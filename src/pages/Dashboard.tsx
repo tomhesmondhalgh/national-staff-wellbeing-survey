@@ -75,7 +75,7 @@ const Dashboard = () => {
                       </span>
                       <p className="text-sm text-gray-500 mt-1">{survey.responses} responses</p>
                     </div>
-                    <Link to={`/surveys/${survey.id}`} className="btn-ghost py-1 px-3">
+                    <Link to={`/analysis?surveyId=${survey.id}`} className="btn-ghost py-1 px-3">
                       View
                     </Link>
                   </div>
