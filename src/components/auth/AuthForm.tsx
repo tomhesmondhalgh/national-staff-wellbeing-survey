@@ -1,13 +1,15 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 
 interface AuthFormProps {
   mode: 'login' | 'signup';
   onSubmit: (data: any) => void;
+  isLoading?: boolean;
 }
 
-const AuthForm: React.FC<AuthFormProps> = ({ mode, onSubmit }) => {
+const AuthForm: React.FC<AuthFormProps> = ({ mode, onSubmit, isLoading = false }) => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -50,6 +52,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onSubmit }) => {
                   className="form-input w-full"
                   value={formData.firstName}
                   onChange={handleChange}
+                  disabled={isLoading}
                 />
               </div>
               <div>
@@ -64,6 +67,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onSubmit }) => {
                   className="form-input w-full"
                   value={formData.lastName}
                   onChange={handleChange}
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -80,6 +84,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onSubmit }) => {
                 className="form-input w-full"
                 value={formData.jobTitle}
                 onChange={handleChange}
+                disabled={isLoading}
               />
             </div>
             
@@ -95,6 +100,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onSubmit }) => {
                 className="form-input w-full"
                 value={formData.schoolName}
                 onChange={handleChange}
+                disabled={isLoading}
               />
             </div>
             
@@ -110,6 +116,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onSubmit }) => {
                 className="form-input w-full"
                 value={formData.schoolAddress}
                 onChange={handleChange}
+                disabled={isLoading}
               />
             </div>
           </>
@@ -128,6 +135,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onSubmit }) => {
             className="form-input w-full"
             value={formData.email}
             onChange={handleChange}
+            disabled={isLoading}
           />
         </div>
         
@@ -144,12 +152,24 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onSubmit }) => {
             className="form-input w-full"
             value={formData.password}
             onChange={handleChange}
+            disabled={isLoading}
           />
         </div>
         
         <div>
-          <button type="submit" className="btn-primary w-full mt-2">
-            {mode === 'login' ? 'Log in' : 'Sign up'}
+          <button 
+            type="submit" 
+            className="btn-primary w-full mt-2 flex justify-center items-center" 
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 size={18} className="mr-2 animate-spin" />
+                {mode === 'login' ? 'Logging in...' : 'Signing up...'}
+              </>
+            ) : (
+              <>{mode === 'login' ? 'Log in' : 'Sign up'}</>
+            )}
           </button>
         </div>
       </form>

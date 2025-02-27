@@ -2,14 +2,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
+  const { user, signOut } = useAuth();
   
-  // Check if user is on a protected route (not login, signup or home)
-  const isProtectedRoute = !['/login', '/signup', '/'].includes(location.pathname);
+  // Check if user is authenticated
+  const isAuthenticated = !!user;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -19,6 +21,11 @@ const Navbar: React.FC = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleSignOut = async () => {
+    await signOut();
+    setIsMenuOpen(false);
+  };
 
   return (
     <header 
@@ -36,7 +43,7 @@ const Navbar: React.FC = () => {
           
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8">
-            {isProtectedRoute ? (
+            {isAuthenticated ? (
               <>
                 <Link 
                   to="/dashboard" 
@@ -56,7 +63,7 @@ const Navbar: React.FC = () => {
                 >
                   Analysis
                 </Link>
-                <button className="nav-link">Sign Out</button>
+                <button className="nav-link" onClick={handleSignOut}>Sign Out</button>
               </>
             ) : (
               <>
@@ -87,7 +94,7 @@ const Navbar: React.FC = () => {
       {isMenuOpen && (
         <div className="md:hidden bg-white shadow-lg animate-slide-down">
           <div className="px-2 pt-2 pb-3 space-y-1">
-            {isProtectedRoute ? (
+            {isAuthenticated ? (
               <>
                 <Link 
                   to="/dashboard" 
@@ -112,7 +119,7 @@ const Navbar: React.FC = () => {
                 </Link>
                 <button 
                   className="block w-full text-left px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
-                  onClick={() => setIsMenuOpen(false)}
+                  onClick={handleSignOut}
                 >
                   Sign Out
                 </button>
