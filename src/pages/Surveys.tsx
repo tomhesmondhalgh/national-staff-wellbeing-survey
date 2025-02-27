@@ -44,7 +44,7 @@ const Surveys = () => {
       responseCount: 0,
       url: 'https://example.com/survey/4'
     }
-  ]);
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
 
   const handleSendReminder = (id: number) => {
     // In a real application, you would send reminders here
