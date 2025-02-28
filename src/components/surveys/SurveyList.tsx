@@ -50,17 +50,17 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
       <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-100 text-sm font-medium text-gray-500 uppercase">
-        <div className="col-span-4">Survey</div>
+        <div className="col-span-3">Survey</div>
         <div className="col-span-2">Date</div>
         <div className="col-span-2">Status</div>
-        <div className="col-span-2">Responses</div>
-        <div className="col-span-2 text-right">Actions</div>
+        <div className="col-span-1">Responses</div>
+        <div className="col-span-4 text-right">Actions</div>
       </div>
       
       <div className="divide-y divide-gray-100">
         {surveys.map((survey) => (
           <div key={survey.id} className="grid grid-cols-12 gap-4 px-6 py-5 items-center hover:bg-gray-50 transition-colors">
-            <div className="col-span-4">
+            <div className="col-span-3">
               <div>
                 <h3 className="text-gray-900 font-medium">{survey.name}</h3>
                 {survey.closeDisplayDate && (
@@ -84,15 +84,15 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
               </span>
             </div>
             
-            <div className="col-span-2 text-gray-700">
+            <div className="col-span-1 text-gray-700">
               {survey.responseCount}
             </div>
             
-            <div className="col-span-2 flex gap-3 justify-end">
+            <div className="col-span-4 flex justify-end space-x-4">
               {survey.status === 'Sent' && (
                 <button 
                   onClick={() => onSendReminder(survey.id)}
-                  className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors"
+                  className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors whitespace-nowrap"
                   title="Send reminder to participants"
                 >
                   <Send size={16} className="mr-1" />
@@ -103,7 +103,7 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
               {survey.url && (
                 <button 
                   onClick={() => copyToClipboard(survey.id, survey.url!)}
-                  className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors"
+                  className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors whitespace-nowrap"
                   title="Copy survey link to clipboard"
                 >
                   <Copy size={16} className="mr-1" />
@@ -113,7 +113,7 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
               
               <Link 
                 to={`/surveys/${survey.id}/edit`} 
-                className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors"
+                className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors whitespace-nowrap"
                 title="Edit survey details"
               >
                 <Edit size={16} className="mr-1" />
