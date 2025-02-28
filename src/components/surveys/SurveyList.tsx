@@ -62,7 +62,14 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
           <div key={survey.id} className="grid grid-cols-12 gap-4 px-6 py-5 items-center hover:bg-gray-50 transition-colors">
             <div className="col-span-3">
               <div>
-                <h3 className="text-gray-900 font-medium">{survey.name}</h3>
+                <h3 className="text-gray-900 font-medium">
+                  <Link 
+                    to={`/surveys/${survey.id}/edit`}
+                    className="hover:text-brandPurple-600 transition-colors"
+                  >
+                    {survey.name}
+                  </Link>
+                </h3>
                 {survey.closeDisplayDate && (
                   <p className="text-xs text-gray-500 mt-1">{survey.closeDisplayDate}</p>
                 )}
