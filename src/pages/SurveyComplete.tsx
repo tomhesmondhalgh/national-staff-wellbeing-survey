@@ -2,7 +2,6 @@
 import React from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
-import { Link } from 'react-router-dom';
 
 const SurveyComplete = () => {
   return (
@@ -36,12 +35,6 @@ const SurveyComplete = () => {
           <p className="text-gray-600 mb-8 text-center">
             Your feedback will help improve staff wellbeing at your organization and contribute to national insights on education staff wellbeing.
           </p>
-          
-          <div className="text-center">
-            <Link to="/" className="btn-primary px-8 py-2 inline-block">
-              Return to Home
-            </Link>
-          </div>
         </div>
         
         <p className="text-sm text-gray-500 mt-8 text-center">
