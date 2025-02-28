@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface AuthContextType {
   user: User | null;
@@ -51,7 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -60,6 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
+      toast.success('Logged in successfully!');
       return { error: null, success: true };
     } catch (error) {
       console.error('Error signing in:', error);
@@ -69,7 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, userData: any) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -87,6 +89,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
+      toast.success('Account created successfully!', {
+        description: 'Please check your email to confirm your account.'
+      });
       return { error: null, success: true };
     } catch (error) {
       console.error('Error signing up:', error);
@@ -95,8 +100,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    navigate('/login');
+    try {
+      await supabase.auth.signOut();
+      toast.success('Signed out successfully');
+      navigate('/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast.error('Error signing out');
+    }
   };
 
   return (

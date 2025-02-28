@@ -19,7 +19,6 @@ const Login = () => {
       const { error, success } = await signIn(data.email, data.password);
       
       if (success) {
-        toast.success('Logged in successfully!');
         navigate('/dashboard');
       } else if (error) {
         toast.error('Failed to log in', {

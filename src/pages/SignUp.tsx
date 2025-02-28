@@ -25,9 +25,6 @@ const SignUp = () => {
       });
       
       if (success) {
-        toast.success('Account created successfully!', {
-          description: 'Please check your email to confirm your account.'
-        });
         navigate('/login');
       } else if (error) {
         toast.error('Failed to create account', {
