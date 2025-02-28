@@ -9,6 +9,8 @@ import SurveyLink from './SurveyLink';
 interface SurveyFormProps {
   onSubmit: (data: SurveyFormData) => void;
   initialData?: Partial<SurveyFormData>;
+  submitButtonText?: string;
+  isEdit?: boolean;
 }
 
 export interface SurveyFormData {
@@ -18,7 +20,12 @@ export interface SurveyFormData {
   name?: string;
 }
 
-const SurveyForm: React.FC<SurveyFormProps> = ({ onSubmit, initialData }) => {
+const SurveyForm: React.FC<SurveyFormProps> = ({ 
+  onSubmit, 
+  initialData,
+  submitButtonText = 'Create Survey',
+  isEdit = false
+}) => {
   const { user } = useAuth();
   const [formData, setFormData] = useState<SurveyFormData>({
     name: initialData?.name || `Survey ${new Date().toLocaleDateString()}`,
@@ -41,43 +48,45 @@ const SurveyForm: React.FC<SurveyFormProps> = ({ onSubmit, initialData }) => {
     
     try {
       // Log the data being submitted
-      console.log("Creating survey with data:", formData);
+      console.log(isEdit ? "Updating survey with data:" : "Creating survey with data:", formData);
       
-      // Save the survey template to the database
-      const { data, error } = await supabase
-        .from('survey_templates')
-        .insert([
-          {
-            name: formData.name,
-            date: formData.date,
-            close_date: formData.closeDate,
-            creator_id: user?.id
-          }
-        ])
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('Error creating survey:', error);
-        toast.error("Failed to create survey", {
-          description: error.message
-        });
-        return;
+      if (!isEdit) {
+        // Save the survey template to the database
+        const { data, error } = await supabase
+          .from('survey_templates')
+          .insert([
+            {
+              name: formData.name,
+              date: formData.date,
+              close_date: formData.closeDate,
+              creator_id: user?.id
+            }
+          ])
+          .select()
+          .single();
+        
+        if (error) {
+          console.error('Error creating survey:', error);
+          toast.error("Failed to create survey", {
+            description: error.message
+          });
+          return;
+        }
+        
+        console.log("Survey created successfully:", data);
+        
+        // Set the survey URL
+        const surveyId = data.id;
+        const baseUrl = window.location.origin;
+        const url = `${baseUrl}/survey?id=${surveyId}`;
+        setSurveyUrl(url);
       }
-      
-      console.log("Survey created successfully:", data);
       
       // Call the onSubmit prop with the form data
       onSubmit(formData);
       
-      // Set the survey URL
-      const surveyId = data.id;
-      const baseUrl = window.location.origin;
-      const url = `${baseUrl}/survey?id=${surveyId}`;
-      setSurveyUrl(url);
-      
-      toast.success("Survey created successfully", {
-        description: "Your survey has been created and is ready to share."
+      toast.success(isEdit ? "Survey updated successfully" : "Survey created successfully", {
+        description: isEdit ? "Your survey has been updated." : "Your survey has been created and is ready to share."
       });
     } catch (error: any) {
       console.error('Error:', error);
@@ -98,18 +107,18 @@ const SurveyForm: React.FC<SurveyFormProps> = ({ onSubmit, initialData }) => {
           isSubmitting={isSubmitting}
         />
         
-        <div className="flex justify-end">
+        <div className={`${isEdit ? 'flex justify-center' : 'flex justify-end'} mt-8`}>
           <button 
             type="submit" 
             className="btn-primary"
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Creating...' : (surveyUrl ? 'Update Survey' : 'Create Survey')}
+            {isSubmitting ? (isEdit ? 'Updating...' : 'Creating...') : submitButtonText}
           </button>
         </div>
       </form>
       
-      <SurveyLink surveyUrl={surveyUrl} />
+      {!isEdit && <SurveyLink surveyUrl={surveyUrl} />}
     </div>
   );
 };

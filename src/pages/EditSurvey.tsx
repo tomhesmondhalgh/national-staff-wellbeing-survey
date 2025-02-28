@@ -3,15 +3,24 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
+import SurveyForm, { SurveyFormData } from '../components/surveys/SurveyForm';
 import { toast } from "sonner";
 import { supabase } from "../lib/supabase";
 import { format } from 'date-fns';
+import { 
+  Breadcrumb, 
+  BreadcrumbItem, 
+  BreadcrumbLink, 
+  BreadcrumbList, 
+  BreadcrumbPage, 
+  BreadcrumbSeparator 
+} from "@/components/ui/breadcrumb";
 
 const EditSurvey = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
-  const [surveyData, setSurveyData] = useState<any | null>(null);
+  const [surveyData, setSurveyData] = useState<Partial<SurveyFormData> | null>(null);
 
   useEffect(() => {
     const fetchSurvey = async () => {
@@ -73,7 +82,7 @@ const EditSurvey = () => {
     fetchSurvey();
   }, [id, navigate]);
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: SurveyFormData) => {
     if (!id) return;
     
     try {
@@ -113,9 +122,23 @@ const EditSurvey = () => {
   return (
     <MainLayout>
       <div className="page-container">
+        <Breadcrumb className="mb-4">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/surveys" onClick={(e) => { e.preventDefault(); navigate('/surveys'); }}>
+                Surveys
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Edit Survey</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+        
         <PageTitle 
           title="Edit Survey" 
-          subtitle="Update your existing survey details"
+          subtitle="Edit your existing staff wellbeing survey"
         />
         
         {isLoading ? (
@@ -127,15 +150,12 @@ const EditSurvey = () => {
             </div>
           </div>
         ) : surveyData ? (
-          <div className="card p-6">
-            <p>Survey edit form would go here. Survey name: {surveyData.name}</p>
-            <button 
-              className="btn-primary mt-4"
-              onClick={() => navigate('/surveys')}
-            >
-              Return to Surveys
-            </button>
-          </div>
+          <SurveyForm 
+            onSubmit={handleSubmit} 
+            initialData={surveyData}
+            submitButtonText="Update Survey"
+            isEdit={true}
+          />
         ) : (
           <div className="card p-6 text-center">
             <p className="text-gray-500">Survey not found or unable to load data.</p>
