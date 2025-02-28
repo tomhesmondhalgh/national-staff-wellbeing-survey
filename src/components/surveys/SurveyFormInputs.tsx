@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Calendar, Mail } from 'lucide-react';
+import { Calendar as CalendarIcon, Mail } from 'lucide-react';
 import { UseFormReturn } from 'react-hook-form';
 import { SurveyFormData } from './SurveyForm';
 import { FormField, FormItem, FormLabel, FormControl, FormDescription } from '../ui/form';
