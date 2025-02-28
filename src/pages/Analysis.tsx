@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LabelList } from 'recharts';
 import { getSurveyOptions, getRecommendationScore, getLeavingContemplation, getWellbeingScores, getTextResponses } from '../utils/analysisUtils';
 import type { SurveyOption, QuestionResponse, TextResponse } from '../utils/analysisUtils';
 import { cn } from '../lib/utils';
@@ -115,6 +116,50 @@ const Analysis = () => {
       );
     }
     return null;
+  };
+
+  // Enhanced tooltip for bar chart
+  const customBarTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-4 border border-gray-200 shadow-sm rounded-md">
+          <p className="font-medium text-gray-900 mb-2">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <div key={`tooltip-${index}`} className="flex items-center mb-1">
+              <div 
+                className="w-3 h-3 rounded-full mr-2" 
+                style={{ backgroundColor: entry.color }} 
+              />
+              <p className="text-gray-700">
+                <span className="font-medium">{entry.name}:</span> {entry.value}%
+              </p>
+            </div>
+          ))}
+          <p className="text-xs text-gray-500 mt-2">
+            Difference: {Math.abs(payload[0].value - payload[1].value).toFixed(1)}%
+            {payload[0].value > payload[1].value ? " above" : " below"} national average
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Custom label renderer for the bars
+  const renderCustomBarLabel = (props: any) => {
+    const { x, y, width, height, value } = props;
+    return (
+      <text 
+        x={x + width / 2} 
+        y={y + height / 2} 
+        fill="#FFFFFF" 
+        textAnchor="middle" 
+        dominantBaseline="middle"
+        style={{ fontWeight: 'bold', fontSize: '12px', textShadow: '0px 0px 3px rgba(0,0,0,0.5)' }}
+      >
+        {value}%
+      </text>
+    );
   };
 
   return (
@@ -259,41 +304,59 @@ const Analysis = () => {
               
               <h3 className="text-lg font-bold text-gray-900 mb-4">Wellbeing Scores by Question</h3>
               
-              <div className="h-96 mb-8">
+              <div className="h-[500px] mb-8">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={wellbeingScores}
                     margin={{ top: 20, right: 30, left: 20, bottom: 120 }}
                     layout="vertical"
+                    barCategoryGap={25} // Increased space between question groups
+                    barGap={8} // Increased space between bars in the same group
                   >
                     <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
                     <XAxis 
                       type="number" 
                       tick={{ fill: '#4B5563' }}
                       domain={[0, 100]}
+                      label={{ value: 'Percentage (%)', position: 'insideBottom', offset: -15 }}
                     />
                     <YAxis 
                       type="category"
                       dataKey="question" 
                       tick={{ fill: '#4B5563' }}
                       width={250}
+                      tickMargin={10}
                     />
-                    <Tooltip />
-                    <Legend />
+                    <Tooltip content={customBarTooltip} />
+                    <Legend verticalAlign="top" height={36} />
                     <Bar 
                       dataKey="school" 
                       name="Your Organization" 
                       fill="#8b5cf6" 
                       radius={[0, 4, 4, 0]} 
                       animationDuration={1500}
-                    />
+                      barSize={30} // Wider bars
+                    >
+                      <LabelList 
+                        dataKey="school" 
+                        position="center" 
+                        content={renderCustomBarLabel} 
+                      />
+                    </Bar>
                     <Bar 
                       dataKey="national" 
                       name="National Average" 
                       fill="#d1d5db" 
                       radius={[0, 4, 4, 0]}
                       animationDuration={1500}
-                    />
+                      barSize={30} // Wider bars
+                    >
+                      <LabelList 
+                        dataKey="national" 
+                        position="center" 
+                        content={renderCustomBarLabel} 
+                      />
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
