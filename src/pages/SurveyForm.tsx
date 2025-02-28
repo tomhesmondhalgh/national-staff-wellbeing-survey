@@ -6,6 +6,7 @@ import PageTitle from '../components/ui/PageTitle';
 import { useToast } from '../components/ui/use-toast';
 import { supabase } from '../lib/supabase';
 import { cn } from '../lib/utils';
+import { getSurveyById, isSurveyClosed, SurveyTemplate } from '../utils/surveyUtils';
 
 // Define options for different question types
 const roleOptions = [
@@ -48,62 +49,65 @@ const SurveyForm = () => {
   // If no survey ID is provided, we'll show an error
   const [surveyNotFound, setSurveyNotFound] = useState(false);
   const [surveyLoading, setSurveyLoading] = useState(true);
-  const [surveyTemplate, setSurveyTemplate] = useState<any>(null);
+  const [surveyTemplate, setSurveyTemplate] = useState<SurveyTemplate | null>(null);
   
+  // Fetch the survey template when component mounts
   useEffect(() => {
-    // This effect fetches the survey template data
-    async function fetchSurveyTemplate() {
+    let isMounted = true;
+    
+    const fetchSurveyTemplate = async () => {
       if (!surveyId) {
         console.error('No survey ID provided in URL');
-        setSurveyNotFound(true);
-        setSurveyLoading(false);
+        if (isMounted) {
+          setSurveyNotFound(true);
+          setSurveyLoading(false);
+        }
         return;
       }
       
       try {
-        console.log("Fetching survey with ID:", surveyId);
-        setSurveyLoading(true);
+        console.log(`Starting survey fetch process for ID: ${surveyId}`);
         
-        const { data, error } = await supabase
-          .from('survey_templates')
-          .select('*')
-          .eq('id', surveyId)
-          .maybeSingle();
-          
-        if (error) {
-          console.error('Error fetching survey template:', error);
+        // Use the utility function to get the survey
+        const survey = await getSurveyById(surveyId);
+        
+        // If component unmounted during async operation, do nothing
+        if (!isMounted) return;
+        
+        if (!survey) {
+          console.error(`Survey with ID ${surveyId} was not found`);
           setSurveyNotFound(true);
           setSurveyLoading(false);
           return;
         }
         
-        if (!data) {
-          console.error('No survey found with ID:', surveyId);
-          setSurveyNotFound(true);
-          setSurveyLoading(false);
-          return;
-        }
-        
-        console.log("Survey found:", data);
+        console.log('Survey retrieved successfully:', survey);
         
         // Check if survey is closed
-        if (data.close_date && new Date(data.close_date) < new Date()) {
-          console.log("Survey is closed, redirecting to closed page");
+        if (isSurveyClosed(survey)) {
+          console.log('Survey is closed, redirecting to closed page');
           navigate('/survey-closed');
           return;
         }
         
-        // Set the survey template data
-        setSurveyTemplate(data);
+        // Set survey template data
+        setSurveyTemplate(survey);
         setSurveyLoading(false);
       } catch (error) {
-        console.error('Unexpected error in fetchSurveyTemplate:', error);
-        setSurveyNotFound(true);
-        setSurveyLoading(false);
+        console.error('Error in fetchSurveyTemplate:', error);
+        if (isMounted) {
+          setSurveyNotFound(true);
+          setSurveyLoading(false);
+        }
       }
-    }
+    };
     
     fetchSurveyTemplate();
+    
+    // Clean up function to prevent state updates if component unmounts
+    return () => {
+      isMounted = false;
+    };
   }, [surveyId, navigate]);
   
   const [formData, setFormData] = useState({
@@ -195,7 +199,7 @@ const SurveyForm = () => {
     setIsSubmitting(true);
     
     try {
-      console.log("Submitting survey response for template ID:", surveyId);
+      console.log(`Submitting survey response for template ID: ${surveyId}`);
       
       // Submit response to Supabase with the survey_template_id
       const { error } = await supabase
