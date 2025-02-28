@@ -7,45 +7,46 @@ import { Link } from 'react-router-dom';
 const SurveyComplete = () => {
   return (
     <MainLayout>
-      <div className="page-container">
-        <div className="max-w-3xl mx-auto text-center">
-          <PageTitle
-            title="Thank You for Completing the Survey!"
-          />
-          
-          <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 mb-8">
+      <div className="page-container max-w-3xl mx-auto px-4 py-8">
+        <PageTitle
+          title="Thank You for Completing the Survey!"
+        />
+        
+        <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 mb-8">
+          <div className="h-20 w-20 text-green-500 mx-auto mb-6">
             <svg 
               xmlns="http://www.w3.org/2000/svg" 
-              className="h-20 w-20 text-green-500 mx-auto mb-6" 
-              fill="none" 
               viewBox="0 0 24 24" 
-              stroke="currentColor"
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+              className="w-full h-full"
             >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M5 13l4 4L19 7" 
-              />
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
             </svg>
-            
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              Your response has been recorded
-            </h2>
-            
-            <p className="text-gray-600 mb-8">
-              Your feedback will help improve staff wellbeing at your organization and contribute to national insights on education staff wellbeing.
-            </p>
-            
-            <Link to="/" className="btn-primary">
+          </div>
+          
+          <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">
+            Your response has been recorded
+          </h2>
+          
+          <p className="text-gray-600 mb-8 text-center">
+            Your feedback will help improve staff wellbeing at your organization and contribute to national insights on education staff wellbeing.
+          </p>
+          
+          <div className="text-center">
+            <Link to="/" className="btn-primary px-8 py-2 inline-block">
               Return to Home
             </Link>
           </div>
-          
-          <p className="text-sm text-gray-500 mt-8">
-            The National Staff Wellbeing Survey is committed to improving working conditions for education professionals across the country.
-          </p>
         </div>
+        
+        <p className="text-sm text-gray-500 mt-8 text-center">
+          The National Staff Wellbeing Survey is committed to improving working conditions for education professionals across the country.
+        </p>
       </div>
     </MainLayout>
   );
