@@ -43,6 +43,14 @@ const Navbar: React.FC = () => {
           
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8">
+            {/* Always visible links for all users */}
+            <Link 
+              to="/survey" 
+              className={`nav-link ${location.pathname === '/survey' ? 'text-brandPurple-600' : ''}`}
+            >
+              Take Survey
+            </Link>
+
             {isAuthenticated ? (
               <>
                 <Link 
@@ -94,6 +102,15 @@ const Navbar: React.FC = () => {
       {isMenuOpen && (
         <div className="md:hidden bg-white shadow-lg animate-slide-down">
           <div className="px-2 pt-2 pb-3 space-y-1">
+            {/* Always visible links for all users */}
+            <Link 
+              to="/survey" 
+              className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Take Survey
+            </Link>
+            
             {isAuthenticated ? (
               <>
                 <Link 

@@ -1,92 +1,59 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import Index from "./pages/Index";
-import Login from "./pages/Login";
-import SignUp from "./pages/SignUp";
-import Dashboard from "./pages/Dashboard";
-import Surveys from "./pages/Surveys";
-import NewSurvey from "./pages/NewSurvey";
-import Analysis from "./pages/Analysis";
-import NotFound from "./pages/NotFound";
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { Toaster } from './components/ui/toaster';
+import './App.css';
 
-const queryClient = new QueryClient();
+// Public pages
+import Index from './pages/Index';
+import Login from './pages/Login';
+import SignUp from './pages/SignUp';
+import NotFound from './pages/NotFound';
+import SurveyForm from './pages/SurveyForm';
+import SurveyComplete from './pages/SurveyComplete';
+
+// Protected pages
+import Dashboard from './pages/Dashboard';
+import Surveys from './pages/Surveys';
+import Analysis from './pages/Analysis';
+import NewSurvey from './pages/NewSurvey';
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, isLoading } = useAuth();
-  
-  if (isLoading) {
-    return <div className="flex h-screen w-full items-center justify-center">Loading...</div>;
-  }
-  
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-  
+  const { user, loading } = useAuth();
+
+  if (loading) return <div>Loading...</div>;
+  if (!user) return <Navigate to="/login" />;
+
   return <>{children}</>;
 };
 
-// Router setup with AuthProvider
-const AppRouter = () => {
+function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
+    <AuthProvider>
+      <Router>
         <Routes>
+          {/* Public routes */}
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
-          <Route 
-            path="/dashboard" 
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/surveys" 
-            element={
-              <ProtectedRoute>
-                <Surveys />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/new-survey" 
-            element={
-              <ProtectedRoute>
-                <NewSurvey />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/analysis" 
-            element={
-              <ProtectedRoute>
-                <Analysis />
-              </ProtectedRoute>
-            } 
-          />
+          <Route path="/survey" element={<SurveyForm />} />
+          <Route path="/survey-complete" element={<SurveyComplete />} />
+
+          {/* Protected routes */}
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/surveys" element={<ProtectedRoute><Surveys /></ProtectedRoute>} />
+          <Route path="/analysis" element={<ProtectedRoute><Analysis /></ProtectedRoute>} />
+          <Route path="/new-survey" element={<ProtectedRoute><NewSurvey /></ProtectedRoute>} />
+          
+          {/* Catch all route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </AuthProvider>
-    </BrowserRouter>
-  );
-};
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
+      </Router>
       <Toaster />
-      <Sonner />
-      <AppRouter />
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+    </AuthProvider>
+  );
+}
 
 export default App;
