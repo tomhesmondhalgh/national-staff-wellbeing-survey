@@ -151,6 +151,21 @@ export const getMockDetailedResponses = (surveyId?: string) => {
       }
     },
     {
+      question: "I am in good physical and mental health",
+      schoolResponses: {
+        "Strongly Agree": 25,
+        "Agree": 40,
+        "Disagree": 25,
+        "Strongly Disagree": 10
+      },
+      nationalResponses: {
+        "Strongly Agree": 20,
+        "Agree": 45,
+        "Disagree": 25,
+        "Strongly Disagree": 10
+      }
+    },
+    {
       question: "I can access support when I need it",
       schoolResponses: {
         "Strongly Agree": 30,
@@ -202,7 +217,8 @@ export const getMockDetailedResponses = (surveyId?: string) => {
     // Autumn 2023 - slightly below average in some areas
     return baseResponses.map(q => {
       if (q.question === "Leadership prioritises staff wellbeing" || 
-          q.question === "My workload is manageable") {
+          q.question === "My workload is manageable" ||
+          q.question === "I am in good physical and mental health") {
         return {
           ...q,
           schoolResponses: {
@@ -223,7 +239,8 @@ export const getMockDetailedResponses = (surveyId?: string) => {
     return baseResponses.map(q => {
       if (q.question === "Leadership prioritises staff wellbeing" || 
           q.question === "My workload is manageable" ||
-          q.question === "I have a good work-life balance") {
+          q.question === "I have a good work-life balance" ||
+          q.question === "I am in good physical and mental health") {
         return {
           ...q,
           schoolResponses: {
