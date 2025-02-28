@@ -58,7 +58,7 @@ const nationalAverages = {
   }
 };
 
-// National average detailed breakdown (mock data - this will be replaced with actual data)
+// National average detailed breakdown (mock data as a fallback)
 const nationalDetailedResponses = {
   "leadership_prioritize": {
     "Strongly Disagree": 10,
@@ -537,6 +537,7 @@ export const getDetailedWellbeingResponses = async (surveyId?: string, startDate
       
       // Calculate percentages for national data
       const nationalTotal = Object.values(nationalResponseCounts).reduce((sum, count) => sum + count, 0);
+      // Change to let instead of const since we need to reassign it
       let nationalPercentages: {[key: string]: number} = {};
       
       if (nationalTotal > 0) {
@@ -545,7 +546,7 @@ export const getDetailedWellbeingResponses = async (surveyId?: string, startDate
         });
       } else {
         // If we have no data, use the mock national averages
-        // Fix: Copy values instead of reassigning the object
+        // Use object spread syntax to create a new object instead of reassigning
         nationalPercentages = { ...nationalDetailedResponses[q.key as keyof typeof nationalDetailedResponses] };
       }
       
@@ -558,7 +559,7 @@ export const getDetailedWellbeingResponses = async (surveyId?: string, startDate
     });
   } catch (error) {
     console.error('Unexpected error in getDetailedWellbeingResponses:', error);
-    // Define questions within this scope to fix the "questions is not defined" error
+    // Define questions inside catch block to ensure it's in scope
     const questions = [
       { key: 'leadership_prioritize', question: 'Leadership prioritise staff wellbeing in our organisation' },
       { key: 'manageable_workload', question: 'I have a manageable workload' },
