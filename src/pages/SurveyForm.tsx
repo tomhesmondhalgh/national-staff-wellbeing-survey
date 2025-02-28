@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
 import { useToast } from '../components/ui/use-toast';
@@ -36,9 +36,52 @@ const frequencyOptions = [
 
 const SurveyForm = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
+  
+  // Get survey_template_id from URL query parameters
+  const searchParams = new URLSearchParams(location.search);
+  const surveyId = searchParams.get('id');
+  
+  // If no survey ID is provided, we'll show an error
+  const [surveyNotFound, setSurveyNotFound] = useState(false);
+  const [surveyTemplate, setSurveyTemplate] = useState<any>(null);
+  
+  useEffect(() => {
+    async function fetchSurveyTemplate() {
+      if (!surveyId) {
+        setSurveyNotFound(true);
+        return;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('survey_templates')
+          .select('*')
+          .eq('id', surveyId)
+          .single();
+          
+        if (error || !data) {
+          console.error('Error fetching survey template:', error);
+          setSurveyNotFound(true);
+        } else {
+          setSurveyTemplate(data);
+          
+          // Check if survey is closed
+          if (data.close_date && new Date(data.close_date) < new Date()) {
+            navigate('/survey-closed');
+          }
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        setSurveyNotFound(true);
+      }
+    }
+    
+    fetchSurveyTemplate();
+  }, [surveyId, navigate]);
   
   const [formData, setFormData] = useState({
     role: '',
@@ -129,19 +172,29 @@ const SurveyForm = () => {
     setIsSubmitting(true);
     
     try {
-      // Try to submit to Supabase if available
-      try {
-        const { error } = await supabase
-          .from('survey_responses')
-          .insert([formData]);
+      // Submit response to Supabase with the survey_template_id
+      const { error } = await supabase
+        .from('survey_responses')
+        .insert([{
+          survey_template_id: surveyId,
+          role: formData.role,
+          leadership_prioritize: formData.leadershipPrioritize,
+          manageable_workload: formData.manageableWorkload,
+          work_life_balance: formData.workLifeBalance,
+          health_state: formData.healthState,
+          valued_member: formData.valuedMember,
+          support_access: formData.supportAccess,
+          confidence_in_role: formData.confidenceInRole,
+          org_pride: formData.orgPride,
+          recommendation_score: formData.recommendationScore,
+          leaving_contemplation: formData.leavingContemplation,
+          doing_well: formData.doingWell,
+          improvements: formData.improvements
+        }]);
           
-        if (error) {
-          console.error('Supabase error:', error);
-          // Continue with form submission process even if Supabase fails
-        }
-      } catch (dbError) {
-        console.error('Database connection error:', dbError);
-        // This is a development version, so we'll proceed anyway
+      if (error) {
+        console.error('Error submitting survey response:', error);
+        throw error;
       }
       
       toast({
@@ -150,7 +203,7 @@ const SurveyForm = () => {
         variant: "default"
       });
       
-      // Always navigate to the thank you page, regardless of Supabase status
+      // Navigate to the thank you page
       navigate('/survey-complete');
       
     } catch (error: any) {
@@ -278,6 +331,29 @@ const SurveyForm = () => {
       {errors[name] && <p className="text-red-500 text-sm mt-1 text-left">{errors[name]}</p>}
     </div>
   );
+
+  if (surveyNotFound) {
+    return (
+      <MainLayout>
+        <div className="page-container max-w-4xl mx-auto px-4 py-8">
+          <PageTitle 
+            title="Survey Not Found" 
+          />
+          <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center">
+            <p className="text-gray-700 mb-6">
+              The survey you are looking for could not be found or has expired.
+            </p>
+            <button 
+              onClick={() => navigate('/')}
+              className="btn-primary"
+            >
+              Go Home
+            </button>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>

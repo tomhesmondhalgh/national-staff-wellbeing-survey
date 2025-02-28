@@ -1,6 +1,9 @@
 
 import React, { useState } from 'react';
 import { Calendar, Copy, Check, Mail } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface SurveyFormProps {
   onSubmit: (data: SurveyFormData) => void;
@@ -11,10 +14,13 @@ export interface SurveyFormData {
   date: string;
   closeDate: string;
   emails: string;
+  name?: string;
 }
 
 const SurveyForm: React.FC<SurveyFormProps> = ({ onSubmit, initialData }) => {
+  const { user } = useAuth();
   const [formData, setFormData] = useState<SurveyFormData>({
+    name: initialData?.name || `Survey ${new Date().toLocaleDateString()}`,
     date: initialData?.date || '',
     closeDate: initialData?.closeDate || '',
     emails: initialData?.emails || ''
@@ -22,19 +28,60 @@ const SurveyForm: React.FC<SurveyFormProps> = ({ onSubmit, initialData }) => {
   
   const [surveyUrl, setSurveyUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    setIsSubmitting(true);
     
-    // In a real application, the URL would be returned from the backend
-    // Here we're just generating a fake URL for demonstration
-    setSurveyUrl(`https://wellbeingsurvey.com/${Math.random().toString(36).substring(2, 10)}`);
+    try {
+      // Save the survey template to the database
+      const { data, error } = await supabase
+        .from('survey_templates')
+        .insert([
+          {
+            name: formData.name,
+            date: formData.date,
+            close_date: formData.closeDate,
+            creator_id: user?.id
+          }
+        ])
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error creating survey:', error);
+        toast.error("Failed to create survey", {
+          description: error.message
+        });
+        return;
+      }
+      
+      // Call the onSubmit prop with the form data
+      onSubmit(formData);
+      
+      // Set the survey URL
+      const surveyId = data.id;
+      const baseUrl = window.location.origin;
+      const url = `${baseUrl}/survey?id=${surveyId}`;
+      setSurveyUrl(url);
+      
+      toast.success("Survey created successfully", {
+        description: "Your survey has been created and is ready to share."
+      });
+    } catch (error: any) {
+      console.error('Error:', error);
+      toast.error("An error occurred", {
+        description: "Please try again later."
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
   const handleCopyUrl = () => {
@@ -48,6 +95,25 @@ const SurveyForm: React.FC<SurveyFormProps> = ({ onSubmit, initialData }) => {
   return (
     <div className="card p-6 animate-slide-up">
       <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+            Survey Name*
+          </label>
+          <input
+            id="name"
+            name="name"
+            type="text"
+            required
+            className="form-input w-full"
+            value={formData.name}
+            onChange={handleChange}
+            placeholder="e.g. Spring Term 2024 Survey"
+          />
+          <p className="mt-1 text-sm text-gray-500">
+            A descriptive name to help you identify this survey
+          </p>
+        </div>
+      
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
@@ -120,8 +186,12 @@ const SurveyForm: React.FC<SurveyFormProps> = ({ onSubmit, initialData }) => {
         </div>
         
         <div className="flex justify-end">
-          <button type="submit" className="btn-primary">
-            {surveyUrl ? 'Update Survey' : 'Create Survey'}
+          <button 
+            type="submit" 
+            className="btn-primary"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Creating...' : (surveyUrl ? 'Update Survey' : 'Create Survey')}
           </button>
         </div>
       </form>

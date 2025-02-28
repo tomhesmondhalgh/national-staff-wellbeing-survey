@@ -1,58 +1,46 @@
 
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { Toaster } from './components/ui/toaster';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './App.css';
-
-// Public pages
-import Index from './pages/Index';
-import Login from './pages/Login';
-import SignUp from './pages/SignUp';
-import NotFound from './pages/NotFound';
-import SurveyForm from './pages/SurveyForm';
-import SurveyComplete from './pages/SurveyComplete';
-
-// Protected pages
 import Dashboard from './pages/Dashboard';
 import Surveys from './pages/Surveys';
-import Analysis from './pages/Analysis';
 import NewSurvey from './pages/NewSurvey';
-
-// Protected route component
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, isLoading } = useAuth();
-
-  if (isLoading) return <div>Loading...</div>;
-  if (!user) return <Navigate to="/login" />;
-
-  return <>{children}</>;
-};
+import SurveyForm from './pages/SurveyForm';
+import Analysis from './pages/Analysis';
+import Login from './pages/Login';
+import SignUp from './pages/SignUp';
+import Index from './pages/Index';
+import NotFound from './pages/NotFound';
+import SurveyComplete from './pages/SurveyComplete';
+import SurveyClosed from './pages/SurveyClosed';
+import { Toaster } from 'sonner';
+import { AuthProvider } from './contexts/AuthContext';
+import { useEffect } from 'react';
 
 function App() {
+  // Add page transitions
+  useEffect(() => {
+    document.body.classList.add('animate-fade-in');
+  }, []);
+
   return (
-    <Router>
+    <BrowserRouter>
       <AuthProvider>
+        <Toaster position="top-right" richColors />
         <Routes>
-          {/* Public routes */}
           <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<SignUp />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/surveys" element={<Surveys />} />
+          <Route path="/new-survey" element={<NewSurvey />} />
           <Route path="/survey" element={<SurveyForm />} />
           <Route path="/survey-complete" element={<SurveyComplete />} />
-
-          {/* Protected routes */}
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/surveys" element={<ProtectedRoute><Surveys /></ProtectedRoute>} />
-          <Route path="/analysis" element={<ProtectedRoute><Analysis /></ProtectedRoute>} />
-          <Route path="/new-survey" element={<ProtectedRoute><NewSurvey /></ProtectedRoute>} />
-          
-          {/* Catch all route */}
+          <Route path="/survey-closed" element={<SurveyClosed />} />
+          <Route path="/analysis" element={<Analysis />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
-        <Toaster />
       </AuthProvider>
-    </Router>
+    </BrowserRouter>
   );
 }
 
