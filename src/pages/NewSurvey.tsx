@@ -54,7 +54,11 @@ const NewSurvey = () => {
           subtitle="Set up a new wellbeing survey to send to your staff"
         />
         
-        <SurveyForm onSubmit={handleSubmit} />
+        <SurveyForm 
+          onSubmit={handleSubmit} 
+          submitButtonText="Create Survey"
+          isEdit={true} // This prop controls button centering
+        />
       </div>
     </MainLayout>
   );
