@@ -150,10 +150,12 @@ const SurveyForm = () => {
     options: string[]; 
     required?: boolean;
   }) => (
-    <div className="mb-6">
+    <div className="mb-10">
       <fieldset>
-        <legend className="text-lg font-medium mb-2">{label} {required && <span className="text-red-500">*</span>}</legend>
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:space-x-4">
+        <legend className="text-lg font-medium mb-3 text-left">
+          {label} {required && <span className="text-red-500">*</span>}
+        </legend>
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:space-x-4 text-left">
           {options.map((option) => (
             <div key={option} className="flex items-center mb-2">
               <input
@@ -171,7 +173,7 @@ const SurveyForm = () => {
             </div>
           ))}
         </div>
-        {errors[name] && <p className="text-red-500 text-sm mt-1">{errors[name]}</p>}
+        {errors[name] && <p className="text-red-500 text-sm mt-1 text-left">{errors[name]}</p>}
       </fieldset>
     </div>
   );
@@ -190,10 +192,12 @@ const SurveyForm = () => {
     max: number;
     required?: boolean;
   }) => (
-    <div className="mb-6">
+    <div className="mb-10">
       <fieldset>
-        <legend className="text-lg font-medium mb-2">{label} {required && <span className="text-red-500">*</span>}</legend>
-        <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
+        <legend className="text-lg font-medium mb-3 text-left">
+          {label} {required && <span className="text-red-500">*</span>}
+        </legend>
+        <div className="grid grid-cols-5 md:grid-cols-10 gap-2 text-left">
           {Array.from({ length: max - min + 1 }, (_, i) => min + i).map((num) => (
             <div key={num} className="flex flex-col items-center">
               <input
@@ -211,7 +215,7 @@ const SurveyForm = () => {
             </div>
           ))}
         </div>
-        {errors[name] && <p className="text-red-500 text-sm mt-1">{errors[name]}</p>}
+        {errors[name] && <p className="text-red-500 text-sm mt-1 text-left">{errors[name]}</p>}
       </fieldset>
     </div>
   );
@@ -228,11 +232,11 @@ const SurveyForm = () => {
     subtitle?: string;
     required?: boolean;
   }) => (
-    <div className="mb-6">
-      <label htmlFor={name} className="block text-lg font-medium mb-2">
+    <div className="mb-10">
+      <label htmlFor={name} className="block text-lg font-medium mb-2 text-left">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
-      {subtitle && <p className="text-sm text-gray-600 mb-2">{subtitle}</p>}
+      {subtitle && <p className="text-sm text-gray-600 mb-2 text-left">{subtitle}</p>}
       <textarea
         id={name}
         name={name}
@@ -244,7 +248,7 @@ const SurveyForm = () => {
           errors[name] ? "border-red-500" : "border-gray-300"
         )}
       />
-      {errors[name] && <p className="text-red-500 text-sm mt-1">{errors[name]}</p>}
+      {errors[name] && <p className="text-red-500 text-sm mt-1 text-left">{errors[name]}</p>}
     </div>
   );
 
@@ -255,7 +259,7 @@ const SurveyForm = () => {
           title="Complete the National Staff Wellbeing Survey" 
         />
         
-        <div className="mb-8 text-center">
+        <div className="mb-8 text-left">
           <p className="text-gray-700">
             Completing this survey will only take around 5 minutes, but it will give your school or college 
             crucial information that will help them improve the wellbeing of staff. You'll also be helping to 
@@ -266,12 +270,28 @@ const SurveyForm = () => {
         
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <form onSubmit={handleSubmit}>
-            {/* Role Selection */}
-            <RadioQuestion 
-              label="What's Your Role Within School or College?" 
-              name="role" 
-              options={roleOptions} 
-            />
+            {/* Role Selection Dropdown */}
+            <div className="mb-10">
+              <label htmlFor="role" className="block text-lg font-medium mb-2 text-left">
+                What's Your Role Within School or College? <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="role"
+                name="role"
+                value={formData.role}
+                onChange={handleInputChange}
+                className={cn(
+                  "w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-brandPurple-500 focus:border-transparent",
+                  errors.role ? "border-red-500" : "border-gray-300"
+                )}
+              >
+                <option value="">Select your role</option>
+                {roleOptions.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+              {errors.role && <p className="text-red-500 text-sm mt-1 text-left">{errors.role}</p>}
+            </div>
             
             {/* Agreement Scale Questions */}
             <RadioQuestion 
@@ -350,7 +370,7 @@ const SurveyForm = () => {
               subtitle="This is an anonymous survey, please do not include any personal identifiable data." 
             />
             
-            <div className="mt-8 flex justify-center">
+            <div className="mt-10 flex justify-center">
               <button
                 type="submit"
                 disabled={isSubmitting}
