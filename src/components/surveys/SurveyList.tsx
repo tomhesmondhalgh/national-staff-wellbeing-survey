@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Send, Copy, Edit } from 'lucide-react';
 import { toast } from "sonner";
+import { supabase } from '../../lib/supabase';
 
 interface Survey {
   id: string;
@@ -14,6 +15,7 @@ interface Survey {
   closeDate?: string;
   closeDisplayDate?: string;
   url?: string;
+  emails?: string;
 }
 
 interface SurveyListProps {
@@ -23,6 +25,7 @@ interface SurveyListProps {
 
 const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [sendingReminder, setSendingReminder] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const copyToClipboard = (id: string, text: string) => {
@@ -41,6 +44,65 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
     // Log before navigation to help debug
     console.log(`Navigating to edit survey: ${id}`);
     navigate(`/surveys/${id}/edit`);
+  };
+  
+  const handleSendReminder = async (survey: Survey) => {
+    if (!survey.emails || !survey.emails.trim()) {
+      toast.error("No email recipients", {
+        description: "This survey doesn't have any email recipients configured."
+      });
+      return;
+    }
+    
+    try {
+      setSendingReminder(survey.id);
+      
+      // Parse the emails string into an array
+      const emails = survey.emails
+        .split(',')
+        .map(email => email.trim())
+        .filter(email => email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
+      
+      if (emails.length === 0) {
+        toast.error("No valid email addresses", {
+          description: "Please check the email addresses and try again."
+        });
+        return;
+      }
+      
+      // Call the Supabase function to send reminder emails
+      const { data, error } = await supabase.functions.invoke('send-survey-email', {
+        body: {
+          surveyId: survey.id,
+          surveyName: survey.name,
+          emails,
+          surveyUrl: survey.url,
+          isReminder: true
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      console.log("Reminder sending result:", data);
+      
+      if (data.success) {
+        onSendReminder(survey.id);
+        toast.success("Reminders sent successfully", {
+          description: `Sent to ${data.count} recipients.`
+        });
+      } else {
+        throw new Error(data.error || "Failed to send reminders");
+      }
+    } catch (error) {
+      console.error("Error sending reminders:", error);
+      toast.error("Failed to send reminders", {
+        description: "There was a problem sending the reminders. Please try again."
+      });
+    } finally {
+      setSendingReminder(null);
+    }
   };
 
   if (surveys.length === 0) {
@@ -105,12 +167,15 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
             <div className="col-span-4 flex justify-end space-x-4">
               {survey.status === 'Sent' && (
                 <button 
-                  onClick={() => onSendReminder(survey.id)}
+                  onClick={() => handleSendReminder(survey)}
                   className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors whitespace-nowrap"
                   title="Send reminder to participants"
+                  disabled={sendingReminder === survey.id}
                 >
                   <Send size={16} className="mr-1" />
-                  <span>Remind</span>
+                  <span>
+                    {sendingReminder === survey.id ? 'Sending...' : 'Remind'}
+                  </span>
                 </button>
               )}
               

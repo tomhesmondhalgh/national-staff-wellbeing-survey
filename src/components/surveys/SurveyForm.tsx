@@ -81,10 +81,15 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
         const baseUrl = window.location.origin;
         const url = `${baseUrl}/survey?id=${surveyId}`;
         setSurveyUrl(url);
+        
+        // If emails are provided, send invitation emails
+        if (formData.emails && formData.emails.trim()) {
+          await sendSurveyEmails(surveyId, data.name, formData.emails, url, false);
+        }
+      } else if (isEdit && initialData?.name) {
+        // Call the onSubmit prop with the form data
+        onSubmit(formData);
       }
-      
-      // Call the onSubmit prop with the form data
-      onSubmit(formData);
       
       toast.success(isEdit ? "Survey updated successfully" : "Survey created successfully", {
         description: isEdit ? "Your survey has been updated." : "Your survey has been created and is ready to share."
@@ -96,6 +101,54 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+  
+  // Function to send emails for a survey
+  const sendSurveyEmails = async (surveyId: string, surveyName: string, emailsString: string, surveyUrl: string, isReminder: boolean = false) => {
+    try {
+      // Parse the emails string into an array
+      const emails = emailsString
+        .split(',')
+        .map(email => email.trim())
+        .filter(email => email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
+      
+      if (emails.length === 0) {
+        console.log("No valid emails found");
+        return;
+      }
+      
+      console.log(`Sending ${isReminder ? 'reminder' : 'invitation'} emails to:`, emails);
+      
+      // Call the Supabase function to send emails
+      const { data, error } = await supabase.functions.invoke('send-survey-email', {
+        body: {
+          surveyId,
+          surveyName,
+          emails,
+          surveyUrl,
+          isReminder
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      console.log("Email sending result:", data);
+      
+      if (data.success) {
+        toast.success(`${isReminder ? 'Reminders' : 'Invitations'} sent successfully`, {
+          description: `Sent to ${data.count} recipients.`
+        });
+      } else {
+        throw new Error(data.error || "Failed to send emails");
+      }
+    } catch (error) {
+      console.error("Error sending emails:", error);
+      toast.error(`Failed to send ${isReminder ? 'reminders' : 'invitations'}`, {
+        description: "There was a problem sending the emails. Please try again."
+      });
     }
   };
   

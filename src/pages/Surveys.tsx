@@ -34,6 +34,7 @@ const Surveys = () => {
             date,
             close_date,
             created_at,
+            emails,
             survey_responses(count)
           `)
           .eq('creator_id', user.id)
@@ -82,7 +83,8 @@ const Surveys = () => {
                 day: 'numeric',
                 year: 'numeric'
               })}` : 
-              undefined
+              undefined,
+            emails: template.emails || ''
           };
         });
         
@@ -118,7 +120,8 @@ const Surveys = () => {
             className="mb-0 text-left"
           />
           <Link 
-            to="/new-survey" 
+            to="/new-survey"
+
             className="btn-primary"
           >
             New Survey
