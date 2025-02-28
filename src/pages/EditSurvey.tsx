@@ -31,7 +31,7 @@ const EditSurvey = () => {
         
         const { data, error } = await supabase
           .from('survey_templates')
-          .select('name, date, close_date')
+          .select('name, date, close_date, emails')
           .eq('id', id)
           .single();
         
@@ -67,7 +67,7 @@ const EditSurvey = () => {
           name: data.name,
           date: formatDateForInput(data.date),
           closeDate: data.close_date ? formatDateForInput(data.close_date) : '',
-          emails: ''
+          emails: data.emails || ''
         });
       } catch (error) {
         console.error('Error:', error);
@@ -93,6 +93,7 @@ const EditSurvey = () => {
           name: data.name,
           date: data.date,
           close_date: data.closeDate,
+          emails: data.emails // Save emails when updating
         })
         .eq('id', id);
       

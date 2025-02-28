@@ -59,7 +59,8 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
               name: formData.name,
               date: formData.date,
               close_date: formData.closeDate,
-              creator_id: user?.id
+              creator_id: user?.id,
+              emails: formData.emails // Save emails to the database
             }
           ])
           .select()
