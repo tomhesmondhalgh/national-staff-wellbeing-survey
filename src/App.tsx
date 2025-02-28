@@ -21,9 +21,9 @@ import NewSurvey from './pages/NewSurvey';
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
+  const { user, isLoading } = useAuth();
 
-  if (loading) return <div>Loading...</div>;
+  if (isLoading) return <div>Loading...</div>;
   if (!user) return <Navigate to="/login" />;
 
   return <>{children}</>;
