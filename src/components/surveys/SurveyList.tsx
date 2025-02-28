@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Edit, Send, ExternalLink } from 'lucide-react';
+import { Calendar, Edit, Send, ExternalLink, Link2, Check } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Survey {
   id: number;
@@ -19,6 +20,8 @@ interface SurveyListProps {
 }
 
 const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
+  const [copiedId, setCopiedId] = useState<number | null>(null);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Scheduled':
@@ -29,6 +32,28 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
         return 'bg-green-100 text-green-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const handleCopyLink = (id: number) => {
+    const survey = surveys.find(s => s.id === id);
+    if (survey) {
+      // Generate URL if it doesn't exist
+      const surveyUrl = survey.url || `${window.location.origin}/survey?id=${id}`;
+      
+      navigator.clipboard.writeText(surveyUrl)
+        .then(() => {
+          setCopiedId(id);
+          toast.success("Survey link copied to clipboard", {
+            description: "You can now share this link with your staff."
+          });
+          setTimeout(() => setCopiedId(null), 2000);
+        })
+        .catch(() => {
+          toast.error("Failed to copy link", {
+            description: "Please try again or copy the URL manually."
+          });
+        });
     }
   };
 
@@ -103,12 +128,23 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
                       </button>
                     )}
                     
-                    {survey.url && (
-                      <button className="btn-ghost py-1 px-2 flex items-center" title="Copy survey link">
-                        <ExternalLink size={16} className="mr-1" />
-                        <span>Copy link</span>
-                      </button>
-                    )}
+                    <button 
+                      onClick={() => handleCopyLink(survey.id)}
+                      className="btn-ghost py-1 px-2 flex items-center" 
+                      title="Copy survey link"
+                    >
+                      {copiedId === survey.id ? (
+                        <>
+                          <Check size={16} className="mr-1" />
+                          <span>Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Link2 size={16} className="mr-1" />
+                          <span>Copy link</span>
+                        </>
+                      )}
+                    </button>
                     
                     <Link
                       to={`/surveys/${survey.id}/edit`}

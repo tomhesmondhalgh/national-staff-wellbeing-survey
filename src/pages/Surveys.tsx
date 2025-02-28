@@ -1,50 +1,91 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
 import SurveyList from '../components/surveys/SurveyList';
 import { toast } from "sonner";
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 const Surveys = () => {
-  // Mock data for demonstration
-  const [surveys, setSurveys] = useState([
-    {
-      id: 1,
-      name: 'Spring Term 2023',
-      date: 'March 10, 2023',
-      status: 'Completed' as const,
-      responseCount: 42,
-      closeDate: 'March 24, 2023',
-      url: 'https://example.com/survey/1'
-    },
-    {
-      id: 2,
-      name: 'Summer Term 2023',
-      date: 'July 15, 2023',
-      status: 'Completed' as const,
-      responseCount: 38,
-      closeDate: 'July 29, 2023',
-      url: 'https://example.com/survey/2'
-    },
-    {
-      id: 3,
-      name: 'Autumn Term 2023',
-      date: 'November 20, 2023',
-      status: 'Sent' as const,
-      responseCount: 24,
-      closeDate: 'December 4, 2023',
-      url: 'https://example.com/survey/3'
-    },
-    {
-      id: 4,
-      name: 'Spring Term 2024',
-      date: 'January 5, 2024',
-      status: 'Scheduled' as const,
-      responseCount: 0,
-      url: 'https://example.com/survey/4'
-    }
-  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [surveys, setSurveys] = useState<any[]>([]);
+
+  // Fetch surveys from Supabase
+  useEffect(() => {
+    const fetchSurveys = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        
+        // Fetch survey templates created by the current user
+        const { data: surveyTemplates, error } = await supabase
+          .from('survey_templates')
+          .select(`
+            id,
+            name,
+            date,
+            close_date,
+            created_at,
+            survey_responses(count)
+          `)
+          .eq('creator_id', user.id)
+          .order('created_at', { ascending: false });
+          
+        if (error) {
+          throw error;
+        }
+        
+        // Transform the data for the SurveyList component
+        const formattedSurveys = surveyTemplates.map(template => {
+          const now = new Date();
+          const surveyDate = new Date(template.date);
+          const closeDate = template.close_date ? new Date(template.close_date) : null;
+          
+          // Determine survey status
+          let status: 'Scheduled' | 'Sent' | 'Completed' = 'Scheduled';
+          if (surveyDate <= now) {
+            status = closeDate && closeDate < now ? 'Completed' : 'Sent';
+          }
+          
+          return {
+            id: template.id,
+            name: template.name,
+            date: new Date(template.date).toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            }),
+            status,
+            responseCount: template.survey_responses.length > 0 ? template.survey_responses[0].count : 0,
+            closeDate: template.close_date ? new Date(template.close_date).toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            }) : undefined,
+            url: `${window.location.origin}/survey?id=${template.id}`
+          };
+        });
+        
+        setSurveys(formattedSurveys);
+      } catch (error) {
+        console.error('Error fetching surveys:', error);
+        toast.error("Failed to load surveys", {
+          description: "Please try refreshing the page."
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSurveys();
+  }, [user]);
 
   const handleSendReminder = (id: number) => {
     // In a real application, you would send reminders here
@@ -70,7 +111,14 @@ const Surveys = () => {
           </Link>
         </div>
 
-        <SurveyList surveys={surveys} onSendReminder={handleSendReminder} />
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin h-8 w-8 border-4 border-brandPurple-500 border-t-transparent rounded-full mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading surveys...</p>
+          </div>
+        ) : (
+          <SurveyList surveys={surveys} onSendReminder={handleSendReminder} />
+        )}
       </div>
     </MainLayout>
   );
