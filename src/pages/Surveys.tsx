@@ -55,7 +55,6 @@ const Surveys = () => {
             status = closeDate && closeDate < now ? 'Completed' : 'Sent';
           }
           
-          // Make sure we're correctly passing the template.id as a string
           return {
             id: template.id,
             name: template.name,
@@ -71,7 +70,15 @@ const Surveys = () => {
               month: 'long', 
               day: 'numeric' 
             }) : undefined,
-            url: `${window.location.origin}/survey?id=${template.id}`
+            url: `${window.location.origin}/survey?id=${template.id}`,
+            formattedDate: new Date(template.date).toLocaleDateString('en-US', {
+              month: 'long',
+              day: 'numeric',
+              year: 'numeric'
+            }),
+            closeDisplayDate: template.close_date ? 
+              `Closes: March ${new Date(template.close_date).getDate()}, ${new Date(template.close_date).getFullYear()}` : 
+              undefined
           };
         });
         
@@ -90,10 +97,8 @@ const Surveys = () => {
   }, [user]);
 
   const handleSendReminder = (id: string) => {
-    // Updated to accept string IDs since Supabase uses UUIDs
     console.log(`Sending reminder for survey ${id}`);
     
-    // Show toast notification
     toast.success("Reminder sent successfully!", {
       description: "Your staff will receive an email reminder shortly."
     });
@@ -101,14 +106,16 @@ const Surveys = () => {
 
   return (
     <MainLayout>
-      <div className="page-container">
-        <div className="flex justify-between items-center mb-8">
-          <PageTitle 
-            title="Surveys" 
-            subtitle="Manage all your wellbeing surveys in one place"
-            className="mb-0 text-left"
-          />
-          <Link to="/new-survey" className="btn-primary">
+      <div className="page-container bg-white">
+        <div className="flex justify-between items-center mb-12">
+          <div>
+            <h1 className="text-3xl font-serif font-bold text-gray-800 mb-2">Surveys</h1>
+            <p className="text-gray-600">Manage all your wellbeing surveys in one place</p>
+          </div>
+          <Link 
+            to="/new-survey" 
+            className="bg-brandPurple-500 hover:bg-brandPurple-600 text-white font-medium py-2 px-6 rounded-md transition-all duration-200"
+          >
             New Survey
           </Link>
         </div>

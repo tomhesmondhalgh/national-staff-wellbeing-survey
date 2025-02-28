@@ -1,15 +1,17 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, Send } from 'lucide-react';
+import { Send, Copy, Edit } from 'lucide-react';
 
 interface Survey {
   id: string;
   name: string;
   date: string;
+  formattedDate: string;
   status: 'Scheduled' | 'Sent' | 'Completed';
   responseCount: number;
   closeDate?: string;
+  closeDisplayDate?: string;
   url?: string;
 }
 
@@ -26,9 +28,9 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
 
   if (surveys.length === 0) {
     return (
-      <div className="card text-center py-12">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 text-center py-12">
         <p className="text-gray-500 mb-4">No surveys found</p>
-        <Link to="/new-survey" className="btn-primary inline-block">
+        <Link to="/new-survey" className="bg-brandPurple-500 hover:bg-brandPurple-600 text-white font-medium py-2 px-6 rounded-md transition-all duration-200 inline-block">
           Create Your First Survey
         </Link>
       </div>
@@ -36,69 +38,74 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
   }
 
   return (
-    <div className="card">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+      <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-100 text-sm font-medium text-gray-500 uppercase">
+        <div className="col-span-4">Survey</div>
+        <div className="col-span-2">Date</div>
+        <div className="col-span-2">Status</div>
+        <div className="col-span-2">Responses</div>
+        <div className="col-span-2 text-right">Actions</div>
+      </div>
+      
       <div className="divide-y divide-gray-100">
         {surveys.map((survey) => (
-          <div key={survey.id} className="p-6 hover:bg-gray-50 transition-colors">
-            <div className="flex flex-wrap justify-between items-start">
-              <div className="mb-4 md:mb-0">
-                <h3 className="text-lg font-medium text-gray-900 mb-1">{survey.name}</h3>
-                <div className="flex items-center text-sm text-gray-500 mb-2">
-                  <Clock size={16} className="mr-1" />
-                  <span>Sent: {survey.date}</span>
-                  {survey.closeDate && (
-                    <span className="ml-4">Closes: {survey.closeDate}</span>
-                  )}
-                </div>
-                <div className="flex items-center">
-                  <span className={`
-                    inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mr-2
-                    ${survey.status === 'Scheduled' ? 'bg-blue-100 text-blue-800' : 
-                      survey.status === 'Sent' ? 'bg-green-100 text-green-800' : 
-                      'bg-purple-100 text-purple-800'}
-                  `}>
-                    {survey.status}
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    {survey.responseCount} {survey.responseCount === 1 ? 'response' : 'responses'}
-                  </span>
-                </div>
+          <div key={survey.id} className="grid grid-cols-12 gap-4 px-6 py-5 items-center hover:bg-gray-50 transition-colors">
+            <div className="col-span-4">
+              <div>
+                <h3 className="text-gray-900 font-medium">{survey.name}</h3>
+                {survey.closeDisplayDate && (
+                  <p className="text-xs text-gray-500 mt-1">{survey.closeDisplayDate}</p>
+                )}
               </div>
+            </div>
+            
+            <div className="col-span-2 text-gray-700">
+              {survey.formattedDate}
+            </div>
+            
+            <div className="col-span-2">
+              <span className={`
+                inline-flex px-2.5 py-1 rounded-full text-xs font-medium
+                ${survey.status === 'Scheduled' ? 'bg-yellow-100 text-yellow-800' : 
+                  survey.status === 'Sent' ? 'bg-blue-100 text-blue-800' : 
+                  'bg-purple-100 text-purple-800'}
+              `}>
+                {survey.status}
+              </span>
+            </div>
+            
+            <div className="col-span-2 text-gray-700">
+              {survey.responseCount}
+            </div>
+            
+            <div className="col-span-2 flex gap-2 justify-end">
+              {survey.status === 'Sent' && (
+                <button 
+                  onClick={() => onSendReminder(survey.id)}
+                  className="text-gray-500 hover:text-brandPurple-600 transition-colors"
+                  title="Send Reminder"
+                >
+                  <Send size={16} />
+                </button>
+              )}
               
-              <div className="flex flex-wrap items-center gap-2">
-                {survey.status === 'Sent' && (
-                  <button 
-                    onClick={() => onSendReminder(survey.id)}
-                    className="btn-outline btn-sm flex items-center"
-                  >
-                    <Send size={14} className="mr-1" />
-                    Send Reminder
-                  </button>
-                )}
-                
-                {survey.url && (
-                  <button 
-                    onClick={() => copyToClipboard(survey.url!)}
-                    className="btn-outline btn-sm"
-                  >
-                    Copy Link
-                  </button>
-                )}
-                
-                <Link 
-                  to={`/surveys/${survey.id}/edit`} 
-                  className="btn-ghost btn-sm"
+              {survey.url && (
+                <button 
+                  onClick={() => copyToClipboard(survey.url!)}
+                  className="text-gray-500 hover:text-brandPurple-600 transition-colors"
+                  title="Copy Link"
                 >
-                  Edit
-                </Link>
-                
-                <Link 
-                  to={`/analysis?surveyId=${survey.id}`}
-                  className="btn-primary btn-sm"
-                >
-                  View Results
-                </Link>
-              </div>
+                  <Copy size={16} />
+                </button>
+              )}
+              
+              <Link 
+                to={`/surveys/${survey.id}/edit`} 
+                className="text-gray-500 hover:text-brandPurple-600 transition-colors"
+                title="Edit Survey"
+              >
+                <Edit size={16} />
+              </Link>
             </div>
           </div>
         ))}
