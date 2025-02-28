@@ -9,7 +9,7 @@ interface PageTitleProps {
 
 const PageTitle: React.FC<PageTitleProps> = ({ title, subtitle, className = '' }) => {
   return (
-    <div className={`mb-8 text-center ${className}`}>
+    <div className={`mb-8 ${className}`}>
       <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2 animate-slide-up [animation-delay:100ms]">
         {title}
       </h1>
