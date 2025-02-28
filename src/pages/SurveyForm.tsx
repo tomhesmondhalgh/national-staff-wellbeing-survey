@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
@@ -38,6 +38,7 @@ const SurveyForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const formRef = useRef<HTMLDivElement>(null);
   
   const [formData, setFormData] = useState({
     role: '',
@@ -56,9 +57,35 @@ const SurveyForm = () => {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [scrollPosition, setScrollPosition] = useState(0);
+
+  // Save scroll position before input change
+  useEffect(() => {
+    const handleScroll = () => {
+      if (formRef.current) {
+        setScrollPosition(window.scrollY);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Restore scroll position after state update
+  useEffect(() => {
+    if (scrollPosition > 0) {
+      window.scrollTo(0, scrollPosition);
+    }
+  }, [formData, scrollPosition]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    
+    // Store current scroll position before state update
+    if (e.target.tagName.toLowerCase() === 'textarea') {
+      setScrollPosition(window.scrollY);
+    }
+    
     setFormData({
       ...formData,
       [name]: value
@@ -268,7 +295,7 @@ const SurveyForm = () => {
           </p>
         </div>
         
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div ref={formRef} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <form onSubmit={handleSubmit}>
             {/* Role Selection Dropdown */}
             <div className="mb-10">
