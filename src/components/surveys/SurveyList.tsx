@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Send, Copy, Edit } from 'lucide-react';
+import { toast } from "sonner";
 
 interface Survey {
   id: string;
@@ -21,9 +22,18 @@ interface SurveyListProps {
 }
 
 const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    // Toast notification is handled by the parent component
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const copyToClipboard = (id: string, text: string) => {
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        setCopiedId(id);
+        toast.success("Survey link copied to clipboard");
+        setTimeout(() => setCopiedId(null), 2000);
+      })
+      .catch(() => {
+        toast.error("Failed to copy link");
+      });
   };
 
   if (surveys.length === 0) {
@@ -78,33 +88,36 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
               {survey.responseCount}
             </div>
             
-            <div className="col-span-2 flex gap-2 justify-end">
+            <div className="col-span-2 flex gap-3 justify-end">
               {survey.status === 'Sent' && (
                 <button 
                   onClick={() => onSendReminder(survey.id)}
-                  className="text-gray-500 hover:text-brandPurple-600 transition-colors"
-                  title="Send Reminder"
+                  className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors"
+                  title="Send reminder to participants"
                 >
-                  <Send size={16} />
+                  <Send size={16} className="mr-1" />
+                  <span>Remind</span>
                 </button>
               )}
               
               {survey.url && (
                 <button 
-                  onClick={() => copyToClipboard(survey.url!)}
-                  className="text-gray-500 hover:text-brandPurple-600 transition-colors"
-                  title="Copy Link"
+                  onClick={() => copyToClipboard(survey.id, survey.url!)}
+                  className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors"
+                  title="Copy survey link to clipboard"
                 >
-                  <Copy size={16} />
+                  <Copy size={16} className="mr-1" />
+                  <span>{copiedId === survey.id ? 'Copied!' : 'Copy Link'}</span>
                 </button>
               )}
               
               <Link 
                 to={`/surveys/${survey.id}/edit`} 
-                className="text-gray-500 hover:text-brandPurple-600 transition-colors"
-                title="Edit Survey"
+                className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors"
+                title="Edit survey details"
               >
-                <Edit size={16} />
+                <Edit size={16} className="mr-1" />
+                <span>Edit</span>
               </Link>
             </div>
           </div>
