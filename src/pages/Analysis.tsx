@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
@@ -290,9 +291,7 @@ const Analysis = () => {
                 </div>
               </div>
               
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Wellbeing Response Distribution</h3>
-              
-              {/* Response distribution legend */}
+              {/* Response distribution legend - moved to the bottom of this section */}
               <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm mb-6">
                 <h4 className="font-medium text-gray-700 mb-3">Response Type Legend</h4>
                 <div className="flex flex-wrap gap-4">
@@ -305,8 +304,8 @@ const Analysis = () => {
                 </div>
               </div>
               
-              {/* Individual charts for each question with stacked bars - now displayed horizontally */}
-              <div className="grid grid-cols-1 gap-6 mb-8">
+              {/* Individual charts for each question with stacked bars - now displayed in a 2-column grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 {detailedWellbeingResponses.map((question, index) => {
                   // Create data for this question's chart
                   const chartData = [
@@ -333,7 +332,8 @@ const Analysis = () => {
                       <h4 className="font-medium text-gray-900 mb-3 text-center">
                         {question.question}
                       </h4>
-                      <div className="h-40">
+                      {/* Increased height from 40 to 60 for better visibility */}
+                      <div className="h-60">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart
                             data={chartData}
@@ -359,7 +359,7 @@ const Analysis = () => {
                               }}
                             />
                             <Tooltip content={customStackedBarTooltip} />
-                            <Legend verticalAlign="top" height={36} />
+                            <Legend verticalAlign="bottom" height={36} />
                             <Bar 
                               dataKey="Strongly Agree" 
                               stackId="a" 
