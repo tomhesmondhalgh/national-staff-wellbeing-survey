@@ -537,7 +537,7 @@ export const getDetailedWellbeingResponses = async (surveyId?: string, startDate
       
       // Calculate percentages for national data
       const nationalTotal = Object.values(nationalResponseCounts).reduce((sum, count) => sum + count, 0);
-      const nationalPercentages: {[key: string]: number} = {};
+      let nationalPercentages: {[key: string]: number} = {};
       
       if (nationalTotal > 0) {
         Object.entries(nationalResponseCounts).forEach(([key, count]) => {
@@ -545,7 +545,8 @@ export const getDetailedWellbeingResponses = async (surveyId?: string, startDate
         });
       } else {
         // If we have no data, use the mock national averages
-        nationalPercentages = nationalDetailedResponses[q.key as keyof typeof nationalDetailedResponses];
+        // Fix: Copy values instead of reassigning the object
+        nationalPercentages = { ...nationalDetailedResponses[q.key as keyof typeof nationalDetailedResponses] };
       }
       
       return {
@@ -557,6 +558,18 @@ export const getDetailedWellbeingResponses = async (surveyId?: string, startDate
     });
   } catch (error) {
     console.error('Unexpected error in getDetailedWellbeingResponses:', error);
+    // Define questions within this scope to fix the "questions is not defined" error
+    const questions = [
+      { key: 'leadership_prioritize', question: 'Leadership prioritise staff wellbeing in our organisation' },
+      { key: 'manageable_workload', question: 'I have a manageable workload' },
+      { key: 'work_life_balance', question: 'I have a good work-life balance' },
+      { key: 'health_state', question: 'I am in good physical and mental health' },
+      { key: 'valued_member', question: 'I feel like a valued member of the team' },
+      { key: 'support_access', question: 'I know where to get support when needed and feel confident to do so' },
+      { key: 'confidence_in_role', question: 'I feel confident performing my role and am given chances to grow' },
+      { key: 'org_pride', question: 'I am proud to be part of this organisation' }
+    ];
+    
     return questions.map(q => ({
       question: q.question,
       key: q.key,
