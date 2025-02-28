@@ -37,8 +37,9 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
       });
   };
 
-  const handleEditClick = (e: React.MouseEvent, id: string) => {
-    e.preventDefault();
+  const handleEditClick = (id: string) => {
+    // Log before navigation to help debug
+    console.log(`Navigating to edit survey: ${id}`);
     navigate(`/surveys/${id}/edit`);
   };
 
@@ -69,12 +70,12 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
             <div className="col-span-3">
               <div>
                 <h3 className="text-gray-900 font-medium">
-                  <Link 
-                    to={`/surveys/${survey.id}/edit`}
-                    className="hover:text-brandPurple-600 transition-colors"
+                  <button 
+                    onClick={() => handleEditClick(survey.id)}
+                    className="hover:text-brandPurple-600 transition-colors text-left"
                   >
                     {survey.name}
-                  </Link>
+                  </button>
                 </h3>
                 {survey.closeDisplayDate && (
                   <p className="text-xs text-gray-500 mt-1">{survey.closeDisplayDate}</p>
@@ -125,7 +126,7 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
               )}
               
               <button 
-                onClick={(e) => handleEditClick(e, survey.id)}
+                onClick={() => handleEditClick(survey.id)}
                 className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors whitespace-nowrap"
                 title="Edit survey details"
               >

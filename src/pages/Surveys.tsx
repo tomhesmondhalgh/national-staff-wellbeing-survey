@@ -77,7 +77,11 @@ const Surveys = () => {
               year: 'numeric'
             }),
             closeDisplayDate: template.close_date ? 
-              `Closes: March ${new Date(template.close_date).getDate()}, ${new Date(template.close_date).getFullYear()}` : 
+              `Closes: ${new Date(template.close_date).toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric'
+              })}` : 
               undefined
           };
         });
@@ -102,10 +106,6 @@ const Surveys = () => {
     toast.success("Reminder sent successfully!", {
       description: "Your staff will receive an email reminder shortly."
     });
-  };
-
-  const handleEditSurvey = (id: string) => {
-    navigate(`/surveys/${id}/edit`);
   };
 
   return (
