@@ -3,9 +3,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
-import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/supabase';
-import { cn } from '@/lib/utils';
+import { useToast } from '../components/ui/use-toast';
+import { supabase } from '../lib/supabase';
+import { cn } from '../lib/utils';
 
 // Define options for different question types
 const roleOptions = [
@@ -108,6 +108,7 @@ const SurveyForm = () => {
         .insert([formData]);
         
       if (error) {
+        console.error('Supabase error:', error);
         throw error;
       }
       
@@ -117,10 +118,8 @@ const SurveyForm = () => {
         variant: "default"
       });
       
-      // Redirect to thank you page instead of home
-      setTimeout(() => {
-        navigate('/survey-complete');
-      }, 1500);
+      // Redirect to thank you page
+      navigate('/survey-complete');
       
     } catch (error: any) {
       console.error('Survey submission error:', error);
