@@ -6,7 +6,7 @@ import PageTitle from '../components/ui/PageTitle';
 import SurveyForm, { SurveyFormData } from '../components/surveys/SurveyForm';
 import { toast } from "sonner";
 import { supabase } from "../lib/supabase";
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { 
   Breadcrumb, 
   BreadcrumbItem, 
@@ -20,6 +20,7 @@ const EditSurvey = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [surveyData, setSurveyData] = useState<Partial<SurveyFormData> | null>(null);
 
   useEffect(() => {
@@ -52,22 +53,11 @@ const EditSurvey = () => {
           return;
         }
         
-        // Format dates for the form inputs (YYYY-MM-DD format)
-        const formatDateForInput = (dateString: string) => {
-          try {
-            const date = new Date(dateString);
-            return format(date, 'yyyy-MM-dd');
-          } catch (e) {
-            console.error('Error formatting date:', e);
-            return '';
-          }
-        };
-        
         setSurveyData({
           name: data.name,
-          date: formatDateForInput(data.date),
-          closeDate: data.close_date ? formatDateForInput(data.close_date) : '',
-          emails: data.emails || ''
+          date: new Date(data.date),
+          closeDate: data.close_date ? new Date(data.close_date) : undefined,
+          recipients: data.emails || ''
         });
       } catch (error) {
         console.error('Error:', error);
@@ -86,14 +76,16 @@ const EditSurvey = () => {
     if (!id) return;
     
     try {
+      setIsSubmitting(true);
+      
       // Update the survey in the database
       const { error } = await supabase
         .from('survey_templates')
         .update({
           name: data.name,
-          date: data.date,
-          close_date: data.closeDate,
-          emails: data.emails // Save emails when updating
+          date: data.date.toISOString(),
+          close_date: data.closeDate ? data.closeDate.toISOString() : null,
+          emails: data.recipients // Save recipients when updating
         })
         .eq('id', id);
       
@@ -117,6 +109,8 @@ const EditSurvey = () => {
       toast.error("An error occurred", {
         description: "Please try again later."
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -156,6 +150,8 @@ const EditSurvey = () => {
             initialData={surveyData}
             submitButtonText="Update Survey"
             isEdit={true}
+            isSubmitting={isSubmitting}
+            surveyId={id}
           />
         ) : (
           <div className="card p-6 text-center">

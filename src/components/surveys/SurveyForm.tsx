@@ -6,11 +6,11 @@ import * as z from 'zod';
 import { format } from 'date-fns';
 import { Calendar } from '../ui/calendar';
 import { Button } from '../ui/button';
-import { SurveyFormInputs } from './SurveyFormInputs';
+import SurveyFormInputs from './SurveyFormInputs';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { SurveyLink } from './SurveyLink';
+import SurveyLink from './SurveyLink';
 
 // Form schema
 const surveyFormSchema = z.object({
