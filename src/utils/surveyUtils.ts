@@ -78,6 +78,8 @@ export const getAllSurveyTemplates = async (): Promise<SurveyTemplate[]> => {
 
 export const getRecentSurveys = async (limit: number = 3): Promise<SurveyWithResponses[]> => {
   try {
+    console.log(`Fetching recent surveys, limit: ${limit}`);
+    
     // First fetch the survey templates
     const { data: templates, error: templatesError } = await supabase
       .from('survey_templates')
@@ -90,13 +92,17 @@ export const getRecentSurveys = async (limit: number = 3): Promise<SurveyWithRes
       return [];
     }
     
+    console.log('Templates fetched:', templates);
+    
     if (!templates || templates.length === 0) {
+      console.log('No templates found');
       return [];
     }
     
     // For each template, count the responses
     const surveysWithResponses = await Promise.all(
       templates.map(async (template) => {
+        console.log(`Counting responses for survey ${template.id}`);
         const { count, error: countError } = await supabase
           .from('survey_responses')
           .select('*', { count: 'exact', head: true })
@@ -107,10 +113,12 @@ export const getRecentSurveys = async (limit: number = 3): Promise<SurveyWithRes
           return { ...template, responses: 0 };
         }
         
+        console.log(`Responses for survey ${template.id}:`, count);
         return { ...template, responses: count || 0 };
       })
     );
     
+    console.log('Surveys with responses:', surveysWithResponses);
     return surveysWithResponses as SurveyWithResponses[];
   } catch (error) {
     console.error('Unexpected error in getRecentSurveys:', error);
@@ -120,6 +128,8 @@ export const getRecentSurveys = async (limit: number = 3): Promise<SurveyWithRes
 
 export const getDashboardStats = async () => {
   try {
+    console.log('Fetching dashboard stats');
+    
     // Get total number of surveys
     const { count: surveyCount, error: surveyError } = await supabase
       .from('survey_templates')
@@ -129,6 +139,8 @@ export const getDashboardStats = async () => {
       console.error('Error counting surveys:', surveyError);
       return null;
     }
+    
+    console.log('Total surveys:', surveyCount);
     
     // Get total number of respondents
     const { count: responseCount, error: responseError } = await supabase
@@ -140,6 +152,8 @@ export const getDashboardStats = async () => {
       return null;
     }
     
+    console.log('Total responses:', responseCount);
+    
     // Calculate response rate (this is a simplified calculation)
     // In a real app, you'd need more complex logic based on invitations sent vs responses received
     const avgResponsesPerSurvey = surveyCount ? Math.round((responseCount / surveyCount) * 100) / 100 : 0;
@@ -149,12 +163,15 @@ export const getDashboardStats = async () => {
     // In a real app, this would be based on actual survey results
     const benchmarkScore = "76%";
     
-    return {
+    const stats = {
       totalSurveys: surveyCount || 0,
       totalRespondents: responseCount || 0,
       responseRate: `${responseRate}%`,
       benchmarkScore
     };
+    
+    console.log('Calculated stats:', stats);
+    return stats;
   } catch (error) {
     console.error('Unexpected error in getDashboardStats:', error);
     return null;

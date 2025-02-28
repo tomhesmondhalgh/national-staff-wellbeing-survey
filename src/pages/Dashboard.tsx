@@ -23,14 +23,17 @@ const Dashboard = () => {
     const fetchDashboardData = async () => {
       setIsLoading(true);
       try {
+        console.log("Fetching dashboard data...");
         // Fetch stats
         const dashboardStats = await getDashboardStats();
+        console.log("Dashboard stats:", dashboardStats);
         if (dashboardStats) {
           setStats(dashboardStats);
         }
         
         // Fetch recent surveys
         const surveys = await getRecentSurveys(3);
+        console.log("Recent surveys:", surveys);
         setRecentSurveys(surveys);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
