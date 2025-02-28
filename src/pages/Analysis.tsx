@@ -119,11 +119,10 @@ const Analysis = () => {
   };
 
   // Enhanced tooltip for bar chart
-  const customBarTooltip = ({ active, payload, label }: any) => {
+  const customBarTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-4 border border-gray-200 shadow-sm rounded-md">
-          <p className="font-medium text-gray-900 mb-2">{label}</p>
           {payload.map((entry: any, index: number) => (
             <div key={`tooltip-${index}`} className="flex items-center mb-1">
               <div 
@@ -160,6 +159,20 @@ const Analysis = () => {
         {value}%
       </text>
     );
+  };
+
+  // Transform each question into a format for individual chart
+  const prepareChartData = (question: QuestionResponse) => {
+    return [
+      { 
+        name: "Your Organization", 
+        value: question.school 
+      },
+      { 
+        name: "National Average", 
+        value: question.national 
+      }
+    ];
   };
 
   return (
@@ -304,61 +317,70 @@ const Analysis = () => {
               
               <h3 className="text-lg font-bold text-gray-900 mb-4">Wellbeing Scores by Question</h3>
               
-              <div className="h-[500px] mb-8">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={wellbeingScores}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 120 }}
-                    layout="vertical"
-                    barCategoryGap={25} // Increased space between question groups
-                    barGap={8} // Increased space between bars in the same group
+              {/* Individual charts for each question */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                {wellbeingScores.map((question, index) => (
+                  <div 
+                    key={`chart-${index}`} 
+                    className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm"
                   >
-                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
-                    <XAxis 
-                      type="number" 
-                      tick={{ fill: '#4B5563' }}
-                      domain={[0, 100]}
-                      label={{ value: 'Percentage (%)', position: 'insideBottom', offset: -15 }}
-                    />
-                    <YAxis 
-                      type="category"
-                      dataKey="question" 
-                      tick={{ fill: '#4B5563' }}
-                      width={250}
-                      tickMargin={10}
-                    />
-                    <Tooltip content={customBarTooltip} />
-                    <Legend verticalAlign="top" height={36} />
-                    <Bar 
-                      dataKey="school" 
-                      name="Your Organization" 
-                      fill="#8b5cf6" 
-                      radius={[0, 4, 4, 0]} 
-                      animationDuration={1500}
-                      barSize={30} // Wider bars
-                    >
-                      <LabelList 
-                        dataKey="school" 
-                        position="center" 
-                        content={renderCustomBarLabel} 
-                      />
-                    </Bar>
-                    <Bar 
-                      dataKey="national" 
-                      name="National Average" 
-                      fill="#d1d5db" 
-                      radius={[0, 4, 4, 0]}
-                      animationDuration={1500}
-                      barSize={30} // Wider bars
-                    >
-                      <LabelList 
-                        dataKey="national" 
-                        position="center" 
-                        content={renderCustomBarLabel} 
-                      />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+                    <h4 className="font-medium text-gray-900 mb-3 text-center">
+                      {question.question}
+                    </h4>
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={prepareChartData(question)}
+                          margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
+                          layout="horizontal"
+                          barCategoryGap={50} // Space between category groups
+                        >
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis 
+                            dataKey="name" 
+                            tick={{ fill: '#4B5563' }}
+                          />
+                          <YAxis 
+                            domain={[0, 100]}
+                            label={{ 
+                              value: 'Percentage (%)', 
+                              angle: -90, 
+                              position: 'insideLeft',
+                              style: { textAnchor: 'middle' }
+                            }}
+                          />
+                          <Tooltip content={customBarTooltip} />
+                          <Bar 
+                            dataKey="value" 
+                            fill={index % 2 === 0 ? "#8b5cf6" : "#6366f1"} 
+                            radius={[4, 4, 0, 0]} 
+                            animationDuration={1500}
+                            barSize={60} // Wider bars
+                          >
+                            <LabelList 
+                              dataKey="value" 
+                              position="top" 
+                              formatter={(value: number) => `${value}%`}
+                              style={{ 
+                                fill: '#4B5563', 
+                                fontSize: 14, 
+                                fontWeight: 'bold' 
+                              }}
+                            />
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="mt-2 text-sm text-gray-500 text-center">
+                      Difference: {Math.abs(question.school - question.national).toFixed(1)}% 
+                      {question.school > question.national ? (
+                        <span className="text-green-600"> above</span>
+                      ) : (
+                        <span className="text-red-600"> below</span>
+                      )} national average
+                    </div>
+                  </div>
+                ))}
               </div>
               
               {/* Text Responses Section */}
