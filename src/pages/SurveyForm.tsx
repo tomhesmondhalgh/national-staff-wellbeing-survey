@@ -57,22 +57,32 @@ const SurveyForm = () => {
       }
       
       try {
+        console.log("Fetching survey with ID:", surveyId);
+        
         const { data, error } = await supabase
           .from('survey_templates')
           .select('*')
           .eq('id', surveyId)
-          .single();
+          .maybeSingle(); // Using maybeSingle instead of single to handle not found case better
           
-        if (error || !data) {
+        if (error) {
           console.error('Error fetching survey template:', error);
           setSurveyNotFound(true);
-        } else {
-          setSurveyTemplate(data);
-          
-          // Check if survey is closed
-          if (data.close_date && new Date(data.close_date) < new Date()) {
-            navigate('/survey-closed');
-          }
+          return;
+        }
+        
+        if (!data) {
+          console.error('No survey found with ID:', surveyId);
+          setSurveyNotFound(true);
+          return;
+        }
+        
+        console.log("Survey found:", data);
+        setSurveyTemplate(data);
+        
+        // Check if survey is closed
+        if (data.close_date && new Date(data.close_date) < new Date()) {
+          navigate('/survey-closed');
         }
       } catch (error) {
         console.error('Error:', error);
@@ -359,7 +369,7 @@ const SurveyForm = () => {
     <MainLayout>
       <div className="page-container max-w-4xl mx-auto px-4 py-8">
         <PageTitle 
-          title="Complete the National Staff Wellbeing Survey" 
+          title={surveyTemplate?.name ? surveyTemplate.name : "Complete the National Staff Wellbeing Survey"}
         />
         
         <div className="mb-8 text-left">

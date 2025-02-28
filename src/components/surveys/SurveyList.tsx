@@ -1,11 +1,11 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Edit, Send, ExternalLink, Link2, Check } from 'lucide-react';
+import { Calendar, Edit, Send, Link2, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Survey {
-  id: number;
+  id: string; // Changed to string since Supabase uses UUID
   name: string;
   date: string;
   status: 'Scheduled' | 'Sent' | 'Completed';
@@ -16,11 +16,11 @@ interface Survey {
 
 interface SurveyListProps {
   surveys: Survey[];
-  onSendReminder: (id: number) => void;
+  onSendReminder: (id: string) => void;
 }
 
 const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
-  const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -35,10 +35,11 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
     }
   };
 
-  const handleCopyLink = (id: number) => {
+  const handleCopyLink = (id: string) => {
+    // Find the survey by ID
     const survey = surveys.find(s => s.id === id);
     if (survey) {
-      // Generate URL if it doesn't exist
+      // Generate URL if it doesn't exist, making sure to use the same URL structure as in SurveyForm.tsx
       const surveyUrl = survey.url || `${window.location.origin}/survey?id=${id}`;
       
       navigator.clipboard.writeText(surveyUrl)

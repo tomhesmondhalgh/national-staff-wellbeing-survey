@@ -54,6 +54,7 @@ const Surveys = () => {
             status = closeDate && closeDate < now ? 'Completed' : 'Sent';
           }
           
+          // Make sure we're correctly passing the template.id as a string
           return {
             id: template.id,
             name: template.name,
@@ -87,8 +88,8 @@ const Surveys = () => {
     fetchSurveys();
   }, [user]);
 
-  const handleSendReminder = (id: number) => {
-    // In a real application, you would send reminders here
+  const handleSendReminder = (id: string) => {
+    // Updated to accept string IDs since Supabase uses UUIDs
     console.log(`Sending reminder for survey ${id}`);
     
     // Show toast notification
