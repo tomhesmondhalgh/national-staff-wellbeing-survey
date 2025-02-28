@@ -107,14 +107,15 @@ const Surveys = () => {
   return (
     <MainLayout>
       <div className="page-container bg-white">
-        <div className="flex justify-between items-start mb-12">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Surveys</h1>
-            <p className="text-gray-600">Manage all your wellbeing surveys in one place</p>
-          </div>
+        <div className="flex justify-between items-center mb-8">
+          <PageTitle 
+            title="Surveys" 
+            subtitle="Manage all your wellbeing surveys in one place"
+            className="mb-0 text-left"
+          />
           <Link 
             to="/new-survey" 
-            className="bg-brandPurple-500 hover:bg-brandPurple-600 text-white font-medium py-2 px-6 rounded-md transition-all duration-200"
+            className="btn-primary"
           >
             New Survey
           </Link>
