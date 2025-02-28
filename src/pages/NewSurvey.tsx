@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
 import SurveyForm, { SurveyFormData } from '../components/surveys/SurveyForm';
+import Breadcrumb from '../components/ui/Breadcrumb';
 import { toast } from "sonner";
 
 const NewSurvey = () => {
@@ -24,9 +25,15 @@ const NewSurvey = () => {
     // setTimeout(() => navigate('/surveys'), 3000);
   };
 
+  const breadcrumbItems = [
+    { label: 'Surveys', href: '/surveys' },
+    { label: 'Create New Survey' }
+  ];
+
   return (
     <MainLayout>
       <div className="page-container">
+        <Breadcrumb items={breadcrumbItems} />
         <PageTitle 
           title="Create New Survey" 
           subtitle="Set up a new wellbeing survey to send to your staff"
