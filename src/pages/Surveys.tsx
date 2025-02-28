@@ -104,6 +104,10 @@ const Surveys = () => {
     });
   };
 
+  const handleEditSurvey = (id: string) => {
+    navigate(`/surveys/${id}/edit`);
+  };
+
   return (
     <MainLayout>
       <div className="page-container bg-white">
@@ -127,7 +131,10 @@ const Surveys = () => {
             <p className="mt-4 text-gray-600">Loading surveys...</p>
           </div>
         ) : (
-          <SurveyList surveys={surveys} onSendReminder={handleSendReminder} />
+          <SurveyList 
+            surveys={surveys} 
+            onSendReminder={handleSendReminder}
+          />
         )}
       </div>
     </MainLayout>

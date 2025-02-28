@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Send, Copy, Edit } from 'lucide-react';
 import { toast } from "sonner";
 
@@ -23,6 +23,7 @@ interface SurveyListProps {
 
 const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const copyToClipboard = (id: string, text: string) => {
     navigator.clipboard.writeText(text)
@@ -34,6 +35,11 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
       .catch(() => {
         toast.error("Failed to copy link");
       });
+  };
+
+  const handleEditClick = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    navigate(`/surveys/${id}/edit`);
   };
 
   if (surveys.length === 0) {
@@ -118,14 +124,14 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
                 </button>
               )}
               
-              <Link 
-                to={`/surveys/${survey.id}/edit`} 
+              <button 
+                onClick={(e) => handleEditClick(e, survey.id)}
                 className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors whitespace-nowrap"
                 title="Edit survey details"
               >
                 <Edit size={16} className="mr-1" />
                 <span>Edit</span>
-              </Link>
+              </button>
             </div>
           </div>
         ))}
