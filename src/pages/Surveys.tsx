@@ -107,7 +107,7 @@ const Surveys = () => {
   return (
     <MainLayout>
       <div className="page-container bg-white">
-        <div className="flex justify-between items-center mb-12">
+        <div className="flex justify-between items-start mb-12">
           <div>
             <h1 className="text-3xl font-serif font-bold text-gray-800 mb-2">Surveys</h1>
             <p className="text-gray-600">Manage all your wellbeing surveys in one place</p>
