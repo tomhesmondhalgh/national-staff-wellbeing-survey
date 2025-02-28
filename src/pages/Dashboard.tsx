@@ -54,10 +54,34 @@ const Dashboard = () => {
 
   // Prepare stats data for display
   const statsData = stats ? [
-    { label: 'Total Surveys', value: stats.totalSurveys.toString(), icon: Calendar, color: 'bg-green-100 text-green-600' },
-    { label: 'Total Respondents', value: stats.totalRespondents.toString(), icon: Users, color: 'bg-blue-100 text-blue-600' },
-    { label: 'Response Rate', value: stats.responseRate, icon: Send, color: 'bg-purple-100 text-purple-600' },
-    { label: 'Benchmark Score', value: stats.benchmarkScore, icon: BarChart, color: 'bg-amber-100 text-amber-600' },
+    { 
+      label: 'Total Surveys', 
+      value: stats.totalSurveys.toString(), 
+      icon: Calendar, 
+      color: 'bg-green-100 text-green-600',
+      link: '/surveys'
+    },
+    { 
+      label: 'Total Respondents', 
+      value: stats.totalRespondents.toString(), 
+      icon: Users, 
+      color: 'bg-blue-100 text-blue-600',
+      link: null
+    },
+    { 
+      label: 'Response Rate', 
+      value: stats.responseRate, 
+      icon: Send, 
+      color: 'bg-purple-100 text-purple-600',
+      link: null
+    },
+    { 
+      label: 'Benchmark Score', 
+      value: stats.benchmarkScore, 
+      icon: BarChart, 
+      color: 'bg-amber-100 text-amber-600',
+      link: null
+    },
   ] : [];
 
   return (
@@ -85,12 +109,8 @@ const Dashboard = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-            {statsData.map((stat, index) => (
-              <div 
-                key={index} 
-                className="card p-6 hover:translate-y-[-4px] animate-slide-up"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
+            {statsData.map((stat, index) => {
+              const StatContent = () => (
                 <div className="flex items-center">
                   <div className={`p-3 rounded-full mr-4 ${stat.color}`}>
                     <stat.icon size={24} />
@@ -100,8 +120,24 @@ const Dashboard = () => {
                     <h3 className="text-2xl font-bold text-gray-900">{stat.value}</h3>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+              
+              return (
+                <div 
+                  key={index} 
+                  className={`card p-6 hover:translate-y-[-4px] animate-slide-up ${stat.link ? 'cursor-pointer hover:shadow-md transition-all' : ''}`}
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  {stat.link ? (
+                    <Link to={stat.link} className="block w-full h-full">
+                      <StatContent />
+                    </Link>
+                  ) : (
+                    <StatContent />
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 
