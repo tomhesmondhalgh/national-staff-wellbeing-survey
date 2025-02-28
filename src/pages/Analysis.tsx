@@ -3,8 +3,9 @@ import React, { useState, useEffect } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LabelList } from 'recharts';
-import { getSurveyOptions, getRecommendationScore, getLeavingContemplation, getWellbeingScores, getTextResponses } from '../utils/analysisUtils';
-import type { SurveyOption, QuestionResponse, TextResponse } from '../utils/analysisUtils';
+import { getSurveyOptions, getRecommendationScore, getLeavingContemplation, getDetailedWellbeingResponses } from '../utils/analysisUtils';
+import type { SurveyOption, DetailedQuestionResponse, TextResponse } from '../utils/analysisUtils';
+import { getTextResponses } from '../utils/analysisUtils';
 import { cn } from '../lib/utils';
 
 const Analysis = () => {
@@ -19,11 +20,20 @@ const Analysis = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [recommendationScore, setRecommendationScore] = useState<{ score: number, nationalAverage: number }>({ score: 0, nationalAverage: 0 });
   const [leavingData, setLeavingData] = useState<{ name: string, value: number }[]>([]);
-  const [wellbeingScores, setWellbeingScores] = useState<QuestionResponse[]>([]);
+  const [detailedWellbeingResponses, setDetailedWellbeingResponses] = useState<DetailedQuestionResponse[]>([]);
   const [textResponses, setTextResponses] = useState<{ doingWell: TextResponse[], improvements: TextResponse[] }>({ doingWell: [], improvements: [] });
 
   // Colors for pie chart
   const COLORS = ['#10b981', '#6366f1', '#f59e0b', '#ef4444', '#6b7280'];
+  
+  // Colors for stacked bar chart
+  const RESPONSE_COLORS = {
+    'Strongly Agree': '#10b981', // Green
+    'Agree': '#6ee7b7', // Light green
+    'Neutral': '#9ca3af', // Grey
+    'Disagree': '#fca5a5', // Light red
+    'Strongly Disagree': '#ef4444'  // Red
+  };
   
   // Load surveys on component mount
   useEffect(() => {
@@ -85,9 +95,9 @@ const Analysis = () => {
         const pieData = Object.entries(leavingContemplation).map(([name, value]) => ({ name, value }));
         setLeavingData(pieData);
         
-        // Get wellbeing scores
-        const scores = await getWellbeingScores(selectedSurvey, startDate, endDate);
-        setWellbeingScores(scores);
+        // Get detailed wellbeing responses
+        const detailedResponses = await getDetailedWellbeingResponses(selectedSurvey, startDate, endDate);
+        setDetailedWellbeingResponses(detailedResponses);
         
         // Get text responses
         const responses = await getTextResponses(selectedSurvey, startDate, endDate);
@@ -118,11 +128,12 @@ const Analysis = () => {
     return null;
   };
 
-  // Enhanced tooltip for bar chart
-  const customBarTooltip = ({ active, payload }: any) => {
+  // Enhanced tooltip for stacked bar chart
+  const customStackedBarTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-4 border border-gray-200 shadow-sm rounded-md">
+          <p className="font-medium text-gray-900 mb-2">{label}</p>
           {payload.map((entry: any, index: number) => (
             <div key={`tooltip-${index}`} className="flex items-center mb-1">
               <div 
@@ -134,43 +145,42 @@ const Analysis = () => {
               </p>
             </div>
           ))}
-          <p className="text-xs text-gray-500 mt-2">
-            Difference: {Math.abs(payload[0].value - payload[1].value).toFixed(1)}%
-            {payload[0].value > payload[1].value ? " above" : " below"} national average
-          </p>
         </div>
       );
     }
     return null;
   };
 
-  // Custom label renderer for the bars
-  const renderCustomBarLabel = (props: any) => {
-    const { x, y, width, height, value } = props;
-    return (
-      <text 
-        x={x + width / 2} 
-        y={y + height / 2} 
-        fill="#FFFFFF" 
-        textAnchor="middle" 
-        dominantBaseline="middle"
-        style={{ fontWeight: 'bold', fontSize: '12px', textShadow: '0px 0px 3px rgba(0,0,0,0.5)' }}
-      >
-        {value}%
-      </text>
-    );
-  };
-
-  // Transform each question into a format for individual chart
-  const prepareChartData = (question: QuestionResponse) => {
+  // Transform detailed response data into format for stacked bar chart
+  const prepareStackedBarData = (question: DetailedQuestionResponse) => {
+    const dataForSchool = Object.entries(question.schoolResponses).map(([key, value]) => ({
+      name: key,
+      value: value,
+      fill: RESPONSE_COLORS[key as keyof typeof RESPONSE_COLORS]
+    })).sort((a, b) => {
+      // Sort by response type (Strongly Agree first, then Agree, etc.)
+      const order = ['Strongly Agree', 'Agree', 'Neutral', 'Disagree', 'Strongly Disagree'];
+      return order.indexOf(a.name) - order.indexOf(b.name);
+    });
+    
+    const dataForNational = Object.entries(question.nationalResponses).map(([key, value]) => ({
+      name: key,
+      value: value,
+      fill: RESPONSE_COLORS[key as keyof typeof RESPONSE_COLORS]
+    })).sort((a, b) => {
+      // Sort by response type (Strongly Agree first, then Agree, etc.)
+      const order = ['Strongly Agree', 'Agree', 'Neutral', 'Disagree', 'Strongly Disagree'];
+      return order.indexOf(a.name) - order.indexOf(b.name);
+    });
+    
     return [
-      { 
-        name: "Your Organization", 
-        value: question.school 
+      {
+        name: "Your Organization",
+        responses: dataForSchool
       },
-      { 
-        name: "National Average", 
-        value: question.national 
+      {
+        name: "National Average",
+        responses: dataForNational
       }
     ];
   };
@@ -315,72 +325,104 @@ const Analysis = () => {
                 </div>
               </div>
               
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Wellbeing Scores by Question</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Wellbeing Response Distribution</h3>
               
-              {/* Individual charts for each question */}
+              {/* Response distribution legend */}
+              <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm mb-6">
+                <h4 className="font-medium text-gray-700 mb-3">Response Type Legend</h4>
+                <div className="flex flex-wrap gap-4">
+                  {Object.entries(RESPONSE_COLORS).map(([key, color]) => (
+                    <div key={key} className="flex items-center">
+                      <div className="w-4 h-4 mr-2" style={{ backgroundColor: color }}></div>
+                      <span className="text-sm text-gray-600">{key}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Individual charts for each question with stacked bars */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                {wellbeingScores.map((question, index) => (
-                  <div 
-                    key={`chart-${index}`} 
-                    className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm"
-                  >
-                    <h4 className="font-medium text-gray-900 mb-3 text-center">
-                      {question.question}
-                    </h4>
-                    <div className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={prepareChartData(question)}
-                          margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
-                          layout="horizontal"
-                          barCategoryGap={50} // Space between category groups
-                        >
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                          <XAxis 
-                            dataKey="name" 
-                            tick={{ fill: '#4B5563' }}
-                          />
-                          <YAxis 
-                            domain={[0, 100]}
-                            label={{ 
-                              value: 'Percentage (%)', 
-                              angle: -90, 
-                              position: 'insideLeft',
-                              style: { textAnchor: 'middle' }
-                            }}
-                          />
-                          <Tooltip content={customBarTooltip} />
-                          <Bar 
-                            dataKey="value" 
-                            fill={index % 2 === 0 ? "#8b5cf6" : "#6366f1"} 
-                            radius={[4, 4, 0, 0]} 
-                            animationDuration={1500}
-                            barSize={60} // Wider bars
+                {detailedWellbeingResponses.map((question, index) => {
+                  // Create data for this question's chart
+                  const chartData = [
+                    {
+                      name: "Your Organization",
+                      "Strongly Agree": question.schoolResponses["Strongly Agree"] || 0,
+                      "Agree": question.schoolResponses["Agree"] || 0,
+                      "Neutral": question.schoolResponses["Neutral"] || 0,
+                      "Disagree": question.schoolResponses["Disagree"] || 0,
+                      "Strongly Disagree": question.schoolResponses["Strongly Disagree"] || 0,
+                    },
+                    {
+                      name: "National Average",
+                      "Strongly Agree": question.nationalResponses["Strongly Agree"] || 0,
+                      "Agree": question.nationalResponses["Agree"] || 0,
+                      "Neutral": question.nationalResponses["Neutral"] || 0,
+                      "Disagree": question.nationalResponses["Disagree"] || 0,
+                      "Strongly Disagree": question.nationalResponses["Strongly Disagree"] || 0,
+                    }
+                  ];
+                  
+                  return (
+                    <div key={`chart-${index}`} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+                      <h4 className="font-medium text-gray-900 mb-3 text-center">
+                        {question.question}
+                      </h4>
+                      <div className="h-64">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={chartData}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
+                            layout="vertical"
+                            barGap={10}
+                            barSize={40}
                           >
-                            <LabelList 
-                              dataKey="value" 
-                              position="top" 
-                              formatter={(value: number) => `${value}%`}
-                              style={{ 
-                                fill: '#4B5563', 
-                                fontSize: 14, 
-                                fontWeight: 'bold' 
-                              }}
+                            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
+                            <XAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
+                            <YAxis 
+                              type="category" 
+                              dataKey="name" 
+                              tick={{ fill: '#4B5563' }} 
+                              width={120}
                             />
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
+                            <Tooltip content={customStackedBarTooltip} />
+                            <Legend verticalAlign="top" height={36} />
+                            <Bar 
+                              dataKey="Strongly Agree" 
+                              stackId="a" 
+                              fill={RESPONSE_COLORS['Strongly Agree']} 
+                              name="Strongly Agree"
+                            />
+                            <Bar 
+                              dataKey="Agree" 
+                              stackId="a" 
+                              fill={RESPONSE_COLORS['Agree']} 
+                              name="Agree"
+                            />
+                            <Bar 
+                              dataKey="Neutral" 
+                              stackId="a" 
+                              fill={RESPONSE_COLORS['Neutral']} 
+                              name="Neutral"
+                            />
+                            <Bar 
+                              dataKey="Disagree" 
+                              stackId="a" 
+                              fill={RESPONSE_COLORS['Disagree']} 
+                              name="Disagree"
+                            />
+                            <Bar 
+                              dataKey="Strongly Disagree" 
+                              stackId="a" 
+                              fill={RESPONSE_COLORS['Strongly Disagree']} 
+                              name="Strongly Disagree"
+                            />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
                     </div>
-                    <div className="mt-2 text-sm text-gray-500 text-center">
-                      Difference: {Math.abs(question.school - question.national).toFixed(1)}% 
-                      {question.school > question.national ? (
-                        <span className="text-green-600"> above</span>
-                      ) : (
-                        <span className="text-red-600"> below</span>
-                      )} national average
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               
               {/* Text Responses Section */}

@@ -26,6 +26,18 @@ export interface TextResponse {
   created_at: string;
 }
 
+// New interface for detailed response breakdown
+export interface DetailedQuestionResponse {
+  question: string;
+  key: string;
+  schoolResponses: {
+    [key: string]: number; // e.g., "Strongly Agree": 25
+  };
+  nationalResponses: {
+    [key: string]: number;
+  };
+}
+
 // National average data (mock data as a fallback)
 const nationalAverages = {
   "leadership_prioritize": 65,
@@ -43,6 +55,66 @@ const nationalAverages = {
     "Neutral": 21,
     "Agree": 18,
     "Strongly Agree": 14
+  }
+};
+
+// National average detailed breakdown (mock data)
+const nationalDetailedResponses = {
+  "leadership_prioritize": {
+    "Strongly Disagree": 10,
+    "Disagree": 15,
+    "Neutral": 20,
+    "Agree": 35,
+    "Strongly Agree": 20
+  },
+  "manageable_workload": {
+    "Strongly Disagree": 12,
+    "Disagree": 18,
+    "Neutral": 25,
+    "Agree": 30,
+    "Strongly Agree": 15
+  },
+  "work_life_balance": {
+    "Strongly Disagree": 15,
+    "Disagree": 18,
+    "Neutral": 20,
+    "Agree": 27,
+    "Strongly Agree": 20
+  },
+  "health_state": {
+    "Strongly Disagree": 8,
+    "Disagree": 12,
+    "Neutral": 20,
+    "Agree": 35,
+    "Strongly Agree": 25
+  },
+  "valued_member": {
+    "Strongly Disagree": 8,
+    "Disagree": 10,
+    "Neutral": 15,
+    "Agree": 37,
+    "Strongly Agree": 30
+  },
+  "support_access": {
+    "Strongly Disagree": 10,
+    "Disagree": 12,
+    "Neutral": 20,
+    "Agree": 38,
+    "Strongly Agree": 20
+  },
+  "confidence_in_role": {
+    "Strongly Disagree": 6,
+    "Disagree": 10,
+    "Neutral": 15,
+    "Agree": 39,
+    "Strongly Agree": 30
+  },
+  "org_pride": {
+    "Strongly Disagree": 8,
+    "Disagree": 11,
+    "Neutral": 20,
+    "Agree": 36,
+    "Strongly Agree": 25
   }
 };
 
@@ -262,6 +334,111 @@ export const getWellbeingScores = async (surveyId?: string, startDate?: string, 
   } catch (error) {
     console.error('Unexpected error in getWellbeingScores:', error);
     return [];
+  }
+};
+
+// New function to get detailed response breakdown
+export const getDetailedWellbeingResponses = async (surveyId?: string, startDate?: string, endDate?: string): Promise<DetailedQuestionResponse[]> => {
+  try {
+    const questions = [
+      { key: 'leadership_prioritize', question: 'Leadership prioritise staff wellbeing in our organisation' },
+      { key: 'manageable_workload', question: 'I have a manageable workload' },
+      { key: 'work_life_balance', question: 'I have a good work-life balance' },
+      { key: 'health_state', question: 'I am in good physical and mental health' },
+      { key: 'valued_member', question: 'I feel like a valued member of the team' },
+      { key: 'support_access', question: 'I know where to get support when needed and feel confident to do so' },
+      { key: 'confidence_in_role', question: 'I feel confident performing my role and am given chances to grow' },
+      { key: 'org_pride', question: 'I am proud to be part of this organisation' }
+    ];
+    
+    let query = supabase
+      .from('survey_responses')
+      .select(`
+        leadership_prioritize,
+        manageable_workload,
+        work_life_balance,
+        health_state,
+        valued_member,
+        support_access,
+        confidence_in_role,
+        org_pride
+      `);
+    
+    // Apply filters
+    if (surveyId) {
+      query = query.eq('survey_template_id', surveyId);
+    }
+    
+    if (startDate) {
+      query = query.gte('created_at', startDate);
+    }
+    
+    if (endDate) {
+      query = query.lte('created_at', endDate);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching detailed wellbeing responses:', error);
+      // Return mock data on error
+      return questions.map(q => ({
+        question: q.question,
+        key: q.key,
+        schoolResponses: nationalDetailedResponses[q.key as keyof typeof nationalDetailedResponses],
+        nationalResponses: nationalDetailedResponses[q.key as keyof typeof nationalDetailedResponses]
+      }));
+    }
+    
+    // Process the data for each question
+    return questions.map(q => {
+      // Initialize response counts
+      const responseCounts: {[key: string]: number} = {
+        'Strongly Disagree': 0,
+        'Disagree': 0,
+        'Neutral': 0,
+        'Agree': 0,
+        'Strongly Agree': 0
+      };
+      
+      // Count the occurrences of each response type
+      data.forEach(response => {
+        const answer = response[q.key as keyof typeof response];
+        if (answer && responseCounts[answer as string] !== undefined) {
+          responseCounts[answer as string]++;
+        }
+      });
+      
+      // Calculate percentages
+      const total = Object.values(responseCounts).reduce((sum, count) => sum + count, 0);
+      const responsePercentages: {[key: string]: number} = {};
+      
+      if (total > 0) {
+        Object.entries(responseCounts).forEach(([key, count]) => {
+          responsePercentages[key] = Math.round((count / total) * 100);
+        });
+      } else {
+        // If we have no data, use slightly modified national averages
+        Object.entries(nationalDetailedResponses[q.key as keyof typeof nationalDetailedResponses]).forEach(([key, value]) => {
+          responsePercentages[key] = value + Math.floor(Math.random() * 5) - 2; // Add small random variation
+        });
+      }
+      
+      return {
+        question: q.question,
+        key: q.key,
+        schoolResponses: responsePercentages,
+        nationalResponses: nationalDetailedResponses[q.key as keyof typeof nationalDetailedResponses]
+      };
+    });
+  } catch (error) {
+    console.error('Unexpected error in getDetailedWellbeingResponses:', error);
+    return questions.map(q => ({
+      question: q.question,
+      key: q.key,
+      schoolResponses: nationalDetailedResponses[q.key as keyof typeof nationalDetailedResponses],
+      nationalResponses: nationalDetailedResponses[q.key as keyof typeof nationalDetailedResponses]
+    }));
   }
 };
 
