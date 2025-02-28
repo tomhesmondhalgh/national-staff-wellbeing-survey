@@ -47,46 +47,59 @@ const SurveyForm = () => {
   
   // If no survey ID is provided, we'll show an error
   const [surveyNotFound, setSurveyNotFound] = useState(false);
+  const [surveyLoading, setSurveyLoading] = useState(true);
   const [surveyTemplate, setSurveyTemplate] = useState<any>(null);
   
   useEffect(() => {
+    // This effect fetches the survey template data
     async function fetchSurveyTemplate() {
       if (!surveyId) {
+        console.error('No survey ID provided in URL');
         setSurveyNotFound(true);
+        setSurveyLoading(false);
         return;
       }
       
       try {
         console.log("Fetching survey with ID:", surveyId);
+        setSurveyLoading(true);
         
         const { data, error } = await supabase
           .from('survey_templates')
           .select('*')
           .eq('id', surveyId)
-          .maybeSingle(); // Using maybeSingle instead of single to handle not found case better
+          .maybeSingle();
           
         if (error) {
           console.error('Error fetching survey template:', error);
           setSurveyNotFound(true);
+          setSurveyLoading(false);
           return;
         }
         
         if (!data) {
           console.error('No survey found with ID:', surveyId);
           setSurveyNotFound(true);
+          setSurveyLoading(false);
           return;
         }
         
         console.log("Survey found:", data);
-        setSurveyTemplate(data);
         
         // Check if survey is closed
         if (data.close_date && new Date(data.close_date) < new Date()) {
+          console.log("Survey is closed, redirecting to closed page");
           navigate('/survey-closed');
+          return;
         }
+        
+        // Set the survey template data
+        setSurveyTemplate(data);
+        setSurveyLoading(false);
       } catch (error) {
-        console.error('Error:', error);
+        console.error('Unexpected error in fetchSurveyTemplate:', error);
         setSurveyNotFound(true);
+        setSurveyLoading(false);
       }
     }
     
@@ -182,6 +195,8 @@ const SurveyForm = () => {
     setIsSubmitting(true);
     
     try {
+      console.log("Submitting survey response for template ID:", surveyId);
+      
       // Submit response to Supabase with the survey_template_id
       const { error } = await supabase
         .from('survey_responses')
@@ -341,6 +356,22 @@ const SurveyForm = () => {
       {errors[name] && <p className="text-red-500 text-sm mt-1 text-left">{errors[name]}</p>}
     </div>
   );
+
+  if (surveyLoading) {
+    return (
+      <MainLayout>
+        <div className="page-container max-w-4xl mx-auto px-4 py-8">
+          <PageTitle 
+            title="Loading Survey..." 
+          />
+          <div className="text-center py-12">
+            <div className="animate-spin h-8 w-8 border-4 border-brandPurple-500 border-t-transparent rounded-full mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading survey data...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   if (surveyNotFound) {
     return (

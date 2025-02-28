@@ -40,6 +40,9 @@ const SurveyForm: React.FC<SurveyFormProps> = ({ onSubmit, initialData }) => {
     setIsSubmitting(true);
     
     try {
+      // Log the data being submitted
+      console.log("Creating survey with data:", formData);
+      
       // Save the survey template to the database
       const { data, error } = await supabase
         .from('survey_templates')
@@ -61,6 +64,8 @@ const SurveyForm: React.FC<SurveyFormProps> = ({ onSubmit, initialData }) => {
         });
         return;
       }
+      
+      console.log("Survey created successfully:", data);
       
       // Call the onSubmit prop with the form data
       onSubmit(formData);
@@ -86,9 +91,19 @@ const SurveyForm: React.FC<SurveyFormProps> = ({ onSubmit, initialData }) => {
   
   const handleCopyUrl = () => {
     if (surveyUrl) {
-      navigator.clipboard.writeText(surveyUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      navigator.clipboard.writeText(surveyUrl)
+        .then(() => {
+          setCopied(true);
+          toast.success("Survey link copied to clipboard", {
+            description: "You can now share this link with your staff."
+          });
+          setTimeout(() => setCopied(false), 2000);
+        })
+        .catch(() => {
+          toast.error("Failed to copy link", {
+            description: "Please try again or copy the URL manually."
+          });
+        });
     }
   };
 
