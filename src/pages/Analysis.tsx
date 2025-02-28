@@ -29,11 +29,10 @@ const Analysis = () => {
   // Colors for pie chart
   const COLORS = ['#10b981', '#6366f1', '#f59e0b', '#ef4444', '#6b7280'];
   
-  // Colors for stacked bar chart
+  // Colors for stacked bar chart - removed Neutral as it's not an option
   const RESPONSE_COLORS = {
     'Strongly Agree': '#10b981', // Green
     'Agree': '#6ee7b7', // Light green
-    'Neutral': '#9ca3af', // Grey
     'Disagree': '#fca5a5', // Light red
     'Strongly Disagree': '#ef4444'  // Red
   };
@@ -164,22 +163,22 @@ const Analysis = () => {
     if (Math.abs(difference) < SIGNIFICANCE_THRESHOLD) {
       return (
         <div className="flex items-center text-gray-500">
-          <MinusIcon size={16} className="mr-1" />
-          <span>Similar to average</span>
+          <MinusIcon size={14} className="mr-1" />
+          <span className="text-sm">Similar to average</span>
         </div>
       );
     } else if (difference > 0) {
       return (
         <div className="flex items-center text-green-600">
-          <ArrowUpIcon size={16} className="mr-1" />
-          <span>Above average</span>
+          <ArrowUpIcon size={14} className="mr-1" />
+          <span className="text-sm">Above average</span>
         </div>
       );
     } else {
       return (
         <div className="flex items-center text-red-600">
-          <ArrowDownIcon size={16} className="mr-1" />
-          <span>Below average</span>
+          <ArrowDownIcon size={14} className="mr-1" />
+          <span className="text-sm">Below average</span>
         </div>
       );
     }
@@ -335,124 +334,109 @@ const Analysis = () => {
                 </div>
               </div>
               
-              {/* Wellbeing Questions Section */}
-              <div className="mb-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Wellbeing Indicators</h2>
-                <div className="mb-6 bg-white p-4 rounded-lg border border-gray-200">
-                  <div className="flex flex-wrap gap-4">
-                    {/* Response type legend */}
-                    {Object.entries(RESPONSE_COLORS).map(([key, color]) => (
-                      <div key={key} className="flex items-center">
-                        <div className="w-4 h-4 mr-2" style={{ backgroundColor: color }}></div>
-                        <span className="text-sm text-gray-600">{key}</span>
+              {/* Questions in a grid - removed heading and key */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                {detailedWellbeingResponses.map((question, index) => {
+                  // Calculate the overall positive response (Agree + Strongly Agree)
+                  const schoolPositive = (question.schoolResponses["Strongly Agree"] || 0) + 
+                                        (question.schoolResponses["Agree"] || 0);
+                  const nationalPositive = (question.nationalResponses["Strongly Agree"] || 0) + 
+                                          (question.nationalResponses["Agree"] || 0);
+                  
+                  // Create data for the detailed stacked chart
+                  const chartData = [
+                    {
+                      name: "Your School",
+                      "Strongly Agree": question.schoolResponses["Strongly Agree"] || 0,
+                      "Agree": question.schoolResponses["Agree"] || 0,
+                      "Disagree": question.schoolResponses["Disagree"] || 0,
+                      "Strongly Disagree": question.schoolResponses["Strongly Disagree"] || 0,
+                    },
+                    {
+                      name: "National Average",
+                      "Strongly Agree": question.nationalResponses["Strongly Agree"] || 0,
+                      "Agree": question.nationalResponses["Agree"] || 0,
+                      "Disagree": question.nationalResponses["Disagree"] || 0,
+                      "Strongly Disagree": question.nationalResponses["Strongly Disagree"] || 0,
+                    }
+                  ];
+                  
+                  return (
+                    <div key={`chart-${index}`} className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+                      {/* Question title takes full width */}
+                      <h4 className="text-md font-semibold text-gray-900 mb-1">
+                        {question.question}
+                      </h4>
+                      
+                      {/* Comparison indicator is below the question title */}
+                      <div className="mb-4">
+                        {getComparisonIndicator(schoolPositive, nationalPositive)}
                       </div>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Questions arranged in a 2-column grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                  {detailedWellbeingResponses.map((question, index) => {
-                    // Calculate the overall positive response (Agree + Strongly Agree)
-                    const schoolPositive = (question.schoolResponses["Strongly Agree"] || 0) + 
-                                          (question.schoolResponses["Agree"] || 0);
-                    const nationalPositive = (question.nationalResponses["Strongly Agree"] || 0) + 
-                                            (question.nationalResponses["Agree"] || 0);
-                    
-                    // Create data for the detailed stacked chart
-                    const chartData = [
-                      {
-                        name: "Your School",
-                        "Strongly Agree": question.schoolResponses["Strongly Agree"] || 0,
-                        "Agree": question.schoolResponses["Agree"] || 0,
-                        "Neutral": question.schoolResponses["Neutral"] || 0,
-                        "Disagree": question.schoolResponses["Disagree"] || 0,
-                        "Strongly Disagree": question.schoolResponses["Strongly Disagree"] || 0,
-                      },
-                      {
-                        name: "National Average",
-                        "Strongly Agree": question.nationalResponses["Strongly Agree"] || 0,
-                        "Agree": question.nationalResponses["Agree"] || 0,
-                        "Neutral": question.nationalResponses["Neutral"] || 0,
-                        "Disagree": question.nationalResponses["Disagree"] || 0,
-                        "Strongly Disagree": question.nationalResponses["Strongly Disagree"] || 0,
-                      }
-                    ];
-                    
-                    return (
-                      <div key={`chart-${index}`} className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                        <div className="flex justify-between items-start mb-4">
-                          <h4 className="text-md font-semibold text-gray-900">
-                            {question.question}
-                          </h4>
-                          {getComparisonIndicator(schoolPositive, nationalPositive)}
-                        </div>
-                        
-                        {/* Detailed Stacked Chart */}
-                        <div className="h-64">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart
-                              data={chartData}
-                              margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                              layout="horizontal"
-                              barGap={25}
-                              barCategoryGap="35%"
-                            >
-                              <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={true} />
-                              <XAxis
-                                dataKey="name"
-                                tick={{ fill: '#4B5563' }}
-                              />
-                              <YAxis 
-                                type="number" 
-                                domain={[0, 100]} 
-                                tickFormatter={(value) => `${value}%`}
-                                label={{ 
-                                  value: 'Percentage (%)', 
-                                  angle: -90, 
-                                  position: 'insideLeft',
-                                  style: { textAnchor: 'middle' }
-                                }}
-                              />
-                              <Tooltip content={customStackedBarTooltip} />
-                              <Legend verticalAlign="bottom" height={36} />
-                              <Bar 
-                                dataKey="Strongly Agree" 
-                                stackId="a" 
-                                fill={RESPONSE_COLORS['Strongly Agree']} 
-                                name="Strongly Agree"
-                              />
-                              <Bar 
-                                dataKey="Agree" 
-                                stackId="a" 
-                                fill={RESPONSE_COLORS['Agree']} 
-                                name="Agree"
-                              />
-                              <Bar 
-                                dataKey="Neutral" 
-                                stackId="a" 
-                                fill={RESPONSE_COLORS['Neutral']} 
-                                name="Neutral"
-                              />
-                              <Bar 
-                                dataKey="Disagree" 
-                                stackId="a" 
-                                fill={RESPONSE_COLORS['Disagree']} 
-                                name="Disagree"
-                              />
-                              <Bar 
-                                dataKey="Strongly Disagree" 
-                                stackId="a" 
-                                fill={RESPONSE_COLORS['Strongly Disagree']} 
-                                name="Strongly Disagree"
-                              />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
+                      
+                      {/* Detailed Stacked Chart */}
+                      <div className="h-64">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={chartData}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                            layout="horizontal"
+                            barGap={25}
+                            barCategoryGap="35%"
+                          >
+                            <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={true} />
+                            <XAxis
+                              dataKey="name"
+                              tick={{ fill: '#4B5563' }}
+                            />
+                            <YAxis 
+                              type="number" 
+                              domain={[0, 100]} 
+                              tickFormatter={(value) => `${value}%`}
+                              label={{ 
+                                value: 'Percentage (%)', 
+                                angle: -90, 
+                                position: 'insideLeft',
+                                style: { textAnchor: 'middle' }
+                              }}
+                            />
+                            <Tooltip content={customStackedBarTooltip} />
+                            {/* Smaller legend that fits on one line */}
+                            <Legend 
+                              verticalAlign="bottom" 
+                              height={20}
+                              iconSize={10}
+                              wrapperStyle={{ fontSize: '10px' }}
+                            />
+                            <Bar 
+                              dataKey="Strongly Agree" 
+                              stackId="a" 
+                              fill={RESPONSE_COLORS['Strongly Agree']} 
+                              name="Strongly Agree"
+                            />
+                            <Bar 
+                              dataKey="Agree" 
+                              stackId="a" 
+                              fill={RESPONSE_COLORS['Agree']} 
+                              name="Agree"
+                            />
+                            <Bar 
+                              dataKey="Disagree" 
+                              stackId="a" 
+                              fill={RESPONSE_COLORS['Disagree']} 
+                              name="Disagree"
+                            />
+                            <Bar 
+                              dataKey="Strongly Disagree" 
+                              stackId="a" 
+                              fill={RESPONSE_COLORS['Strongly Disagree']} 
+                              name="Strongly Disagree"
+                            />
+                          </BarChart>
+                        </ResponsiveContainer>
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })}
               </div>
               
               {/* Text Responses Section */}
