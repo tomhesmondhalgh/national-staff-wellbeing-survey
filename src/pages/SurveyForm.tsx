@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
@@ -52,7 +52,7 @@ const SurveyForm = () => {
   const [surveyTemplate, setSurveyTemplate] = useState<SurveyTemplate | null>(null);
   
   // Fetch the survey template when component mounts
-  useEffect(() => {
+  React.useEffect(() => {
     let isMounted = true;
     
     const fetchSurveyTemplate = async () => {
@@ -127,34 +127,9 @@ const SurveyForm = () => {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [scrollPosition, setScrollPosition] = useState(0);
-
-  // Save scroll position before input change
-  useEffect(() => {
-    const handleScroll = () => {
-      if (formRef.current) {
-        setScrollPosition(window.scrollY);
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Restore scroll position after state update
-  useEffect(() => {
-    if (scrollPosition > 0) {
-      window.scrollTo(0, scrollPosition);
-    }
-  }, [formData, scrollPosition]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    
-    // Store current scroll position before state update
-    if (e.target.tagName.toLowerCase() === 'textarea') {
-      setScrollPosition(window.scrollY);
-    }
     
     setFormData({
       ...formData,
