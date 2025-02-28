@@ -1,32 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, useParams, useNavigate, Routes, Route } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
 import SurveyList from '../components/surveys/SurveyList';
 import { toast } from "sonner";
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import EditSurvey from './EditSurvey';
 
 const Surveys = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const params = useParams();
   const [loading, setLoading] = useState(true);
   const [surveys, setSurveys] = useState<any[]>([]);
-
-  // Check if we're on the main surveys page or a sub-route
-  const isSubRoute = !!params.id;
-
-  // If we're on a sub-route like /surveys/:id/edit, we'll render that component
-  if (isSubRoute) {
-    return (
-      <Routes>
-        <Route path=":id/edit" element={<EditSurvey />} />
-      </Routes>
-    );
-  }
 
   // Fetch surveys from Supabase
   useEffect(() => {
