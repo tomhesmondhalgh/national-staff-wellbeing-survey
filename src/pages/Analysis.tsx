@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Line, ComposedChart, ReferenceLine } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ReferenceLine } from 'recharts';
 import { getSurveyOptions, getRecommendationScore, getLeavingContemplation, getDetailedWellbeingResponses } from '../utils/analysisUtils';
 import type { SurveyOption, DetailedQuestionResponse, TextResponse } from '../utils/analysisUtils';
 import { getTextResponses } from '../utils/analysisUtils';
@@ -119,61 +118,16 @@ const Analysis = () => {
   // Helper to customize tooltip on pie chart
   const customPieTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
+      const total = leavingData.reduce((sum, item) => sum + item.value, 0);
+      const percentage = total > 0 ? ((payload[0].value / total) * 100).toFixed(1) : "0.0";
+      
       return (
         <div className="bg-white p-3 border border-gray-200 shadow-sm rounded-md">
           <p className="font-medium">{payload[0].name}</p>
           <p className="text-gray-600">Count: {payload[0].value}</p>
           <p className="text-gray-600">
-            Percentage: {((payload[0].value / leavingData.reduce((sum, item) => sum + item.value, 0)) * 100).toFixed(1)}%
+            Percentage: {percentage}%
           </p>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  // Enhanced tooltip for comparison chart
-  const customComparisonTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const schoolData = payload.find((p: any) => p.name === "Your Organization");
-      const nationalData = payload.find((p: any) => p.name === "National Average");
-      
-      const difference = schoolData && nationalData 
-        ? (schoolData.value - nationalData.value).toFixed(1) 
-        : "N/A";
-      
-      const isSignificant = Math.abs(Number(difference)) >= SIGNIFICANCE_THRESHOLD;
-      
-      return (
-        <div className="bg-white p-4 border border-gray-200 shadow-lg rounded-md max-w-xs">
-          <p className="font-medium text-gray-900 mb-3">{label}</p>
-          {payload.map((entry: any) => (
-            <div key={entry.name} className="mb-2">
-              <div className="flex items-center">
-                <div 
-                  className="w-3 h-3 rounded-full mr-2" 
-                  style={{ backgroundColor: entry.fill }} 
-                />
-                <p className="text-gray-700 font-medium">{entry.name}: {entry.value}%</p>
-              </div>
-            </div>
-          ))}
-          
-          {schoolData && nationalData && (
-            <div className="mt-3 pt-2 border-t border-gray-100">
-              <p className={cn(
-                "text-sm font-medium",
-                Number(difference) > 0 ? "text-green-600" : Number(difference) < 0 ? "text-red-600" : "text-gray-600"
-              )}>
-                Difference: {difference > 0 ? "+" : ""}{difference}%
-                {isSignificant && (
-                  <span className="ml-1">
-                    {Number(difference) > 0 ? "(Significantly above average)" : "(Significantly below average)"}
-                  </span>
-                )}
-              </p>
-            </div>
-          )}
         </div>
       );
     }
@@ -334,46 +288,19 @@ const Analysis = () => {
                       <h3 className="text-lg font-semibold text-gray-900">Recommendation Score</h3>
                       {getComparisonIndicator(recommendationScore.score, recommendationScore.nationalAverage)}
                     </div>
-                    <div className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <ComposedChart
-                          data={[
-                            { name: "Score", school: recommendationScore.score, national: recommendationScore.nationalAverage }
-                          ]}
-                          margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                          <XAxis dataKey="name" />
-                          <YAxis domain={[0, 10]} ticks={[0, 2, 4, 6, 8, 10]} />
-                          <Tooltip 
-                            content={({ active, payload }) => {
-                              if (active && payload && payload.length) {
-                                return (
-                                  <div className="bg-white p-4 border border-gray-200 shadow-sm rounded-md">
-                                    <p className="text-gray-700">
-                                      <span className="font-medium">Your Score:</span> {payload[0].value}/10
-                                    </p>
-                                    <p className="text-gray-700">
-                                      <span className="font-medium">National Average:</span> {payload[1].value}/10
-                                    </p>
-                                    <p className="text-gray-700 mt-2">
-                                      <span className="font-medium">Difference:</span> {(payload[0].value - payload[1].value).toFixed(1)}
-                                    </p>
-                                  </div>
-                                );
-                              }
-                              return null;
-                            }}
-                          />
-                          <Legend />
-                          <Bar dataKey="school" fill="#4f46e5" name="Your Organization" barSize={60} />
-                          <Bar dataKey="national" fill="#94a3b8" name="National Average" barSize={60} />
-                          <ReferenceLine y={recommendationScore.nationalAverage} stroke="#94a3b8" strokeDasharray="3 3" />
-                        </ComposedChart>
-                      </ResponsiveContainer>
+                    <div className="flex items-center justify-center space-x-12 mt-6">
+                      <div className="text-center">
+                        <div className="text-5xl font-bold text-indigo-600 mb-2">{recommendationScore.score}</div>
+                        <div className="text-sm text-gray-500">Your School</div>
+                      </div>
+                      <div className="h-20 border-l border-gray-200"></div>
+                      <div className="text-center">
+                        <div className="text-5xl font-bold text-gray-500 mb-2">{recommendationScore.nationalAverage}</div>
+                        <div className="text-sm text-gray-500">National Average</div>
+                      </div>
                     </div>
-                    <p className="text-sm text-gray-600 mt-4">
-                      Average score for "How likely are you to recommend this organisation to others as a great place to work?"
+                    <p className="text-sm text-gray-600 mt-8 text-center">
+                      Average score for "How likely are you to recommend this organisation to others as a great place to work?" (0-10)
                     </p>
                   </div>
                   
@@ -401,7 +328,7 @@ const Analysis = () => {
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
-                    <p className="text-sm text-gray-600 mt-2">
+                    <p className="text-sm text-gray-600 mt-2 text-center">
                       Responses to "In the last 6 months I have contemplated leaving my role"
                     </p>
                   </div>
@@ -412,35 +339,19 @@ const Analysis = () => {
               <div className="mb-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Wellbeing Indicators</h2>
                 <div className="mb-6 bg-white p-4 rounded-lg border border-gray-200">
-                  <div className="flex items-center space-x-8">
-                    <div className="flex items-center">
-                      <div className="w-4 h-4 bg-indigo-600 mr-2"></div>
-                      <span className="text-sm text-gray-700">Your Organization</span>
-                    </div>
-                    <div className="flex items-center">
-                      <div className="w-4 h-4 bg-gray-400 mr-2"></div>
-                      <span className="text-sm text-gray-700">National Average</span>
-                    </div>
-                    <div className="h-6 border-r border-gray-300 mx-2"></div>
-                    {/* Significance indicators */}
-                    <div className="flex items-center">
-                      <div className="flex items-center text-green-600 mr-4">
-                        <ArrowUpIcon size={16} className="mr-1" />
-                        <span className="text-sm">Above average</span>
+                  <div className="flex flex-wrap gap-4">
+                    {/* Response type legend */}
+                    {Object.entries(RESPONSE_COLORS).map(([key, color]) => (
+                      <div key={key} className="flex items-center">
+                        <div className="w-4 h-4 mr-2" style={{ backgroundColor: color }}></div>
+                        <span className="text-sm text-gray-600">{key}</span>
                       </div>
-                      <div className="flex items-center text-gray-500 mr-4">
-                        <MinusIcon size={16} className="mr-1" />
-                        <span className="text-sm">Similar</span>
-                      </div>
-                      <div className="flex items-center text-red-600">
-                        <ArrowDownIcon size={16} className="mr-1" />
-                        <span className="text-sm">Below average</span>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 gap-6 mb-8">
+                {/* Questions arranged in a 2-column grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   {detailedWellbeingResponses.map((question, index) => {
                     // Calculate the overall positive response (Agree + Strongly Agree)
                     const schoolPositive = (question.schoolResponses["Strongly Agree"] || 0) + 
@@ -448,19 +359,10 @@ const Analysis = () => {
                     const nationalPositive = (question.nationalResponses["Strongly Agree"] || 0) + 
                                             (question.nationalResponses["Agree"] || 0);
                     
-                    // Create data for the comparison chart
-                    const comparisonData = [
-                      {
-                        name: question.question,
-                        "Your Organization": schoolPositive,
-                        "National Average": nationalPositive
-                      }
-                    ];
-                    
                     // Create data for the detailed stacked chart
                     const chartData = [
                       {
-                        name: "Your Organization",
+                        name: "Your School",
                         "Strongly Agree": question.schoolResponses["Strongly Agree"] || 0,
                         "Agree": question.schoolResponses["Agree"] || 0,
                         "Neutral": question.schoolResponses["Neutral"] || 0,
@@ -486,32 +388,8 @@ const Analysis = () => {
                           {getComparisonIndicator(schoolPositive, nationalPositive)}
                         </div>
                         
-                        {/* Comparison Chart */}
-                        <div className="h-24 mb-4">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart
-                              data={comparisonData}
-                              layout="vertical"
-                              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                            >
-                              <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
-                              <XAxis 
-                                type="number" 
-                                domain={[0, 100]} 
-                                tickFormatter={(value) => `${value}%`}
-                              />
-                              <YAxis type="category" dataKey="name" hide={true} />
-                              <Tooltip content={customComparisonTooltip} />
-                              <Legend verticalAlign="top" height={36} />
-                              <Bar dataKey="Your Organization" fill="#4f46e5" barSize={20} />
-                              <Bar dataKey="National Average" fill="#94a3b8" barSize={20} />
-                              <ReferenceLine x={nationalPositive} stroke="#94a3b8" strokeDasharray="3 3" />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                        
                         {/* Detailed Stacked Chart */}
-                        <div className="h-60">
+                        <div className="h-64">
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart
                               data={chartData}
