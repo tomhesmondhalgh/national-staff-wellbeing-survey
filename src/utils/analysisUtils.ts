@@ -58,7 +58,7 @@ const nationalAverages = {
   }
 };
 
-// National average detailed breakdown (mock data)
+// National average detailed breakdown (mock data - this will be replaced with actual data)
 const nationalDetailedResponses = {
   "leadership_prioritize": {
     "Strongly Disagree": 10,
@@ -149,32 +149,43 @@ export const getSurveyOptions = async (): Promise<SurveyOption[]> => {
 // Function to get recommendation scores
 export const getRecommendationScore = async (surveyId?: string, startDate?: string, endDate?: string): Promise<{score: number, nationalAverage: number}> => {
   try {
-    let query = supabase
+    // Get scores for specific survey/date range
+    let surveyQuery = supabase
       .from('survey_responses')
       .select('recommendation_score');
     
     // Apply filters
     if (surveyId) {
-      query = query.eq('survey_template_id', surveyId);
+      surveyQuery = surveyQuery.eq('survey_template_id', surveyId);
     }
     
     if (startDate) {
-      query = query.gte('created_at', startDate);
+      surveyQuery = surveyQuery.gte('created_at', startDate);
     }
     
     if (endDate) {
-      query = query.lte('created_at', endDate);
+      surveyQuery = surveyQuery.lte('created_at', endDate);
     }
     
-    const { data, error } = await query;
+    const { data: surveyData, error: surveyError } = await surveyQuery;
     
-    if (error) {
-      console.error('Error fetching recommendation scores:', error);
+    if (surveyError) {
+      console.error('Error fetching recommendation scores:', surveyError);
       return { score: 0, nationalAverage: nationalAverages.recommendation_score };
     }
     
-    // Calculate average score
-    const scores = data
+    // Get all scores for national average
+    const { data: allData, error: allError } = await supabase
+      .from('survey_responses')
+      .select('recommendation_score');
+    
+    if (allError) {
+      console.error('Error fetching all recommendation scores:', allError);
+      return { score: 0, nationalAverage: nationalAverages.recommendation_score };
+    }
+    
+    // Calculate average score for survey
+    const scores = surveyData
       .filter(response => response.recommendation_score)
       .map(response => parseInt(response.recommendation_score, 10))
       .filter(score => !isNaN(score));
@@ -183,9 +194,19 @@ export const getRecommendationScore = async (surveyId?: string, startDate?: stri
       ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
       : 0;
     
+    // Calculate national average from all data
+    const allScores = allData
+      .filter(response => response.recommendation_score)
+      .map(response => parseInt(response.recommendation_score, 10))
+      .filter(score => !isNaN(score));
+    
+    const nationalAverage = allScores.length > 0
+      ? Math.round(allScores.reduce((sum, score) => sum + score, 0) / allScores.length)
+      : nationalAverages.recommendation_score;
+    
     return { 
       score: average, 
-      nationalAverage: nationalAverages.recommendation_score 
+      nationalAverage 
     };
   } catch (error) {
     console.error('Unexpected error in getRecommendationScore:', error);
@@ -196,6 +217,7 @@ export const getRecommendationScore = async (surveyId?: string, startDate?: stri
 // Function to get leaving contemplation data
 export const getLeavingContemplation = async (surveyId?: string, startDate?: string, endDate?: string): Promise<{[key: string]: number}> => {
   try {
+    // Get data for specific survey/date range
     let query = supabase
       .from('survey_responses')
       .select('leaving_contemplation');
@@ -262,7 +284,8 @@ export const getWellbeingScores = async (surveyId?: string, startDate?: string, 
       { key: 'org_pride', question: 'I am proud to be part of this organisation' }
     ];
     
-    let query = supabase
+    // Get data for specific survey/date range
+    let surveyQuery = supabase
       .from('survey_responses')
       .select(`
         leadership_prioritize,
@@ -277,21 +300,21 @@ export const getWellbeingScores = async (surveyId?: string, startDate?: string, 
     
     // Apply filters
     if (surveyId) {
-      query = query.eq('survey_template_id', surveyId);
+      surveyQuery = surveyQuery.eq('survey_template_id', surveyId);
     }
     
     if (startDate) {
-      query = query.gte('created_at', startDate);
+      surveyQuery = surveyQuery.gte('created_at', startDate);
     }
     
     if (endDate) {
-      query = query.lte('created_at', endDate);
+      surveyQuery = surveyQuery.lte('created_at', endDate);
     }
     
-    const { data, error } = await query;
+    const { data: surveyData, error: surveyError } = await surveyQuery;
     
-    if (error) {
-      console.error('Error fetching wellbeing scores:', error);
+    if (surveyError) {
+      console.error('Error fetching wellbeing scores:', surveyError);
       // Return mock data on error
       return questions.map(q => ({
         question: q.question,
@@ -301,9 +324,51 @@ export const getWellbeingScores = async (surveyId?: string, startDate?: string, 
       }));
     }
     
+    // Get all data for national averages
+    const { data: allData, error: allError } = await supabase
+      .from('survey_responses')
+      .select(`
+        leadership_prioritize,
+        manageable_workload,
+        work_life_balance,
+        health_state,
+        valued_member,
+        support_access,
+        confidence_in_role,
+        org_pride
+      `);
+    
+    if (allError) {
+      console.error('Error fetching all wellbeing scores:', allError);
+      return questions.map(q => ({
+        question: q.question,
+        key: q.key,
+        school: 0,
+        national: nationalAverages[q.key as keyof typeof nationalAverages] as number
+      }));
+    }
+    
     // Calculate average scores for each question
     return questions.map(q => {
-      const responses = data
+      // Survey-specific score calculation
+      const surveyResponses = surveyData
+        .filter(response => response[q.key as keyof typeof response])
+        .map(response => {
+          const value = response[q.key as keyof typeof response];
+          // Convert Likert scale to numbers (1-5)
+          switch(value) {
+            case 'Strongly Disagree': return 1;
+            case 'Disagree': return 2;
+            case 'Neutral': return 3;
+            case 'Agree': return 4;
+            case 'Strongly Agree': return 5;
+            default: return parseInt(value as string, 10);
+          }
+        })
+        .filter(score => !isNaN(score));
+      
+      // National average calculation
+      const allResponses = allData
         .filter(response => response[q.key as keyof typeof response])
         .map(response => {
           const value = response[q.key as keyof typeof response];
@@ -320,15 +385,19 @@ export const getWellbeingScores = async (surveyId?: string, startDate?: string, 
         .filter(score => !isNaN(score));
       
       // Convert to percentage (1-5 scale to 0-100)
-      const average = responses.length > 0
-        ? Math.round(((responses.reduce((sum, score) => sum + score, 0) / responses.length) - 1) / 4 * 100)
+      const surveyAverage = surveyResponses.length > 0
+        ? Math.round(((surveyResponses.reduce((sum, score) => sum + score, 0) / surveyResponses.length) - 1) / 4 * 100)
         : 0;
+      
+      const nationalAverage = allResponses.length > 0
+        ? Math.round(((allResponses.reduce((sum, score) => sum + score, 0) / allResponses.length) - 1) / 4 * 100)
+        : nationalAverages[q.key as keyof typeof nationalAverages] as number;
       
       return {
         question: q.question,
         key: q.key,
-        school: average || nationalAverages[q.key as keyof typeof nationalAverages] as number + Math.floor(Math.random() * 10), // Fallback with random variation
-        national: nationalAverages[q.key as keyof typeof nationalAverages] as number
+        school: surveyAverage || nationalAverages[q.key as keyof typeof nationalAverages] as number + Math.floor(Math.random() * 10), // Fallback with random variation
+        national: nationalAverage
       };
     });
   } catch (error) {
@@ -351,7 +420,8 @@ export const getDetailedWellbeingResponses = async (surveyId?: string, startDate
       { key: 'org_pride', question: 'I am proud to be part of this organisation' }
     ];
     
-    let query = supabase
+    // Get data for specific survey/date range
+    let surveyQuery = supabase
       .from('survey_responses')
       .select(`
         leadership_prioritize,
@@ -366,22 +436,46 @@ export const getDetailedWellbeingResponses = async (surveyId?: string, startDate
     
     // Apply filters
     if (surveyId) {
-      query = query.eq('survey_template_id', surveyId);
+      surveyQuery = surveyQuery.eq('survey_template_id', surveyId);
     }
     
     if (startDate) {
-      query = query.gte('created_at', startDate);
+      surveyQuery = surveyQuery.gte('created_at', startDate);
     }
     
     if (endDate) {
-      query = query.lte('created_at', endDate);
+      surveyQuery = surveyQuery.lte('created_at', endDate);
     }
     
-    const { data, error } = await query;
+    const { data: surveyData, error: surveyError } = await surveyQuery;
     
-    if (error) {
-      console.error('Error fetching detailed wellbeing responses:', error);
+    // Get all data for national averages
+    const { data: allData, error: allError } = await supabase
+      .from('survey_responses')
+      .select(`
+        leadership_prioritize,
+        manageable_workload,
+        work_life_balance,
+        health_state,
+        valued_member,
+        support_access,
+        confidence_in_role,
+        org_pride
+      `);
+    
+    if (surveyError) {
+      console.error('Error fetching detailed wellbeing responses:', surveyError);
       // Return mock data on error
+      return questions.map(q => ({
+        question: q.question,
+        key: q.key,
+        schoolResponses: nationalDetailedResponses[q.key as keyof typeof nationalDetailedResponses],
+        nationalResponses: nationalDetailedResponses[q.key as keyof typeof nationalDetailedResponses]
+      }));
+    }
+    
+    if (allError) {
+      console.error('Error fetching all detailed wellbeing responses:', allError);
       return questions.map(q => ({
         question: q.question,
         key: q.key,
@@ -392,8 +486,8 @@ export const getDetailedWellbeingResponses = async (surveyId?: string, startDate
     
     // Process the data for each question
     return questions.map(q => {
-      // Initialize response counts
-      const responseCounts: {[key: string]: number} = {
+      // Initialize response counts for survey data
+      const surveyResponseCounts: {[key: string]: number} = {
         'Strongly Disagree': 0,
         'Disagree': 0,
         'Neutral': 0,
@@ -401,34 +495,64 @@ export const getDetailedWellbeingResponses = async (surveyId?: string, startDate
         'Strongly Agree': 0
       };
       
-      // Count the occurrences of each response type
-      data.forEach(response => {
+      // Initialize response counts for national data
+      const nationalResponseCounts: {[key: string]: number} = {
+        'Strongly Disagree': 0,
+        'Disagree': 0,
+        'Neutral': 0,
+        'Agree': 0,
+        'Strongly Agree': 0
+      };
+      
+      // Count the occurrences of each response type for survey data
+      surveyData.forEach(response => {
         const answer = response[q.key as keyof typeof response];
-        if (answer && responseCounts[answer as string] !== undefined) {
-          responseCounts[answer as string]++;
+        if (answer && surveyResponseCounts[answer as string] !== undefined) {
+          surveyResponseCounts[answer as string]++;
         }
       });
       
-      // Calculate percentages
-      const total = Object.values(responseCounts).reduce((sum, count) => sum + count, 0);
-      const responsePercentages: {[key: string]: number} = {};
+      // Count the occurrences of each response type for national data
+      allData.forEach(response => {
+        const answer = response[q.key as keyof typeof response];
+        if (answer && nationalResponseCounts[answer as string] !== undefined) {
+          nationalResponseCounts[answer as string]++;
+        }
+      });
       
-      if (total > 0) {
-        Object.entries(responseCounts).forEach(([key, count]) => {
-          responsePercentages[key] = Math.round((count / total) * 100);
+      // Calculate percentages for survey data
+      const surveyTotal = Object.values(surveyResponseCounts).reduce((sum, count) => sum + count, 0);
+      const surveyPercentages: {[key: string]: number} = {};
+      
+      if (surveyTotal > 0) {
+        Object.entries(surveyResponseCounts).forEach(([key, count]) => {
+          surveyPercentages[key] = Math.round((count / surveyTotal) * 100);
         });
       } else {
         // If we have no data, use slightly modified national averages
         Object.entries(nationalDetailedResponses[q.key as keyof typeof nationalDetailedResponses]).forEach(([key, value]) => {
-          responsePercentages[key] = value + Math.floor(Math.random() * 5) - 2; // Add small random variation
+          surveyPercentages[key] = value + Math.floor(Math.random() * 5) - 2; // Add small random variation
         });
+      }
+      
+      // Calculate percentages for national data
+      const nationalTotal = Object.values(nationalResponseCounts).reduce((sum, count) => sum + count, 0);
+      const nationalPercentages: {[key: string]: number} = {};
+      
+      if (nationalTotal > 0) {
+        Object.entries(nationalResponseCounts).forEach(([key, count]) => {
+          nationalPercentages[key] = Math.round((count / nationalTotal) * 100);
+        });
+      } else {
+        // If we have no data, use the mock national averages
+        nationalPercentages = nationalDetailedResponses[q.key as keyof typeof nationalDetailedResponses];
       }
       
       return {
         question: q.question,
         key: q.key,
-        schoolResponses: responsePercentages,
-        nationalResponses: nationalDetailedResponses[q.key as keyof typeof nationalDetailedResponses]
+        schoolResponses: surveyPercentages,
+        nationalResponses: nationalPercentages
       };
     });
   } catch (error) {

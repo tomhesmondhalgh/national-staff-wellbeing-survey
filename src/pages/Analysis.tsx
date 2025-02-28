@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
@@ -151,40 +150,6 @@ const Analysis = () => {
     return null;
   };
 
-  // Transform detailed response data into format for stacked bar chart
-  const prepareStackedBarData = (question: DetailedQuestionResponse) => {
-    const dataForSchool = Object.entries(question.schoolResponses).map(([key, value]) => ({
-      name: key,
-      value: value,
-      fill: RESPONSE_COLORS[key as keyof typeof RESPONSE_COLORS]
-    })).sort((a, b) => {
-      // Sort by response type (Strongly Agree first, then Agree, etc.)
-      const order = ['Strongly Agree', 'Agree', 'Neutral', 'Disagree', 'Strongly Disagree'];
-      return order.indexOf(a.name) - order.indexOf(b.name);
-    });
-    
-    const dataForNational = Object.entries(question.nationalResponses).map(([key, value]) => ({
-      name: key,
-      value: value,
-      fill: RESPONSE_COLORS[key as keyof typeof RESPONSE_COLORS]
-    })).sort((a, b) => {
-      // Sort by response type (Strongly Agree first, then Agree, etc.)
-      const order = ['Strongly Agree', 'Agree', 'Neutral', 'Disagree', 'Strongly Disagree'];
-      return order.indexOf(a.name) - order.indexOf(b.name);
-    });
-    
-    return [
-      {
-        name: "Your Organization",
-        responses: dataForSchool
-      },
-      {
-        name: "National Average",
-        responses: dataForNational
-      }
-    ];
-  };
-
   return (
     <MainLayout>
       <div className="page-container">
@@ -287,7 +252,7 @@ const Analysis = () => {
                     <div className="h-16 border-l border-gray-200 mx-6"></div>
                     <div className="flex flex-col items-center">
                       <div className="text-4xl font-bold text-gray-400">{recommendationScore.nationalAverage}/10</div>
-                      <div className="text-sm text-gray-500 mt-2">National Average</div>
+                      <div className="text-sm text-gray-500 mt-2">All Surveys Average</div>
                     </div>
                   </div>
                   <p className="text-sm text-gray-600 mt-4">
@@ -340,8 +305,8 @@ const Analysis = () => {
                 </div>
               </div>
               
-              {/* Individual charts for each question with stacked bars */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              {/* Individual charts for each question with stacked bars - now displayed horizontally */}
+              <div className="grid grid-cols-1 gap-6 mb-8">
                 {detailedWellbeingResponses.map((question, index) => {
                   // Create data for this question's chart
                   const chartData = [
@@ -354,7 +319,7 @@ const Analysis = () => {
                       "Strongly Disagree": question.schoolResponses["Strongly Disagree"] || 0,
                     },
                     {
-                      name: "National Average",
+                      name: "All Surveys Average",
                       "Strongly Agree": question.nationalResponses["Strongly Agree"] || 0,
                       "Agree": question.nationalResponses["Agree"] || 0,
                       "Neutral": question.nationalResponses["Neutral"] || 0,
@@ -368,22 +333,30 @@ const Analysis = () => {
                       <h4 className="font-medium text-gray-900 mb-3 text-center">
                         {question.question}
                       </h4>
-                      <div className="h-64">
+                      <div className="h-40">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart
                             data={chartData}
-                            margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
-                            layout="vertical"
-                            barGap={10}
-                            barSize={40}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                            layout="horizontal"
+                            barGap={25} // Space between bar groups
+                            barCategoryGap="35%" // Space between different categories
                           >
-                            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
-                            <XAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
+                            <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={true} />
+                            <XAxis
+                              dataKey="name"
+                              tick={{ fill: '#4B5563' }}
+                            />
                             <YAxis 
-                              type="category" 
-                              dataKey="name" 
-                              tick={{ fill: '#4B5563' }} 
-                              width={120}
+                              type="number" 
+                              domain={[0, 100]} 
+                              tickFormatter={(value) => `${value}%`}
+                              label={{ 
+                                value: 'Percentage (%)', 
+                                angle: -90, 
+                                position: 'insideLeft',
+                                style: { textAnchor: 'middle' }
+                              }}
                             />
                             <Tooltip content={customStackedBarTooltip} />
                             <Legend verticalAlign="top" height={36} />
