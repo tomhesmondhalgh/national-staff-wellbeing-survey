@@ -22,8 +22,8 @@ import './App.css';
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
@@ -38,10 +38,10 @@ function App() {
           <Route path="/analysis" element={<Analysis />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </Router>
-      <Toaster />
-      <SonnerToaster closeButton position="bottom-right" />
-    </AuthProvider>
+        <Toaster />
+        <SonnerToaster closeButton position="bottom-right" />
+      </AuthProvider>
+    </Router>
   );
 }
 
