@@ -24,6 +24,8 @@ const SurveyForm = () => {
   const surveyId = searchParams.get('id');
 
   const [survey, setSurvey] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showQuestionsDialog, setShowQuestionsDialog] = useState(false);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const [customQuestions, setCustomQuestions] = useState<CustomQuestion[]>([]);
@@ -52,10 +54,18 @@ const SurveyForm = () => {
 
   useEffect(() => {
     const loadSurvey = async () => {
-      if (!surveyId) return;
+      if (!surveyId) {
+        setError("No survey ID provided");
+        setLoading(false);
+        return;
+      }
 
       try {
+        console.log("Loading survey with ID:", surveyId);
+        setLoading(true);
         const surveyData = await getSurveyById(surveyId);
+        console.log("Survey data loaded:", surveyData);
+        
         if (surveyData) {
           setSurvey(surveyData);
           // Cast the values to the proper types before setting state
@@ -65,10 +75,15 @@ const SurveyForm = () => {
           if ('emails' in surveyData) {
             setEmails(surveyData.emails ? String(surveyData.emails) : '');
           }
+        } else {
+          setError("Survey not found");
         }
       } catch (error) {
         console.error('Error loading survey:', error);
+        setError("Failed to load survey");
         toast.error("Failed to load survey");
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -111,6 +126,48 @@ const SurveyForm = () => {
   const onSubmitForm = (e: React.FormEvent) => {
     handleSubmit(e, customQuestions);
   };
+
+  // Show loading state while data is being fetched
+  if (loading) {
+    return (
+      <div className="page-container">
+        <div className="flex justify-center items-center min-h-[60vh]">
+          <div className="animate-spin h-8 w-8 border-4 border-gray-900 border-t-transparent rounded-full"></div>
+          <p className="ml-4 text-gray-700">Loading survey...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if there was a problem
+  if (error) {
+    return (
+      <div className="page-container">
+        <div className="card animate-slide-up p-8 text-center">
+          <div className="text-red-500 text-xl mb-4">Error</div>
+          <p className="text-gray-700 mb-6">{error}</p>
+          <Button variant="outline" onClick={() => navigate('/surveys')}>
+            Back to Surveys
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // If survey wasn't found
+  if (!survey) {
+    return (
+      <div className="page-container">
+        <div className="card animate-slide-up p-8 text-center">
+          <div className="text-amber-500 text-xl mb-4">Survey Not Found</div>
+          <p className="text-gray-700 mb-6">The survey you are looking for doesn't exist or has been removed.</p>
+          <Button variant="outline" onClick={() => navigate('/surveys')}>
+            Back to Surveys
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-container">
