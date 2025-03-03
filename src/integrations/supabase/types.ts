@@ -42,6 +42,420 @@ export type Database = {
         }
         Relationships: []
       }
+      schools: {
+        Row: {
+          AccreditationExpiryDate: string | null
+          Address3: string | null
+          "AdministrativeWard (code)": string | null
+          "AdministrativeWard (name)": string | null
+          "AdmissionsPolicy (code)": string | null
+          "AdmissionsPolicy (name)": string | null
+          "Boarders (code)": string | null
+          "Boarders (name)": string | null
+          "BoardingEstablishment (name)": string | null
+          "BSOInspectorateName (name)": string | null
+          "CCF (name)": string | null
+          CensusDate: string | null
+          CHNumber: string | null
+          CloseDate: string | null
+          "Country (name)": string | null
+          "County (name)": string | null
+          DateOfLastInspectionVisit: string | null
+          "Diocese (code)": string | null
+          "Diocese (name)": string | null
+          "DistrictAdministrative (code)": string | null
+          "DistrictAdministrative (name)": string | null
+          Easting: string | null
+          "EBD (name)": string | null
+          "EdByOther (name)": string | null
+          "EstablishmentAccredited (code)": string | null
+          "EstablishmentAccredited (name)": string | null
+          EstablishmentName: string | null
+          EstablishmentNumber: number | null
+          "EstablishmentStatus (code)": number | null
+          "EstablishmentStatus (name)": string | null
+          "EstablishmentTypeGroup (code)": number | null
+          "EstablishmentTypeGroup (name)": string | null
+          "FederationFlag (name)": string | null
+          "Federations (code)": string | null
+          "Federations (name)": string | null
+          FEHEIdentifier: string | null
+          FSM: string | null
+          "FTProv (name)": string | null
+          "FurtherEducationType (name)": string | null
+          "Gender (code)": string | null
+          "Gender (name)": string | null
+          "GOR (code)": string | null
+          "GOR (name)": string | null
+          "GSSLACode (name)": string | null
+          HeadFirstName: string | null
+          HeadLastName: string | null
+          HeadPreferredJobTitle: string | null
+          "HeadTitle (name)": string | null
+          "InspectorateName (name)": string | null
+          InspectorateReport: string | null
+          "LA (code)": string | null
+          "LA (name)": string | null
+          LastChangedDate: string | null
+          Locality: string | null
+          "LSOA (code)": string | null
+          "LSOA (name)": string | null
+          "MSOA (code)": string | null
+          "MSOA (name)": string | null
+          NextInspectionVisit: string | null
+          Northing: string | null
+          NumberOfBoys: string | null
+          NumberOfGirls: string | null
+          NumberOfPupils: string | null
+          "NurseryProvision (name)": string | null
+          "OfficialSixthForm (code)": string | null
+          "OfficialSixthForm (name)": string | null
+          OpenDate: string | null
+          "ParliamentaryConstituency (code)": string | null
+          "ParliamentaryConstituency (name)": string | null
+          PercentageFSM: string | null
+          "PhaseOfEducation (code)": string | null
+          "PhaseOfEducation (name)": string | null
+          PlacesPRU: string | null
+          Postcode: string | null
+          PreviousEstablishmentNumber: string | null
+          "PreviousLA (code)": number | null
+          "PreviousLA (name)": string | null
+          PropsName: string | null
+          "QABName (code)": string | null
+          "QABName (name)": string | null
+          QABReport: string | null
+          "ReasonEstablishmentClosed (code)": string | null
+          "ReasonEstablishmentClosed (name)": string | null
+          "ReasonEstablishmentOpened (code)": string | null
+          "ReasonEstablishmentOpened (name)": string | null
+          "ReligiousCharacter (code)": string | null
+          "ReligiousCharacter (name)": string | null
+          "ReligiousEthos (name)": string | null
+          ResourcedProvisionCapacity: string | null
+          ResourcedProvisionOnRoll: string | null
+          SchoolCapacity: string | null
+          "SchoolSponsorFlag (name)": string | null
+          "SchoolSponsors (name)": string | null
+          SchoolWebsite: string | null
+          "Section41Approved (name)": string | null
+          "SEN1 (name)": string | null
+          "SEN10 (name)": string | null
+          "SEN11 (name)": string | null
+          "SEN12 (name)": string | null
+          "SEN13 (name)": string | null
+          "SEN2 (name)": string | null
+          "SEN3 (name)": string | null
+          "SEN4 (name)": string | null
+          "SEN5 (name)": string | null
+          "SEN6 (name)": string | null
+          "SEN7 (name)": string | null
+          "SEN8 (name)": string | null
+          "SEN9 (name)": string | null
+          SENNoStat: string | null
+          "SENPRU (name)": string | null
+          SENStat: string | null
+          SenUnitCapacity: string | null
+          SenUnitOnRoll: string | null
+          SiteName: string | null
+          "SpecialClasses (code)": string | null
+          "SpecialClasses (name)": string | null
+          StatutoryHighAge: string | null
+          StatutoryLowAge: string | null
+          Street: string | null
+          "TeenMoth (name)": string | null
+          TeenMothPlaces: string | null
+          TelephoneNum: string | null
+          Town: string | null
+          "Trusts (code)": string | null
+          "Trusts (name)": string | null
+          "TrustSchoolFlag (code)": string | null
+          "TrustSchoolFlag (name)": string | null
+          "TypeOfEstablishment (code)": number | null
+          "TypeOfEstablishment (name)": string | null
+          "TypeOfResourcedProvision (name)": string | null
+          UKPRN: string | null
+          UPRN: string | null
+          "UrbanRural (code)": string | null
+          "UrbanRural (name)": string | null
+          URN: number
+        }
+        Insert: {
+          AccreditationExpiryDate?: string | null
+          Address3?: string | null
+          "AdministrativeWard (code)"?: string | null
+          "AdministrativeWard (name)"?: string | null
+          "AdmissionsPolicy (code)"?: string | null
+          "AdmissionsPolicy (name)"?: string | null
+          "Boarders (code)"?: string | null
+          "Boarders (name)"?: string | null
+          "BoardingEstablishment (name)"?: string | null
+          "BSOInspectorateName (name)"?: string | null
+          "CCF (name)"?: string | null
+          CensusDate?: string | null
+          CHNumber?: string | null
+          CloseDate?: string | null
+          "Country (name)"?: string | null
+          "County (name)"?: string | null
+          DateOfLastInspectionVisit?: string | null
+          "Diocese (code)"?: string | null
+          "Diocese (name)"?: string | null
+          "DistrictAdministrative (code)"?: string | null
+          "DistrictAdministrative (name)"?: string | null
+          Easting?: string | null
+          "EBD (name)"?: string | null
+          "EdByOther (name)"?: string | null
+          "EstablishmentAccredited (code)"?: string | null
+          "EstablishmentAccredited (name)"?: string | null
+          EstablishmentName?: string | null
+          EstablishmentNumber?: number | null
+          "EstablishmentStatus (code)"?: number | null
+          "EstablishmentStatus (name)"?: string | null
+          "EstablishmentTypeGroup (code)"?: number | null
+          "EstablishmentTypeGroup (name)"?: string | null
+          "FederationFlag (name)"?: string | null
+          "Federations (code)"?: string | null
+          "Federations (name)"?: string | null
+          FEHEIdentifier?: string | null
+          FSM?: string | null
+          "FTProv (name)"?: string | null
+          "FurtherEducationType (name)"?: string | null
+          "Gender (code)"?: string | null
+          "Gender (name)"?: string | null
+          "GOR (code)"?: string | null
+          "GOR (name)"?: string | null
+          "GSSLACode (name)"?: string | null
+          HeadFirstName?: string | null
+          HeadLastName?: string | null
+          HeadPreferredJobTitle?: string | null
+          "HeadTitle (name)"?: string | null
+          "InspectorateName (name)"?: string | null
+          InspectorateReport?: string | null
+          "LA (code)"?: string | null
+          "LA (name)"?: string | null
+          LastChangedDate?: string | null
+          Locality?: string | null
+          "LSOA (code)"?: string | null
+          "LSOA (name)"?: string | null
+          "MSOA (code)"?: string | null
+          "MSOA (name)"?: string | null
+          NextInspectionVisit?: string | null
+          Northing?: string | null
+          NumberOfBoys?: string | null
+          NumberOfGirls?: string | null
+          NumberOfPupils?: string | null
+          "NurseryProvision (name)"?: string | null
+          "OfficialSixthForm (code)"?: string | null
+          "OfficialSixthForm (name)"?: string | null
+          OpenDate?: string | null
+          "ParliamentaryConstituency (code)"?: string | null
+          "ParliamentaryConstituency (name)"?: string | null
+          PercentageFSM?: string | null
+          "PhaseOfEducation (code)"?: string | null
+          "PhaseOfEducation (name)"?: string | null
+          PlacesPRU?: string | null
+          Postcode?: string | null
+          PreviousEstablishmentNumber?: string | null
+          "PreviousLA (code)"?: number | null
+          "PreviousLA (name)"?: string | null
+          PropsName?: string | null
+          "QABName (code)"?: string | null
+          "QABName (name)"?: string | null
+          QABReport?: string | null
+          "ReasonEstablishmentClosed (code)"?: string | null
+          "ReasonEstablishmentClosed (name)"?: string | null
+          "ReasonEstablishmentOpened (code)"?: string | null
+          "ReasonEstablishmentOpened (name)"?: string | null
+          "ReligiousCharacter (code)"?: string | null
+          "ReligiousCharacter (name)"?: string | null
+          "ReligiousEthos (name)"?: string | null
+          ResourcedProvisionCapacity?: string | null
+          ResourcedProvisionOnRoll?: string | null
+          SchoolCapacity?: string | null
+          "SchoolSponsorFlag (name)"?: string | null
+          "SchoolSponsors (name)"?: string | null
+          SchoolWebsite?: string | null
+          "Section41Approved (name)"?: string | null
+          "SEN1 (name)"?: string | null
+          "SEN10 (name)"?: string | null
+          "SEN11 (name)"?: string | null
+          "SEN12 (name)"?: string | null
+          "SEN13 (name)"?: string | null
+          "SEN2 (name)"?: string | null
+          "SEN3 (name)"?: string | null
+          "SEN4 (name)"?: string | null
+          "SEN5 (name)"?: string | null
+          "SEN6 (name)"?: string | null
+          "SEN7 (name)"?: string | null
+          "SEN8 (name)"?: string | null
+          "SEN9 (name)"?: string | null
+          SENNoStat?: string | null
+          "SENPRU (name)"?: string | null
+          SENStat?: string | null
+          SenUnitCapacity?: string | null
+          SenUnitOnRoll?: string | null
+          SiteName?: string | null
+          "SpecialClasses (code)"?: string | null
+          "SpecialClasses (name)"?: string | null
+          StatutoryHighAge?: string | null
+          StatutoryLowAge?: string | null
+          Street?: string | null
+          "TeenMoth (name)"?: string | null
+          TeenMothPlaces?: string | null
+          TelephoneNum?: string | null
+          Town?: string | null
+          "Trusts (code)"?: string | null
+          "Trusts (name)"?: string | null
+          "TrustSchoolFlag (code)"?: string | null
+          "TrustSchoolFlag (name)"?: string | null
+          "TypeOfEstablishment (code)"?: number | null
+          "TypeOfEstablishment (name)"?: string | null
+          "TypeOfResourcedProvision (name)"?: string | null
+          UKPRN?: string | null
+          UPRN?: string | null
+          "UrbanRural (code)"?: string | null
+          "UrbanRural (name)"?: string | null
+          URN: number
+        }
+        Update: {
+          AccreditationExpiryDate?: string | null
+          Address3?: string | null
+          "AdministrativeWard (code)"?: string | null
+          "AdministrativeWard (name)"?: string | null
+          "AdmissionsPolicy (code)"?: string | null
+          "AdmissionsPolicy (name)"?: string | null
+          "Boarders (code)"?: string | null
+          "Boarders (name)"?: string | null
+          "BoardingEstablishment (name)"?: string | null
+          "BSOInspectorateName (name)"?: string | null
+          "CCF (name)"?: string | null
+          CensusDate?: string | null
+          CHNumber?: string | null
+          CloseDate?: string | null
+          "Country (name)"?: string | null
+          "County (name)"?: string | null
+          DateOfLastInspectionVisit?: string | null
+          "Diocese (code)"?: string | null
+          "Diocese (name)"?: string | null
+          "DistrictAdministrative (code)"?: string | null
+          "DistrictAdministrative (name)"?: string | null
+          Easting?: string | null
+          "EBD (name)"?: string | null
+          "EdByOther (name)"?: string | null
+          "EstablishmentAccredited (code)"?: string | null
+          "EstablishmentAccredited (name)"?: string | null
+          EstablishmentName?: string | null
+          EstablishmentNumber?: number | null
+          "EstablishmentStatus (code)"?: number | null
+          "EstablishmentStatus (name)"?: string | null
+          "EstablishmentTypeGroup (code)"?: number | null
+          "EstablishmentTypeGroup (name)"?: string | null
+          "FederationFlag (name)"?: string | null
+          "Federations (code)"?: string | null
+          "Federations (name)"?: string | null
+          FEHEIdentifier?: string | null
+          FSM?: string | null
+          "FTProv (name)"?: string | null
+          "FurtherEducationType (name)"?: string | null
+          "Gender (code)"?: string | null
+          "Gender (name)"?: string | null
+          "GOR (code)"?: string | null
+          "GOR (name)"?: string | null
+          "GSSLACode (name)"?: string | null
+          HeadFirstName?: string | null
+          HeadLastName?: string | null
+          HeadPreferredJobTitle?: string | null
+          "HeadTitle (name)"?: string | null
+          "InspectorateName (name)"?: string | null
+          InspectorateReport?: string | null
+          "LA (code)"?: string | null
+          "LA (name)"?: string | null
+          LastChangedDate?: string | null
+          Locality?: string | null
+          "LSOA (code)"?: string | null
+          "LSOA (name)"?: string | null
+          "MSOA (code)"?: string | null
+          "MSOA (name)"?: string | null
+          NextInspectionVisit?: string | null
+          Northing?: string | null
+          NumberOfBoys?: string | null
+          NumberOfGirls?: string | null
+          NumberOfPupils?: string | null
+          "NurseryProvision (name)"?: string | null
+          "OfficialSixthForm (code)"?: string | null
+          "OfficialSixthForm (name)"?: string | null
+          OpenDate?: string | null
+          "ParliamentaryConstituency (code)"?: string | null
+          "ParliamentaryConstituency (name)"?: string | null
+          PercentageFSM?: string | null
+          "PhaseOfEducation (code)"?: string | null
+          "PhaseOfEducation (name)"?: string | null
+          PlacesPRU?: string | null
+          Postcode?: string | null
+          PreviousEstablishmentNumber?: string | null
+          "PreviousLA (code)"?: number | null
+          "PreviousLA (name)"?: string | null
+          PropsName?: string | null
+          "QABName (code)"?: string | null
+          "QABName (name)"?: string | null
+          QABReport?: string | null
+          "ReasonEstablishmentClosed (code)"?: string | null
+          "ReasonEstablishmentClosed (name)"?: string | null
+          "ReasonEstablishmentOpened (code)"?: string | null
+          "ReasonEstablishmentOpened (name)"?: string | null
+          "ReligiousCharacter (code)"?: string | null
+          "ReligiousCharacter (name)"?: string | null
+          "ReligiousEthos (name)"?: string | null
+          ResourcedProvisionCapacity?: string | null
+          ResourcedProvisionOnRoll?: string | null
+          SchoolCapacity?: string | null
+          "SchoolSponsorFlag (name)"?: string | null
+          "SchoolSponsors (name)"?: string | null
+          SchoolWebsite?: string | null
+          "Section41Approved (name)"?: string | null
+          "SEN1 (name)"?: string | null
+          "SEN10 (name)"?: string | null
+          "SEN11 (name)"?: string | null
+          "SEN12 (name)"?: string | null
+          "SEN13 (name)"?: string | null
+          "SEN2 (name)"?: string | null
+          "SEN3 (name)"?: string | null
+          "SEN4 (name)"?: string | null
+          "SEN5 (name)"?: string | null
+          "SEN6 (name)"?: string | null
+          "SEN7 (name)"?: string | null
+          "SEN8 (name)"?: string | null
+          "SEN9 (name)"?: string | null
+          SENNoStat?: string | null
+          "SENPRU (name)"?: string | null
+          SENStat?: string | null
+          SenUnitCapacity?: string | null
+          SenUnitOnRoll?: string | null
+          SiteName?: string | null
+          "SpecialClasses (code)"?: string | null
+          "SpecialClasses (name)"?: string | null
+          StatutoryHighAge?: string | null
+          StatutoryLowAge?: string | null
+          Street?: string | null
+          "TeenMoth (name)"?: string | null
+          TeenMothPlaces?: string | null
+          TelephoneNum?: string | null
+          Town?: string | null
+          "Trusts (code)"?: string | null
+          "Trusts (name)"?: string | null
+          "TrustSchoolFlag (code)"?: string | null
+          "TrustSchoolFlag (name)"?: string | null
+          "TypeOfEstablishment (code)"?: number | null
+          "TypeOfEstablishment (name)"?: string | null
+          "TypeOfResourcedProvision (name)"?: string | null
+          UKPRN?: string | null
+          UPRN?: string | null
+          "UrbanRural (code)"?: string | null
+          "UrbanRural (name)"?: string | null
+          URN?: number
+        }
+        Relationships: []
+      }
       survey_responses: {
         Row: {
           confidence_in_role: string | null
