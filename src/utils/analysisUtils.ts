@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase";
 export interface SurveyOption {
   id: string;
   name: string;
+  date?: string; // Add date property
 }
 
 export interface DetailedQuestionResponse {
@@ -15,6 +16,8 @@ export interface DetailedQuestionResponse {
 export interface TextResponse {
   text: string;
   count: number;
+  response?: string; // Add response property
+  created_at?: string; // Add created_at property
 }
 
 // Function to calculate the average score for a given survey
@@ -260,7 +263,7 @@ export const getSurveyOptions = async (): Promise<SurveyOption[]> => {
   try {
     const { data, error } = await supabase
       .from('survey_templates')
-      .select('id, name')
+      .select('id, name, date')
       .order('created_at', { ascending: false });
       
     if (error) {
@@ -275,13 +278,28 @@ export const getSurveyOptions = async (): Promise<SurveyOption[]> => {
   }
 };
 
-export const getRecommendationScore = async (surveyId: string): Promise<{ score: number; nationalAverage: number }> => {
+export const getRecommendationScore = async (
+  surveyId: string, 
+  startDate?: string, 
+  endDate?: string
+): Promise<{ score: number; nationalAverage: number }> => {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('survey_responses')
       .select('recommendation_score')
       .eq('survey_template_id', surveyId)
       .not('recommendation_score', 'is', null);
+      
+    // Add date filters if provided
+    if (startDate) {
+      query = query.gte('created_at', startDate);
+    }
+    
+    if (endDate) {
+      query = query.lte('created_at', endDate);
+    }
+    
+    const { data, error } = await query;
       
     if (error) {
       console.error('Error fetching recommendation scores:', error);
@@ -312,13 +330,28 @@ export const getRecommendationScore = async (surveyId: string): Promise<{ score:
   }
 };
 
-export const getLeavingContemplation = async (surveyId: string): Promise<Record<string, number>> => {
+export const getLeavingContemplation = async (
+  surveyId: string,
+  startDate?: string,
+  endDate?: string
+): Promise<Record<string, number>> => {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('survey_responses')
       .select('leaving_contemplation')
       .eq('survey_template_id', surveyId)
       .not('leaving_contemplation', 'is', null);
+      
+    // Add date filters if provided
+    if (startDate) {
+      query = query.gte('created_at', startDate);
+    }
+    
+    if (endDate) {
+      query = query.lte('created_at', endDate);
+    }
+      
+    const { data, error } = await query;
       
     if (error) {
       console.error('Error fetching leaving contemplation data:', error);
@@ -345,12 +378,27 @@ export const getLeavingContemplation = async (surveyId: string): Promise<Record<
   }
 };
 
-export const getDetailedWellbeingResponses = async (surveyId: string): Promise<DetailedQuestionResponse[]> => {
+export const getDetailedWellbeingResponses = async (
+  surveyId: string,
+  startDate?: string,
+  endDate?: string
+): Promise<DetailedQuestionResponse[]> => {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('survey_responses')
       .select('confidence_in_role, support_access, valued_member, health_state, work_life_balance, manageable_workload, leadership_prioritize, org_pride')
       .eq('survey_template_id', surveyId);
+      
+    // Add date filters if provided
+    if (startDate) {
+      query = query.gte('created_at', startDate);
+    }
+    
+    if (endDate) {
+      query = query.lte('created_at', endDate);
+    }
+      
+    const { data, error } = await query;
       
     if (error) {
       console.error('Error fetching wellbeing responses:', error);
@@ -428,23 +476,29 @@ export const getDetailedWellbeingResponses = async (surveyId: string): Promise<D
   }
 };
 
-export const getCustomQuestionAnalysisResults = async (surveyId: string) => {
+export const getTextResponses = async (
+  surveyId: string,
+  startDate?: string,
+  endDate?: string
+): Promise<{ doingWell: TextResponse[]; improvements: TextResponse[] }> => {
   try {
-    return await processCustomQuestionResults(surveyId);
-  } catch (error) {
-    console.error('Error in getCustomQuestionAnalysisResults:', error);
-    return [];
-  }
-};
-
-export const getTextResponses = async (surveyId: string): Promise<{ doingWell: TextResponse[]; improvements: TextResponse[] }> => {
-  try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('survey_responses')
-      .select('doing_well, improvements')
+      .select('doing_well, improvements, created_at')
       .eq('survey_template_id', surveyId)
       .not('doing_well', 'is', null)
       .not('improvements', 'is', null);
+      
+    // Add date filters if provided
+    if (startDate) {
+      query = query.gte('created_at', startDate);
+    }
+    
+    if (endDate) {
+      query = query.lte('created_at', endDate);
+    }
+      
+    const { data, error } = await query;
       
     if (error) {
       console.error('Error fetching text responses:', error);
@@ -456,44 +510,82 @@ export const getTextResponses = async (surveyId: string): Promise<{ doingWell: T
     }
     
     // Process "doing well" responses
-    const doingWellMap = new Map<string, number>();
+    const doingWellResponses: TextResponse[] = [];
     data.forEach(response => {
       if (response.doing_well) {
-        const text = response.doing_well.trim();
-        if (text) {
-          doingWellMap.set(text, (doingWellMap.get(text) || 0) + 1);
-        }
+        doingWellResponses.push({
+          text: response.doing_well,
+          count: 1,
+          response: response.doing_well,
+          created_at: response.created_at
+        });
       }
     });
     
     // Process "improvements" responses
-    const improvementsMap = new Map<string, number>();
+    const improvementsResponses: TextResponse[] = [];
     data.forEach(response => {
       if (response.improvements) {
-        const text = response.improvements.trim();
-        if (text) {
-          improvementsMap.set(text, (improvementsMap.get(text) || 0) + 1);
-        }
+        improvementsResponses.push({
+          text: response.improvements,
+          count: 1,
+          response: response.improvements,
+          created_at: response.created_at
+        });
       }
     });
     
-    // Convert maps to arrays and sort by count (descending)
-    const doingWell = Array.from(doingWellMap.entries())
-      .map(([text, count]) => ({ text, count }))
-      .sort((a, b) => b.count - a.count);
-      
-    const improvements = Array.from(improvementsMap.entries())
-      .map(([text, count]) => ({ text, count }))
-      .sort((a, b) => b.count - a.count);
-      
-    return { doingWell, improvements };
+    return { 
+      doingWell: doingWellResponses, 
+      improvements: improvementsResponses 
+    };
   } catch (error) {
     console.error('Error in getTextResponses:', error);
     return { doingWell: [], improvements: [] };
   }
 };
 
-// Function to process custom question results
+export const getCustomQuestionAnalysisResults = async (surveyId: string) => {
+  try {
+    return await processCustomQuestionResults(surveyId);
+  } catch (error) {
+    console.error('Error in getCustomQuestionAnalysisResults:', error);
+    return [];
+  }
+};
+
+export const getCustomQuestionResponses = async (surveyId: string): Promise<any[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('survey_responses')
+      .select(`
+        id,
+        custom_question_responses (
+          id,
+          question_id,
+          answer,
+          custom_questions (
+            id,
+            text,
+            type,
+            options
+          )
+        )
+      `)
+      .eq('survey_template_id', surveyId);
+    
+    if (error) {
+      console.error('Error fetching custom question responses:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Unexpected error in getCustomQuestionResponses:', error);
+    return [];
+  }
+};
+
 export const processCustomQuestionResults = async (surveyId) => {
   try {
     const customQuestionsResponses = await getCustomQuestionResponses(surveyId);
@@ -539,39 +631,6 @@ export const processCustomQuestionResults = async (surveyId) => {
     return results;
   } catch (error) {
     console.error('Error processing custom question results:', error);
-    return [];
-  }
-};
-
-// Function to get custom question responses for a particular survey
-export const getCustomQuestionResponses = async (surveyId: string): Promise<any[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('survey_responses')
-      .select(`
-        id,
-        custom_question_responses (
-          id,
-          question_id,
-          answer,
-          custom_questions (
-            id,
-            text,
-            type,
-            options
-          )
-        )
-      `)
-      .eq('survey_template_id', surveyId);
-    
-    if (error) {
-      console.error('Error fetching custom question responses:', error);
-      return [];
-    }
-    
-    return data || [];
-  } catch (error) {
-    console.error('Unexpected error in getCustomQuestionResponses:', error);
     return [];
   }
 };

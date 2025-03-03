@@ -313,7 +313,7 @@ const SurveyForm = () => {
       setEmails(value);
     }
     
-    // Update currentSurvey state
+    // Update currentSurvey state with type safety
     setCurrentSurvey(prev => ({
       ...prev,
       [name]: value
