@@ -1,15 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ReferenceLine } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { getSurveyOptions, getRecommendationScore, getLeavingContemplation, getDetailedWellbeingResponses } from '../utils/analysisUtils';
 import type { SurveyOption, DetailedQuestionResponse, TextResponse } from '../utils/analysisUtils';
 import { getTextResponses } from '../utils/analysisUtils';
-import { ArrowDownIcon, ArrowUpIcon, MinusIcon, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowDownIcon, ArrowUpIcon, MinusIcon, ChevronLeft, ChevronRight, Mail, Download } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { getSurveySummary } from '../utils/summaryUtils';
 import type { SummaryData } from '../utils/summaryUtils';
 import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
+import { generatePDF, sendReportByEmail } from '../utils/reportUtils';
+import { useToast } from '../hooks/use-toast';
 
 const SIGNIFICANCE_THRESHOLD = 10;
 const RESPONSES_PER_PAGE = 5;
@@ -44,7 +48,6 @@ const Analysis = () => {
   const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
   const [summaryLoading, setSummaryLoading] = useState<boolean>(false);
   
-  // Add pagination state
   const [doingWellPage, setDoingWellPage] = useState<number>(1);
   const [improvementsPage, setImprovementsPage] = useState<number>(1);
 
@@ -56,6 +59,13 @@ const Analysis = () => {
     'Disagree': '#fca5a5',
     'Strongly Disagree': '#ef4444'
   };
+
+  const analysisRef = useRef<HTMLDivElement>(null);
+  const [emailDialogOpen, setEmailDialogOpen] = useState<boolean>(false);
+  const [emailAddress, setEmailAddress] = useState<string>('');
+  const [isEmailSending, setIsEmailSending] = useState<boolean>(false);
+  const [isPdfGenerating, setIsPdfGenerating] = useState<boolean>(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const loadSurveys = async () => {
@@ -200,18 +210,15 @@ const Analysis = () => {
     }
   };
 
-  // Get paginated responses
   const getPaginatedResponses = (responses: TextResponse[], page: number) => {
     const startIndex = (page - 1) * RESPONSES_PER_PAGE;
     return responses.slice(startIndex, startIndex + RESPONSES_PER_PAGE);
   };
 
-  // Calculate total pages
   const getTotalPages = (responses: TextResponse[]) => {
     return Math.max(1, Math.ceil(responses.length / RESPONSES_PER_PAGE));
   };
 
-  // Pagination controls component
   const PaginationControls = ({ 
     currentPage, 
     totalPages, 
@@ -250,59 +257,170 @@ const Analysis = () => {
     );
   };
 
+  const handleSendEmail = async () => {
+    if (!emailAddress || !emailAddress.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsEmailSending(true);
+      
+      const selectedSurveyName = surveys.find(s => s.id === selectedSurvey)?.name || 'Survey Analysis';
+      
+      await sendReportByEmail(
+        emailAddress,
+        selectedSurvey,
+        selectedSurveyName,
+        summaryData,
+        recommendationScore,
+        leavingData,
+        detailedWellbeingResponses,
+        textResponses
+      );
+      
+      setEmailDialogOpen(false);
+      setEmailAddress('');
+      
+      toast({
+        title: "Email Sent",
+        description: `Report has been sent to ${emailAddress}`,
+      });
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast({
+        title: "Email Failed",
+        description: "Failed to send the report. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsEmailSending(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    try {
+      setIsPdfGenerating(true);
+      
+      const selectedSurveyName = surveys.find(s => s.id === selectedSurvey)?.name || 'survey';
+      const fileName = `${selectedSurveyName.toLowerCase().replace(/\s+/g, '-')}-analysis.pdf`;
+      
+      await generatePDF(analysisRef, fileName);
+      
+      toast({
+        title: "PDF Generated",
+        description: "Report has been downloaded as PDF",
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "PDF Generation Failed",
+        description: "Failed to generate PDF. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPdfGenerating(false);
+    }
+  };
+
   return (
     <MainLayout>
       <div className="page-container">
         <PageTitle title="Survey Analysis" subtitle="Compare your school's results with national benchmarks" />
         
         <div className="card p-6 mb-8 animate-slide-up">
-          <div className="bg-gray-50 p-4 rounded-lg mb-6">
-            <h3 className="text-md font-semibold text-gray-700 mb-3">Data Filters</h3>
-            <div className="flex flex-wrap gap-4 items-end">
-              <div>
-                <label htmlFor="survey-select" className="block text-sm font-medium text-gray-700 mb-1">
-                  Survey
-                </label>
-                <select id="survey-select" className="form-input min-w-64" value={selectedSurvey} onChange={e => setSelectedSurvey(e.target.value)} disabled={loading}>
-                  <option value="">All Surveys</option>
-                  {surveys.map(survey => (
-                    <option key={survey.id} value={survey.id}>
-                      {survey.name} ({survey.date})
-                    </option>
-                  ))}
-                </select>
+          <div className="flex justify-between items-center mb-6">
+            <div className="bg-gray-50 p-4 rounded-lg flex-grow">
+              <h3 className="text-md font-semibold text-gray-700 mb-3">Data Filters</h3>
+              <div className="flex flex-wrap gap-4 items-end">
+                <div>
+                  <label htmlFor="survey-select" className="block text-sm font-medium text-gray-700 mb-1">
+                    Survey
+                  </label>
+                  <select id="survey-select" className="form-input min-w-64" value={selectedSurvey} onChange={e => setSelectedSurvey(e.target.value)} disabled={loading}>
+                    <option value="">All Surveys</option>
+                    {surveys.map(survey => (
+                      <option key={survey.id} value={survey.id}>
+                        {survey.name} ({survey.date})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label htmlFor="date-filter" className="block text-sm font-medium text-gray-700 mb-1">
+                    Date Range
+                  </label>
+                  <select id="date-filter" className="form-input" value={dateFilter} onChange={e => setDateFilter(e.target.value)} disabled={loading}>
+                    <option value="all">All Time</option>
+                    <option value="month">Last Month</option>
+                    <option value="quarter">Last Quarter</option>
+                    <option value="year">Last Year</option>
+                    <option value="custom">Custom Range</option>
+                  </select>
+                </div>
+                
+                {dateFilter === 'custom' && (
+                  <>
+                    <div>
+                      <label htmlFor="start-date" className="block text-sm font-medium text-gray-700 mb-1">
+                        Start Date
+                      </label>
+                      <input id="start-date" type="date" className="form-input" value={startDate.split('T')[0]} onChange={e => setStartDate(`${e.target.value}T00:00:00Z`)} disabled={loading} />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="end-date" className="block text-sm font-medium text-gray-700 mb-1">
+                        End Date
+                      </label>
+                      <input id="end-date" type="date" className="form-input" value={endDate.split('T')[0]} onChange={e => setEndDate(`${e.target.value}T23:59:59Z`)} disabled={loading} />
+                    </div>
+                  </>
+                )}
               </div>
-              
-              <div>
-                <label htmlFor="date-filter" className="block text-sm font-medium text-gray-700 mb-1">
-                  Date Range
-                </label>
-                <select id="date-filter" className="form-input" value={dateFilter} onChange={e => setDateFilter(e.target.value)} disabled={loading}>
-                  <option value="all">All Time</option>
-                  <option value="month">Last Month</option>
-                  <option value="quarter">Last Quarter</option>
-                  <option value="year">Last Year</option>
-                  <option value="custom">Custom Range</option>
-                </select>
-              </div>
-              
-              {dateFilter === 'custom' && (
-                <>
-                  <div>
-                    <label htmlFor="start-date" className="block text-sm font-medium text-gray-700 mb-1">
-                      Start Date
-                    </label>
-                    <input id="start-date" type="date" className="form-input" value={startDate.split('T')[0]} onChange={e => setStartDate(`${e.target.value}T00:00:00Z`)} disabled={loading} />
+            </div>
+            
+            <div className="flex gap-2 ml-4">
+              <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" disabled={loading}>
+                    <Mail className="mr-2 h-4 w-4" />
+                    Email Report
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Email Analysis Report</DialogTitle>
+                    <DialogDescription>
+                      Enter an email address to send this analysis report to.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="py-4">
+                    <Input
+                      type="email"
+                      placeholder="name@example.com"
+                      value={emailAddress}
+                      onChange={(e) => setEmailAddress(e.target.value)}
+                      className="w-full"
+                    />
                   </div>
-                  
-                  <div>
-                    <label htmlFor="end-date" className="block text-sm font-medium text-gray-700 mb-1">
-                      End Date
-                    </label>
-                    <input id="end-date" type="date" className="form-input" value={endDate.split('T')[0]} onChange={e => setEndDate(`${e.target.value}T23:59:59Z`)} disabled={loading} />
-                  </div>
-                </>
-              )}
+                  <DialogFooter>
+                    <Button variant="secondary" onClick={() => setEmailDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={handleSendEmail} disabled={isEmailSending}>
+                      {isEmailSending ? "Sending..." : "Send Report"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              
+              <Button variant="outline" onClick={handleDownloadPdf} disabled={loading || isPdfGenerating}>
+                <Download className="mr-2 h-4 w-4" />
+                {isPdfGenerating ? "Generating..." : "Download PDF"}
+              </Button>
             </div>
           </div>
           
@@ -312,7 +430,7 @@ const Analysis = () => {
               <span className="ml-3 text-gray-700">Loading analysis data...</span>
             </div>
           ) : (
-            <>
+            <div ref={analysisRef}>
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-4 border-b pb-2">
                   <h2 className="text-xl text-gray-900 text-center font-bold w-full">AI-Powered Summary</h2>
@@ -573,7 +691,7 @@ const Analysis = () => {
                   </div>
                 </div>
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>
