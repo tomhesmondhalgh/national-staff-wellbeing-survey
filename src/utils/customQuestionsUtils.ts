@@ -119,7 +119,8 @@ export const getSurveyCustomQuestions = async (surveyId: string): Promise<Custom
     }
     
     // Transform the joined data to a flat array of custom questions
-    return data.map(item => item.custom_questions) as CustomQuestion[];
+    const questions = data.map(item => item.custom_questions);
+    return questions as unknown as CustomQuestion[];
   } catch (error) {
     console.error('Unexpected error in getSurveyCustomQuestions:', error);
     return [];

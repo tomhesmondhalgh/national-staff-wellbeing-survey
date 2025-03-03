@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -45,6 +46,7 @@ const EditSurvey = () => {
           setName(surveyData.name);
           setDate(surveyData.date ? new Date(surveyData.date) : undefined);
           setCloseDate(surveyData.close_date ? new Date(surveyData.close_date) : undefined);
+          // Check if emails property exists before setting it
           setEmails(surveyData.emails || '');
         } else {
           toast.error("Survey not found");
@@ -68,7 +70,7 @@ const EditSurvey = () => {
       
       try {
         setLoadingCustomQuestions(true);
-        const questions = await getSurveyCustomQuestions(surveyId);
+        const questions = await getSurveyCustomQuestions(surveyId!);
         setCustomQuestions(questions);
       } catch (error) {
         console.error('Error fetching custom questions:', error);

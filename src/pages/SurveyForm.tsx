@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '../components/ui/button';
@@ -8,11 +9,11 @@ import { Calendar } from 'lucide-react';
 import { Calendar as CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { DatePicker } from "@/components/ui/date-picker"
+import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover"
+import { DatePicker } from "../components/ui/date-picker"
 import { toast } from "sonner";
 import { useAuth } from '../contexts/AuthContext';
-import { createSurvey, sendSurveyEmails, getSurveyById } from '../utils/surveyUtils';
+import { getSurveyById } from '../utils/surveyUtils';
 import CustomQuestions from '../components/survey-form/CustomQuestions';
 import { getSurveyCustomQuestions, submitCustomQuestionResponses } from '../utils/customQuestionsUtils';
 import {
@@ -27,6 +28,7 @@ import { Plus } from 'lucide-react';
 import QuestionsList from '../components/questions/QuestionsList';
 import { getUserCustomQuestions, addQuestionsToSurvey } from '../utils/customQuestionsUtils';
 import { CustomQuestion } from '../types/customQuestions';
+import { supabase } from '../lib/supabase';
 
 const SurveyForm = () => {
   const navigate = useNavigate();
@@ -61,7 +63,10 @@ const SurveyForm = () => {
           setName(surveyData.name);
           setDate(surveyData.date ? new Date(surveyData.date) : undefined);
           setCloseDate(surveyData.close_date ? new Date(surveyData.close_date) : undefined);
-          setEmails(surveyData.emails || '');
+          // Check if emails property exists before setting it
+          if ('emails' in surveyData) {
+            setEmails(surveyData.emails || '');
+          }
         }
       } catch (error) {
         console.error('Error loading survey:', error);
@@ -192,29 +197,56 @@ const SurveyForm = () => {
       const formattedDate = date ? date.toISOString() : '';
       const formattedCloseDate = closeDate ? closeDate.toISOString() : null;
 
-      // Create the survey template
-      const createdSurvey = await createSurvey({
-        name: name.trim(),
-        date: formattedDate,
-        close_date: formattedCloseDate,
-        emails: emails.trim(),
-        creator_id: user?.id
-      });
+      // Create or update the survey template
+      let surveyResult;
+      if (surveyId) {
+        // Update existing survey
+        const { data, error } = await supabase
+          .from('survey_templates')
+          .update({
+            name: name.trim(),
+            date: formattedDate,
+            close_date: formattedCloseDate,
+            emails: emails.trim()
+          })
+          .eq('id', surveyId)
+          .select()
+          .single();
+          
+        if (error) throw error;
+        surveyResult = data;
+      } else {
+        // Create new survey
+        const { data, error } = await supabase
+          .from('survey_templates')
+          .insert({
+            name: name.trim(),
+            date: formattedDate,
+            close_date: formattedCloseDate,
+            emails: emails.trim(),
+            creator_id: user?.id
+          })
+          .select()
+          .single();
+          
+        if (error) throw error;
+        surveyResult = data;
+      }
 
-      if (!createdSurvey) {
+      if (!surveyResult) {
         toast.error("Failed to create survey");
         return;
       }
       
       // Add custom questions to the survey
-      if (createdSurvey && selectedQuestions.length > 0) {
-        const addQuestionsResult = await addQuestionsToSurvey(createdSurvey.id, selectedQuestions);
+      if (surveyResult && selectedQuestions.length > 0) {
+        const addQuestionsResult = await addQuestionsToSurvey(surveyResult.id, selectedQuestions);
         if (!addQuestionsResult) {
           toast.error("Failed to add custom questions to the survey");
         }
       }
 
-      const responseId = createdSurvey.id;
+      const responseId = surveyResult.id;
       
       // Submit custom question responses
       if (responseId && customQuestions.length > 0) {
@@ -229,7 +261,24 @@ const SurveyForm = () => {
       // Send emails to recipients
       if (emails.trim()) {
         const emailList = emails.split(',').map(email => email.trim());
-        await sendSurveyEmails(createdSurvey.id, name.trim(), emailList);
+        
+        // Call the Edge Function to send emails
+        const { error: emailError } = await supabase.functions.invoke('send-survey-email', {
+          body: {
+            surveyId: surveyResult.id,
+            surveyName: name.trim(),
+            emails: emailList,
+            surveyUrl: `${window.location.origin}/survey?id=${surveyResult.id}`,
+            isReminder: false
+          }
+        });
+        
+        if (emailError) {
+          console.error('Error sending emails:', emailError);
+          toast.error("Survey created but emails could not be sent");
+        } else {
+          toast.success("Survey created and invitations sent");
+        }
       }
 
       // Reset the form
@@ -273,57 +322,19 @@ const SurveyForm = () => {
 
           <div>
             <Label>Survey Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-[240px] justify-start text-left font-normal",
-                    !date && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <DatePicker
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  disabled={isSubmitting}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+            <DatePicker
+              date={date}
+              onDateChange={setDate}
+            />
             {dateError && <p className="text-red-500 text-sm mt-1">{dateError}</p>}
           </div>
 
           <div>
             <Label>Close Date (Optional)</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-[240px] justify-start text-left font-normal",
-                    !closeDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {closeDate ? format(closeDate, "PPP") : <span>Pick a close date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <DatePicker
-                  mode="single"
-                  selected={closeDate}
-                  onSelect={setCloseDate}
-                  disabled={isSubmitting}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+            <DatePicker
+              date={closeDate}
+              onDateChange={setCloseDate}
+            />
           </div>
 
           <div>

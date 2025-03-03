@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -8,11 +9,11 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Calendar } from "lucide-react";
-import { DatePicker } from "../components/ui/date-picker";
+import { DatePicker } from "../ui/date-picker";
 import { format } from 'date-fns';
 import { toast } from "sonner";
 import { useAuth } from '../../contexts/AuthContext';
-import { createSurveyTemplate, sendSurveyEmails } from '../../utils/surveyUtils';
+import { createSurvey, sendSurveyEmails } from '../../utils/surveyUtils';
 import { addQuestionsToSurvey, getUserCustomQuestions } from '../../utils/customQuestionsUtils';
 import { Plus } from 'lucide-react';
 import {
@@ -26,6 +27,13 @@ import {
 import QuestionsList from '../questions/QuestionsList';
 import { CustomQuestion } from '../../types/customQuestions';
 
+export interface SurveyFormData {
+  name: string;
+  date: Date;
+  closeDate?: Date;
+  recipients?: string;
+}
+
 const formSchema = z.object({
   name: z.string().min(3, {
     message: "Survey name must be at least 3 characters.",
@@ -35,11 +43,21 @@ const formSchema = z.object({
   emails: z.string().optional(),
 });
 
-const SurveyForm = () => {
+interface SurveyFormProps {
+  onSubmit: (data: SurveyFormData, questions: string[]) => Promise<void>;
+  submitButtonText: string;
+  isEdit?: boolean;
+  isSubmitting?: boolean;
+}
+
+const SurveyForm: React.FC<SurveyFormProps> = ({ 
+  onSubmit, 
+  submitButtonText = "Create Survey", 
+  isEdit = false,
+  isSubmitting = false 
+}) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [survey, setSurvey] = useState<any>(null);
   const [customQuestions, setCustomQuestions] = useState<CustomQuestion[]>([]);
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
   const [showQuestionsDialog, setShowQuestionsDialog] = useState(false);
@@ -47,27 +65,22 @@ const SurveyForm = () => {
 
   const {
     register,
-    handleSubmit,
+    handleSubmit: rhfHandleSubmit,
     setValue,
     formState: { errors },
+    watch,
   } = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       date: new Date(),
-      close_date: null,
+      close_date: undefined,
       emails: ''
     },
   });
 
-  useEffect(() => {
-    if (survey) {
-      setValue('name', survey.name);
-      setValue('date', new Date(survey.date));
-      setValue('close_date', survey.close_date ? new Date(survey.close_date) : null);
-      setValue('emails', survey.emails || '');
-    }
-  }, [survey, setValue]);
+  const watchedDate = watch('date');
+  const watchedCloseDate = watch('close_date');
 
   const fetchCustomQuestions = async () => {
     if (!user) return;
@@ -103,76 +116,20 @@ const SurveyForm = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmitForm = rhfHandleSubmit((data) => {
+    const formData: SurveyFormData = {
+      name: data.name,
+      date: data.date,
+      closeDate: data.close_date,
+      recipients: data.emails
+    };
     
-    const formData = new FormData(e.currentTarget as HTMLFormElement);
-    const name = formData.get('name') as string;
-    const date = formData.get('date') as string;
-    const close_date = formData.get('close_date') as string;
-    const emails = formData.get('emails') as string;
-    
-    if (!name || !date) {
-      toast.error("Please fill out all required fields.");
-      return;
-    }
-    
-    setIsSubmitting(true);
-    
-    try {
-      const parsedDate = new Date(date);
-      const parsedCloseDate = close_date ? new Date(close_date) : null;
-      
-      // Create survey template
-      const createdSurvey = await createSurveyTemplate(
-        name,
-        parsedDate.toISOString(),
-        parsedCloseDate ? parsedCloseDate.toISOString() : null,
-        emails
-      );
-      
-      if (!createdSurvey) {
-        toast.error("Failed to create survey. Please try again.");
-        return;
-      }
-      
-      // Send emails
-      if (emails) {
-        const emailList = emails.split(',').map(email => email.trim());
-        await sendSurveyEmails(createdSurvey.id, name, emailList);
-      }
-      
-      // Add custom questions to the survey
-      if (createdSurvey && selectedQuestions.length > 0) {
-        const addQuestionsResult = await addQuestionsToSurvey(createdSurvey.id, selectedQuestions);
-        if (!addQuestionsResult) {
-          toast.error("Failed to add custom questions to the survey");
-        }
-      }
-      
-      // Reset form
-      (e.currentTarget as HTMLFormElement).reset();
-      setSurvey(null);
-      
-      toast.success("Survey created successfully!", {
-        description: "Redirecting to surveys page..."
-      });
-      
-      setTimeout(() => {
-        navigate('/surveys');
-      }, 1500);
-      
-    } catch (error) {
-      console.error('Error creating survey:', error);
-      toast.error("An unexpected error occurred. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    onSubmit(formData, selectedQuestions);
+  });
 
   return (
     <div>
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={onSubmitForm} className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <Label htmlFor="name">Survey Name</Label>
@@ -206,15 +163,9 @@ const SurveyForm = () => {
               Start Date
             </Label>
             <DatePicker
-              onSelect={handleDateChange}
-              defaultMonth={new Date()}
-              mode="single"
-            >
-              <Button variant={"outline"} className="w-full justify-start text-left font-normal">
-                <Calendar className="mr-2 h-4 w-4" />
-                {format(new Date(), "PPP")}
-              </Button>
-            </DatePicker>
+              date={watchedDate}
+              onDateChange={handleDateChange}
+            />
             {errors.date && (
               <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>
             )}
@@ -225,15 +176,9 @@ const SurveyForm = () => {
               Close Date (Optional)
             </Label>
             <DatePicker
-              onSelect={handleCloseDateChange}
-              defaultMonth={new Date()}
-              mode="single"
-            >
-              <Button variant={"outline"} className="w-full justify-start text-left font-normal">
-                <Calendar className="mr-2 h-4 w-4" />
-                {format(new Date(), "PPP")}
-              </Button>
-            </DatePicker>
+              date={watchedCloseDate}
+              onDateChange={handleCloseDateChange}
+            />
             {errors.close_date && (
               <p className="text-red-500 text-sm mt-1">{errors.close_date.message}</p>
             )}
@@ -298,7 +243,7 @@ const SurveyForm = () => {
         </div>
         
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Creating Survey...' : 'Create Survey'}
+          {isSubmitting ? 'Creating Survey...' : submitButtonText}
         </Button>
         
         {/* Custom Questions Dialog */}
