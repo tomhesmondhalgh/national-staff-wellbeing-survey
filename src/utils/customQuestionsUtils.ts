@@ -147,9 +147,13 @@ export const getSurveyCustomQuestions = async (surveyId: string): Promise<Custom
         // Ensure it has the required properties of a CustomQuestion
         if (questionData && 
             typeof questionData === 'object' && 
+            !Array.isArray(questionData) &&
             'id' in questionData && 
             'text' in questionData &&
-            'type' in questionData) {
+            'type' in questionData &&
+            'options' in questionData &&
+            'creator_id' in questionData &&
+            'created_at' in questionData) {
           questions.push(questionData as CustomQuestion);
         }
       }
