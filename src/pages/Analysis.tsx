@@ -275,11 +275,7 @@ const Analysis = () => {
               {/* AI Summary Section */}
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-4 border-b pb-2">
-                  <h2 className="text-xl text-gray-900 text-center font-bold">AI-Powered Summary</h2>
-                  <div className="flex items-center text-indigo-600">
-                    
-                    
-                  </div>
+                  <h2 className="text-xl text-gray-900 text-center font-bold w-full">AI-Powered Summary</h2>
                 </div>
                 
                 {summaryLoading ? <div className="flex items-center justify-center h-40 bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
@@ -293,7 +289,7 @@ const Analysis = () => {
                     </div>
                     <p className="text-gray-700 text-center">Not enough data available for AI analysis. A minimum of 20 survey responses is required.</p>
                   </div> : summaryData ? <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                    <p className="text-gray-700 mb-6">{summaryData.introduction}</p>
+                    
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* Strengths */}
@@ -337,9 +333,9 @@ const Analysis = () => {
                   </div>}
               </div>
               
-              {/* Key Metrics Section */}
+              {/* Key Metrics Section - Renamed to "Survey Results" */}
               <div className="mb-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Key Metrics</h2>
+                <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Survey Results</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Recommendation Score Tile */}
                   <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
@@ -386,7 +382,7 @@ const Analysis = () => {
                 </div>
               </div>
               
-              {/* Questions in a grid - removed heading and key */}
+              {/* Questions in a grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 {detailedWellbeingResponses.map((question, index) => {
               // Calculate the overall positive response (Agree + Strongly Agree)

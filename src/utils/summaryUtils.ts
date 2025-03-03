@@ -17,7 +17,7 @@ export interface SummaryData {
 // Mock AI summary for when the Edge Function is unavailable
 const getMockSummary = (): SummaryData => {
   return {
-    introduction: "Based on the survey data, your organization shows several strengths and areas for improvement. Staff generally feel positive about the organizational culture and their roles.",
+    introduction: "", // Removed the introduction text as requested
     strengths: [
       "Strong sense of pride in the organization with 85% of staff responding positively",
       "Staff feel valued as members of the organization, scoring above national average",
@@ -85,7 +85,7 @@ export const getSurveySummary = async (
       
       // Return the summary data
       return {
-        introduction: data.introduction || '',
+        introduction: '', // Return empty introduction as requested
         strengths: data.strengths || [],
         improvements: data.improvements || []
       };
