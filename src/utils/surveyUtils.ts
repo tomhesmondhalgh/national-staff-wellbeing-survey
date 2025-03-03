@@ -1,5 +1,6 @@
+
 import { supabase } from "../lib/supabase";
-import { useAuth } from "../contexts/AuthContext";
+import { getUserCustomQuestions } from "../utils/customQuestionsUtils";
 
 export interface SurveyTemplate {
   id: string;
@@ -22,6 +23,66 @@ export interface SurveyResponse {
 export interface SurveyWithResponses extends SurveyTemplate {
   responses: number;
 }
+
+export const createSurvey = async (formData: {
+  name: string;
+  date: Date;
+  closeDate?: Date;
+  recipients?: string;
+}, userId: string): Promise<string | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('survey_templates')
+      .insert({
+        name: formData.name.trim(),
+        date: formData.date.toISOString(),
+        close_date: formData.closeDate ? formData.closeDate.toISOString() : null,
+        emails: formData.recipients?.trim() || '',
+        creator_id: userId
+      })
+      .select()
+      .single();
+      
+    if (error) {
+      console.error('Error creating survey:', error);
+      return null;
+    }
+    
+    return data?.id || null;
+  } catch (error) {
+    console.error('Unexpected error in createSurvey:', error);
+    return null;
+  }
+};
+
+export const sendSurveyEmails = async (
+  surveyId: string, 
+  surveyName: string, 
+  emails: string[],
+  surveyUrl: string
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase.functions.invoke('send-survey-email', {
+      body: {
+        surveyId,
+        surveyName,
+        emails,
+        surveyUrl,
+        isReminder: false
+      }
+    });
+    
+    if (error) {
+      console.error('Error sending survey emails:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Unexpected error in sendSurveyEmails:', error);
+    return false;
+  }
+};
 
 export const getSurveyById = async (id: string): Promise<SurveyTemplate | null> => {
   try {
@@ -274,6 +335,30 @@ export const getSurveyWithCustomQuestions = async (id: string): Promise<any> => 
   } catch (error) {
     console.error('Unexpected error in getSurveyWithCustomQuestions:', error);
     return null;
+  }
+};
+
+// Add the missing getSurveyCustomQuestions function
+export const getSurveyCustomQuestions = async (surveyId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('survey_questions')
+      .select(`
+        question_id,
+        custom_questions (*)
+      `)
+      .eq('survey_id', surveyId);
+      
+    if (error) {
+      console.error('Error fetching survey custom questions:', error);
+      return [];
+    }
+    
+    // Extract just the custom questions from the join
+    return data?.map(item => item.custom_questions) || [];
+  } catch (error) {
+    console.error('Error in getSurveyCustomQuestions:', error);
+    return [];
   }
 };
 

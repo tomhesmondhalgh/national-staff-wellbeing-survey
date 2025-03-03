@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '../components/ui/button';
@@ -306,6 +307,13 @@ const SurveyForm = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    if (name === 'name') {
+      setName(value);
+    } else if (name === 'emails') {
+      setEmails(value);
+    }
+    
+    // Update currentSurvey state
     setCurrentSurvey(prev => ({
       ...prev,
       [name]: value

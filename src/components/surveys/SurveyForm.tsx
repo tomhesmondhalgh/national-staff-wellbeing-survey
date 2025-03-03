@@ -48,13 +48,20 @@ interface SurveyFormProps {
   submitButtonText: string;
   isEdit?: boolean;
   isSubmitting?: boolean;
+  initialValues?: {
+    name: string;
+    date: Date;
+    closeDate: Date;
+    recipients: string;
+  };
 }
 
 const SurveyForm: React.FC<SurveyFormProps> = ({ 
   onSubmit, 
   submitButtonText = "Create Survey", 
   isEdit = false,
-  isSubmitting = false 
+  isSubmitting = false,
+  initialValues
 }) => {
   const navigate = useNavigate();
   const { user } = useAuth();

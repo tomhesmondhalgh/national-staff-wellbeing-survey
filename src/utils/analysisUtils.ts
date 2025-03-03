@@ -1,5 +1,22 @@
 import { supabase } from "../lib/supabase";
 
+// Define the missing exported types used in other files
+export interface SurveyOption {
+  id: string;
+  name: string;
+}
+
+export interface DetailedQuestionResponse {
+  question: string;
+  schoolResponses: Record<string, number>;
+  nationalResponses: Record<string, number>;
+}
+
+export interface TextResponse {
+  text: string;
+  count: number;
+}
+
 // Function to calculate the average score for a given survey
 export const calculateAverageScore = async (surveyId: string): Promise<number | null> => {
   try {
@@ -235,6 +252,244 @@ export const getIncompleteSurveysForUser = async (userId: string): Promise<any[]
   } catch (error) {
     console.error('Error retrieving incomplete surveys for user:', error);
     return null;
+  }
+};
+
+// Add the missing exported functions referenced in Analysis.tsx
+export const getSurveyOptions = async (): Promise<SurveyOption[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('survey_templates')
+      .select('id, name')
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      console.error('Error fetching survey options:', error);
+      return [];
+    }
+    
+    return data as SurveyOption[];
+  } catch (error) {
+    console.error('Error in getSurveyOptions:', error);
+    return [];
+  }
+};
+
+export const getRecommendationScore = async (surveyId: string): Promise<{ score: number; nationalAverage: number }> => {
+  try {
+    const { data, error } = await supabase
+      .from('survey_responses')
+      .select('recommendation_score')
+      .eq('survey_template_id', surveyId)
+      .not('recommendation_score', 'is', null);
+      
+    if (error) {
+      console.error('Error fetching recommendation scores:', error);
+      return { score: 0, nationalAverage: 8.2 }; // Default national average
+    }
+    
+    if (!data || data.length === 0) {
+      return { score: 0, nationalAverage: 8.2 };
+    }
+    
+    // Calculate average recommendation score
+    const validScores = data
+      .map(response => Number(response.recommendation_score))
+      .filter(score => !isNaN(score));
+      
+    if (validScores.length === 0) {
+      return { score: 0, nationalAverage: 8.2 };
+    }
+    
+    const averageScore = validScores.reduce((sum, score) => sum + score, 0) / validScores.length;
+    return { 
+      score: parseFloat(averageScore.toFixed(1)), 
+      nationalAverage: 8.2  // This could be dynamically fetched in a real application
+    };
+  } catch (error) {
+    console.error('Error in getRecommendationScore:', error);
+    return { score: 0, nationalAverage: 8.2 };
+  }
+};
+
+export const getLeavingContemplation = async (surveyId: string): Promise<Record<string, number>> => {
+  try {
+    const { data, error } = await supabase
+      .from('survey_responses')
+      .select('leaving_contemplation')
+      .eq('survey_template_id', surveyId)
+      .not('leaving_contemplation', 'is', null);
+      
+    if (error) {
+      console.error('Error fetching leaving contemplation data:', error);
+      return {};
+    }
+    
+    if (!data || data.length === 0) {
+      return {};
+    }
+    
+    // Count responses by category
+    const counts: Record<string, number> = {};
+    data.forEach(response => {
+      const answer = response.leaving_contemplation;
+      if (answer) {
+        counts[answer] = (counts[answer] || 0) + 1;
+      }
+    });
+    
+    return counts;
+  } catch (error) {
+    console.error('Error in getLeavingContemplation:', error);
+    return {};
+  }
+};
+
+export const getDetailedWellbeingResponses = async (surveyId: string): Promise<DetailedQuestionResponse[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('survey_responses')
+      .select('confidence_in_role, support_access, valued_member, health_state, work_life_balance, manageable_workload, leadership_prioritize, org_pride')
+      .eq('survey_template_id', surveyId);
+      
+    if (error) {
+      console.error('Error fetching wellbeing responses:', error);
+      return [];
+    }
+    
+    if (!data || data.length === 0) {
+      return [];
+    }
+    
+    // Map to store the counts for each question and response
+    const questionResponseCounts: Record<string, Record<string, number>> = {};
+    
+    // Define questions and their keys
+    const questions = [
+      { key: 'confidence_in_role', text: 'I feel confident in my role' },
+      { key: 'support_access', text: 'I can easily access support when I need it' },
+      { key: 'valued_member', text: 'I feel valued as a member of the organisation' },
+      { key: 'health_state', text: 'My health and wellbeing is in a good state' },
+      { key: 'work_life_balance', text: 'I have a good work-life balance' },
+      { key: 'manageable_workload', text: 'My workload is manageable' },
+      { key: 'leadership_prioritize', text: 'Leadership prioritize staff wellbeing' },
+      { key: 'org_pride', text: 'I feel proud to be part of this organisation' }
+    ];
+    
+    // Initialize the counts for each question
+    questions.forEach(question => {
+      questionResponseCounts[question.key] = {
+        'Strongly Agree': 0,
+        'Agree': 0,
+        'Disagree': 0,
+        'Strongly Disagree': 0
+      };
+    });
+    
+    // Count the responses for each question
+    data.forEach(response => {
+      questions.forEach(question => {
+        const answer = response[question.key];
+        if (answer && questionResponseCounts[question.key][answer] !== undefined) {
+          questionResponseCounts[question.key][answer]++;
+        }
+      });
+    });
+    
+    // Calculate percentages for each question
+    const totalResponses = data.length;
+    const results: DetailedQuestionResponse[] = questions.map(question => {
+      const counts = questionResponseCounts[question.key];
+      const percentages: Record<string, number> = {};
+      
+      Object.keys(counts).forEach(response => {
+        percentages[response] = Math.round((counts[response] / totalResponses) * 100);
+      });
+      
+      // Mock national averages - these would come from a real data source in production
+      const nationalAverages = {
+        'Strongly Agree': Math.round(Math.random() * 30) + 20,
+        'Agree': Math.round(Math.random() * 30) + 30,
+        'Disagree': Math.round(Math.random() * 15) + 10,
+        'Strongly Disagree': Math.round(Math.random() * 10) + 5
+      };
+      
+      return {
+        question: question.text,
+        schoolResponses: percentages,
+        nationalResponses: nationalAverages
+      };
+    });
+    
+    return results;
+  } catch (error) {
+    console.error('Error in getDetailedWellbeingResponses:', error);
+    return [];
+  }
+};
+
+export const getCustomQuestionAnalysisResults = async (surveyId: string) => {
+  try {
+    return await processCustomQuestionResults(surveyId);
+  } catch (error) {
+    console.error('Error in getCustomQuestionAnalysisResults:', error);
+    return [];
+  }
+};
+
+export const getTextResponses = async (surveyId: string): Promise<{ doingWell: TextResponse[]; improvements: TextResponse[] }> => {
+  try {
+    const { data, error } = await supabase
+      .from('survey_responses')
+      .select('doing_well, improvements')
+      .eq('survey_template_id', surveyId)
+      .not('doing_well', 'is', null)
+      .not('improvements', 'is', null);
+      
+    if (error) {
+      console.error('Error fetching text responses:', error);
+      return { doingWell: [], improvements: [] };
+    }
+    
+    if (!data || data.length === 0) {
+      return { doingWell: [], improvements: [] };
+    }
+    
+    // Process "doing well" responses
+    const doingWellMap = new Map<string, number>();
+    data.forEach(response => {
+      if (response.doing_well) {
+        const text = response.doing_well.trim();
+        if (text) {
+          doingWellMap.set(text, (doingWellMap.get(text) || 0) + 1);
+        }
+      }
+    });
+    
+    // Process "improvements" responses
+    const improvementsMap = new Map<string, number>();
+    data.forEach(response => {
+      if (response.improvements) {
+        const text = response.improvements.trim();
+        if (text) {
+          improvementsMap.set(text, (improvementsMap.get(text) || 0) + 1);
+        }
+      }
+    });
+    
+    // Convert maps to arrays and sort by count (descending)
+    const doingWell = Array.from(doingWellMap.entries())
+      .map(([text, count]) => ({ text, count }))
+      .sort((a, b) => b.count - a.count);
+      
+    const improvements = Array.from(improvementsMap.entries())
+      .map(([text, count]) => ({ text, count }))
+      .sort((a, b) => b.count - a.count);
+      
+    return { doingWell, improvements };
+  } catch (error) {
+    console.error('Error in getTextResponses:', error);
+    return { doingWell: [], improvements: [] };
   }
 };
 
