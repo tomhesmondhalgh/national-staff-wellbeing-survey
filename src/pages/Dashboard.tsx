@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -143,61 +144,97 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Recent Surveys */}
+        {/* Recent Surveys - Redesigned to match Surveys page */}
         <div className="card animate-slide-up [animation-delay:400ms]">
-          <div className="border-b border-gray-100 p-6">
+          <div className="border-b border-gray-100 p-6 flex justify-between items-center">
             <h2 className="text-lg font-bold text-gray-900">Recent Surveys</h2>
+            <Link to="/surveys" className="text-sm font-medium text-brandPurple-600 hover:text-brandPurple-700">
+              View all surveys →
+            </Link>
           </div>
+          
           {isLoading ? (
-            <div className="divide-y divide-gray-100">
-              {[...Array(3)].map((_, index) => (
-                <div key={index} className="p-6 animate-pulse">
-                  <div className="flex flex-wrap justify-between items-center">
-                    <div className="mb-2 md:mb-0 w-1/2">
-                      <div className="h-5 bg-gray-200 rounded mb-2"></div>
-                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <div className="h-10 bg-gray-200 rounded w-24"></div>
+            <div className="bg-white rounded-lg overflow-hidden">
+              <div className="divide-y divide-gray-100">
+                {[...Array(3)].map((_, index) => (
+                  <div key={index} className="p-6 animate-pulse">
+                    <div className="grid grid-cols-12 gap-4 items-center">
+                      <div className="col-span-3">
+                        <div className="h-5 bg-gray-200 rounded mb-2"></div>
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                      </div>
+                      <div className="col-span-2">
+                        <div className="h-4 bg-gray-200 rounded"></div>
+                      </div>
+                      <div className="col-span-2">
+                        <div className="h-6 bg-gray-200 rounded-full w-16"></div>
+                      </div>
+                      <div className="col-span-1">
+                        <div className="h-4 bg-gray-200 rounded"></div>
+                      </div>
+                      <div className="col-span-4 flex justify-end">
+                        <div className="h-8 bg-gray-200 rounded w-16"></div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           ) : recentSurveys.length > 0 ? (
-            <div className="divide-y divide-gray-100">
-              {recentSurveys.map((survey) => (
-                <div key={survey.id} className="p-6 hover:bg-gray-50 transition-colors">
-                  <div className="flex flex-wrap justify-between items-center">
-                    <div className="mb-2 md:mb-0">
-                      <h3 className="text-md font-medium text-gray-900">{survey.name}</h3>
-                      <p className="text-sm text-gray-500">Sent on {formatDate(survey.date)}</p>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <div className="text-right">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          {survey.status}
-                        </span>
-                        <p className="text-sm text-gray-500 mt-1">{survey.responses} responses</p>
+            <div className="bg-white rounded-lg overflow-hidden">
+              <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-100 text-sm font-medium text-gray-500 uppercase">
+                <div className="col-span-3">Survey</div>
+                <div className="col-span-3">Date</div>
+                <div className="col-span-3">Status</div>
+                <div className="col-span-3">Responses</div>
+              </div>
+              
+              <div className="divide-y divide-gray-100">
+                {recentSurveys.map((survey) => (
+                  <div key={survey.id} className="grid grid-cols-12 gap-4 px-6 py-5 items-center hover:bg-gray-50 transition-colors">
+                    <div className="col-span-3">
+                      <div>
+                        <h3 className="text-gray-900 font-medium">
+                          <Link 
+                            to={`/analysis?surveyId=${survey.id}`}
+                            className="hover:text-brandPurple-600 transition-colors"
+                          >
+                            {survey.name}
+                          </Link>
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {formatDate(survey.date)}
+                        </p>
                       </div>
-                      <Link to={`/analysis?surveyId=${survey.id}`} className="btn-ghost py-1 px-3">
-                        View
-                      </Link>
+                    </div>
+                    
+                    <div className="col-span-3 text-gray-700">
+                      {formatDate(survey.date)}
+                    </div>
+                    
+                    <div className="col-span-3">
+                      <span className={`
+                        inline-flex px-2.5 py-1 rounded-full text-xs font-medium
+                        ${survey.status === 'Scheduled' ? 'bg-yellow-100 text-yellow-800' : 
+                          survey.status === 'Sent' ? 'bg-blue-100 text-blue-800' : 
+                          'bg-green-100 text-green-800'}
+                      `}>
+                        {survey.status}
+                      </span>
+                    </div>
+                    
+                    <div className="col-span-3 text-gray-700">
+                      {survey.responses}
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           ) : (
             <div className="p-6 text-center">
               <p className="text-gray-500">No surveys found. Create your first survey to get started.</p>
             </div>
           )}
-          <div className="p-4 border-t border-gray-100 text-center">
-            <Link to="/surveys" className="text-sm font-medium text-brandPurple-600 hover:text-brandPurple-700">
-              View all surveys →
-            </Link>
-          </div>
         </div>
       </div>
     </MainLayout>
