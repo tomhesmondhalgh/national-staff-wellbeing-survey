@@ -21,7 +21,7 @@ export const useSurveyForm = (surveyId?: string | null) => {
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
   const [customQuestionValues, setCustomQuestionValues] = useState<Record<string, string>>({});
   const [customQuestionErrors, setCustomQuestionErrors] = useState<Record<string, string>>({});
-  // Fix: Properly type currentSurvey as Record<string, string>
+  // Fix: Properly define currentSurvey state as Record<string, string>
   const [currentSurvey, setCurrentSurvey] = useState<Record<string, string>>({});
   
   const validateForm = () => {
@@ -212,7 +212,7 @@ export const useSurveyForm = (surveyId?: string | null) => {
       setEmails(value);
     }
     
-    // Fixed TypeScript error by ensuring correct typing of prev parameter
+    // Now we're properly typing the prev parameter to avoid the error
     setCurrentSurvey(prev => ({
       ...prev,
       [fieldName]: value
