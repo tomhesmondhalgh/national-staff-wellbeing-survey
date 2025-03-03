@@ -275,10 +275,10 @@ const Analysis = () => {
               {/* AI Summary Section */}
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-4 border-b pb-2">
-                  <h2 className="text-xl font-bold text-gray-900">AI-Powered Summary</h2>
+                  <h2 className="text-xl text-gray-900 text-center font-bold">AI-Powered Summary</h2>
                   <div className="flex items-center text-indigo-600">
-                    <Sparkles size={18} className="mr-1" />
-                    <span className="text-sm font-medium">AI Analysis</span>
+                    
+                    
                   </div>
                 </div>
                 
