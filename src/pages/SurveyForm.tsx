@@ -55,6 +55,7 @@ const SurveyForm = () => {
   useEffect(() => {
     const loadSurvey = async () => {
       if (!surveyId) {
+        console.error("No survey ID provided in URL parameters");
         setError("No survey ID provided");
         setLoading(false);
         return;
@@ -63,26 +64,40 @@ const SurveyForm = () => {
       try {
         console.log("Loading survey with ID:", surveyId);
         setLoading(true);
+        
+        // Debug the API call to getSurveyById
+        console.log("About to call getSurveyById...");
         const surveyData = await getSurveyById(surveyId);
-        console.log("Survey data loaded:", surveyData);
+        console.log("Survey data returned:", surveyData);
         
         if (surveyData) {
+          console.log("Setting survey state with data:", surveyData);
           setSurvey(surveyData);
+          
+          // Log the values we're setting
+          console.log("Setting name to:", surveyData.name ? String(surveyData.name) : '');
+          console.log("Setting date to:", surveyData.date ? new Date(surveyData.date) : undefined);
+          console.log("Setting closeDate to:", surveyData.close_date ? new Date(surveyData.close_date) : undefined);
+          
           // Cast the values to the proper types before setting state
           setName(surveyData.name ? String(surveyData.name) : '');
           setDate(surveyData.date ? new Date(surveyData.date) : undefined);
           setCloseDate(surveyData.close_date ? new Date(surveyData.close_date) : undefined);
+          
           if ('emails' in surveyData) {
+            console.log("Setting emails to:", surveyData.emails ? String(surveyData.emails) : '');
             setEmails(surveyData.emails ? String(surveyData.emails) : '');
           }
         } else {
+          console.error("Survey data not found for ID:", surveyId);
           setError("Survey not found");
         }
       } catch (error) {
         console.error('Error loading survey:', error);
-        setError("Failed to load survey");
+        setError(`Failed to load survey: ${error instanceof Error ? error.message : 'Unknown error'}`);
         toast.error("Failed to load survey");
       } finally {
+        console.log("Finished loading survey, setting loading to false");
         setLoading(false);
       }
     };
@@ -90,30 +105,40 @@ const SurveyForm = () => {
     loadSurvey();
   }, [surveyId, setName, setDate, setCloseDate, setEmails]);
 
-  const fetchCustomQuestions = async () => {
-    if (!user) return;
-    
-    try {
-      setIsLoadingQuestions(true);
-      const questions = await getUserCustomQuestions();
-      setCustomQuestions(questions);
-    } catch (error) {
-      console.error('Error loading custom questions:', error);
-    } finally {
-      setIsLoadingQuestions(false);
-    }
-  };
-
   useEffect(() => {
-    fetchCustomQuestions();
+    const fetchQuestions = async () => {
+      if (!user) {
+        console.log("No user, skipping custom questions fetch");
+        return;
+      }
+      
+      try {
+        setIsLoadingQuestions(true);
+        console.log("Fetching custom questions for user");
+        const questions = await getUserCustomQuestions();
+        console.log("Custom questions fetched:", questions);
+        setCustomQuestions(questions);
+      } catch (error) {
+        console.error('Error loading custom questions:', error);
+      } finally {
+        setIsLoadingQuestions(false);
+      }
+    };
+
+    fetchQuestions();
   }, [user]);
 
   useEffect(() => {
     const loadCustomQuestions = async () => {
-      if (!survey) return;
+      if (!survey) {
+        console.log("No survey, skipping survey custom questions fetch");
+        return;
+      }
       
       try {
+        console.log("Fetching custom questions for survey:", survey.id);
         const questions = await getSurveyCustomQuestions(survey.id);
+        console.log("Survey custom questions fetched:", questions);
         setCustomQuestions(questions);
       } catch (error) {
         console.error('Error loading custom questions:', error);
@@ -124,11 +149,13 @@ const SurveyForm = () => {
   }, [survey]);
 
   const onSubmitForm = (e: React.FormEvent) => {
+    console.log("Form submit triggered");
     handleSubmit(e, customQuestions);
   };
 
   // Show loading state while data is being fetched
   if (loading) {
+    console.log("Rendering loading state");
     return (
       <div className="page-container">
         <div className="flex justify-center items-center min-h-[60vh]">
@@ -141,6 +168,7 @@ const SurveyForm = () => {
 
   // Show error state if there was a problem
   if (error) {
+    console.log("Rendering error state:", error);
     return (
       <div className="page-container">
         <div className="card animate-slide-up p-8 text-center">
@@ -156,6 +184,7 @@ const SurveyForm = () => {
 
   // If survey wasn't found
   if (!survey) {
+    console.log("Rendering survey not found state");
     return (
       <div className="page-container">
         <div className="card animate-slide-up p-8 text-center">
@@ -168,6 +197,8 @@ const SurveyForm = () => {
       </div>
     );
   }
+
+  console.log("Rendering survey form with data:", { name, date, closeDate, emails });
 
   return (
     <div className="page-container">
