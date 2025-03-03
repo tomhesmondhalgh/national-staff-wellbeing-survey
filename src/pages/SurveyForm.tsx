@@ -297,7 +297,7 @@ const SurveyForm = () => {
       setEmails(value);
     }
     
-    setCurrentSurvey((prev) => ({
+    setCurrentSurvey((prev: Record<string, string>) => ({
       ...prev,
       [fieldName]: value
     }));
