@@ -1,6 +1,5 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { User, Session, Provider } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -18,6 +17,10 @@ interface AuthContextType {
     success: boolean;
   }>;
   signOut: () => Promise<void>;
+  signInWithSocialProvider: (provider: Provider) => Promise<{
+    error: Error | null;
+    success: boolean;
+  }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -126,6 +129,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const signInWithSocialProvider = async (provider: Provider) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      // No need for toast here as the user will be redirected to the provider's authentication page
+      return { error: null, success: true };
+    } catch (error) {
+      console.error(`Error signing in with ${provider}:`, error);
+      toast.error(`Failed to sign in with ${provider}`);
+      return { error: error as Error, success: false };
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -135,6 +160,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signIn,
         signUp,
         signOut,
+        signInWithSocialProvider,
       }}
     >
       {children}

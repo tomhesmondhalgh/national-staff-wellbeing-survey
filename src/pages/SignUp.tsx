@@ -16,9 +16,6 @@ const SignUp = () => {
     setIsLoading(true);
     
     try {
-      // Log the Supabase URL to verify it's correctly set
-      console.log('Attempting signup with Supabase URL:', import.meta.env.VITE_SUPABASE_URL || 'Not defined');
-      
       const { error, success } = await signUp(data.email, data.password, {
         firstName: data.firstName,
         lastName: data.lastName,
@@ -31,14 +28,12 @@ const SignUp = () => {
         toast.success('Account created successfully!');
         navigate('/login');
       } else if (error) {
-        // Enhanced error message
         console.error('Detailed signup error:', error);
         toast.error('Failed to create account', {
           description: error.message || 'Please check your information and try again.'
         });
       }
     } catch (err: any) {
-      // Better error logging
       console.error('Signup error details:', err);
       toast.error('Connection error', {
         description: 'Unable to connect to authentication service. Please try again later.'
