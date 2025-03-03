@@ -12,12 +12,17 @@ interface AuthContextType {
     error: Error | null;
     success: boolean;
   }>;
-  signUp: (email: string, password: string, userData: any) => Promise<{
+  signUp: (email: string, password: string, userData?: any) => Promise<{
     error: Error | null;
     success: boolean;
+    user?: User | null;
   }>;
   signOut: () => Promise<void>;
   signInWithSocialProvider: (provider: Provider) => Promise<{
+    error: Error | null;
+    success: boolean;
+  }>;
+  completeUserProfile: (userId: string, userData: any) => Promise<{
     error: Error | null;
     success: boolean;
   }>;
@@ -72,31 +77,70 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signUp = async (email: string, password: string, userData: any) => {
+  const signUp = async (email: string, password: string, userData?: any) => {
     try {
+      // If userData is provided, it means we're completing the final signup step
+      // Otherwise, we're just creating the initial auth account
+      const options = userData ? {
+        data: {
+          first_name: userData.firstName,
+          last_name: userData.lastName,
+          // Don't include school info in this initial signup
+        },
+      } : {};
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: {
-            first_name: userData.firstName,
-            last_name: userData.lastName,
-            job_title: userData.jobTitle,
-            school_name: userData.schoolName,
-            school_address: userData.schoolAddress,
-          },
-        },
+        options,
       });
 
       if (error) {
         throw error;
       }
 
+      // Return user data so we can use it for the second step
+      return { error: null, success: true, user: data.user };
+    } catch (error) {
+      console.error('Error signing up:', error);
+      return { error: error as Error, success: false };
+    }
+  };
+
+  const completeUserProfile = async (userId: string, userData: any) => {
+    try {
+      // Update user metadata with school information
+      const { error: metadataError } = await supabase.auth.updateUser({
+        data: {
+          job_title: userData.jobTitle,
+          school_name: userData.schoolName,
+          school_address: userData.schoolAddress,
+        },
+      });
+
+      if (metadataError) {
+        throw metadataError;
+      }
+
+      // Update the profiles table manually since the trigger might not have the complete data
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: userId,
+          job_title: userData.jobTitle,
+          school_name: userData.schoolName,
+          school_address: userData.schoolAddress,
+        }, { onConflict: 'id' });
+
+      if (profileError) {
+        throw profileError;
+      }
+
       // Send welcome email
       try {
         await supabase.functions.invoke('send-welcome-email', {
           body: {
-            email,
+            email: userData.email,
             firstName: userData.firstName,
             lastName: userData.lastName,
             schoolName: userData.schoolName,
@@ -108,12 +152,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Don't fail the signup if the welcome email fails
       }
 
-      toast.success('Account created successfully!', {
+      toast.success('Account setup completed successfully!', {
         description: 'Please check your email to confirm your account.'
       });
+      
       return { error: null, success: true };
     } catch (error) {
-      console.error('Error signing up:', error);
+      console.error('Error completing user profile:', error);
       return { error: error as Error, success: false };
     }
   };
@@ -134,7 +179,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: `${window.location.origin}/onboarding`,
         },
       });
 
@@ -161,6 +206,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signUp,
         signOut,
         signInWithSocialProvider,
+        completeUserProfile,
       }}
     >
       {children}

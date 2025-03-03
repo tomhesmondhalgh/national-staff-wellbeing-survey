@@ -16,17 +16,23 @@ const SignUp = () => {
     setIsLoading(true);
     
     try {
-      const { error, success } = await signUp(data.email, data.password, {
+      // Only pass the basic information for the first step
+      const { error, success, user } = await signUp(data.email, data.password, {
         firstName: data.firstName,
         lastName: data.lastName,
-        jobTitle: data.jobTitle,
-        schoolName: data.schoolName,
-        schoolAddress: data.schoolAddress,
       });
       
-      if (success) {
-        toast.success('Account created successfully!');
-        navigate('/login');
+      if (success && user) {
+        // Store user info in session storage temporarily to use in onboarding
+        sessionStorage.setItem('tempUser', JSON.stringify({
+          id: user.id,
+          email: data.email,
+          firstName: data.firstName,
+          lastName: data.lastName,
+        }));
+        
+        // Navigate to onboarding page with the temp user data
+        navigate('/onboarding');
       } else if (error) {
         console.error('Detailed signup error:', error);
         toast.error('Failed to create account', {

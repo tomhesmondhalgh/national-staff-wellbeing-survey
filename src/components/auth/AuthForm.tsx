@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Loader2, Mail, GitHub, Globe } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface AuthFormProps {
@@ -11,15 +11,13 @@ interface AuthFormProps {
 }
 
 const AuthForm: React.FC<AuthFormProps> = ({ mode, onSubmit, isLoading = false }) => {
+  const navigate = useNavigate();
   const { signInWithSocialProvider } = useAuth();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     password: '',
-    jobTitle: '',
-    schoolName: '',
-    schoolAddress: '',
   });
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
 
@@ -37,7 +35,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onSubmit, isLoading = false }
     try {
       setSocialLoading(provider);
       await signInWithSocialProvider(provider);
-      // User will be redirected, no need to handle success here
+      // User will be redirected to the provider's authentication page and then to onboarding
     } catch (error) {
       console.error(`Error when trying to sign in with ${provider}:`, error);
       setSocialLoading(null);
@@ -114,88 +112,38 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onSubmit, isLoading = false }
       
       <form onSubmit={handleSubmit} className="space-y-4">
         {mode === 'signup' && (
-          <>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-                  First name
-                </label>
-                <input
-                  id="firstName"
-                  name="firstName"
-                  type="text"
-                  required
-                  className="form-input w-full"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  disabled={isLoading}
-                />
-              </div>
-              <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-                  Last name
-                </label>
-                <input
-                  id="lastName"
-                  name="lastName"
-                  type="text"
-                  required
-                  className="form-input w-full"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-            
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="jobTitle" className="block text-sm font-medium text-gray-700 mb-1">
-                Job title
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                First name
               </label>
               <input
-                id="jobTitle"
-                name="jobTitle"
+                id="firstName"
+                name="firstName"
                 type="text"
                 required
                 className="form-input w-full"
-                value={formData.jobTitle}
+                value={formData.firstName}
                 onChange={handleChange}
                 disabled={isLoading}
               />
             </div>
-            
             <div>
-              <label htmlFor="schoolName" className="block text-sm font-medium text-gray-700 mb-1">
-                School/College name
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                Last name
               </label>
               <input
-                id="schoolName"
-                name="schoolName"
+                id="lastName"
+                name="lastName"
                 type="text"
                 required
                 className="form-input w-full"
-                value={formData.schoolName}
+                value={formData.lastName}
                 onChange={handleChange}
                 disabled={isLoading}
               />
             </div>
-            
-            <div>
-              <label htmlFor="schoolAddress" className="block text-sm font-medium text-gray-700 mb-1">
-                School/College address
-              </label>
-              <textarea
-                id="schoolAddress"
-                name="schoolAddress"
-                rows={3}
-                required
-                className="form-input w-full"
-                value={formData.schoolAddress}
-                onChange={handleChange}
-                disabled={isLoading}
-              />
-            </div>
-          </>
+          </div>
         )}
         
         <div>
@@ -241,10 +189,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onSubmit, isLoading = false }
             {isLoading ? (
               <>
                 <Loader2 size={18} className="mr-2 animate-spin" />
-                {mode === 'login' ? 'Logging in...' : 'Signing up...'}
+                {mode === 'login' ? 'Logging in...' : 'Continuing...'}
               </>
             ) : (
-              <>{mode === 'login' ? 'Log in' : 'Sign up'}</>
+              <>{mode === 'login' ? 'Log in' : 'Continue'}</>
             )}
           </button>
         </div>
