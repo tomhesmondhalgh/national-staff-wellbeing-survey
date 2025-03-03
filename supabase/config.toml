@@ -4,3 +4,7 @@ project_id = "bagaaqkmewkuwtudwnqw"
 [[functions]]
 name = "send-survey-email"
 verify_jwt = false
+
+[[functions]]
+name = "generate-survey-summary"
+verify_jwt = false

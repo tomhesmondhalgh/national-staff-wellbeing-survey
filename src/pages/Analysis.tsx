@@ -6,8 +6,10 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { getSurveyOptions, getRecommendationScore, getLeavingContemplation, getDetailedWellbeingResponses } from '../utils/analysisUtils';
 import type { SurveyOption, DetailedQuestionResponse, TextResponse } from '../utils/analysisUtils';
 import { getTextResponses } from '../utils/analysisUtils';
-import { ArrowDownIcon, ArrowUpIcon, MinusIcon } from 'lucide-react';
+import { ArrowDownIcon, ArrowUpIcon, MinusIcon, Sparkles } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { getSurveySummary } from '../utils/summaryUtils';
+import type { SummaryData } from '../utils/summaryUtils';
 
 // Significance threshold (how much difference is considered significant)
 const SIGNIFICANCE_THRESHOLD = 10; // percentage points
@@ -26,6 +28,8 @@ const Analysis = () => {
   const [leavingData, setLeavingData] = useState<{ name: string, value: number }[]>([]);
   const [detailedWellbeingResponses, setDetailedWellbeingResponses] = useState<DetailedQuestionResponse[]>([]);
   const [textResponses, setTextResponses] = useState<{ doingWell: TextResponse[], improvements: TextResponse[] }>({ doingWell: [], improvements: [] });
+  const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState<boolean>(false);
 
   // Colors for pie chart
   const COLORS = ['#10b981', '#6366f1', '#f59e0b', '#ef4444', '#6b7280'];
@@ -114,6 +118,46 @@ const Analysis = () => {
     
     loadAnalysisData();
   }, [selectedSurvey, startDate, endDate]);
+
+  // Generate AI summary when data changes
+  useEffect(() => {
+    const generateSummary = async () => {
+      if (loading || !selectedSurvey) return;
+      
+      setSummaryLoading(true);
+      
+      try {
+        // Get the raw leaving contemplation data (not the pie chart format)
+        const leavingContemplation = Object.fromEntries(
+          leavingData.map(item => [item.name, item.value])
+        );
+        
+        // Generate the summary
+        const summary = await getSurveySummary(
+          selectedSurvey,
+          recommendationScore,
+          leavingContemplation,
+          detailedWellbeingResponses,
+          textResponses
+        );
+        
+        setSummaryData(summary);
+      } catch (error) {
+        console.error('Error generating summary:', error);
+      } finally {
+        setSummaryLoading(false);
+      }
+    };
+    
+    generateSummary();
+  }, [
+    selectedSurvey,
+    loading,
+    recommendationScore,
+    leavingData,
+    detailedWellbeingResponses,
+    textResponses
+  ]);
   
   // Helper to customize tooltip on pie chart
   const customPieTooltip = ({ active, payload }: any) => {
@@ -278,6 +322,83 @@ const Analysis = () => {
             </div>
           ) : (
             <>
+              {/* AI Summary Section */}
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-4 border-b pb-2">
+                  <h2 className="text-xl font-bold text-gray-900">AI-Powered Summary</h2>
+                  <div className="flex items-center text-indigo-600">
+                    <Sparkles size={18} className="mr-1" />
+                    <span className="text-sm font-medium">AI Analysis</span>
+                  </div>
+                </div>
+                
+                {summaryLoading ? (
+                  <div className="flex items-center justify-center h-40 bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+                    <div className="animate-spin h-6 w-6 border-4 border-indigo-500 border-t-transparent rounded-full mr-3"></div>
+                    <span className="text-gray-700">Generating AI insights...</span>
+                  </div>
+                ) : summaryData?.insufficientData ? (
+                  <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm flex flex-col items-center justify-center h-40">
+                    <div className="text-amber-500 mb-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-10 h-10">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-700 text-center">Not enough data available for AI analysis. A minimum of 20 survey responses is required.</p>
+                  </div>
+                ) : summaryData ? (
+                  <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+                    <p className="text-gray-700 mb-6">{summaryData.introduction}</p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Strengths */}
+                      <div>
+                        <h3 className="text-lg font-semibold text-green-600 mb-3 flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                          </svg>
+                          Areas of Strength
+                        </h3>
+                        <ul className="space-y-2">
+                          {summaryData.strengths.map((strength, index) => (
+                            <li key={`strength-${index}`} className="flex items-start">
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-green-500 mt-0.5 mr-2 flex-shrink-0">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-gray-700">{strength}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      
+                      {/* Areas for Improvement */}
+                      <div>
+                        <h3 className="text-lg font-semibold text-amber-600 mb-3 flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                          </svg>
+                          Areas for Improvement
+                        </h3>
+                        <ul className="space-y-2">
+                          {summaryData.improvements.map((improvement, index) => (
+                            <li key={`improvement-${index}`} className="flex items-start">
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-amber-500 mt-0.5 mr-2 flex-shrink-0">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-gray-700">{improvement}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm flex items-center justify-center h-40">
+                    <span className="text-gray-500">Unable to generate summary. Please try again later.</span>
+                  </div>
+                )}
+              </div>
+              
               {/* Key Metrics Section */}
               <div className="mb-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Key Metrics</h2>
