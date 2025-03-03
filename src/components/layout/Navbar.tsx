@@ -29,8 +29,8 @@ const Navbar: React.FC = () => {
 
   return (
     <header 
-      className={`sticky top-0 z-50 w-full transition-all duration-300 ${
-        isScrolled ? 'bg-white/80 backdrop-blur-md shadow-sm' : 'bg-transparent'
+      className={`sticky top-0 z-40 w-full transition-all duration-300 ${
+        isScrolled ? 'bg-white/90 backdrop-blur-md shadow-sm' : 'bg-white/80'
       }`}
     >
       <div className="container mx-auto px-4">
@@ -47,42 +47,42 @@ const Navbar: React.FC = () => {
               <>
                 <Link 
                   to="/dashboard" 
-                  className={`nav-link ${location.pathname === '/dashboard' ? 'text-brandPurple-600' : ''}`}
+                  className={`nav-link z-50 relative ${location.pathname === '/dashboard' ? 'text-brandPurple-600' : ''}`}
                 >
                   Dashboard
                 </Link>
                 <Link 
                   to="/surveys" 
-                  className={`nav-link ${location.pathname === '/surveys' || location.pathname === '/new-survey' ? 'text-brandPurple-600' : ''}`}
+                  className={`nav-link z-50 relative ${location.pathname === '/surveys' || location.pathname === '/new-survey' ? 'text-brandPurple-600' : ''}`}
                 >
                   Surveys
                 </Link>
                 <Link 
                   to="/questions" 
-                  className={`nav-link ${location.pathname === '/questions' ? 'text-brandPurple-600' : ''}`}
+                  className={`nav-link z-50 relative ${location.pathname === '/questions' ? 'text-brandPurple-600' : ''}`}
                 >
                   Questions
                 </Link>
                 <Link 
                   to="/analysis" 
-                  className={`nav-link ${location.pathname === '/analysis' ? 'text-brandPurple-600' : ''}`}
+                  className={`nav-link z-50 relative ${location.pathname === '/analysis' ? 'text-brandPurple-600' : ''}`}
                 >
                   Analysis
                 </Link>
                 <Link 
                   to="/profile" 
-                  className={`nav-link ${location.pathname === '/profile' ? 'text-brandPurple-600' : ''}`}
+                  className={`nav-link z-50 relative ${location.pathname === '/profile' ? 'text-brandPurple-600' : ''}`}
                 >
                   Profile
                 </Link>
-                <button className="nav-link" onClick={handleSignOut}>Sign Out</button>
+                <button className="nav-link z-50 relative" onClick={handleSignOut}>Sign Out</button>
               </>
             ) : (
               <>
-                <Link to="/login" className="btn-ghost">
+                <Link to="/login" className="btn-ghost z-50 relative">
                   Log in
                 </Link>
-                <Link to="/signup" className="btn-primary">
+                <Link to="/signup" className="btn-primary z-50 relative">
                   Sign up
                 </Link>
               </>
@@ -93,7 +93,7 @@ const Navbar: React.FC = () => {
           <div className="md:hidden">
             <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-brandPurple-600 hover:bg-brandPurple-50 focus:outline-none"
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-brandPurple-600 hover:bg-brandPurple-50 focus:outline-none z-50 relative"
             >
               <span className="sr-only">{isMenuOpen ? 'Close menu' : 'Open menu'}</span>
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -104,7 +104,7 @@ const Navbar: React.FC = () => {
       
       {/* Mobile Navigation Menu */}
       {isMenuOpen && (
-        <div className="md:hidden bg-white shadow-lg animate-slide-down">
+        <div className="md:hidden bg-white shadow-lg animate-slide-down absolute top-16 left-0 right-0 z-50">
           <div className="px-2 pt-2 pb-3 space-y-1">
             {isAuthenticated ? (
               <>
