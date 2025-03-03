@@ -1,218 +1,121 @@
-
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
-import SurveyForm, { SurveyFormData } from '../components/surveys/SurveyForm';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Button } from '../components/ui/button';
+import { Calendar } from 'lucide-react';
+import { DatePicker } from '../components/ui/date-picker';
+import { format } from 'date-fns';
 import { toast } from "sonner";
-import { supabase } from "../lib/supabase";
-import { format, parse } from 'date-fns';
-import { 
-  Breadcrumb, 
-  BreadcrumbItem, 
-  BreadcrumbLink, 
-  BreadcrumbList, 
-  BreadcrumbPage, 
-  BreadcrumbSeparator 
-} from "@/components/ui/breadcrumb";
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
+import { getSurveyById } from '../utils/surveyUtils';
+import { getSurveyCustomQuestions } from '../utils/customQuestionsUtils';
 
 const EditSurvey = () => {
-  const { id } = useParams<{ id: string }>();
+  const { surveyId } = useParams<{ surveyId: string }>();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
+
+  const [survey, setSurvey] = useState<any>(null);
+  const [name, setName] = useState('');
+  const [date, setDate] = useState<Date | undefined>(undefined);
+  const [closeDate, setCloseDate] = useState<Date | undefined>(undefined);
+  const [emails, setEmails] = useState('');
+  const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [surveyData, setSurveyData] = useState<Partial<SurveyFormData> | null>(null);
-  const [originalEmails, setOriginalEmails] = useState<string>('');
-  const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
-  const [isSent, setIsSent] = useState(false);
+  const [customQuestions, setCustomQuestions] = useState<any[]>([]);
+  const [loadingCustomQuestions, setLoadingCustomQuestions] = useState(false);
 
   useEffect(() => {
     const fetchSurvey = async () => {
-      if (!id) return;
+      if (!surveyId) {
+        toast.error("Survey ID is required");
+        return;
+      }
 
       try {
-        setIsLoading(true);
-        
-        // Get the survey template data
-        const { data, error } = await supabase
-          .from('survey_templates')
-          .select('name, date, close_date, emails, status')
-          .eq('id', id)
-          .single();
-        
-        if (error) {
-          console.error('Error fetching survey:', error);
-          toast.error("Failed to load survey data", {
-            description: "Please try again later."
-          });
+        setLoading(true);
+        const surveyData = await getSurveyById(surveyId);
+
+        if (surveyData) {
+          setSurvey(surveyData);
+          setName(surveyData.name);
+          setDate(surveyData.date ? new Date(surveyData.date) : undefined);
+          setCloseDate(surveyData.close_date ? new Date(surveyData.close_date) : undefined);
+          setEmails(surveyData.emails || '');
+        } else {
+          toast.error("Survey not found");
           navigate('/surveys');
-          return;
-        }
-        
-        if (!data) {
-          toast.error("Survey not found", {
-            description: "The survey you're trying to edit doesn't exist."
-          });
-          navigate('/surveys');
-          return;
-        }
-        
-        // Store the original emails for comparison later
-        setOriginalEmails(data.emails || '');
-        
-        // Check if the survey has already been sent
-        setIsSent(data.status === 'Sent' || data.status === 'Closed');
-        
-        setSurveyData({
-          name: data.name,
-          date: new Date(data.date),
-          closeDate: data.close_date ? new Date(data.close_date) : undefined,
-          recipients: data.emails || ''
-        });
-        
-        // Fetch associated custom questions
-        const { data: questionsData, error: questionsError } = await supabase
-          .from('survey_questions')
-          .select('question_id')
-          .eq('survey_id', id);
-          
-        if (questionsError) {
-          console.error('Error fetching survey questions:', questionsError);
-        } else if (questionsData) {
-          setSelectedQuestions(questionsData.map(q => q.question_id));
         }
       } catch (error) {
-        console.error('Error:', error);
-        toast.error("An error occurred", {
-          description: "Please try again later."
-        });
+        console.error('Error fetching survey:', error);
+        toast.error("Failed to load survey");
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
 
     fetchSurvey();
-  }, [id, navigate]);
+  }, [surveyId, navigate]);
 
-  const handleSubmit = async (data: SurveyFormData, questions: string[]) => {
-    if (!id) return;
-    
-    try {
-      setIsSubmitting(true);
+  // Load custom questions for this survey
+  useEffect(() => {
+    const fetchCustomQuestions = async () => {
+      if (!survey) return;
       
-      // Update the survey in the database
+      try {
+        setLoadingCustomQuestions(true);
+        const questions = await getSurveyCustomQuestions(surveyId);
+        setCustomQuestions(questions);
+      } catch (error) {
+        console.error('Error fetching custom questions:', error);
+        toast.error("Failed to load custom questions");
+      } finally {
+        setLoadingCustomQuestions(false);
+      }
+    };
+    
+    fetchCustomQuestions();
+  }, [survey, surveyId]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!name.trim()) {
+      toast.error("Survey name is required");
+      return;
+    }
+
+    if (!date) {
+      toast.error("Survey date is required");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
       const { error } = await supabase
         .from('survey_templates')
         .update({
-          name: data.name,
-          date: data.date.toISOString(),
-          close_date: data.closeDate ? data.closeDate.toISOString() : null,
-          emails: data.recipients // Save recipients when updating
+          name: name.trim(),
+          date: date.toISOString(),
+          close_date: closeDate ? closeDate.toISOString() : null,
+          emails: emails.trim()
         })
-        .eq('id', id);
-      
+        .eq('id', surveyId);
+
       if (error) {
-        console.error('Error updating survey:', error);
-        toast.error("Failed to update survey", {
-          description: error.message
-        });
-        return;
+        throw error;
       }
 
-      // Handle custom questions if survey is not already sent
-      if (!isSent) {
-        // First, delete existing survey question associations
-        const { error: deleteError } = await supabase
-          .from('survey_questions')
-          .delete()
-          .eq('survey_id', id);
-
-        if (deleteError) {
-          console.error('Error removing existing questions:', deleteError);
-        }
-
-        // Then, add the new selected questions
-        if (questions.length > 0) {
-          const surveyQuestionsData = questions.map(questionId => ({
-            survey_id: id,
-            question_id: questionId
-          }));
-
-          const { error: questionsError } = await supabase
-            .from('survey_questions')
-            .insert(surveyQuestionsData);
-
-          if (questionsError) {
-            console.error('Error adding custom questions:', questionsError);
-            toast.error("Failed to update custom questions", {
-              description: "Your survey was updated, but there was an issue updating custom questions."
-            });
-          }
-        }
-      }
-
-      // Check if email recipients have changed and send emails to new recipients
-      if (data.recipients && data.recipients !== originalEmails) {
-        // Generate survey link
-        const baseUrl = window.location.origin;
-        const surveyUrl = `${baseUrl}/survey?id=${id}`;
-        
-        // Find new email addresses that weren't in the original list
-        const oldEmails = originalEmails
-          .split(',')
-          .map(email => email.trim())
-          .filter(email => email);
-          
-        const newEmails = data.recipients
-          .split(',')
-          .map(email => email.trim())
-          .filter(email => email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-          .filter(email => !oldEmails.includes(email)); // Filter to only include emails not in old list
-        
-        if (newEmails.length > 0) {
-          console.log('Sending surveys to new recipients:', newEmails);
-          
-          // Call the Edge Function to send emails only to new recipients
-          const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-survey-email', {
-            body: {
-              surveyId: id,
-              surveyName: data.name,
-              emails: newEmails,
-              surveyUrl: surveyUrl,
-              isReminder: false
-            }
-          });
-          
-          if (emailError) {
-            console.error('Error sending emails:', emailError);
-            toast.error("Survey updated but emails could not be sent", {
-              description: "Your survey was updated successfully, but there was an issue sending invitation emails to new recipients."
-            });
-          } else {
-            console.log('Email sending result:', emailResult);
-            toast.success("Survey updated and invitations sent", {
-              description: `Survey updated and invitations sent to ${newEmails.length} new recipients.`
-            });
-          }
-        } else {
-          toast.success("Survey updated successfully!", {
-            description: "Your changes have been saved. No new recipients to send to."
-          });
-        }
-      } else {
-        // Show success toast without email info
-        toast.success("Survey updated successfully!", {
-          description: "Your changes have been saved."
-        });
-      }
-      
-      // Navigate back to surveys list
+      toast.success("Survey updated successfully");
       navigate('/surveys');
-    } catch (error: any) {
-      console.error('Error:', error);
-      toast.error("An error occurred", {
-        description: "Please try again later."
-      });
+    } catch (error) {
+      console.error('Error updating survey:', error);
+      toast.error("Failed to update survey");
     } finally {
       setIsSubmitting(false);
     }
@@ -221,48 +124,122 @@ const EditSurvey = () => {
   return (
     <MainLayout>
       <div className="page-container">
-        <Breadcrumb className="mb-4">
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/surveys" onClick={(e) => { e.preventDefault(); navigate('/surveys'); }}>
-                Surveys
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Edit Survey</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-        
-        <PageTitle 
-          title="Edit Survey" 
-          subtitle="Edit your existing staff wellbeing survey"
-        />
-        
-        {isLoading ? (
-          <div className="card p-6 animate-slide-up">
-            <div className="animate-pulse space-y-6">
-              <div className="h-10 bg-gray-200 rounded w-1/4"></div>
-              <div className="h-20 bg-gray-200 rounded"></div>
-              <div className="h-10 bg-gray-200 rounded w-1/3"></div>
-            </div>
-          </div>
-        ) : surveyData ? (
-          <SurveyForm 
-            onSubmit={handleSubmit} 
-            initialData={surveyData}
-            initialQuestions={selectedQuestions}
-            submitButtonText="Update Survey"
-            isEdit={true}
-            isSubmitting={isSubmitting}
-            surveyId={id}
-            isSent={isSent}
+        <div className="flex justify-between items-center mb-8">
+          <PageTitle
+            title="Edit Survey"
+            subtitle="Update your survey details"
+            className="mb-0 text-left"
           />
-        ) : (
-          <div className="card p-6 text-center">
-            <p className="text-gray-500">Survey not found or unable to load data.</p>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin h-8 w-8 border-4 border-brandPurple-500 border-t-transparent rounded-full mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading survey details...</p>
           </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="card animate-slide-up">
+            <div className="grid gap-6">
+              <div>
+                <Label htmlFor="name">Survey Name</Label>
+                <Input
+                  type="text"
+                  id="name"
+                  placeholder="Enter survey name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div>
+                <Label>
+                  Launch Date
+                </Label>
+                <DatePicker
+                  date={date}
+                  onDateChange={setDate}
+                />
+              </div>
+
+              <div>
+                <Label>
+                  Closing Date (Optional)
+                </Label>
+                <DatePicker
+                  date={closeDate}
+                  onDateChange={setCloseDate}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="emails">
+                  Recipient Emails (Comma Separated)
+                </Label>
+                <Input
+                  type="email"
+                  id="emails"
+                  placeholder="Enter recipient emails, separated by commas"
+                  value={emails}
+                  onChange={(e) => setEmails(e.target.value)}
+                />
+              </div>
+            </div>
+            
+            {/* Add custom questions section before the form submit buttons */}
+            <div className="mt-8 border-t pt-8">
+              <h3 className="text-lg font-semibold mb-4">Custom Questions</h3>
+              
+              {loadingCustomQuestions ? (
+                <div className="text-center py-4">
+                  <div className="animate-spin h-5 w-5 border-4 border-brandPurple-500 border-t-transparent rounded-full mx-auto"></div>
+                  <p className="mt-2 text-gray-600 text-sm">Loading custom questions...</p>
+                </div>
+              ) : customQuestions.length > 0 ? (
+                <div className="space-y-4">
+                  {customQuestions.map(question => (
+                    <div key={question.id} className="p-4 bg-gray-50 rounded-md border border-gray-200">
+                      <p className="font-medium">{question.text}</p>
+                      <div className="flex items-center mt-1 text-sm text-gray-500">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          question.type === 'text' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {question.type === 'text' ? 'Text Response' : 'Dropdown Selection'}
+                        </span>
+                        
+                        {question.type === 'dropdown' && question.options && (
+                          <span className="ml-2">
+                            {question.options.length} {question.options.length === 1 ? 'option' : 'options'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">No custom questions have been added to this survey.</p>
+              )}
+              
+              <div className="mt-4">
+                <p className="text-sm text-amber-600">
+                  Note: Custom questions cannot be modified after a survey has been created.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-8 flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => navigate('/surveys')}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Updating...' : 'Update Survey'}
+              </Button>
+            </div>
+          </form>
         )}
       </div>
     </MainLayout>

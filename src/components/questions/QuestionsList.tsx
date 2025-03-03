@@ -1,144 +1,203 @@
 
-import React from 'react';
-import { Edit, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
 import { Button } from '../ui/button';
-import { 
-  Card,
-  CardContent
-} from '../ui/card';
+import { MoreHorizontal, Edit, Trash2, MessageSquare, ListFilter } from 'lucide-react';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-
-export interface QuestionItem {
-  id: string;
-  text: string;
-  type: 'text' | 'dropdown';
-  options: string[] | null;
-  creator_id: string;
-  created_at: string;
-}
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "../ui/dialog";
+import { toast } from "sonner";
+import { CustomQuestion } from '../../types/customQuestions';
+import QuestionForm from './QuestionForm';
+import { deleteCustomQuestion } from '../../utils/customQuestionsUtils';
 
 interface QuestionsListProps {
-  questions: QuestionItem[];
-  isLoading: boolean;
-  onEdit: (question: QuestionItem) => void;
-  onDelete: (questionId: string) => void;
+  questions: CustomQuestion[];
+  onUpdate: () => void;
+  isSelectable?: boolean;
+  selectedQuestions?: string[];
+  onSelectQuestion?: (questionId: string) => void;
 }
 
 const QuestionsList: React.FC<QuestionsListProps> = ({ 
   questions, 
-  isLoading, 
-  onEdit, 
-  onDelete 
+  onUpdate,
+  isSelectable = false,
+  selectedQuestions = [],
+  onSelectQuestion
 }) => {
-  if (isLoading) {
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletingQuestion, setDeletingQuestion] = useState<CustomQuestion | null>(null);
+  const [editingQuestion, setEditingQuestion] = useState<CustomQuestion | null>(null);
+
+  const handleDeleteClick = (question: CustomQuestion) => {
+    setDeletingQuestion(question);
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingQuestion) return;
+    
+    try {
+      const success = await deleteCustomQuestion(deletingQuestion.id);
+      
+      if (success) {
+        toast.success("Question deleted successfully");
+        onUpdate();
+      } else {
+        toast.error("Failed to delete question");
+      }
+    } catch (error) {
+      console.error('Error deleting question:', error);
+      toast.error("An unexpected error occurred");
+    } finally {
+      setShowDeleteDialog(false);
+      setDeletingQuestion(null);
+    }
+  };
+
+  const handleEdit = (question: CustomQuestion) => {
+    setEditingQuestion(question);
+  };
+  
+  const handleFormSuccess = () => {
+    setEditingQuestion(null);
+    onUpdate();
+  };
+
+  if (questions.length === 0) {
     return (
-      <div className="space-y-4">
-        {[...Array(3)].map((_, i) => (
-          <Card key={i} className="animate-pulse">
-            <CardContent className="p-6">
-              <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="text-center py-12 border border-dashed border-gray-300 rounded-lg">
+        <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">No custom questions yet</h3>
+        <p className="text-gray-500 mb-4">
+          Create your first custom question to include in your surveys.
+        </p>
       </div>
     );
   }
 
-  if (questions.length === 0) {
-    return (
-      <Card>
-        <CardContent className="p-6 text-center">
-          <p className="text-gray-500 my-8">
-            No custom questions found. Click "New Question" to create your first custom question.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <div className="space-y-4">
-      {questions.map((question) => (
-        <Card key={question.id} className="overflow-hidden">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-1">{question.text}</h3>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                    {question.type === 'text' ? 'Free Text' : 'Dropdown'}
-                  </span>
-                </div>
-                
-                {question.type === 'dropdown' && question.options && question.options.length > 0 && (
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-500 mb-1">Options:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {question.options.map((option, index) => (
-                        <span 
-                          key={index}
-                          className="text-xs bg-gray-50 text-gray-700 px-2 py-1 rounded border border-gray-200"
-                        >
-                          {option}
-                        </span>
-                      ))}
+    <div>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+        <div className="divide-y divide-gray-100">
+          {questions.map((question) => (
+            <div 
+              key={question.id} 
+              className={`p-4 hover:bg-gray-50 transition-colors flex items-center ${
+                isSelectable ? 'cursor-pointer' : ''
+              }`}
+              onClick={isSelectable && onSelectQuestion ? () => onSelectQuestion(question.id) : undefined}
+            >
+              <div className="flex-grow">
+                <div className="flex items-center space-x-2">
+                  {isSelectable && (
+                    <div className={`w-5 h-5 border rounded-md flex items-center justify-center transition-colors ${
+                      selectedQuestions.includes(question.id) ? 'bg-brandPurple-500 border-brandPurple-500' : 'border-gray-300'
+                    }`}>
+                      {selectedQuestions.includes(question.id) && (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
                     </div>
-                  </div>
-                )}
+                  )}
+                  <h3 className="font-medium text-gray-900">{question.text}</h3>
+                </div>
+                <div className="mt-1 flex items-center space-x-2 text-sm text-gray-500">
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                    question.type === 'text' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                  }`}>
+                    {question.type === 'text' ? 'Text Response' : 'Dropdown'}
+                  </span>
+                  {question.type === 'dropdown' && question.options && (
+                    <span className="flex items-center">
+                      <ListFilter size={14} className="mr-1" />
+                      {question.options.length} {question.options.length === 1 ? 'option' : 'options'}
+                    </span>
+                  )}
+                </div>
               </div>
               
-              <div className="flex gap-2">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => onEdit(question)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <Edit size={16} />
-                </Button>
-                
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      className="text-gray-500 hover:text-red-600"
-                    >
-                      <Trash2 size={16} />
+              {!isSelectable && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreHorizontal className="h-5 w-5" />
+                      <span className="sr-only">Open menu</span>
                     </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Question</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete this question? This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => onDelete(question.id)} className="bg-red-600 hover:bg-red-700">
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleEdit(question)}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handleDeleteClick(question)}
+                      className="text-red-600 focus:text-red-700"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
-          </CardContent>
-        </Card>
-      ))}
+          ))}
+        </div>
+      </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Question</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this custom question?
+              {deletingQuestion && (
+                <p className="mt-2 font-medium text-gray-900">{deletingQuestion.text}</p>
+              )}
+              <p className="mt-2 text-red-600">
+                This action cannot be undone.
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Question Dialog */}
+      <Dialog open={!!editingQuestion} onOpenChange={(open) => !open && setEditingQuestion(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Question</DialogTitle>
+          </DialogHeader>
+          {editingQuestion && (
+            <QuestionForm 
+              questionToEdit={editingQuestion} 
+              onSuccess={handleFormSuccess} 
+              onCancel={() => setEditingQuestion(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

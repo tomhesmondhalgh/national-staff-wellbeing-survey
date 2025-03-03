@@ -251,3 +251,76 @@ export const getDashboardStats = async () => {
     return null;
   }
 };
+
+// Get a survey with its custom questions
+export const getSurveyWithCustomQuestions = async (id: string): Promise<any> => {
+  try {
+    console.log(`Fetching survey template with ID: ${id} and its custom questions`);
+    
+    // First, get the survey template
+    const survey = await getSurveyById(id);
+    
+    if (!survey) {
+      return null;
+    }
+    
+    // Then, get the custom questions
+    const customQuestions = await getSurveyCustomQuestions(id);
+    
+    return {
+      ...survey,
+      customQuestions
+    };
+  } catch (error) {
+    console.error('Unexpected error in getSurveyWithCustomQuestions:', error);
+    return null;
+  }
+};
+
+// Process custom question data for analysis
+export const getCustomQuestionAnalysis = async (surveyId: string): Promise<any> => {
+  try {
+    const { data, error } = await supabase
+      .from('custom_question_responses')
+      .select(`
+        question_id,
+        answer,
+        custom_questions (
+          id,
+          text,
+          type,
+          options
+        )
+      `)
+      .eq('survey_id', surveyId);
+    
+    if (error) {
+      console.error('Error fetching custom question analysis:', error);
+      return [];
+    }
+    
+    // Group responses by question
+    const questionResponsesMap = new Map();
+    
+    data.forEach(response => {
+      const questionId = response.question_id;
+      const answer = response.answer;
+      const question = response.custom_questions;
+      
+      if (!questionResponsesMap.has(questionId)) {
+        questionResponsesMap.set(questionId, {
+          question: question,
+          responses: []
+        });
+      }
+      
+      questionResponsesMap.get(questionId).responses.push(answer);
+    });
+    
+    // Convert map to array
+    return Array.from(questionResponsesMap.values());
+  } catch (error) {
+    console.error('Unexpected error in getCustomQuestionAnalysis:', error);
+    return [];
+  }
+};

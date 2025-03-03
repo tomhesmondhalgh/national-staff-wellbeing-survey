@@ -1,156 +1,95 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
 import { Button } from '../components/ui/button';
 import { Plus } from 'lucide-react';
-import QuestionsList from '../components/questions/QuestionsList';
-import QuestionForm from '../components/questions/QuestionForm';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
+import QuestionForm from '../components/questions/QuestionForm';
+import QuestionsList from '../components/questions/QuestionsList';
+import { getUserCustomQuestions } from '../utils/customQuestionsUtils';
+import { CustomQuestion } from '../types/customQuestions';
 import { toast } from 'sonner';
 
 const Questions = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const [questions, setQuestions] = useState<CustomQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [questions, setQuestions] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [editingQuestion, setEditingQuestion] = useState(null);
-
-  useEffect(() => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-    
-    fetchQuestions();
-  }, [user, navigate]);
+  const [showAddDialog, setShowAddDialog] = useState(false);
 
   const fetchQuestions = async () => {
-    if (!user) return;
-    
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from('custom_questions')
-        .select('*')
-        .eq('creator_id', user.id)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      setQuestions(data || []);
+      const questionsData = await getUserCustomQuestions();
+      setQuestions(questionsData);
     } catch (error) {
       console.error('Error fetching questions:', error);
-      toast.error('Failed to load questions');
+      toast.error("Failed to load questions");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleCreateQuestion = () => {
-    setEditingQuestion(null);
-    setShowForm(true);
-  };
+  useEffect(() => {
+    fetchQuestions();
+  }, [user]);
 
-  const handleEditQuestion = (question) => {
-    setEditingQuestion(question);
-    setShowForm(true);
-  };
-
-  const handleDeleteQuestion = async (questionId) => {
-    try {
-      const { error } = await supabase
-        .from('custom_questions')
-        .delete()
-        .eq('id', questionId)
-        .eq('creator_id', user.id);
-      
-      if (error) throw error;
-      
-      toast.success('Question deleted successfully');
-      fetchQuestions();
-    } catch (error) {
-      console.error('Error deleting question:', error);
-      toast.error('Failed to delete question');
-    }
-  };
-
-  const handleFormSubmit = async (questionData) => {
-    try {
-      if (editingQuestion) {
-        // Update existing question
-        const { error } = await supabase
-          .from('custom_questions')
-          .update({
-            text: questionData.text,
-            type: questionData.type,
-            options: questionData.type === 'dropdown' ? questionData.options : null
-          })
-          .eq('id', editingQuestion.id)
-          .eq('creator_id', user.id);
-        
-        if (error) throw error;
-        toast.success('Question updated successfully');
-      } else {
-        // Create new question
-        const { error } = await supabase
-          .from('custom_questions')
-          .insert({
-            text: questionData.text,
-            type: questionData.type,
-            options: questionData.type === 'dropdown' ? questionData.options : null,
-            creator_id: user.id
-          });
-        
-        if (error) throw error;
-        toast.success('Question created successfully');
-      }
-      
-      setShowForm(false);
-      fetchQuestions();
-    } catch (error) {
-      console.error('Error saving question:', error);
-      toast.error('Failed to save question');
-    }
-  };
-
-  const handleFormCancel = () => {
-    setShowForm(false);
-    setEditingQuestion(null);
+  const handleAddSuccess = () => {
+    setShowAddDialog(false);
+    fetchQuestions();
   };
 
   return (
     <MainLayout>
       <div className="page-container">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-8">
           <PageTitle 
             title="Custom Questions" 
-            subtitle="Create and manage your own survey questions"
+            subtitle="Create and manage custom questions for your surveys"
+            className="mb-0 text-left"
           />
-          <Button onClick={handleCreateQuestion} className="flex items-center gap-2">
-            <Plus size={16} />
+          <Button onClick={() => setShowAddDialog(true)} className="flex items-center">
+            <Plus className="mr-2 h-4 w-4" />
             New Question
           </Button>
         </div>
-        
-        {showForm ? (
-          <QuestionForm 
-            initialData={editingQuestion}
-            onSubmit={handleFormSubmit}
-            onCancel={handleFormCancel}
-          />
+
+        {isLoading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin h-8 w-8 border-4 border-brandPurple-500 border-t-transparent rounded-full mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading questions...</p>
+          </div>
         ) : (
           <QuestionsList 
-            questions={questions}
-            isLoading={isLoading}
-            onEdit={handleEditQuestion}
-            onDelete={handleDeleteQuestion}
+            questions={questions} 
+            onUpdate={fetchQuestions}
           />
         )}
       </div>
+
+      {/* Add Question Dialog */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Create New Question</DialogTitle>
+          </DialogHeader>
+          <QuestionForm 
+            onSuccess={handleAddSuccess} 
+            onCancel={() => setShowAddDialog(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };

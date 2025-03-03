@@ -1,435 +1,456 @@
-
-import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import MainLayout from '../components/layout/MainLayout';
-import { useToast } from '../components/ui/use-toast';
-import { supabase } from '../lib/supabase';
-import { getSurveyById, isSurveyClosed, SurveyTemplate } from '../utils/surveyUtils';
-
-// Import refactored components
-import RadioQuestion from '../components/survey-form/RadioQuestion';
-import RatingQuestion from '../components/survey-form/RatingQuestion';
-import TextQuestion from '../components/survey-form/TextQuestion';
-import RoleSelect from '../components/survey-form/RoleSelect';
-import SurveyIntro from '../components/survey-form/SurveyIntro';
-import SurveyLoading from '../components/survey-form/SurveyLoading';
-import SurveyNotFound from '../components/survey-form/SurveyNotFound';
-import SubmitButton from '../components/survey-form/SubmitButton';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Textarea } from '../components/ui/textarea';
+import { Calendar } from 'lucide-react';
+import { Calendar as CalendarIcon } from "lucide-react"
+import { format } from "date-fns"
+import { cn } from "@/lib/utils"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { DatePicker } from "@/components/ui/date-picker"
+import { toast } from "sonner";
+import { useAuth } from '../contexts/AuthContext';
+import { createSurvey, sendSurveyEmails, getSurveyById } from '../utils/surveyUtils';
 import CustomQuestions from '../components/survey-form/CustomQuestions';
-
-// Import constants
-import { 
-  roleOptions, 
-  agreementOptions, 
-  frequencyOptions, 
-  initialFormData,
-  SurveyFormData
-} from '../components/survey-form/constants';
-
-interface CustomQuestion {
-  id: string;
-  text: string;
-  type: 'text' | 'dropdown';
-  options: string[] | null;
-}
+import { getSurveyCustomQuestions, submitCustomQuestionResponses } from '../utils/customQuestionsUtils';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "../components/ui/dialog";
+import { Plus } from 'lucide-react';
+import QuestionsList from '../components/questions/QuestionsList';
+import { getUserCustomQuestions, addQuestionsToSurvey } from '../utils/customQuestionsUtils';
+import { CustomQuestion } from '../types/customQuestions';
 
 const SurveyForm = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const formRef = useRef<HTMLDivElement>(null);
-  
-  // Get survey_template_id from URL query parameters
-  const searchParams = new URLSearchParams(location.search);
+  const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const surveyId = searchParams.get('id');
-  
-  // If no survey ID is provided, we'll show an error
-  const [surveyNotFound, setSurveyNotFound] = useState(false);
-  const [surveyLoading, setSurveyLoading] = useState(true);
-  const [surveyTemplate, setSurveyTemplate] = useState<SurveyTemplate | null>(null);
+
+  const [survey, setSurvey] = useState<any>(null);
+  const [name, setName] = useState('');
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [closeDate, setCloseDate] = useState<Date | undefined>(undefined);
+  const [emails, setEmails] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [nameError, setNameError] = useState('');
+  const [dateError, setDateError] = useState('');
+  const [emailsError, setEmailsError] = useState('');
   const [customQuestions, setCustomQuestions] = useState<CustomQuestion[]>([]);
-  
-  // Fetch the survey template when component mounts
+  const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
+  const [showQuestionsDialog, setShowQuestionsDialog] = useState(false);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+  const [customQuestionValues, setCustomQuestionValues] = useState<Record<string, string>>({});
+  const [customQuestionErrors, setCustomQuestionErrors] = useState<Record<string, string>>({});
+
   useEffect(() => {
-    let isMounted = true;
-    
-    const fetchSurveyTemplate = async () => {
-      if (!surveyId) {
-        console.error('No survey ID provided in URL');
-        if (isMounted) {
-          setSurveyNotFound(true);
-          setSurveyLoading(false);
+    const loadSurvey = async () => {
+      if (!surveyId) return;
+
+      try {
+        const surveyData = await getSurveyById(surveyId);
+        if (surveyData) {
+          setSurvey(surveyData);
+          setName(surveyData.name);
+          setDate(surveyData.date ? new Date(surveyData.date) : undefined);
+          setCloseDate(surveyData.close_date ? new Date(surveyData.close_date) : undefined);
+          setEmails(surveyData.emails || '');
         }
-        return;
+      } catch (error) {
+        console.error('Error loading survey:', error);
+        toast.error("Failed to load survey");
       }
+    };
+
+    loadSurvey();
+  }, [surveyId]);
+
+  const fetchCustomQuestions = async () => {
+    if (!user) return;
+    
+    try {
+      setIsLoadingQuestions(true);
+      const questions = await getUserCustomQuestions();
+      setCustomQuestions(questions);
+    } catch (error) {
+      console.error('Error loading custom questions:', error);
+    } finally {
+      setIsLoadingQuestions(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCustomQuestions();
+  }, [user]);
+
+  // Load custom questions for this survey
+  useEffect(() => {
+    const loadCustomQuestions = async () => {
+      if (!survey) return;
       
       try {
-        console.log(`Starting survey fetch process for ID: ${surveyId}`);
-        
-        // Use the utility function to get the survey
-        const survey = await getSurveyById(surveyId);
-        
-        // If component unmounted during async operation, do nothing
-        if (!isMounted) return;
-        
-        if (!survey) {
-          console.error(`Survey with ID ${surveyId} was not found`);
-          setSurveyNotFound(true);
-          setSurveyLoading(false);
-          return;
-        }
-        
-        console.log('Survey retrieved successfully:', survey);
-        
-        // Check if survey is closed
-        if (isSurveyClosed(survey)) {
-          console.log('Survey is closed, redirecting to closed page');
-          navigate('/survey-closed');
-          return;
-        }
-        
-        // Set survey template data
-        setSurveyTemplate(survey);
-        
-        // Fetch custom questions for this survey
-        try {
-          const { data: surveyQuestionsData, error: surveyQuestionsError } = await supabase
-            .from('survey_questions')
-            .select('question_id')
-            .eq('survey_id', surveyId);
-            
-          if (surveyQuestionsError) {
-            console.error('Error fetching survey questions:', surveyQuestionsError);
-          } else if (surveyQuestionsData && surveyQuestionsData.length > 0) {
-            const questionIds = surveyQuestionsData.map(sq => sq.question_id);
-            
-            // Fetch the actual question data
-            const { data: questionsData, error: questionsError } = await supabase
-              .from('custom_questions')
-              .select('*')
-              .in('id', questionIds);
-              
-            if (questionsError) {
-              console.error('Error fetching custom questions:', questionsError);
-            } else if (questionsData) {
-              console.log('Custom questions fetched:', questionsData);
-              setCustomQuestions(questionsData);
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching custom questions:', error);
-        }
-        
-        setSurveyLoading(false);
+        const questions = await getSurveyCustomQuestions(survey.id);
+        setCustomQuestions(questions);
       } catch (error) {
-        console.error('Error in fetchSurveyTemplate:', error);
-        if (isMounted) {
-          setSurveyNotFound(true);
-          setSurveyLoading(false);
-        }
+        console.error('Error loading custom questions:', error);
       }
     };
     
-    fetchSurveyTemplate();
-    
-    // Clean up function to prevent state updates if component unmounts
-    return () => {
-      isMounted = false;
-    };
-  }, [surveyId, navigate]);
-  
-  const [formData, setFormData] = useState<SurveyFormData>(initialFormData);
-  const [customAnswers, setCustomAnswers] = useState<Record<string, string>>({});
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-    
-    // Clear error when field is populated
-    if (errors[name]) {
-      setErrors({
-        ...errors,
-        [name]: ''
-      });
-    }
-  };
-  
-  const handleCustomQuestionChange = (questionId: string, value: string) => {
-    setCustomAnswers({
-      ...customAnswers,
-      [questionId]: value
-    });
-    
-    // Clear error when field is populated
-    if (errors[questionId]) {
-      setErrors({
-        ...errors,
-        [questionId]: ''
-      });
-    }
-  };
+    loadCustomQuestions();
+  }, [survey]);
 
   const validateForm = () => {
-    const newErrors: Record<string, string> = {};
+    let isValid = true;
+    setNameError('');
+    setDateError('');
+    setEmailsError('');
+
+    if (!name.trim()) {
+      setNameError('Survey name is required');
+      isValid = false;
+    }
+
+    if (!date) {
+      setDateError('Survey date is required');
+      isValid = false;
+    }
+
+    if (emails.trim() && !emails.split(',').every(email => email.trim().match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/))) {
+      setEmailsError('Please enter a valid comma-separated list of email addresses');
+      isValid = false;
+    }
+
+    return isValid;
+  };
+
+  const handleSelectQuestion = (questionId: string) => {
+    if (selectedQuestions.includes(questionId)) {
+      setSelectedQuestions(prev => prev.filter(id => id !== questionId));
+    } else {
+      setSelectedQuestions(prev => [...prev, questionId]);
+    }
+  };
+
+  const handleCustomQuestionChange = (id: string, value: string) => {
+    setCustomQuestionValues(prev => ({
+      ...prev,
+      [id]: value
+    }));
     
-    // Check each required field in the standard form
-    Object.entries(formData).forEach(([key, value]) => {
-      if (!value.trim()) {
-        newErrors[key] = 'This field is required';
-      }
-    });
+    // Clear any error for this field when the user changes the value
+    if (customQuestionErrors[id]) {
+      setCustomQuestionErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[id];
+        return newErrors;
+      });
+    }
+  };
+
+  const validateCustomQuestions = () => {
+    const errors: Record<string, string> = {};
+    let isValid = true;
     
-    // Check custom questions (all are required)
     customQuestions.forEach(question => {
-      const answer = customAnswers[question.id];
-      if (!answer || !answer.trim()) {
-        newErrors[question.id] = 'This field is required';
+      // Required validation for all custom questions
+      if (!customQuestionValues[question.id] || !customQuestionValues[question.id].trim()) {
+        errors[question.id] = 'This field is required';
+        isValid = false;
       }
     });
     
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setCustomQuestionErrors(errors);
+    return isValid;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate the standard form fields
     if (!validateForm()) {
-      toast({
-        title: "Form Incomplete",
-        description: "Please fill in all required fields",
-        variant: "destructive"
-      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    
+    // Validate custom questions
+    if (customQuestions.length > 0 && !validateCustomQuestions()) {
+      // Scroll to the custom questions section
+      document.querySelector('.custom-questions-section')?.scrollIntoView({ behavior: 'smooth' });
       return;
     }
     
     setIsSubmitting(true);
     
     try {
-      console.log(`Submitting survey response for template ID: ${surveyId}`);
-      
-      // Submit response to Supabase with the survey_template_id
-      const { data: surveyResponse, error } = await supabase
-        .from('survey_responses')
-        .insert([{
-          survey_template_id: surveyId,
-          role: formData.role,
-          leadership_prioritize: formData.leadershipPrioritize,
-          manageable_workload: formData.manageableWorkload,
-          work_life_balance: formData.workLifeBalance,
-          health_state: formData.healthState,
-          valued_member: formData.valuedMember,
-          support_access: formData.supportAccess,
-          confidence_in_role: formData.confidenceInRole,
-          org_pride: formData.orgPride,
-          recommendation_score: formData.recommendationScore,
-          leaving_contemplation: formData.leavingContemplation,
-          doing_well: formData.doingWell,
-          improvements: formData.improvements
-        }])
-        .select();
-          
-      if (error) {
-        console.error('Error submitting survey response:', error);
-        throw error;
+      const formattedDate = date ? date.toISOString() : '';
+      const formattedCloseDate = closeDate ? closeDate.toISOString() : null;
+
+      // Create the survey template
+      const createdSurvey = await createSurvey({
+        name: name.trim(),
+        date: formattedDate,
+        close_date: formattedCloseDate,
+        emails: emails.trim(),
+        creator_id: user?.id
+      });
+
+      if (!createdSurvey) {
+        toast.error("Failed to create survey");
+        return;
       }
       
-      // If custom questions exist, submit answers
-      if (customQuestions.length > 0 && Object.keys(customAnswers).length > 0) {
-        const customResponsesData = Object.entries(customAnswers).map(([questionId, answer]) => ({
-          response_id: surveyResponse[0].id,
-          question_id: questionId,
-          answer: answer
-        }));
-        
-        const { error: customResponseError } = await supabase
-          .from('custom_question_responses')
-          .insert(customResponsesData);
-          
-        if (customResponseError) {
-          console.error('Error submitting custom question responses:', customResponseError);
-          // Continue with success flow - we don't want to fail the whole submission
+      // Add custom questions to the survey
+      if (createdSurvey && selectedQuestions.length > 0) {
+        const addQuestionsResult = await addQuestionsToSurvey(createdSurvey.id, selectedQuestions);
+        if (!addQuestionsResult) {
+          toast.error("Failed to add custom questions to the survey");
         }
       }
+
+      const responseId = createdSurvey.id;
       
-      toast({
-        title: "Survey Submitted",
-        description: "Thank you for completing the wellbeing survey!",
-        variant: "default"
+      // Submit custom question responses
+      if (responseId && customQuestions.length > 0) {
+        const customResponses = Object.entries(customQuestionValues).map(([questionId, answer]) => ({
+          questionId,
+          answer
+        }));
+        
+        await submitCustomQuestionResponses(responseId, customResponses);
+      }
+
+      // Send emails to recipients
+      if (emails.trim()) {
+        const emailList = emails.split(',').map(email => email.trim());
+        await sendSurveyEmails(createdSurvey.id, name.trim(), emailList);
+      }
+
+      // Reset the form
+      setName('');
+      setDate(undefined);
+      setCloseDate(undefined);
+      setEmails('');
+      setCustomQuestionValues({});
+      setSelectedQuestions([]);
+
+      toast.success("Survey created successfully!", {
+        description: "Redirecting to surveys page..."
       });
-      
-      // Navigate to the thank you page
-      navigate('/survey-complete');
-      
-    } catch (error: any) {
-      console.error('Survey submission error:', error);
-      toast({
-        title: "Submission Error",
-        description: "There was a problem submitting your response. Please try again.",
-        variant: "destructive"
-      });
+
+      setTimeout(() => {
+        navigate('/surveys');
+      }, 1500);
+    } catch (error) {
+      console.error('Error creating survey:', error);
+      toast.error("Failed to create survey");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (surveyLoading) {
-    return <SurveyLoading />;
-  }
-
-  if (surveyNotFound) {
-    return <SurveyNotFound />;
-  }
-
   return (
-    <MainLayout>
-      <div className="page-container max-w-4xl mx-auto px-4 py-8">
-        <SurveyIntro surveyTemplate={surveyTemplate} />
-        
-        <div ref={formRef} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <form onSubmit={handleSubmit}>
-            {/* Role Selection Dropdown */}
-            <RoleSelect 
-              value={formData.role}
-              onChange={handleInputChange}
-              options={roleOptions}
-              error={errors.role}
+    <div className="page-container">
+      <div className="card animate-slide-up">
+        <form onSubmit={handleSubmit} className="grid gap-6">
+          <div>
+            <Label htmlFor="name">Survey Name</Label>
+            <Input
+              type="text"
+              id="name"
+              placeholder="Enter survey name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
             />
-            
-            {/* Agreement Scale Questions */}
-            <RadioQuestion 
-              label="Leadership prioritise staff wellbeing in our organisation" 
-              name="leadershipPrioritize" 
-              options={agreementOptions}
-              value={formData.leadershipPrioritize}
-              onChange={handleInputChange}
-              error={errors.leadershipPrioritize}
+            {nameError && <p className="text-red-500 text-sm mt-1">{nameError}</p>}
+          </div>
+
+          <div>
+            <Label>Survey Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-[240px] justify-start text-left font-normal",
+                    !date && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {date ? format(date, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <DatePicker
+                  mode="single"
+                  selected={date}
+                  onSelect={setDate}
+                  disabled={isSubmitting}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            {dateError && <p className="text-red-500 text-sm mt-1">{dateError}</p>}
+          </div>
+
+          <div>
+            <Label>Close Date (Optional)</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-[240px] justify-start text-left font-normal",
+                    !closeDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {closeDate ? format(closeDate, "PPP") : <span>Pick a close date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <DatePicker
+                  mode="single"
+                  selected={closeDate}
+                  onSelect={setCloseDate}
+                  disabled={isSubmitting}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div>
+            <Label htmlFor="emails">Recipient Emails (comma-separated)</Label>
+            <Textarea
+              id="emails"
+              placeholder="Enter recipient emails"
+              value={emails}
+              onChange={(e) => setEmails(e.target.value)}
+              rows={3}
             />
+            {emailsError && <p className="text-red-500 text-sm mt-1">{emailsError}</p>}
+          </div>
+          
+          <div className="mt-8 border-t pt-8">
+            <h3 className="text-lg font-semibold mb-4">Custom Questions</h3>
+            <p className="text-gray-600 mb-4">
+              Add your custom questions to this survey. These will appear at the end of the standard questions.
+            </p>
             
-            <RadioQuestion 
-              label="I have a manageable workload" 
-              name="manageableWorkload" 
-              options={agreementOptions}
-              value={formData.manageableWorkload}
-              onChange={handleInputChange}
-              error={errors.manageableWorkload}
-            />
-            
-            <RadioQuestion 
-              label="I have a good work-life balance" 
-              name="workLifeBalance" 
-              options={agreementOptions}
-              value={formData.workLifeBalance}
-              onChange={handleInputChange}
-              error={errors.workLifeBalance}
-            />
-            
-            <RadioQuestion 
-              label="I am in good physical and mental health" 
-              name="healthState" 
-              options={agreementOptions}
-              value={formData.healthState}
-              onChange={handleInputChange}
-              error={errors.healthState}
-            />
-            
-            <RadioQuestion 
-              label="I feel a valued member of the team" 
-              name="valuedMember" 
-              options={agreementOptions}
-              value={formData.valuedMember}
-              onChange={handleInputChange}
-              error={errors.valuedMember}
-            />
-            
-            <RadioQuestion 
-              label="I know where to get support when needed and feel confident to do so" 
-              name="supportAccess" 
-              options={agreementOptions}
-              value={formData.supportAccess}
-              onChange={handleInputChange}
-              error={errors.supportAccess}
-            />
-            
-            <RadioQuestion 
-              label="I feel confident performing my role and am given opportunities to grow" 
-              name="confidenceInRole" 
-              options={agreementOptions}
-              value={formData.confidenceInRole}
-              onChange={handleInputChange}
-              error={errors.confidenceInRole}
-            />
-            
-            <RadioQuestion 
-              label="I am proud to be part of this organisation" 
-              name="orgPride" 
-              options={agreementOptions}
-              value={formData.orgPride}
-              onChange={handleInputChange}
-              error={errors.orgPride}
-            />
-            
-            {/* Numeric Rating */}
-            <RatingQuestion 
-              label="On a Scale of 1-10 How Likely Are You to Recommend This Organisation to Others as a Great Place to Work?" 
-              name="recommendationScore" 
-              min={1} 
-              max={10}
-              value={formData.recommendationScore}
-              onChange={handleInputChange}
-              error={errors.recommendationScore}
-            />
-            
-            {/* Frequency Question */}
-            <RadioQuestion 
-              label="In the last 6 months I have contemplated leaving my role" 
-              name="leavingContemplation" 
-              options={frequencyOptions}
-              value={formData.leavingContemplation}
-              onChange={handleInputChange}
-              error={errors.leavingContemplation}
-            />
-            
-            {/* Text Questions */}
-            <TextQuestion 
-              label="Thinking about staff wellbeing, what does your organisation do well?" 
-              name="doingWell"
-              value={formData.doingWell}
-              onChange={handleInputChange}
-              error={errors.doingWell}
-              subtitle="This is an anonymous survey, please do not include any personal identifiable data." 
-            />
-            
-            <TextQuestion 
-              label="Thinking about staff wellbeing, what could your organisation do better?" 
-              name="improvements"
-              value={formData.improvements}
-              onChange={handleInputChange}
-              error={errors.improvements}
-              subtitle="This is an anonymous survey, please do not include any personal identifiable data." 
-            />
-            
-            {/* Custom Questions */}
-            {customQuestions.length > 0 && (
-              <CustomQuestions 
-                questions={customQuestions}
-                values={customAnswers}
-                onChange={handleCustomQuestionChange}
-                errors={errors}
-              />
+            {selectedQuestions.length > 0 ? (
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Questions:</h4>
+                <div className="grid gap-2">
+                  {selectedQuestions.map(id => {
+                    const question = customQuestions.find(q => q.id === id);
+                    return question ? (
+                      <div key={id} className="flex justify-between items-center bg-gray-50 p-3 rounded-md border border-gray-200">
+                        <div>
+                          <p className="font-medium">{question.text}</p>
+                          <p className="text-xs text-gray-500">
+                            {question.type === 'text' ? 'Text Response' : 'Dropdown Selection'}
+                          </p>
+                        </div>
+                        <Button 
+                          type="button"
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleSelectQuestion(id)}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+            ) : (
+              <p className="text-amber-600 text-sm mb-4">No custom questions selected.</p>
             )}
             
-            <SubmitButton isSubmitting={isSubmitting} />
-          </form>
-        </div>
+            <div className="flex space-x-4">
+              <Button 
+                type="button"
+                variant="outline" 
+                onClick={() => setShowQuestionsDialog(true)}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Questions
+              </Button>
+              
+              <Button
+                type="button"
+                variant="link"
+                onClick={() => navigate('/questions')}
+              >
+                Manage Questions
+              </Button>
+            </div>
+          </div>
+          
+          {/* Right before the submit button, add the custom questions section */}
+          <div className="custom-questions-section">
+            <CustomQuestions 
+              questions={customQuestions}
+              values={customQuestionValues}
+              onChange={handleCustomQuestionChange}
+              errors={customQuestionErrors}
+            />
+          </div>
+
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Creating Survey...' : 'Create Survey'}
+          </Button>
+        </form>
       </div>
-    </MainLayout>
+      
+      {/* Custom Questions Dialog */}
+      <Dialog open={showQuestionsDialog} onOpenChange={setShowQuestionsDialog}>
+        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add Custom Questions</DialogTitle>
+            <DialogDescription>
+              Select questions to add to your survey.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {isLoadingQuestions ? (
+            <div className="text-center py-8">
+              <div className="animate-spin h-6 w-6 border-4 border-brandPurple-500 border-t-transparent rounded-full mx-auto"></div>
+              <p className="mt-3 text-gray-600">Loading questions...</p>
+            </div>
+          ) : customQuestions.length > 0 ? (
+            <QuestionsList
+              questions={customQuestions}
+              onUpdate={fetchCustomQuestions}
+              isSelectable
+              selectedQuestions={selectedQuestions}
+              onSelectQuestion={handleSelectQuestion}
+            />
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-600 mb-4">You haven't created any custom questions yet.</p>
+              <Button onClick={() => navigate('/questions')}>
+                Create Questions
+              </Button>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowQuestionsDialog(false)}>
+              Done
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { getSurveyOptions, getRecommendationScore, getLeavingContemplation, getDetailedWellbeingResponses } from '../utils/analysisUtils';
+import { getSurveyOptions, getRecommendationScore, getLeavingContemplation, getDetailedWellbeingResponses, getCustomQuestionAnalysisResults } from '../utils/analysisUtils';
 import type { SurveyOption, DetailedQuestionResponse, TextResponse } from '../utils/analysisUtils';
 import { getTextResponses } from '../utils/analysisUtils';
 import { ArrowDownIcon, ArrowUpIcon, MinusIcon, ChevronLeft, ChevronRight, Mail, Download } from 'lucide-react';
@@ -14,6 +14,7 @@ import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { generatePDF, sendReportByEmail } from '../utils/reportUtils';
 import { useToast } from '../hooks/use-toast';
+import { CustomQuestionResults } from '../components/analysis';
 
 const SIGNIFICANCE_THRESHOLD = 10;
 const RESPONSES_PER_PAGE = 5;
@@ -47,7 +48,8 @@ const Analysis = () => {
   });
   const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
   const [summaryLoading, setSummaryLoading] = useState<boolean>(false);
-  
+  const [customQuestionResults, setCustomQuestionResults] = useState<any[]>([]);
+
   const [doingWellPage, setDoingWellPage] = useState<number>(1);
   const [improvementsPage, setImprovementsPage] = useState<number>(1);
 
@@ -124,6 +126,10 @@ const Analysis = () => {
 
         const responses = await getTextResponses(selectedSurvey, startDate, endDate);
         setTextResponses(responses);
+
+        // Load custom question results
+        const customResults = await getCustomQuestionAnalysisResults(selectedSurvey);
+        setCustomQuestionResults(customResults);
       } catch (error) {
         console.error('Error loading analysis data:', error);
       } finally {
@@ -695,6 +701,10 @@ const Analysis = () => {
           )}
         </div>
       </div>
+      
+      {customQuestionResults.length > 0 && (
+        <CustomQuestionResults results={customQuestionResults} />
+      )}
     </MainLayout>
   );
 };

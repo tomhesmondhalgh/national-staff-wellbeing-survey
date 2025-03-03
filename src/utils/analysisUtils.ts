@@ -1,4 +1,3 @@
-
 import { supabase, getMockSurveyOptions, getMockRecommendationScore, getMockLeavingContemplation, getMockDetailedResponses, getMockTextResponses } from '../lib/supabase';
 
 // Type definitions
@@ -202,5 +201,84 @@ export const getTextResponses = async (
   } catch (error) {
     console.error('Error in getTextResponses, using mock data:', error);
     return getMockTextResponses(surveyId);
+  }
+};
+
+// Get custom question responses for analysis
+export const getCustomQuestionAnalysisResults = async (surveyId: string): Promise<any[]> => {
+  try {
+    // First get all the custom questions assigned to this survey
+    const { data: surveyQuestions, error: surveyQuestionsError } = await supabase
+      .from('survey_questions')
+      .select(`
+        question_id,
+        custom_questions (*)
+      `)
+      .eq('survey_id', surveyId);
+    
+    if (surveyQuestionsError) {
+      console.error('Error fetching custom questions for survey:', surveyQuestionsError);
+      return [];
+    }
+    
+    if (!surveyQuestions.length) {
+      return [];
+    }
+    
+    // Get all survey responses for this survey
+    const { data: responses, error: responsesError } = await supabase
+      .from('survey_responses')
+      .select('id')
+      .eq('survey_template_id', surveyId);
+    
+    if (responsesError) {
+      console.error('Error fetching survey responses:', responsesError);
+      return [];
+    }
+    
+    if (!responses.length) {
+      return [];
+    }
+    
+    const responseIds = responses.map(r => r.id);
+    
+    // Get all custom question responses
+    const { data: questionResponses, error: questionResponsesError } = await supabase
+      .from('custom_question_responses')
+      .select(`
+        id,
+        question_id,
+        answer,
+        response_id
+      `)
+      .in('response_id', responseIds)
+      .in('question_id', surveyQuestions.map(sq => sq.question_id));
+    
+    if (questionResponsesError) {
+      console.error('Error fetching custom question responses:', questionResponsesError);
+      return [];
+    }
+    
+    // Process and group the data
+    const questionMap = new Map();
+    
+    surveyQuestions.forEach(sq => {
+      const question = sq.custom_questions;
+      questionMap.set(question.id, {
+        question,
+        responses: []
+      });
+    });
+    
+    questionResponses.forEach(qr => {
+      if (questionMap.has(qr.question_id)) {
+        questionMap.get(qr.question_id).responses.push(qr.answer);
+      }
+    });
+    
+    return Array.from(questionMap.values());
+  } catch (error) {
+    console.error('Error in getCustomQuestionAnalysisResults:', error);
+    return [];
   }
 };
