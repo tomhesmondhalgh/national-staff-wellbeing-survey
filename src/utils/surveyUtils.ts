@@ -154,6 +154,29 @@ export const getDashboardStats = async () => {
     
     console.log('Total responses:', responseCount);
     
+    // Calculate benchmark score based on recommendation scores
+    const { data: recommendationData, error: recommendationError } = await supabase
+      .from('survey_responses')
+      .select('recommendation_score')
+      .not('recommendation_score', 'is', null);
+    
+    let benchmarkScore = "0";
+    
+    if (recommendationError) {
+      console.error('Error fetching recommendation scores:', recommendationError);
+    } else if (recommendationData && recommendationData.length > 0) {
+      // Calculate average recommendation score
+      const validScores = recommendationData
+        .map(response => Number(response.recommendation_score))
+        .filter(score => !isNaN(score) && score > 0);
+      
+      if (validScores.length > 0) {
+        const averageScore = validScores.reduce((sum, score) => sum + score, 0) / validScores.length;
+        benchmarkScore = averageScore.toFixed(1);
+        console.log('Calculated benchmark score from recommendation data:', benchmarkScore);
+      }
+    }
+    
     // Get total number of recipients from emails field (to calculate response rate properly)
     const { data: surveyTemplates, error: templatesFetchError } = await supabase
       .from('survey_templates')
@@ -172,7 +195,7 @@ export const getDashboardStats = async () => {
         totalSurveys: surveyCount || 0,
         totalRespondents: responseCount || 0,
         responseRate: `${fallbackResponseRate}%`,
-        benchmarkScore: "76%" // Placeholder
+        benchmarkScore: `${benchmarkScore}` // Now using the calculated benchmark score
       };
     }
     
@@ -206,15 +229,11 @@ export const getDashboardStats = async () => {
     
     console.log('Calculated response rate:', responseRate);
     
-    // Calculate benchmark score (this is a placeholder)
-    // In a real app, this would be based on actual survey results
-    const benchmarkScore = "76%";
-    
     const stats = {
       totalSurveys: surveyCount || 0,
       totalRespondents: responseCount || 0,
       responseRate: `${responseRate}%`,
-      benchmarkScore
+      benchmarkScore: `${benchmarkScore}`
     };
     
     console.log('Calculated stats:', stats);
@@ -224,4 +243,3 @@ export const getDashboardStats = async () => {
     return null;
   }
 };
-

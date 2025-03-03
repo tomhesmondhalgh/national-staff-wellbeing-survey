@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -79,7 +78,7 @@ const Dashboard = () => {
       link: null
     },
     { 
-      label: 'Benchmark Score', 
+      label: 'Avg. Recommendation', 
       value: stats.benchmarkScore, 
       icon: BarChart, 
       color: 'bg-amber-100 text-amber-600',
