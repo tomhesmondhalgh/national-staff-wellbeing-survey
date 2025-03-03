@@ -4,15 +4,20 @@ import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
 import SurveyList from '../components/surveys/SurveyList';
+import Pagination from '../components/surveys/Pagination';
 import { toast } from "sonner";
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+
+const SURVEYS_PER_PAGE = 10;
 
 const Surveys = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [surveys, setSurveys] = useState<any[]>([]);
+  const [totalSurveys, setTotalSurveys] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Fetch surveys from Supabase
   useEffect(() => {
@@ -25,7 +30,23 @@ const Surveys = () => {
       try {
         setLoading(true);
         
-        // Fetch survey templates created by the current user
+        // Get total count for pagination
+        const { count, error: countError } = await supabase
+          .from('survey_templates')
+          .select('*', { count: 'exact', head: true })
+          .eq('creator_id', user.id);
+          
+        if (countError) {
+          throw countError;
+        }
+        
+        setTotalSurveys(count || 0);
+        
+        // Calculate pagination range
+        const from = (currentPage - 1) * SURVEYS_PER_PAGE;
+        const to = from + SURVEYS_PER_PAGE - 1;
+        
+        // Fetch survey templates created by the current user with pagination
         const { data: surveyTemplates, error } = await supabase
           .from('survey_templates')
           .select(`
@@ -38,7 +59,8 @@ const Surveys = () => {
             survey_responses(count)
           `)
           .eq('creator_id', user.id)
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .range(from, to);
           
         if (error) {
           throw error;
@@ -100,7 +122,7 @@ const Surveys = () => {
     };
 
     fetchSurveys();
-  }, [user]);
+  }, [user, currentPage]);
 
   const handleSendReminder = (id: string) => {
     console.log(`Sending reminder for survey ${id}`);
@@ -109,6 +131,14 @@ const Surveys = () => {
       description: "Your staff will receive an email reminder shortly."
     });
   };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to top for better UX
+    window.scrollTo(0, 0);
+  };
+
+  const totalPages = Math.ceil(totalSurveys / SURVEYS_PER_PAGE);
 
   return (
     <MainLayout>
@@ -121,7 +151,6 @@ const Surveys = () => {
           />
           <Link 
             to="/new-survey"
-
             className="btn-primary"
           >
             New Survey
@@ -134,10 +163,22 @@ const Surveys = () => {
             <p className="mt-4 text-gray-600">Loading surveys...</p>
           </div>
         ) : (
-          <SurveyList 
-            surveys={surveys} 
-            onSendReminder={handleSendReminder}
-          />
+          <>
+            <SurveyList 
+              surveys={surveys} 
+              onSendReminder={handleSendReminder}
+            />
+            
+            {totalPages > 1 && (
+              <div className="mt-8">
+                <Pagination 
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
     </MainLayout>
