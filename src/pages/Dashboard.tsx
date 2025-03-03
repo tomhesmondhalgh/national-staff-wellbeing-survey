@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -24,14 +23,12 @@ const Dashboard = () => {
       setIsLoading(true);
       try {
         console.log("Fetching dashboard data...");
-        // Fetch stats
         const dashboardStats = await getDashboardStats();
         console.log("Dashboard stats:", dashboardStats);
         if (dashboardStats) {
           setStats(dashboardStats);
         }
         
-        // Fetch recent surveys
         const surveys = await getRecentSurveys(3);
         console.log("Recent surveys:", surveys);
         setRecentSurveys(surveys);
@@ -45,7 +42,6 @@ const Dashboard = () => {
     fetchDashboardData();
   }, []);
 
-  // Format for display
   const formatDate = (dateString: string) => {
     try {
       return format(new Date(dateString), 'MMMM d, yyyy');
@@ -55,7 +51,6 @@ const Dashboard = () => {
     }
   };
 
-  // Prepare stats data for display
   const statsData = stats ? [
     { 
       label: 'Total Surveys', 
@@ -101,50 +96,50 @@ const Dashboard = () => {
           </Link>
         </div>
 
-        {/* Stats Grid */}
-        {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-            {[...Array(4)].map((_, index) => (
-              <div key={index} className="card p-6 animate-pulse">
-                <div className="h-16 bg-gray-200 rounded"></div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-            {statsData.map((stat, index) => {
-              const StatContent = () => (
-                <div className="flex items-center">
-                  <div className={`p-3 rounded-full mr-4 ${stat.color}`}>
-                    <stat.icon size={24} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">{stat.label}</p>
-                    <h3 className="text-2xl font-bold text-gray-900">{stat.value}</h3>
-                  </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+          {isLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+              {[...Array(4)].map((_, index) => (
+                <div key={index} className="card p-6 animate-pulse">
+                  <div className="h-16 bg-gray-200 rounded"></div>
                 </div>
-              );
-              
-              return (
-                <div 
-                  key={index} 
-                  className={`card p-6 hover:translate-y-[-4px] animate-slide-up ${stat.link ? 'cursor-pointer hover:shadow-md transition-all' : ''}`}
-                  style={{ animationDelay: `${index * 100}ms` }}
-                >
-                  {stat.link ? (
-                    <Link to={stat.link} className="block w-full h-full">
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+              {statsData.map((stat, index) => {
+                const StatContent = () => (
+                  <div className="flex items-center">
+                    <div className={`p-3 rounded-full mr-4 ${stat.color}`}>
+                      <stat.icon size={24} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">{stat.label}</p>
+                      <h3 className="text-2xl font-bold text-gray-900">{stat.value}</h3>
+                    </div>
+                  </div>
+                );
+                
+                return (
+                  <div 
+                    key={index} 
+                    className={`card p-6 hover:translate-y-[-4px] animate-slide-up ${stat.link ? 'cursor-pointer hover:shadow-md transition-all' : ''}`}
+                    style={{ animationDelay: `${index * 100}ms` }}
+                  >
+                    {stat.link ? (
+                      <Link to={stat.link} className="block w-full h-full">
+                        <StatContent />
+                      </Link>
+                    ) : (
                       <StatContent />
-                    </Link>
-                  ) : (
-                    <StatContent />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
-        {/* Recent Surveys - Redesigned to match Surveys page */}
         <div className="card animate-slide-up [animation-delay:400ms]">
           <div className="border-b border-gray-100 p-6 flex justify-between items-center">
             <h2 className="text-lg font-bold text-gray-900">Recent Surveys</h2>
