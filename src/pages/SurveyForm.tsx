@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '../components/ui/button';
@@ -50,6 +51,7 @@ const SurveyForm = () => {
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const [customQuestionValues, setCustomQuestionValues] = useState<Record<string, string>>({});
   const [customQuestionErrors, setCustomQuestionErrors] = useState<Record<string, string>>({});
+  // Fix: Properly type currentSurvey as Record<string, string> instead of string
   const [currentSurvey, setCurrentSurvey] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -297,7 +299,7 @@ const SurveyForm = () => {
       setEmails(value);
     }
     
-    setCurrentSurvey((prev: Record<string, string>) => ({
+    setCurrentSurvey((prev) => ({
       ...prev,
       [fieldName]: value
     }));
