@@ -6,6 +6,7 @@ import * as z from 'zod';
 import { format } from 'date-fns';
 import { Button } from '../ui/button';
 import SurveyFormInputs from './SurveyFormInputs';
+import SurveyQuestions from './SurveyQuestions';
 import { Form } from '../ui/form';
 import SurveyLink from './SurveyLink';
 
@@ -23,23 +24,30 @@ export type SurveyFormData = z.infer<typeof surveyFormSchema>;
 
 interface SurveyFormProps {
   initialData?: Partial<SurveyFormData>;
-  onSubmit: (data: SurveyFormData) => void;
+  initialQuestions?: string[];
+  onSubmit: (data: SurveyFormData, questions: string[]) => void;
   submitButtonText?: string;
   isEdit?: boolean;
   surveyId?: string;
   isSubmitting?: boolean;
+  isSent?: boolean;
 }
 
 const SurveyForm: React.FC<SurveyFormProps> = ({ 
   initialData, 
+  initialQuestions = [],
   onSubmit, 
   submitButtonText = 'Save Changes',
   isEdit = false,
   surveyId,
-  isSubmitting = false
+  isSubmitting = false,
+  isSent = false
 }) => {
   const [showSurveyLink, setShowSurveyLink] = useState<boolean>(false);
   const [surveyLink, setSurveyLink] = useState<string>('');
+  const [selectedQuestions, setSelectedQuestions] = useState<string[]>(initialQuestions);
+  const { useAuth } = require('../contexts/AuthContext');
+  const { user } = useAuth();
   
   const form = useForm<SurveyFormData>({
     resolver: zodResolver(surveyFormSchema),
@@ -60,7 +68,7 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
   }, [showSurveyLink, surveyId]);
   
   const handleFormSubmit = (data: SurveyFormData) => {
-    onSubmit(data);
+    onSubmit(data, selectedQuestions);
     
     if (isEdit && surveyId) {
       setShowSurveyLink(true);
@@ -72,6 +80,15 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-8">
           <SurveyFormInputs form={form} />
+          
+          {user && (
+            <SurveyQuestions 
+              userId={user.id} 
+              selectedQuestions={selectedQuestions}
+              onQuestionsChange={setSelectedQuestions}
+              disabled={isSent}
+            />
+          )}
           
           <div className={`mt-8 ${isEdit ? 'flex justify-between' : 'text-center'}`}>
             <Button 

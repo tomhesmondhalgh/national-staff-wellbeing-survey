@@ -17,6 +17,7 @@ import SurveyForm from './pages/SurveyForm';
 import SurveyComplete from './pages/SurveyComplete';
 import SurveyClosed from './pages/SurveyClosed';
 import Analysis from './pages/Analysis';
+import Questions from './pages/Questions';
 import Profile from './pages/Profile';
 import NotFound from './pages/NotFound';
 
@@ -35,6 +36,7 @@ function App() {
           <Route path="/surveys" element={<Surveys />} />
           <Route path="/surveys/:id/edit" element={<EditSurvey />} />
           <Route path="/new-survey" element={<NewSurvey />} />
+          <Route path="/questions" element={<Questions />} />
           <Route path="/survey" element={<SurveyForm />} />
           <Route path="/survey-complete" element={<SurveyComplete />} />
           <Route path="/survey-closed" element={<SurveyClosed />} />

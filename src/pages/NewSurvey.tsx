@@ -21,10 +21,11 @@ const NewSurvey = () => {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (data: SurveyFormData) => {
+  const handleSubmit = async (data: SurveyFormData, questions: string[]) => {
     try {
       setIsSubmitting(true);
       console.log('Survey data to be saved:', data);
+      console.log('Custom questions to be added:', questions);
       
       if (!user) {
         toast.error("Authentication required", {
@@ -55,6 +56,25 @@ const NewSurvey = () => {
       }
       
       console.log('Saved survey:', savedSurvey);
+
+      // If custom questions were selected, create survey_questions records
+      if (questions.length > 0) {
+        const surveyQuestionsData = questions.map(questionId => ({
+          survey_id: savedSurvey.id,
+          question_id: questionId
+        }));
+
+        const { error: questionsError } = await supabase
+          .from('survey_questions')
+          .insert(surveyQuestionsData);
+
+        if (questionsError) {
+          console.error('Error adding custom questions:', questionsError);
+          toast.error("Failed to add custom questions", {
+            description: "Your survey was created, but there was an issue adding custom questions."
+          });
+        }
+      }
 
       // Process and send emails if recipients are provided
       if (data.recipients && data.recipients.trim()) {

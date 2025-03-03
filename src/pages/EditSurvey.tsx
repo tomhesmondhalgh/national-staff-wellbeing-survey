@@ -23,6 +23,8 @@ const EditSurvey = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [surveyData, setSurveyData] = useState<Partial<SurveyFormData> | null>(null);
   const [originalEmails, setOriginalEmails] = useState<string>('');
+  const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
+  const [isSent, setIsSent] = useState(false);
 
   useEffect(() => {
     const fetchSurvey = async () => {
@@ -31,9 +33,10 @@ const EditSurvey = () => {
       try {
         setIsLoading(true);
         
+        // Get the survey template data
         const { data, error } = await supabase
           .from('survey_templates')
-          .select('name, date, close_date, emails')
+          .select('name, date, close_date, emails, status')
           .eq('id', id)
           .single();
         
@@ -57,12 +60,27 @@ const EditSurvey = () => {
         // Store the original emails for comparison later
         setOriginalEmails(data.emails || '');
         
+        // Check if the survey has already been sent
+        setIsSent(data.status === 'Sent' || data.status === 'Closed');
+        
         setSurveyData({
           name: data.name,
           date: new Date(data.date),
           closeDate: data.close_date ? new Date(data.close_date) : undefined,
           recipients: data.emails || ''
         });
+        
+        // Fetch associated custom questions
+        const { data: questionsData, error: questionsError } = await supabase
+          .from('survey_questions')
+          .select('question_id')
+          .eq('survey_id', id);
+          
+        if (questionsError) {
+          console.error('Error fetching survey questions:', questionsError);
+        } else if (questionsData) {
+          setSelectedQuestions(questionsData.map(q => q.question_id));
+        }
       } catch (error) {
         console.error('Error:', error);
         toast.error("An error occurred", {
@@ -76,7 +94,7 @@ const EditSurvey = () => {
     fetchSurvey();
   }, [id, navigate]);
 
-  const handleSubmit = async (data: SurveyFormData) => {
+  const handleSubmit = async (data: SurveyFormData, questions: string[]) => {
     if (!id) return;
     
     try {
@@ -99,6 +117,38 @@ const EditSurvey = () => {
           description: error.message
         });
         return;
+      }
+
+      // Handle custom questions if survey is not already sent
+      if (!isSent) {
+        // First, delete existing survey question associations
+        const { error: deleteError } = await supabase
+          .from('survey_questions')
+          .delete()
+          .eq('survey_id', id);
+
+        if (deleteError) {
+          console.error('Error removing existing questions:', deleteError);
+        }
+
+        // Then, add the new selected questions
+        if (questions.length > 0) {
+          const surveyQuestionsData = questions.map(questionId => ({
+            survey_id: id,
+            question_id: questionId
+          }));
+
+          const { error: questionsError } = await supabase
+            .from('survey_questions')
+            .insert(surveyQuestionsData);
+
+          if (questionsError) {
+            console.error('Error adding custom questions:', questionsError);
+            toast.error("Failed to update custom questions", {
+              description: "Your survey was updated, but there was an issue updating custom questions."
+            });
+          }
+        }
       }
 
       // Check if email recipients have changed and send emails to new recipients
@@ -202,10 +252,12 @@ const EditSurvey = () => {
           <SurveyForm 
             onSubmit={handleSubmit} 
             initialData={surveyData}
+            initialQuestions={selectedQuestions}
             submitButtonText="Update Survey"
             isEdit={true}
             isSubmitting={isSubmitting}
             surveyId={id}
+            isSent={isSent}
           />
         ) : (
           <div className="card p-6 text-center">

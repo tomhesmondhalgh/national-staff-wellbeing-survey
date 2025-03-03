@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import { useToast } from '../components/ui/use-toast';
@@ -15,6 +15,7 @@ import SurveyIntro from '../components/survey-form/SurveyIntro';
 import SurveyLoading from '../components/survey-form/SurveyLoading';
 import SurveyNotFound from '../components/survey-form/SurveyNotFound';
 import SubmitButton from '../components/survey-form/SubmitButton';
+import CustomQuestions from '../components/survey-form/CustomQuestions';
 
 // Import constants
 import { 
@@ -24,6 +25,13 @@ import {
   initialFormData,
   SurveyFormData
 } from '../components/survey-form/constants';
+
+interface CustomQuestion {
+  id: string;
+  text: string;
+  type: 'text' | 'dropdown';
+  options: string[] | null;
+}
 
 const SurveyForm = () => {
   const navigate = useNavigate();
@@ -40,9 +48,10 @@ const SurveyForm = () => {
   const [surveyNotFound, setSurveyNotFound] = useState(false);
   const [surveyLoading, setSurveyLoading] = useState(true);
   const [surveyTemplate, setSurveyTemplate] = useState<SurveyTemplate | null>(null);
+  const [customQuestions, setCustomQuestions] = useState<CustomQuestion[]>([]);
   
   // Fetch the survey template when component mounts
-  React.useEffect(() => {
+  useEffect(() => {
     let isMounted = true;
     
     const fetchSurveyTemplate = async () => {
@@ -82,6 +91,36 @@ const SurveyForm = () => {
         
         // Set survey template data
         setSurveyTemplate(survey);
+        
+        // Fetch custom questions for this survey
+        try {
+          const { data: surveyQuestionsData, error: surveyQuestionsError } = await supabase
+            .from('survey_questions')
+            .select('question_id')
+            .eq('survey_id', surveyId);
+            
+          if (surveyQuestionsError) {
+            console.error('Error fetching survey questions:', surveyQuestionsError);
+          } else if (surveyQuestionsData && surveyQuestionsData.length > 0) {
+            const questionIds = surveyQuestionsData.map(sq => sq.question_id);
+            
+            // Fetch the actual question data
+            const { data: questionsData, error: questionsError } = await supabase
+              .from('custom_questions')
+              .select('*')
+              .in('id', questionIds);
+              
+            if (questionsError) {
+              console.error('Error fetching custom questions:', questionsError);
+            } else if (questionsData) {
+              console.log('Custom questions fetched:', questionsData);
+              setCustomQuestions(questionsData);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching custom questions:', error);
+        }
+        
         setSurveyLoading(false);
       } catch (error) {
         console.error('Error in fetchSurveyTemplate:', error);
@@ -101,6 +140,7 @@ const SurveyForm = () => {
   }, [surveyId, navigate]);
   
   const [formData, setFormData] = useState<SurveyFormData>(initialFormData);
+  const [customAnswers, setCustomAnswers] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -119,14 +159,37 @@ const SurveyForm = () => {
       });
     }
   };
+  
+  const handleCustomQuestionChange = (questionId: string, value: string) => {
+    setCustomAnswers({
+      ...customAnswers,
+      [questionId]: value
+    });
+    
+    // Clear error when field is populated
+    if (errors[questionId]) {
+      setErrors({
+        ...errors,
+        [questionId]: ''
+      });
+    }
+  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
-    // Check each required field
+    // Check each required field in the standard form
     Object.entries(formData).forEach(([key, value]) => {
       if (!value.trim()) {
         newErrors[key] = 'This field is required';
+      }
+    });
+    
+    // Check custom questions (all are required)
+    customQuestions.forEach(question => {
+      const answer = customAnswers[question.id];
+      if (!answer || !answer.trim()) {
+        newErrors[question.id] = 'This field is required';
       }
     });
     
@@ -152,7 +215,7 @@ const SurveyForm = () => {
       console.log(`Submitting survey response for template ID: ${surveyId}`);
       
       // Submit response to Supabase with the survey_template_id
-      const { error } = await supabase
+      const { data: surveyResponse, error } = await supabase
         .from('survey_responses')
         .insert([{
           survey_template_id: surveyId,
@@ -169,11 +232,30 @@ const SurveyForm = () => {
           leaving_contemplation: formData.leavingContemplation,
           doing_well: formData.doingWell,
           improvements: formData.improvements
-        }]);
+        }])
+        .select();
           
       if (error) {
         console.error('Error submitting survey response:', error);
         throw error;
+      }
+      
+      // If custom questions exist, submit answers
+      if (customQuestions.length > 0 && Object.keys(customAnswers).length > 0) {
+        const customResponsesData = Object.entries(customAnswers).map(([questionId, answer]) => ({
+          response_id: surveyResponse[0].id,
+          question_id: questionId,
+          answer: answer
+        }));
+        
+        const { error: customResponseError } = await supabase
+          .from('custom_question_responses')
+          .insert(customResponsesData);
+          
+        if (customResponseError) {
+          console.error('Error submitting custom question responses:', customResponseError);
+          // Continue with success flow - we don't want to fail the whole submission
+        }
       }
       
       toast({
@@ -332,6 +414,16 @@ const SurveyForm = () => {
               error={errors.improvements}
               subtitle="This is an anonymous survey, please do not include any personal identifiable data." 
             />
+            
+            {/* Custom Questions */}
+            {customQuestions.length > 0 && (
+              <CustomQuestions 
+                questions={customQuestions}
+                values={customAnswers}
+                onChange={handleCustomQuestionChange}
+                errors={errors}
+              />
+            )}
             
             <SubmitButton isSubmitting={isSubmitting} />
           </form>
