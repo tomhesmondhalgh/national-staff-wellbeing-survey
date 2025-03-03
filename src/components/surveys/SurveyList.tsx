@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Send, Copy, Edit } from 'lucide-react';
@@ -179,20 +178,18 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
                 </button>
               )}
               
-              {survey.url && (
-                <button 
-                  onClick={() => {
-                    // Generate the correct survey URL for participants to complete the survey
-                    const surveyUrl = `${window.location.origin}/survey?id=${survey.id}`;
-                    copyToClipboard(survey.id, surveyUrl);
-                  }}
-                  className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors whitespace-nowrap"
-                  title="Copy survey link to clipboard"
-                >
-                  <Copy size={16} className="mr-1" />
-                  <span>{copiedId === survey.id ? 'Copied!' : 'Copy Link'}</span>
-                </button>
-              )}
+              <button 
+                onClick={() => {
+                  // Create the public survey URL (NOT the edit URL)
+                  const surveyUrl = `${window.location.origin}/survey?id=${survey.id}`;
+                  copyToClipboard(survey.id, surveyUrl);
+                }}
+                className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors whitespace-nowrap"
+                title="Copy survey link to clipboard"
+              >
+                <Copy size={16} className="mr-1" />
+                <span>{copiedId === survey.id ? 'Copied!' : 'Copy Link'}</span>
+              </button>
               
               <button 
                 onClick={() => handleEditClick(survey.id)}
