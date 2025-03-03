@@ -202,9 +202,11 @@ const Dashboard = () => {
                             {survey.name}
                           </Link>
                         </h3>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {formatDate(survey.date)}
-                        </p>
+                        {survey.close_date && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Closes: {formatDate(survey.close_date)}
+                          </p>
+                        )}
                       </div>
                     </div>
                     
@@ -217,7 +219,7 @@ const Dashboard = () => {
                         inline-flex px-2.5 py-1 rounded-full text-xs font-medium
                         ${survey.status === 'Scheduled' ? 'bg-yellow-100 text-yellow-800' : 
                           survey.status === 'Sent' ? 'bg-blue-100 text-blue-800' : 
-                          'bg-green-100 text-green-800'}
+                          'bg-purple-100 text-purple-800'}
                       `}>
                         {survey.status}
                       </span>
@@ -242,4 +244,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
