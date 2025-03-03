@@ -1,3 +1,4 @@
+importtypescript
 import React, { useState, useEffect, useRef } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
@@ -168,13 +169,15 @@ const Analysis = () => {
     if (active && payload && payload.length) {
       const total = leavingData.reduce((sum, item) => sum + item.value, 0);
       const percentage = total > 0 ? (payload[0].value / total * 100).toFixed(1) : "0.0";
-      return <div className="bg-white p-3 border border-gray-200 shadow-sm rounded-md">
+      return (
+        <div className="bg-white p-3 border border-gray-200 shadow-sm rounded-md">
           <p className="font-medium">{payload[0].name}</p>
           <p className="text-gray-600">Count: {payload[0].value}</p>
           <p className="text-gray-600">
             Percentage: {percentage}%
           </p>
-        </div>;
+        </div>
+      );
     }
     return null;
   };
@@ -185,17 +188,24 @@ const Analysis = () => {
     label
   }: any) => {
     if (active && payload && payload.length) {
-      return <div className="bg-white p-4 border border-gray-200 shadow-sm rounded-md">
+      return (
+        <div className="bg-white p-4 border border-gray-200 shadow-sm rounded-md">
           <p className="font-medium text-gray-900 mb-2">{label}</p>
-          {payload.map((entry: any, index: number) => <div key={`tooltip-${index}`} className="flex items-center mb-1">
-              <div className="w-3 h-3 rounded-full mr-2" style={{
-            backgroundColor: entry.color
-          }} />
+          {payload.map((entry: any, index: number) => (
+            <div key={`tooltip-${index}`} className="flex items-center mb-1">
+              <div 
+                className="w-3 h-3 rounded-full mr-2" 
+                style={{
+                  backgroundColor: entry.color
+                }} 
+              />
               <p className="text-gray-700">
                 <span className="font-medium">{entry.name}:</span> {entry.value}%
               </p>
-            </div>)}
-        </div>;
+            </div>
+          ))}
+        </div>
+      );
     }
     return null;
   };
@@ -203,20 +213,26 @@ const Analysis = () => {
   const getComparisonIndicator = (schoolScore: number, nationalScore: number) => {
     const difference = schoolScore - nationalScore;
     if (Math.abs(difference) < SIGNIFICANCE_THRESHOLD) {
-      return <div className="flex items-center justify-center text-gray-500">
+      return (
+        <div className="flex items-center justify-center text-gray-500">
           <MinusIcon size={14} className="mr-1" />
           <span className="text-sm">Similar to average</span>
-        </div>;
+        </div>
+      );
     } else if (difference > 0) {
-      return <div className="flex items-center justify-center text-green-600">
+      return (
+        <div className="flex items-center justify-center text-green-600">
           <ArrowUpIcon size={14} className="mr-1" />
           <span className="text-sm">Above average</span>
-        </div>;
+        </div>
+      );
     } else {
-      return <div className="flex items-center justify-center text-red-600">
+      return (
+        <div className="flex items-center justify-center text-red-600">
           <ArrowDownIcon size={14} className="mr-1" />
           <span className="text-sm">Below average</span>
-        </div>;
+        </div>
+      );
     }
   };
 
@@ -635,10 +651,19 @@ const Analysis = () => {
                     <div className="h-64">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
-                          <Pie data={leavingData} cx="50%" cy="50%" labelLine={false} outerRadius={80} fill="#8884d8" dataKey="value" label={({
-                            name,
-                            percent
-                          }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
+                          <Pie 
+                            data={leavingData} 
+                            cx="50%" 
+                            cy="50%" 
+                            labelLine={false} 
+                            outerRadius={80} 
+                            fill="#8884d8" 
+                            dataKey="value" 
+                            label={({
+                              name,
+                              percent
+                            }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          >
                             {leavingData.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))}
@@ -672,14 +697,7 @@ const Analysis = () => {
                     "Disagree": question.nationalResponses["Disagree"] || 0,
                     "Strongly Disagree": question.nationalResponses["Strongly Disagree"] || 0
                   }];
+                  
                   return (
                     <div key={`chart-${index}`} className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                      <h4 className="text-md font-semibold text-gray-900 mb-1 text-center">
-                        {question.question}
-                      </h4>
-                      
-                      <div className="flex justify-center mb-4">
-                        {getComparisonIndicator(schoolPositive, nationalPositive)}
-                      </div>
-                      
-                      <div className
+                      <h4 className="text-
