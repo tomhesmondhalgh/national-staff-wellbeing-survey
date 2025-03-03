@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -10,6 +9,7 @@ import { toast } from 'sonner';
 import { Textarea } from '../components/ui/textarea';
 import { Input } from '../components/ui/input';
 import { supabase } from '../lib/supabase';
+import Pagination from '../components/surveys/Pagination';
 
 type SchoolSearchResult = {
   URN: number;
@@ -34,7 +34,6 @@ const Profile = () => {
     jobTitle: '',
     schoolName: '',
     schoolAddress: '',
-    // Fields for custom school
     customStreetAddress: '',
     customStreetAddress2: '',
     customCity: '',
@@ -43,8 +42,11 @@ const Profile = () => {
     customCountry: 'United Kingdom',
   });
   
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+  const resultsPerPage = 5;
+  
   useEffect(() => {
-    // Fetch user profile data if available
     const fetchProfileData = async () => {
       if (!user) return;
       
@@ -79,23 +81,35 @@ const Profile = () => {
     fetchProfileData();
   }, [user]);
   
-  const handleSearchSchool = async () => {
+  const handleSearchSchool = async (page = 1) => {
     if (!searchQuery.trim()) return;
     
     setSearching(true);
     setSearchResults([]);
+    setCurrentPage(page);
     
     try {
       console.log('Searching for schools with query:', searchQuery);
       
-      // Improved search query with wider matching criteria and logging
+      const countQuery = await supabase
+        .from('schools')
+        .select('URN', { count: 'exact', head: true })
+        .or(`EstablishmentName.ilike.%${searchQuery.trim()}%,Postcode.ilike.%${searchQuery.trim()}%`);
+      
+      const totalCount = countQuery.count || 0;
+      setTotalResults(totalCount);
+      
+      const from = (page - 1) * resultsPerPage;
+      const to = from + resultsPerPage - 1;
+      
       const { data, error } = await supabase
         .from('schools')
         .select('URN, EstablishmentName, Postcode, Street, Town, "County (name)"')
         .or(`EstablishmentName.ilike.%${searchQuery.trim()}%,Postcode.ilike.%${searchQuery.trim()}%`)
-        .limit(10);
+        .range(from, to);
       
       console.log('Search results:', data);
+      console.log('Total results:', totalCount);
       
       if (error) {
         console.error('Error searching schools:', error);
@@ -111,7 +125,6 @@ const Profile = () => {
         }));
         setSearchResults(formattedResults);
       } else {
-        // Show feedback when no results are found
         toast.info('No schools found matching your search term');
         console.log('No schools found matching:', searchQuery);
       }
@@ -121,6 +134,10 @@ const Profile = () => {
     } finally {
       setSearching(false);
     }
+  };
+  
+  const handlePageChange = (page: number) => {
+    handleSearchSchool(page);
   };
   
   const selectSchool = (school: SchoolSearchResult) => {
@@ -144,14 +161,12 @@ const Profile = () => {
   const toggleCustomSchool = () => {
     setUseCustomSchool(!useCustomSchool);
     if (!useCustomSchool) {
-      // Clear school selection when switching to custom
       setProfileData(prev => ({
         ...prev,
         schoolName: '',
         schoolAddress: '',
       }));
     } else {
-      // Clear custom fields when switching back
       setProfileData(prev => ({
         ...prev,
         customStreetAddress: '',
@@ -190,20 +205,17 @@ const Profile = () => {
       return;
     }
     
-    // Validate required fields
     if (!profileData.jobTitle) {
       toast.error('Please enter your job title');
       return;
     }
     
     if (useCustomSchool) {
-      // Validate custom school fields
       if (!profileData.customStreetAddress || !profileData.customCity || !profileData.customPostalCode) {
         toast.error('Please fill in all required address fields');
         return;
       }
       
-      // Compile custom address
       const customAddress = compileCustomAddress();
       
       setProfileData(prev => ({
@@ -232,7 +244,6 @@ const Profile = () => {
       
       if (success) {
         toast.success('Profile updated successfully!');
-        // Redirect to dashboard after successful update
         navigate('/dashboard');
       } else if (error) {
         console.error('Error saving profile:', error);
@@ -331,7 +342,7 @@ const Profile = () => {
                         />
                         <Button 
                           type="button" 
-                          onClick={handleSearchSchool} 
+                          onClick={() => handleSearchSchool()} 
                           disabled={searching || !searchQuery.trim()}
                         >
                           {searching ? (
@@ -344,17 +355,32 @@ const Profile = () => {
                       </div>
                       
                       {searchResults.length > 0 && (
-                        <div className="border rounded-md overflow-hidden divide-y">
-                          {searchResults.map((school, index) => (
-                            <div 
-                              key={`${school.URN}-${index}`} 
-                              className="p-3 hover:bg-gray-50 cursor-pointer"
-                              onClick={() => selectSchool(school)}
-                            >
-                              <p className="font-medium">{school.EstablishmentName}</p>
-                              <p className="text-sm text-gray-600">{school.Postcode}</p>
+                        <div className="space-y-4">
+                          <div className="border rounded-md overflow-hidden divide-y">
+                            {searchResults.map((school, index) => (
+                              <div 
+                                key={`${school.URN}-${index}`} 
+                                className="p-3 hover:bg-gray-50 cursor-pointer"
+                                onClick={() => selectSchool(school)}
+                              >
+                                <p className="font-medium">{school.EstablishmentName}</p>
+                                <p className="text-sm text-gray-600">{school.Postcode}</p>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          {totalResults > resultsPerPage && (
+                            <div className="mt-4">
+                              <Pagination
+                                currentPage={currentPage}
+                                totalPages={Math.ceil(totalResults / resultsPerPage)}
+                                onPageChange={handlePageChange}
+                              />
+                              <p className="text-xs text-center text-gray-500 mt-2">
+                                Showing {searchResults.length} of {totalResults} results
+                              </p>
                             </div>
-                          ))}
+                          )}
                         </div>
                       )}
                       
