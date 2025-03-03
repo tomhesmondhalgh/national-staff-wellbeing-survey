@@ -10,18 +10,15 @@ import { cn } from '../lib/utils';
 import { getSurveySummary } from '../utils/summaryUtils';
 import type { SummaryData } from '../utils/summaryUtils';
 
-// Significance threshold (how much difference is considered significant)
-const SIGNIFICANCE_THRESHOLD = 10; // percentage points
+const SIGNIFICANCE_THRESHOLD = 10;
 
 const Analysis = () => {
-  // State for filters
   const [surveys, setSurveys] = useState<SurveyOption[]>([]);
   const [selectedSurvey, setSelectedSurvey] = useState<string>('');
-  const [dateFilter, setDateFilter] = useState<string>('all'); // 'all', 'month', 'quarter', 'year', 'custom'
+  const [dateFilter, setDateFilter] = useState<string>('all');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
 
-  // State for analysis data
   const [loading, setLoading] = useState<boolean>(true);
   const [recommendationScore, setRecommendationScore] = useState<{
     score: number;
@@ -45,21 +42,15 @@ const Analysis = () => {
   const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
   const [summaryLoading, setSummaryLoading] = useState<boolean>(false);
 
-  // Colors for pie chart
   const COLORS = ['#10b981', '#6366f1', '#f59e0b', '#ef4444', '#6b7280'];
 
-  // Colors for stacked bar chart - removed Neutral as it's not an option
   const RESPONSE_COLORS = {
     'Strongly Agree': '#10b981',
-    // Green
     'Agree': '#6ee7b7',
-    // Light green
     'Disagree': '#fca5a5',
-    // Light red
-    'Strongly Disagree': '#ef4444' // Red
+    'Strongly Disagree': '#ef4444'
   };
 
-  // Load surveys on component mount
   useEffect(() => {
     const loadSurveys = async () => {
       const options = await getSurveyOptions();
@@ -72,7 +63,6 @@ const Analysis = () => {
     loadSurveys();
   }, []);
 
-  // Calculate date range based on filter
   useEffect(() => {
     const now = new Date();
     let start = '';
@@ -88,12 +78,10 @@ const Analysis = () => {
         start = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()).toISOString();
         break;
       case 'custom':
-        // Keep the manually set dates
         start = startDate;
         end = endDate;
         break;
       default:
-        // 'all' - no date filtering
         start = '';
         end = '';
     }
@@ -101,16 +89,13 @@ const Analysis = () => {
     setEndDate(end);
   }, [dateFilter]);
 
-  // Load analysis data when filters change
   useEffect(() => {
     const loadAnalysisData = async () => {
       setLoading(true);
       try {
-        // Get recommendation score
         const recScore = await getRecommendationScore(selectedSurvey, startDate, endDate);
         setRecommendationScore(recScore);
 
-        // Get leaving contemplation data
         const leavingContemplation = await getLeavingContemplation(selectedSurvey, startDate, endDate);
         const pieData = Object.entries(leavingContemplation).map(([name, value]) => ({
           name,
@@ -118,11 +103,9 @@ const Analysis = () => {
         }));
         setLeavingData(pieData);
 
-        // Get detailed wellbeing responses
         const detailedResponses = await getDetailedWellbeingResponses(selectedSurvey, startDate, endDate);
         setDetailedWellbeingResponses(detailedResponses);
 
-        // Get text responses
         const responses = await getTextResponses(selectedSurvey, startDate, endDate);
         setTextResponses(responses);
       } catch (error) {
@@ -134,16 +117,13 @@ const Analysis = () => {
     loadAnalysisData();
   }, [selectedSurvey, startDate, endDate]);
 
-  // Generate AI summary when data changes
   useEffect(() => {
     const generateSummary = async () => {
       if (loading || !selectedSurvey) return;
       setSummaryLoading(true);
       try {
-        // Get the raw leaving contemplation data (not the pie chart format)
         const leavingContemplation = Object.fromEntries(leavingData.map(item => [item.name, item.value]));
 
-        // Generate the summary
         const summary = await getSurveySummary(selectedSurvey, recommendationScore, leavingContemplation, detailedWellbeingResponses, textResponses);
         setSummaryData(summary);
       } catch (error) {
@@ -155,7 +135,6 @@ const Analysis = () => {
     generateSummary();
   }, [selectedSurvey, loading, recommendationScore, leavingData, detailedWellbeingResponses, textResponses]);
 
-  // Helper to customize tooltip on pie chart
   const customPieTooltip = ({
     active,
     payload
@@ -174,7 +153,6 @@ const Analysis = () => {
     return null;
   };
 
-  // Enhanced tooltip for stacked bar chart
   const customStackedBarTooltip = ({
     active,
     payload,
@@ -196,7 +174,6 @@ const Analysis = () => {
     return null;
   };
 
-  // Helper to determine if a school score is significantly different from national average
   const getComparisonIndicator = (schoolScore: number, nationalScore: number) => {
     const difference = schoolScore - nationalScore;
     if (Math.abs(difference) < SIGNIFICANCE_THRESHOLD) {
@@ -216,12 +193,12 @@ const Analysis = () => {
         </div>;
     }
   };
+
   return <MainLayout>
       <div className="page-container">
         <PageTitle title="Survey Analysis" subtitle="Compare your school's results with national benchmarks" />
         
         <div className="card p-6 mb-8 animate-slide-up">
-          {/* Filters Section */}
           <div className="bg-gray-50 p-4 rounded-lg mb-6">
             <h3 className="text-md font-semibold text-gray-700 mb-3">Data Filters</h3>
             <div className="flex flex-wrap gap-4 items-end">
@@ -272,7 +249,6 @@ const Analysis = () => {
               <div className="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
               <span className="ml-3 text-gray-700">Loading analysis data...</span>
             </div> : <>
-              {/* AI Summary Section */}
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-4 border-b pb-2">
                   <h2 className="text-xl text-gray-900 text-center font-bold w-full">AI-Powered Summary</h2>
@@ -292,7 +268,6 @@ const Analysis = () => {
                     
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Strengths */}
                       <div>
                         <h3 className="font-semibold text-green-600 mb-3 flex items-center text-xl my-[10px]">
                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
@@ -310,7 +285,6 @@ const Analysis = () => {
                         </ul>
                       </div>
                       
-                      {/* Areas for Improvement */}
                       <div>
                         <h3 className="font-semibold text-amber-600 mb-3 flex items-center text-xl py-[10px] my-0">
                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
@@ -333,11 +307,9 @@ const Analysis = () => {
                   </div>}
               </div>
               
-              {/* Key Metrics Section - Renamed to "Survey Results" */}
               <div className="mb-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Survey Results</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Recommendation Score Tile */}
                   <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
                     <div className="flex justify-between items-start mb-4">
                       <h3 className="text-lg font-semibold text-gray-900">Recommendation Score</h3>
@@ -359,7 +331,6 @@ const Analysis = () => {
                     </p>
                   </div>
                   
-                  {/* Leaving Contemplation Pie Chart */}
                   <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Staff Contemplating Leaving</h3>
                     <div className="h-64">
@@ -382,39 +353,33 @@ const Analysis = () => {
                 </div>
               </div>
               
-              {/* Questions in a grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 {detailedWellbeingResponses.map((question, index) => {
-              // Calculate the overall positive response (Agree + Strongly Agree)
-              const schoolPositive = (question.schoolResponses["Strongly Agree"] || 0) + (question.schoolResponses["Agree"] || 0);
-              const nationalPositive = (question.nationalResponses["Strongly Agree"] || 0) + (question.nationalResponses["Agree"] || 0);
+                  const schoolPositive = (question.schoolResponses["Strongly Agree"] || 0) + (question.schoolResponses["Agree"] || 0);
+                  const nationalPositive = (question.nationalResponses["Strongly Agree"] || 0) + (question.nationalResponses["Agree"] || 0);
 
-              // Create data for the detailed stacked chart
-              const chartData = [{
-                name: "Your School",
-                "Strongly Agree": question.schoolResponses["Strongly Agree"] || 0,
-                "Agree": question.schoolResponses["Agree"] || 0,
-                "Disagree": question.schoolResponses["Disagree"] || 0,
-                "Strongly Disagree": question.schoolResponses["Strongly Disagree"] || 0
-              }, {
-                name: "National Average",
-                "Strongly Agree": question.nationalResponses["Strongly Agree"] || 0,
-                "Agree": question.nationalResponses["Agree"] || 0,
-                "Disagree": question.nationalResponses["Disagree"] || 0,
-                "Strongly Disagree": question.nationalResponses["Strongly Disagree"] || 0
-              }];
-              return <div key={`chart-${index}`} className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                      {/* Question title takes full width and is center aligned */}
+                  const chartData = [{
+                    name: "Your School",
+                    "Strongly Agree": question.schoolResponses["Strongly Agree"] || 0,
+                    "Agree": question.schoolResponses["Agree"] || 0,
+                    "Disagree": question.schoolResponses["Disagree"] || 0,
+                    "Strongly Disagree": question.schoolResponses["Strongly Disagree"] || 0
+                  }, {
+                    name: "National Average",
+                    "Strongly Agree": question.nationalResponses["Strongly Agree"] || 0,
+                    "Agree": question.nationalResponses["Agree"] || 0,
+                    "Disagree": question.nationalResponses["Disagree"] || 0,
+                    "Strongly Disagree": question.nationalResponses["Strongly Disagree"] || 0
+                  }];
+                  return <div key={`chart-${index}`} className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
                       <h4 className="text-md font-semibold text-gray-900 mb-1 text-center">
                         {question.question}
                       </h4>
                       
-                      {/* Comparison indicator is also center aligned below the question title */}
                       <div className="flex justify-center mb-4">
                         {getComparisonIndicator(schoolPositive, nationalPositive)}
                       </div>
                       
-                      {/* Detailed Stacked Chart */}
                       <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={chartData} margin={{
@@ -436,27 +401,24 @@ const Analysis = () => {
                         }
                       }} />
                             <Tooltip content={customStackedBarTooltip} />
-                            {/* Smaller legend that fits on one line */}
                             <Legend verticalAlign="bottom" height={20} iconSize={10} wrapperStyle={{
                         fontSize: '10px'
                       }} />
-                            <Bar dataKey="Strongly Agree" stackId="a" fill={RESPONSE_COLORS['Strongly Agree']} name="Strongly Agree" />
-                            <Bar dataKey="Agree" stackId="a" fill={RESPONSE_COLORS['Agree']} name="Agree" />
-                            <Bar dataKey="Disagree" stackId="a" fill={RESPONSE_COLORS['Disagree']} name="Disagree" />
                             <Bar dataKey="Strongly Disagree" stackId="a" fill={RESPONSE_COLORS['Strongly Disagree']} name="Strongly Disagree" />
+                            <Bar dataKey="Disagree" stackId="a" fill={RESPONSE_COLORS['Disagree']} name="Disagree" />
+                            <Bar dataKey="Agree" stackId="a" fill={RESPONSE_COLORS['Agree']} name="Agree" />
+                            <Bar dataKey="Strongly Agree" stackId="a" fill={RESPONSE_COLORS['Strongly Agree']} name="Strongly Agree" />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
                     </div>;
-            })}
+                })}
               </div>
               
-              {/* Text Responses Section */}
               <div className="mb-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Open-ended Feedback</h2>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* What's Going Well */}
                   <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
                     <h4 className="text-md font-semibold text-gray-900 mb-4">
                       What does your organisation do well?
@@ -469,7 +431,6 @@ const Analysis = () => {
                       </div> : <p className="text-gray-500 italic">No responses available.</p>}
                   </div>
                   
-                  {/* What Could Improve */}
                   <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
                     <h4 className="text-md font-semibold text-gray-900 mb-4">
                       What could your organisation do better?
