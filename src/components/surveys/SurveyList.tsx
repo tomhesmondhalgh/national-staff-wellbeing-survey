@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Send, Copy, Edit } from 'lucide-react';
@@ -27,16 +28,29 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
   const [sendingReminder, setSendingReminder] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const copyToClipboard = (id: string, text: string) => {
-    navigator.clipboard.writeText(text)
-      .then(() => {
-        setCopiedId(id);
-        toast.success("Survey link copied to clipboard");
-        setTimeout(() => setCopiedId(null), 2000);
-      })
-      .catch(() => {
-        toast.error("Failed to copy link");
-      });
+  // Completely redesigned copyToClipboard to properly handle the survey URL
+  const copyToClipboard = (surveyId: string) => {
+    try {
+      // Explicitly construct the survey participation URL
+      const participationUrl = window.location.origin + '/survey?id=' + surveyId;
+      console.log("Generated participation URL:", participationUrl);
+      
+      // Use navigator.clipboard API to copy the URL
+      navigator.clipboard.writeText(participationUrl)
+        .then(() => {
+          setCopiedId(surveyId);
+          toast.success("Survey link copied to clipboard");
+          console.log("Copied URL to clipboard:", participationUrl);
+          setTimeout(() => setCopiedId(null), 2000);
+        })
+        .catch((error) => {
+          console.error("Failed to copy link:", error);
+          toast.error("Failed to copy link");
+        });
+    } catch (error) {
+      console.error("Error in copyToClipboard:", error);
+      toast.error("Failed to copy link");
+    }
   };
 
   const handleEditClick = (id: string) => {
@@ -179,11 +193,7 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
               )}
               
               <button 
-                onClick={() => {
-                  // Create the public survey URL (NOT the edit URL)
-                  const surveyUrl = `${window.location.origin}/survey?id=${survey.id}`;
-                  copyToClipboard(survey.id, surveyUrl);
-                }}
+                onClick={() => copyToClipboard(survey.id)}
                 className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors whitespace-nowrap"
                 title="Copy survey link to clipboard"
               >
