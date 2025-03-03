@@ -114,6 +114,8 @@ export const deleteCustomQuestion = async (id: string): Promise<boolean> => {
 // Get questions for a specific survey
 export const getSurveyCustomQuestions = async (surveyId: string): Promise<CustomQuestion[]> => {
   try {
+    console.log(`Fetching custom questions for survey ID: ${surveyId}`);
+    
     const { data, error } = await supabase
       .from('survey_questions')
       .select(`
@@ -127,9 +129,21 @@ export const getSurveyCustomQuestions = async (surveyId: string): Promise<Custom
       return [];
     }
     
+    if (!data || data.length === 0) {
+      console.log('No custom questions found for this survey');
+      return [];
+    }
+    
+    console.log('Raw data from survey_questions query:', data);
+    
     // Transform the joined data to a flat array of custom questions
-    const questions = data.map(item => item.custom_questions);
-    return questions as unknown as CustomQuestion[];
+    // Filter out any null or undefined custom_questions
+    const questions = data
+      .filter(item => item && item.custom_questions)
+      .map(item => item.custom_questions);
+    
+    console.log('Processed custom questions:', questions);
+    return questions.filter(Boolean) as CustomQuestion[];
   } catch (error) {
     console.error('Unexpected error in getSurveyCustomQuestions:', error);
     return [];

@@ -30,7 +30,15 @@ const CustomQuestions: React.FC<CustomQuestionsProps> = ({
   onChange,
   errors
 }) => {
+  // If there are no questions, or the array is empty, return null
   if (!questions || questions.length === 0) {
+    return null;
+  }
+
+  // Filter out any null values from the questions array
+  const validQuestions = questions.filter(question => question != null);
+
+  if (validQuestions.length === 0) {
     return null;
   }
 
@@ -39,7 +47,7 @@ const CustomQuestions: React.FC<CustomQuestionsProps> = ({
       <div className="border-t pt-8">
         <h3 className="text-xl font-semibold mb-6">Additional Questions</h3>
         
-        {questions.map((question) => (
+        {validQuestions.map((question) => (
           <div key={question.id} className="mb-8">
             <label className="block text-gray-700 font-medium mb-2">
               {question.text}
