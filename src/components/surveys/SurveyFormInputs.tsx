@@ -3,7 +3,7 @@ import React from 'react';
 import { Calendar as CalendarIcon, Mail } from 'lucide-react';
 import { UseFormReturn } from 'react-hook-form';
 import { SurveyFormData } from './SurveyForm';
-import { FormField, FormItem, FormLabel, FormControl, FormDescription } from '../ui/form';
+import { FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from '../ui/form';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
@@ -34,6 +34,7 @@ const SurveyFormInputs: React.FC<SurveyFormInputsProps> = ({ form }) => {
             <FormDescription>
               A descriptive name to help you identify this survey
             </FormDescription>
+            <FormMessage />
           </FormItem>
         )}
       />
@@ -79,6 +80,7 @@ const SurveyFormInputs: React.FC<SurveyFormInputsProps> = ({ form }) => {
               <FormDescription>
                 The date when the survey will be sent to staff
               </FormDescription>
+              <FormMessage />
             </FormItem>
           )}
         />
@@ -123,6 +125,7 @@ const SurveyFormInputs: React.FC<SurveyFormInputsProps> = ({ form }) => {
               <FormDescription>
                 The last day staff can respond to the survey
               </FormDescription>
+              <FormMessage />
             </FormItem>
           )}
         />
@@ -150,6 +153,7 @@ const SurveyFormInputs: React.FC<SurveyFormInputsProps> = ({ form }) => {
             <FormDescription>
               Enter staff email addresses, separated by commas. Leave blank to use the survey link instead.
             </FormDescription>
+            <FormMessage />
           </FormItem>
         )}
       />
