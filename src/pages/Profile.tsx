@@ -4,7 +4,7 @@ import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
-import { Loader2, Search, Info } from 'lucide-react';
+import { Loader2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { Textarea } from '../components/ui/textarea';
 import { Input } from '../components/ui/input';
@@ -18,7 +18,6 @@ type SchoolSearchResult = {
   Street: string;
   Town: string;
   County: string;
-  MatchField?: string;
 };
 
 const Profile = () => {
@@ -116,29 +115,14 @@ const Profile = () => {
         console.error('Error searching schools:', error);
         toast.error('Error searching for schools');
       } else if (data && data.length > 0) {
-        const formattedResults = data.map(school => {
-          const result: SchoolSearchResult = {
-            URN: school.URN,
-            EstablishmentName: school.EstablishmentName,
-            Postcode: school.Postcode,
-            Street: school.Street || '',
-            Town: school.Town || '',
-            County: school["County (name)"] || '',
-          };
-          
-          const query = searchQuery.trim().toLowerCase();
-          if (school.EstablishmentName?.toLowerCase().includes(query)) {
-            result.MatchField = 'Name';
-          } else if (school.Postcode?.toLowerCase().includes(query)) {
-            result.MatchField = 'Postcode';
-          } else {
-            result.MatchField = 'Unknown';
-          }
-          
-          return result;
-        });
-        
-        console.log('Formatted results with match info:', formattedResults);
+        const formattedResults = data.map(school => ({
+          URN: school.URN,
+          EstablishmentName: school.EstablishmentName,
+          Postcode: school.Postcode,
+          Street: school.Street || '',
+          Town: school.Town || '',
+          County: school["County (name)"] || '',
+        }));
         setSearchResults(formattedResults);
       } else {
         toast.info('No schools found matching your search term');
@@ -380,15 +364,7 @@ const Profile = () => {
                                 onClick={() => selectSchool(school)}
                               >
                                 <p className="font-medium">{school.EstablishmentName}</p>
-                                <div className="flex items-center gap-2">
-                                  <p className="text-sm text-gray-600">{school.Postcode}</p>
-                                  {school.MatchField && school.MatchField !== 'Unknown' && (
-                                    <div className="flex items-center text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
-                                      <Info size={12} className="mr-1" />
-                                      Match: {school.MatchField}
-                                    </div>
-                                  )}
-                                </div>
+                                <p className="text-sm text-gray-600">{school.Postcode}</p>
                               </div>
                             ))}
                           </div>
