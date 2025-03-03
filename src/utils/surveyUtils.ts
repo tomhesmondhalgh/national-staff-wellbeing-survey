@@ -1,4 +1,3 @@
-
 import { supabase } from "../lib/supabase";
 
 export interface SurveyTemplate {
@@ -195,7 +194,7 @@ export const getDashboardStats = async () => {
         totalSurveys: surveyCount || 0,
         totalRespondents: responseCount || 0,
         responseRate: `${fallbackResponseRate}%`,
-        benchmarkScore: `${benchmarkScore}` // Now using the calculated benchmark score
+        benchmarkScore: benchmarkScore // Now using the calculated benchmark score
       };
     }
     
@@ -233,7 +232,7 @@ export const getDashboardStats = async () => {
       totalSurveys: surveyCount || 0,
       totalRespondents: responseCount || 0,
       responseRate: `${responseRate}%`,
-      benchmarkScore: `${benchmarkScore}`
+      benchmarkScore: benchmarkScore
     };
     
     console.log('Calculated stats:', stats);

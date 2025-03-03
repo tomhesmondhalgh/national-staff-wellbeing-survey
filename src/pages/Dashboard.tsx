@@ -79,8 +79,8 @@ const Dashboard = () => {
       link: null
     },
     { 
-      label: 'Avg. Recommendation', 
-      value: stats.benchmarkScore, 
+      label: 'Would Recommend', 
+      value: `${stats.benchmarkScore}/10`, 
       icon: BarChart, 
       color: 'bg-amber-100 text-amber-600',
       link: null
@@ -242,3 +242,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
