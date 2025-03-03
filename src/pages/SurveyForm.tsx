@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '../components/ui/button';
@@ -51,7 +50,7 @@ const SurveyForm = () => {
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const [customQuestionValues, setCustomQuestionValues] = useState<Record<string, string>>({});
   const [customQuestionErrors, setCustomQuestionErrors] = useState<Record<string, string>>({});
-  const [currentSurvey, setCurrentSurvey] = useState<any>(null);
+  const [currentSurvey, setCurrentSurvey] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const loadSurvey = async () => {
@@ -64,7 +63,6 @@ const SurveyForm = () => {
           setName(surveyData.name);
           setDate(surveyData.date ? new Date(surveyData.date) : undefined);
           setCloseDate(surveyData.close_date ? new Date(surveyData.close_date) : undefined);
-          // Check if emails property exists before setting it
           if ('emails' in surveyData) {
             setEmails(surveyData.emails || '');
           }
@@ -96,7 +94,6 @@ const SurveyForm = () => {
     fetchCustomQuestions();
   }, [user]);
 
-  // Load custom questions for this survey
   useEffect(() => {
     const loadCustomQuestions = async () => {
       if (!survey) return;
@@ -150,7 +147,6 @@ const SurveyForm = () => {
       [id]: value
     }));
     
-    // Clear any error for this field when the user changes the value
     if (customQuestionErrors[id]) {
       setCustomQuestionErrors(prev => {
         const newErrors = { ...prev };
@@ -165,7 +161,6 @@ const SurveyForm = () => {
     let isValid = true;
     
     customQuestions.forEach(question => {
-      // Required validation for all custom questions
       if (!customQuestionValues[question.id] || !customQuestionValues[question.id].trim()) {
         errors[question.id] = 'This field is required';
         isValid = false;
@@ -179,15 +174,12 @@ const SurveyForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate the standard form fields
     if (!validateForm()) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     
-    // Validate custom questions
     if (customQuestions.length > 0 && !validateCustomQuestions()) {
-      // Scroll to the custom questions section
       document.querySelector('.custom-questions-section')?.scrollIntoView({ behavior: 'smooth' });
       return;
     }
@@ -198,10 +190,8 @@ const SurveyForm = () => {
       const formattedDate = date ? date.toISOString() : '';
       const formattedCloseDate = closeDate ? closeDate.toISOString() : null;
 
-      // Create or update the survey template
       let surveyResult;
       if (surveyId) {
-        // Update existing survey
         const { data, error } = await supabase
           .from('survey_templates')
           .update({
@@ -217,7 +207,6 @@ const SurveyForm = () => {
         if (error) throw error;
         surveyResult = data;
       } else {
-        // Create new survey
         const { data, error } = await supabase
           .from('survey_templates')
           .insert({
@@ -239,7 +228,6 @@ const SurveyForm = () => {
         return;
       }
       
-      // Add custom questions to the survey
       if (surveyResult && selectedQuestions.length > 0) {
         const addQuestionsResult = await addQuestionsToSurvey(surveyResult.id, selectedQuestions);
         if (!addQuestionsResult) {
@@ -249,7 +237,6 @@ const SurveyForm = () => {
 
       const responseId = surveyResult.id;
       
-      // Submit custom question responses
       if (responseId && customQuestions.length > 0) {
         const customResponses = Object.entries(customQuestionValues).map(([questionId, answer]) => ({
           questionId,
@@ -259,11 +246,9 @@ const SurveyForm = () => {
         await submitCustomQuestionResponses(responseId, customResponses);
       }
 
-      // Send emails to recipients
       if (emails.trim()) {
         const emailList = emails.split(',').map(email => email.trim());
         
-        // Call the Edge Function to send emails
         const { error: emailError } = await supabase.functions.invoke('send-survey-email', {
           body: {
             surveyId: surveyResult.id,
@@ -282,7 +267,6 @@ const SurveyForm = () => {
         }
       }
 
-      // Reset the form
       setName('');
       setDate(undefined);
       setCloseDate(undefined);
@@ -313,8 +297,7 @@ const SurveyForm = () => {
       setEmails(value);
     }
     
-    // Update currentSurvey state with type safety
-    setCurrentSurvey((prev: any) => ({
+    setCurrentSurvey((prev) => ({
       ...prev,
       [fieldName]: value
     }));
@@ -422,7 +405,6 @@ const SurveyForm = () => {
             </div>
           </div>
           
-          {/* Right before the submit button, add the custom questions section */}
           <div className="custom-questions-section">
             <CustomQuestions 
               questions={customQuestions}
@@ -438,7 +420,6 @@ const SurveyForm = () => {
         </form>
       </div>
       
-      {/* Custom Questions Dialog */}
       <Dialog open={showQuestionsDialog} onOpenChange={setShowQuestionsDialog}>
         <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
