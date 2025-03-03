@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
@@ -760,8 +759,7 @@ const Analysis = () => {
                           <div key={`doing-well-${index}`} className="p-3 bg-gray-50 rounded-md">
                             <p className="text-gray-700">{response.response}</p>
                             <div className="text-xs text-gray-500 mt-1">
-                              {response.role && <span className="mr-3">{response.role}</span>}
-                              {response.date && <span>{new Date(response.date).toLocaleDateString()}</span>}
+                              {response.created_at && <span>{new Date(response.created_at).toLocaleDateString()}</span>}
                             </div>
                           </div>
                         ))}
@@ -791,8 +789,7 @@ const Analysis = () => {
                           <div key={`improvement-${index}`} className="p-3 bg-gray-50 rounded-md">
                             <p className="text-gray-700">{response.response}</p>
                             <div className="text-xs text-gray-500 mt-1">
-                              {response.role && <span className="mr-3">{response.role}</span>}
-                              {response.date && <span>{new Date(response.date).toLocaleDateString()}</span>}
+                              {response.created_at && <span>{new Date(response.created_at).toLocaleDateString()}</span>}
                             </div>
                           </div>
                         ))}
