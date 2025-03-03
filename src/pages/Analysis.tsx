@@ -5,12 +5,14 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { getSurveyOptions, getRecommendationScore, getLeavingContemplation, getDetailedWellbeingResponses } from '../utils/analysisUtils';
 import type { SurveyOption, DetailedQuestionResponse, TextResponse } from '../utils/analysisUtils';
 import { getTextResponses } from '../utils/analysisUtils';
-import { ArrowDownIcon, ArrowUpIcon, MinusIcon, Sparkles } from 'lucide-react';
+import { ArrowDownIcon, ArrowUpIcon, MinusIcon, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { getSurveySummary } from '../utils/summaryUtils';
 import type { SummaryData } from '../utils/summaryUtils';
+import { Button } from '../components/ui/button';
 
 const SIGNIFICANCE_THRESHOLD = 10;
+const RESPONSES_PER_PAGE = 5;
 
 const Analysis = () => {
   const [surveys, setSurveys] = useState<SurveyOption[]>([]);
@@ -41,6 +43,10 @@ const Analysis = () => {
   });
   const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
   const [summaryLoading, setSummaryLoading] = useState<boolean>(false);
+  
+  // Add pagination state
+  const [doingWellPage, setDoingWellPage] = useState<number>(1);
+  const [improvementsPage, setImprovementsPage] = useState<number>(1);
 
   const COLORS = ['#10b981', '#6366f1', '#f59e0b', '#ef4444', '#6b7280'];
 
@@ -194,6 +200,56 @@ const Analysis = () => {
     }
   };
 
+  // Get paginated responses
+  const getPaginatedResponses = (responses: TextResponse[], page: number) => {
+    const startIndex = (page - 1) * RESPONSES_PER_PAGE;
+    return responses.slice(startIndex, startIndex + RESPONSES_PER_PAGE);
+  };
+
+  // Calculate total pages
+  const getTotalPages = (responses: TextResponse[]) => {
+    return Math.max(1, Math.ceil(responses.length / RESPONSES_PER_PAGE));
+  };
+
+  // Pagination controls component
+  const PaginationControls = ({ 
+    currentPage, 
+    totalPages, 
+    onPageChange 
+  }: { 
+    currentPage: number; 
+    totalPages: number; 
+    onPageChange: (page: number) => void 
+  }) => {
+    return (
+      <div className="flex items-center justify-center mt-4 space-x-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage <= 1}
+          className="h-8 w-8 p-0"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          <span className="sr-only">Previous page</span>
+        </Button>
+        <span className="text-sm text-gray-600">
+          {currentPage} of {totalPages}
+        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage >= totalPages}
+          className="h-8 w-8 p-0"
+        >
+          <ChevronRight className="h-4 w-4" />
+          <span className="sr-only">Next page</span>
+        </Button>
+      </div>
+    );
+  };
+
   return <MainLayout>
       <div className="page-container">
         <PageTitle title="Survey Analysis" subtitle="Compare your school's results with national benchmarks" />
@@ -296,21 +352,21 @@ const Analysis = () => {
                           {summaryData.improvements.map((improvement, index) => <li key={`improvement-${index}`} className="flex items-start my-0">
                               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-amber-500 mt-0.5 mr-2 flex-shrink-0">
                                 <path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
-                              </svg>
-                              <span className="text-gray-700 text-left my-[5px] py-0">{improvement}</span>
-                            </li>)}
-                        </ul>
-                      </div>
-                    </div>
-                  </div> : <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm flex items-center justify-center h-40">
-                    <span className="text-gray-500">Unable to generate summary. Please try again later.</span>
-                  </div>}
-              </div>
-              
-              <div className="mb-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Survey Results</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+                          </svg>
+                          <span className="text-gray-700 text-left my-[5px] py-0">{improvement}</span>
+                        </li>)}
+                    </ul>
+                  </div>
+                </div>
+              </div> : <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm flex items-center justify-center h-40">
+                <span className="text-gray-500">Unable to generate summary. Please try again later.</span>
+              </div>}
+          </div>
+          
+          <div className="mb-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Survey Results</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
                     <div className="flex justify-between items-start mb-4">
                       <h3 className="text-lg font-semibold text-gray-900">Recommendation Score</h3>
                       {getComparisonIndicator(recommendationScore.score, recommendationScore.nationalAverage)}
@@ -350,11 +406,11 @@ const Analysis = () => {
                       Responses to "In the last 6 months I have contemplated leaving my role"
                     </p>
                   </div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                {detailedWellbeingResponses.map((question, index) => {
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {detailedWellbeingResponses.map((question, index) => {
                   const schoolPositive = (question.schoolResponses["Strongly Agree"] || 0) + (question.schoolResponses["Agree"] || 0);
                   const nationalPositive = (question.nationalResponses["Strongly Agree"] || 0) + (question.nationalResponses["Agree"] || 0);
 
@@ -413,38 +469,69 @@ const Analysis = () => {
                       </div>
                     </div>;
                 })}
+          </div>
+          
+          <div className="mb-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Open-ended Feedback</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+                <h4 className="text-md font-semibold text-gray-900 mb-4">
+                  What does your organisation do well?
+                </h4>
+                {textResponses.doingWell.length > 0 ? (
+                  <>
+                    <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                      {getPaginatedResponses(textResponses.doingWell, doingWellPage).map((item, index) => (
+                        <div key={index} className="pb-4 border-b border-gray-100 last:border-0">
+                          <p className="text-gray-700">{item.response}</p>
+                          <p className="text-xs text-gray-500 mt-1">{item.created_at}</p>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {textResponses.doingWell.length > RESPONSES_PER_PAGE && (
+                      <PaginationControls 
+                        currentPage={doingWellPage}
+                        totalPages={getTotalPages(textResponses.doingWell)}
+                        onPageChange={setDoingWellPage}
+                      />
+                    )}
+                  </>
+                ) : (
+                  <p className="text-gray-500 italic">No responses available.</p>
+                )}
               </div>
               
-              <div className="mb-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Open-ended Feedback</h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                    <h4 className="text-md font-semibold text-gray-900 mb-4">
-                      What does your organisation do well?
-                    </h4>
-                    {textResponses.doingWell.length > 0 ? <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
-                        {textResponses.doingWell.map((item, index) => <div key={index} className="pb-4 border-b border-gray-100 last:border-0">
-                            <p className="text-gray-700">{item.response}</p>
-                            <p className="text-xs text-gray-500 mt-1">{item.created_at}</p>
-                          </div>)}
-                      </div> : <p className="text-gray-500 italic">No responses available.</p>}
-                  </div>
-                  
-                  <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                    <h4 className="text-md font-semibold text-gray-900 mb-4">
-                      What could your organisation do better?
-                    </h4>
-                    {textResponses.improvements.length > 0 ? <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
-                        {textResponses.improvements.map((item, index) => <div key={index} className="pb-4 border-b border-gray-100 last:border-0">
-                            <p className="text-gray-700">{item.response}</p>
-                            <p className="text-xs text-gray-500 mt-1">{item.created_at}</p>
-                          </div>)}
-                      </div> : <p className="text-gray-500 italic">No responses available.</p>}
-                  </div>
-                </div>
+              <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+                <h4 className="text-md font-semibold text-gray-900 mb-4">
+                  What could your organisation do better?
+                </h4>
+                {textResponses.improvements.length > 0 ? (
+                  <>
+                    <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                      {getPaginatedResponses(textResponses.improvements, improvementsPage).map((item, index) => (
+                        <div key={index} className="pb-4 border-b border-gray-100 last:border-0">
+                          <p className="text-gray-700">{item.response}</p>
+                          <p className="text-xs text-gray-500 mt-1">{item.created_at}</p>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {textResponses.improvements.length > RESPONSES_PER_PAGE && (
+                      <PaginationControls 
+                        currentPage={improvementsPage}
+                        totalPages={getTotalPages(textResponses.improvements)}
+                        onPageChange={setImprovementsPage}
+                      />
+                    )}
+                  </>
+                ) : (
+                  <p className="text-gray-500 italic">No responses available.</p>
+                )}
               </div>
-            </>}
+            </div>
+          </div>
         </div>
       </div>
     </MainLayout>;
