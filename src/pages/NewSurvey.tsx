@@ -56,10 +56,48 @@ const NewSurvey = () => {
       
       console.log('Saved survey:', savedSurvey);
 
-      // Show success toast notification
-      toast.success("Survey created successfully!", {
-        description: "Your survey will be sent to staff on the specified date."
-      });
+      // Process and send emails if recipients are provided
+      if (data.recipients && data.recipients.trim()) {
+        // Generate survey link
+        const baseUrl = window.location.origin;
+        const surveyUrl = `${baseUrl}/survey?id=${savedSurvey.id}`;
+        
+        // Process email addresses: trim spaces, split by commas
+        const emails = data.recipients
+          .split(',')
+          .map(email => email.trim())
+          .filter(email => email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
+        
+        if (emails.length > 0) {
+          // Call the Edge Function to send emails
+          const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-survey-email', {
+            body: {
+              surveyId: savedSurvey.id,
+              surveyName: data.name,
+              emails: emails,
+              surveyUrl: surveyUrl,
+              isReminder: false
+            }
+          });
+          
+          if (emailError) {
+            console.error('Error sending emails:', emailError);
+            toast.error("Survey created but emails could not be sent", {
+              description: "Your survey was created successfully, but there was an issue sending invitation emails."
+            });
+          } else {
+            console.log('Email sending result:', emailResult);
+            toast.success("Survey created and invitations sent", {
+              description: `Invitations sent to ${emails.length} recipients.`
+            });
+          }
+        }
+      } else {
+        // Show success toast notification without email info
+        toast.success("Survey created successfully!", {
+          description: "Your survey will be sent to staff on the specified date."
+        });
+      }
       
       // Navigate to the surveys page after success
       setTimeout(() => navigate('/surveys'), 1500);
