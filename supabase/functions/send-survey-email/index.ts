@@ -1,6 +1,8 @@
 
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { Resend } from "https://esm.sh/resend@1.0.0";
+// Using a more recent version of the Deno standard library
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+// Using a newer version of Resend that's compatible with Deno
+import { Resend } from "https://esm.sh/resend@2.0.0";
 
 // CORS headers for browser requests
 const corsHeaders = {
@@ -85,12 +87,15 @@ serve(async (req) => {
       }
     }
     
+    const responseData = {
+      success: true,
+      message: `Processed ${emails.length} emails`,
+      count: results.successful.length,
+      results: results,
+    };
+    
     return new Response(
-      JSON.stringify({
-        success: true,
-        message: `Processed ${emails.length} emails`,
-        results: results,
-      }),
+      JSON.stringify(responseData),
       {
         headers: {
           ...corsHeaders,
