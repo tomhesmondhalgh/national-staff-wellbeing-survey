@@ -136,14 +136,18 @@ export const getSurveyCustomQuestions = async (surveyId: string): Promise<Custom
     
     console.log('Raw data from survey_questions query:', data);
     
-    // Transform the joined data to a flat array of custom questions
-    // Filter out any null or undefined custom_questions
-    const questions = data
-      .filter(item => item && item.custom_questions)
-      .map(item => item.custom_questions);
+    // Extract custom questions from the joined data
+    const questions: CustomQuestion[] = [];
+    
+    data.forEach(item => {
+      if (item && item.custom_questions) {
+        // Add the custom question to our array if it exists
+        questions.push(item.custom_questions as CustomQuestion);
+      }
+    });
     
     console.log('Processed custom questions:', questions);
-    return questions.filter(Boolean) as CustomQuestion[];
+    return questions;
   } catch (error) {
     console.error('Unexpected error in getSurveyCustomQuestions:', error);
     return [];
