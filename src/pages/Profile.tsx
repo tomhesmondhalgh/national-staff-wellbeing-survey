@@ -86,16 +86,21 @@ const Profile = () => {
     setSearchResults([]);
     
     try {
+      console.log('Searching for schools with query:', searchQuery);
+      
+      // Improved search query with wider matching criteria and logging
       const { data, error } = await supabase
         .from('schools')
         .select('URN, EstablishmentName, Postcode, Street, Town, "County (name)"')
-        .or(`EstablishmentName.ilike.%${searchQuery}%,Postcode.ilike.%${searchQuery}%`)
+        .or(`EstablishmentName.ilike.%${searchQuery.trim()}%,Postcode.ilike.%${searchQuery.trim()}%`)
         .limit(10);
+      
+      console.log('Search results:', data);
       
       if (error) {
         console.error('Error searching schools:', error);
         toast.error('Error searching for schools');
-      } else {
+      } else if (data && data.length > 0) {
         const formattedResults = data.map(school => ({
           URN: school.URN,
           EstablishmentName: school.EstablishmentName,
@@ -105,6 +110,10 @@ const Profile = () => {
           County: school["County (name)"] || '',
         }));
         setSearchResults(formattedResults);
+      } else {
+        // Show feedback when no results are found
+        toast.info('No schools found matching your search term');
+        console.log('No schools found matching:', searchQuery);
       }
     } catch (err) {
       console.error('Search error:', err);
@@ -313,6 +322,12 @@ const Profile = () => {
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           className="flex-1"
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleSearchSchool();
+                            }
+                          }}
                         />
                         <Button 
                           type="button" 
