@@ -141,8 +141,17 @@ export const getSurveyCustomQuestions = async (surveyId: string): Promise<Custom
     
     data.forEach(item => {
       if (item && item.custom_questions) {
-        // Add the custom question to our array if it exists
-        questions.push(item.custom_questions as CustomQuestion);
+        // Type check: make sure custom_questions is an object, not an array
+        const questionData = item.custom_questions;
+        
+        // Ensure it has the required properties of a CustomQuestion
+        if (questionData && 
+            typeof questionData === 'object' && 
+            'id' in questionData && 
+            'text' in questionData &&
+            'type' in questionData) {
+          questions.push(questionData as CustomQuestion);
+        }
       }
     });
     
