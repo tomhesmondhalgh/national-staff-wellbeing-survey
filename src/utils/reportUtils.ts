@@ -30,22 +30,43 @@ export const generatePDF = async (
     doc.text('Survey Analysis Report', 20, 20);
     doc.setFontSize(12);
     
-    // Capture the HTML content as an image
-    const canvas = await html2canvas(contentElement, {
-      scale: 1.5, // Higher resolution
-      logging: false,
-      useCORS: true,
-      allowTaint: true,
-    });
+    // Split content into sections for better processing
+    const sections = Array.from(contentElement.children) as HTMLElement[];
     
-    const imgData = canvas.toDataURL('image/png');
+    let currentY = 30; // Start position after title
+    const margin = 20; // Margin on each side
+    const availablePageHeight = pdfHeight - 40; // Available height per page (excluding margins)
     
-    // Calculate dimensions to fit within PDF
-    const contentWidth = pdfWidth - 40; // 20mm margins on each side
-    const contentHeight = (canvas.height * contentWidth) / canvas.width;
-    
-    // Add the image to the PDF
-    doc.addImage(imgData, 'PNG', 20, 30, contentWidth, contentHeight);
+    // Process each section one by one
+    for (let i = 0; i < sections.length; i++) {
+      const section = sections[i];
+      
+      // Capture each section as an image
+      const canvas = await html2canvas(section, {
+        scale: 1.5, // Higher resolution
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      
+      // Calculate dimensions to fit within PDF width
+      const contentWidth = pdfWidth - (margin * 2); // margins on each side
+      const scaledHeight = (canvas.height * contentWidth) / canvas.width;
+      
+      // Check if this section needs to go to a new page
+      if (currentY + scaledHeight > availablePageHeight && i > 0) {
+        doc.addPage();
+        currentY = margin;
+      }
+      
+      // Add the image to the PDF
+      doc.addImage(imgData, 'PNG', margin, currentY, contentWidth, scaledHeight);
+      
+      // Update the Y position for the next section
+      currentY += scaledHeight + 10; // Add some spacing between sections
+    }
     
     // Save the PDF
     doc.save(fileName);
