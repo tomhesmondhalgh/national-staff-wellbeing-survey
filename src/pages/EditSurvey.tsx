@@ -22,6 +22,7 @@ const EditSurvey = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [surveyData, setSurveyData] = useState<Partial<SurveyFormData> | null>(null);
+  const [originalEmails, setOriginalEmails] = useState<string>('');
 
   useEffect(() => {
     const fetchSurvey = async () => {
@@ -52,6 +53,9 @@ const EditSurvey = () => {
           navigate('/surveys');
           return;
         }
+        
+        // Store the original emails for comparison later
+        setOriginalEmails(data.emails || '');
         
         setSurveyData({
           name: data.name,
@@ -96,11 +100,61 @@ const EditSurvey = () => {
         });
         return;
       }
-      
-      // Show success toast
-      toast.success("Survey updated successfully!", {
-        description: "Your changes have been saved."
-      });
+
+      // Check if email recipients have changed and send emails to new recipients
+      if (data.recipients && data.recipients !== originalEmails) {
+        // Generate survey link
+        const baseUrl = window.location.origin;
+        const surveyUrl = `${baseUrl}/survey?id=${id}`;
+        
+        // Find new email addresses that weren't in the original list
+        const oldEmails = originalEmails
+          .split(',')
+          .map(email => email.trim())
+          .filter(email => email);
+          
+        const newEmails = data.recipients
+          .split(',')
+          .map(email => email.trim())
+          .filter(email => email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+          .filter(email => !oldEmails.includes(email)); // Filter to only include emails not in old list
+        
+        if (newEmails.length > 0) {
+          console.log('Sending surveys to new recipients:', newEmails);
+          
+          // Call the Edge Function to send emails only to new recipients
+          const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-survey-email', {
+            body: {
+              surveyId: id,
+              surveyName: data.name,
+              emails: newEmails,
+              surveyUrl: surveyUrl,
+              isReminder: false
+            }
+          });
+          
+          if (emailError) {
+            console.error('Error sending emails:', emailError);
+            toast.error("Survey updated but emails could not be sent", {
+              description: "Your survey was updated successfully, but there was an issue sending invitation emails to new recipients."
+            });
+          } else {
+            console.log('Email sending result:', emailResult);
+            toast.success("Survey updated and invitations sent", {
+              description: `Survey updated and invitations sent to ${newEmails.length} new recipients.`
+            });
+          }
+        } else {
+          toast.success("Survey updated successfully!", {
+            description: "Your changes have been saved. No new recipients to send to."
+          });
+        }
+      } else {
+        // Show success toast without email info
+        toast.success("Survey updated successfully!", {
+          description: "Your changes have been saved."
+        });
+      }
       
       // Navigate back to surveys list
       navigate('/surveys');
