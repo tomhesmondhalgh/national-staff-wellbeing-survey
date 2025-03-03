@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '../components/ui/button';
@@ -51,6 +50,7 @@ const SurveyForm = () => {
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const [customQuestionValues, setCustomQuestionValues] = useState<Record<string, string>>({});
   const [customQuestionErrors, setCustomQuestionErrors] = useState<Record<string, string>>({});
+  const [currentSurvey, setCurrentSurvey] = useState<any>(null);
 
   useEffect(() => {
     const loadSurvey = async () => {
@@ -302,6 +302,14 @@ const SurveyForm = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setCurrentSurvey(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   return (

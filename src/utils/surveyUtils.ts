@@ -324,3 +324,42 @@ export const getCustomQuestionAnalysis = async (surveyId: string): Promise<any> 
     return [];
   }
 };
+
+export const getSurveyWithResponses = async (surveyId) => {
+  try {
+    // Get survey data
+    const { data: survey, error: surveyError } = await supabase
+      .from('survey_templates')
+      .select('*')
+      .eq('id', surveyId)
+      .single();
+    
+    if (surveyError) {
+      console.error('Error fetching survey:', surveyError);
+      return null;
+    }
+    
+    // Get custom questions
+    const customQuestions = await getUserCustomQuestions();
+    
+    // Get survey responses
+    const { data: responses, error: responsesError } = await supabase
+      .from('survey_responses')
+      .select('*')
+      .eq('survey_template_id', surveyId);
+    
+    if (responsesError) {
+      console.error('Error fetching responses:', responsesError);
+      return { ...survey, responses: [] };
+    }
+    
+    return {
+      ...survey,
+      responses: responses || [],
+      customQuestions: customQuestions || []
+    };
+  } catch (error) {
+    console.error('Error in getSurveyWithResponses:', error);
+    return null;
+  }
+};

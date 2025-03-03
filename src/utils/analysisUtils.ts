@@ -1,284 +1,322 @@
-import { supabase, getMockSurveyOptions, getMockRecommendationScore, getMockLeavingContemplation, getMockDetailedResponses, getMockTextResponses } from '../lib/supabase';
+import { supabase } from "../lib/supabase";
 
-// Type definitions
-export interface SurveyOption {
-  id: string;
-  name: string;
-  date: string;
-}
-
-export interface DetailedQuestionResponse {
-  question: string;
-  schoolResponses: Record<string, number>;
-  nationalResponses: Record<string, number>;
-}
-
-export interface TextResponse {
-  response: string;
-  created_at: string;
-}
-
-// Function to get survey options
-export const getSurveyOptions = async (): Promise<SurveyOption[]> => {
+// Function to calculate the average score for a given survey
+export const calculateAverageScore = async (surveyId: string): Promise<number | null> => {
   try {
-    // Try to get data from Supabase first
+    const { data, error } = await supabase
+      .from('survey_responses')
+      .select('answers')
+      .eq('survey_template_id', surveyId);
+
+    if (error) {
+      console.error('Error fetching survey responses:', error);
+      return null;
+    }
+
+    if (!data || data.length === 0) {
+      return 0; // Return 0 if there are no responses
+    }
+
+    // Extract all answers arrays into a single array
+    const allAnswers = data.flatMap(response => Object.values(response.answers));
+
+    // Convert answers to numbers and filter out any non-numeric values
+    const numericAnswers = allAnswers.map(Number).filter(value => !isNaN(value));
+
+    if (numericAnswers.length === 0) {
+      return 0; // Return 0 if there are no valid numeric answers
+    }
+
+    // Calculate the sum of all numeric answers
+    const sum = numericAnswers.reduce((acc, value) => acc + value, 0);
+
+    // Calculate the average
+    const average = sum / numericAnswers.length;
+
+    return average;
+  } catch (error) {
+    console.error('Error calculating average score:', error);
+    return null;
+  }
+};
+
+// Function to retrieve all responses for a given survey
+export const getSurveyResponses = async (surveyId: string): Promise<any[] | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('survey_responses')
+      .select('*')
+      .eq('survey_template_id', surveyId);
+
+    if (error) {
+      console.error('Error fetching survey responses:', error);
+      return null;
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error retrieving survey responses:', error);
+    return null;
+  }
+};
+
+// Function to count the number of responses for a given survey
+export const countSurveyResponses = async (surveyId: string): Promise<number | null> => {
+  try {
+    const { count, error } = await supabase
+      .from('survey_responses')
+      .select('*', { count: 'exact' })
+      .eq('survey_template_id', surveyId);
+
+    if (error) {
+      console.error('Error counting survey responses:', error);
+      return null;
+    }
+
+    return count;
+  } catch (error) {
+    console.error('Error counting survey responses:', error);
+    return null;
+  }
+};
+
+// Function to calculate the distribution of answers for a given question in a survey
+export const calculateAnswerDistribution = async (surveyId: string, questionKey: string): Promise<{ [answer: string]: number } | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('survey_responses')
+      .select('answers')
+      .eq('survey_template_id', surveyId);
+
+    if (error) {
+      console.error('Error fetching survey responses:', error);
+      return null;
+    }
+
+    const distribution: { [answer: string]: number } = {};
+
+    if (data && data.length > 0) {
+      data.forEach(response => {
+        const answer = response.answers[questionKey];
+        if (answer) {
+          distribution[answer] = (distribution[answer] || 0) + 1;
+        }
+      });
+    }
+
+    return distribution;
+  } catch (error) {
+    console.error('Error calculating answer distribution:', error);
+    return null;
+  }
+};
+
+// Function to retrieve survey responses over a period
+export const getSurveyResponsesOverTime = async (surveyId: string, from: Date, to: Date): Promise<any[] | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('survey_responses')
+      .select('*')
+      .eq('survey_template_id', surveyId)
+      .gte('created_at', from.toISOString())
+      .lte('created_at', to.toISOString());
+
+    if (error) {
+      console.error('Error fetching survey responses over time:', error);
+      return null;
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error retrieving survey responses over time:', error);
+    return null;
+  }
+};
+
+// Function to calculate the average score over a period
+export const calculateAverageScoreOverTime = async (surveyId: string, from: Date, to: Date): Promise<number | null> => {
+  try {
+    const responses = await getSurveyResponsesOverTime(surveyId, from, to);
+
+    if (!responses || responses.length === 0) {
+      return 0;
+    }
+
+    const allAnswers = responses.flatMap(response => Object.values(response.answers));
+    const numericAnswers = allAnswers.map(Number).filter(value => !isNaN(value));
+
+    if (numericAnswers.length === 0) {
+      return 0;
+    }
+
+    const sum = numericAnswers.reduce((acc, value) => acc + value, 0);
+    const average = sum / numericAnswers.length;
+
+    return average;
+  } catch (error) {
+    console.error('Error calculating average score over time:', error);
+    return null;
+  }
+};
+
+// Function to retrieve surveys created by a specific user
+export const getSurveysByCreator = async (creatorId: string): Promise<any[] | null> => {
+  try {
     const { data, error } = await supabase
       .from('survey_templates')
-      .select('id, name, date')
-      .order('date', { ascending: false });
-    
+      .select('*')
+      .eq('creator_id', creatorId);
+
     if (error) {
-      console.error('Error fetching surveys:', error);
-      throw error;
+      console.error('Error fetching surveys by creator:', error);
+      return null;
     }
-    
-    // If we got empty data from Supabase, use mock data
-    if (!data || data.length === 0) {
-      console.info('No surveys found in database, using mock data');
-      return getMockSurveyOptions();
-    }
-    
-    return data.map(survey => ({
-      id: survey.id,
-      name: survey.name,
-      date: new Date(survey.date).toLocaleDateString(),
-    }));
+
+    return data || [];
   } catch (error) {
-    console.error('Error in getSurveyOptions, falling back to mock data:', error);
-    return getMockSurveyOptions();
+    console.error('Error retrieving surveys by creator:', error);
+    return null;
   }
 };
 
-// Function to get recommendation score
-export const getRecommendationScore = async (
-  surveyId: string, 
-  startDate?: string, 
-  endDate?: string
-): Promise<{ score: number, nationalAverage: number }> => {
+// Function to retrieve the latest survey
+export const getLatestSurvey = async (): Promise<any | null> => {
   try {
-    // Start with mock data in case real data fetch fails
-    const mockData = getMockRecommendationScore(surveyId);
-    
-    // Try to get real data from Supabase
-    const query = supabase
-      .from('survey_responses')
-      .select('recommendation_score')
-      .eq('survey_template_id', surveyId);
-    
-    // Apply date filters if provided
-    if (startDate) {
-      query.gte('created_at', startDate);
-    }
-    if (endDate) {
-      query.lte('created_at', endDate);
-    }
-    
-    const { data, error } = await query;
-    
+    const { data, error } = await supabase
+      .from('survey_templates')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
     if (error) {
-      console.error('Error fetching recommendation score:', error);
-      throw error;
+      console.error('Error fetching latest survey:', error);
+      return null;
     }
-    
-    // If no data, return mock data
-    if (!data || data.length === 0) {
-      return mockData;
-    }
-    
-    // Calculate average score from responses
-    const scores = data
-      .map(response => Number(response.recommendation_score))
-      .filter(score => !isNaN(score));
-    
-    const averageScore = scores.length > 0
-      ? Math.round((scores.reduce((sum, score) => sum + score, 0) / scores.length) * 10) / 10
-      : 0;
-    
-    return {
-      score: averageScore,
-      nationalAverage: 7.8 // Hardcoded benchmark
-    };
+
+    return data && data.length > 0 ? data[0] : null;
   } catch (error) {
-    console.error('Error in getRecommendationScore, using mock data:', error);
-    return getMockRecommendationScore(surveyId);
+    console.error('Error retrieving latest survey:', error);
+    return null;
   }
 };
 
-// Function to get leaving contemplation data
-export const getLeavingContemplation = async (
-  surveyId: string, 
-  startDate?: string, 
-  endDate?: string
-): Promise<Record<string, number>> => {
+// Function to retrieve surveys closing soon
+export const getSurveysClosingSoon = async (days: number): Promise<any[] | null> => {
   try {
-    // Start with mock data in case real data fetch fails
-    const mockData = getMockLeavingContemplation(surveyId);
-    
-    // Try to get real data from Supabase
-    const query = supabase
-      .from('survey_responses')
-      .select('leaving_contemplation')
-      .eq('survey_template_id', surveyId);
-    
-    // Apply date filters if provided
-    if (startDate) {
-      query.gte('created_at', startDate);
-    }
-    if (endDate) {
-      query.lte('created_at', endDate);
-    }
-    
-    const { data, error } = await query;
-    
+    const closingDate = new Date();
+    closingDate.setDate(closingDate.getDate() + days);
+
+    const { data, error } = await supabase
+      .from('survey_templates')
+      .select('*')
+      .lte('close_date', closingDate.toISOString())
+      .gte('close_date', new Date().toISOString());
+
     if (error) {
-      console.error('Error fetching leaving contemplation data:', error);
-      throw error;
+      console.error('Error fetching surveys closing soon:', error);
+      return null;
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error retrieving surveys closing soon:', error);
+    return null;
+  }
+};
+
+// Function to retrieve incomplete surveys for a specific user
+export const getIncompleteSurveysForUser = async (userId: string): Promise<any[] | null> => {
+  try {
+    // This function requires a more complex implementation
+    // You need to check which surveys the user has not completed yet
+    // This might involve checking the survey_responses table
+    // For simplicity, I'm returning an empty array for now
+    return [];
+  } catch (error) {
+    console.error('Error retrieving incomplete surveys for user:', error);
+    return null;
+  }
+};
+
+// Function to process custom question results
+export const processCustomQuestionResults = async (surveyId) => {
+  try {
+    const customQuestionsResponses = await getCustomQuestionResponses(surveyId);
+    
+    if (!customQuestionsResponses || customQuestionsResponses.length === 0) {
+      return [];
     }
     
-    // If no data, return mock data
-    if (!data || data.length === 0) {
-      return mockData;
-    }
+    const questions = new Map();
+    const responsesMap = new Map();
     
-    // Count responses for each option
-    const counts: Record<string, number> = {
-      "Strongly Agree": 0,
-      "Agree": 0,
-      "Disagree": 0, 
-      "Strongly Disagree": 0
-    };
-    
-    data.forEach(response => {
-      const option = response.leaving_contemplation;
-      if (option && counts[option] !== undefined) {
-        counts[option]++;
+    // Process all responses
+    customQuestionsResponses.forEach(survey => {
+      if (survey && survey.custom_question_responses && Array.isArray(survey.custom_question_responses)) {
+        // Process each response in the current survey
+        survey.custom_question_responses.forEach(response => {
+          if (response && response.custom_questions) {
+            const questionId = response.question_id;
+            const question = response.custom_questions;
+            
+            // Store the question information
+            questions.set(questionId, question);
+            
+            // Store the responses by question ID
+            if (!responsesMap.has(questionId)) {
+              responsesMap.set(questionId, []);
+            }
+            responsesMap.get(questionId).push(response.answer);
+          }
+        });
       }
     });
     
-    return counts;
-  } catch (error) {
-    console.error('Error in getLeavingContemplation, using mock data:', error);
-    return getMockLeavingContemplation(surveyId);
-  }
-};
-
-// Function to get detailed wellbeing responses
-export const getDetailedWellbeingResponses = async (
-  surveyId: string, 
-  startDate?: string, 
-  endDate?: string
-): Promise<DetailedQuestionResponse[]> => {
-  try {
-    // Start with mock data
-    const mockData = getMockDetailedResponses(surveyId);
-    
-    // For a real implementation, we would fetch data from Supabase here
-    // with complex queries to aggregate results for each question
-    
-    // For demo purposes, let's return mock data directly
-    return mockData;
-  } catch (error) {
-    console.error('Error in getDetailedWellbeingResponses, using mock data:', error);
-    return getMockDetailedResponses(surveyId);
-  }
-};
-
-// Function to get text responses
-export const getTextResponses = async (
-  surveyId: string,
-  startDate?: string,
-  endDate?: string
-): Promise<{ doingWell: TextResponse[], improvements: TextResponse[] }> => {
-  try {
-    // Start with mock data
-    const mockData = getMockTextResponses(surveyId);
-    
-    // For real implementation, we would query Supabase here
-    // Select doing_well and improvements columns with timestamps
-    
-    // For demo purposes, let's return mock data directly
-    return mockData;
-  } catch (error) {
-    console.error('Error in getTextResponses, using mock data:', error);
-    return getMockTextResponses(surveyId);
-  }
-};
-
-// Get custom question responses for analysis
-export const getCustomQuestionAnalysisResults = async (surveyId: string): Promise<any[]> => {
-  try {
-    // First get all the custom questions assigned to this survey
-    const { data: surveyQuestions, error: surveyQuestionsError } = await supabase
-      .from('survey_questions')
-      .select(`
-        question_id,
-        custom_questions (*)
-      `)
-      .eq('survey_id', surveyId);
-    
-    if (surveyQuestionsError) {
-      console.error('Error fetching custom questions for survey:', surveyQuestionsError);
-      return [];
-    }
-    
-    if (!surveyQuestions.length) {
-      return [];
-    }
-    
-    // Get all survey responses for this survey
-    const { data: responses, error: responsesError } = await supabase
-      .from('survey_responses')
-      .select('id')
-      .eq('survey_template_id', surveyId);
-    
-    if (responsesError) {
-      console.error('Error fetching survey responses:', responsesError);
-      return [];
-    }
-    
-    if (!responses.length) {
-      return [];
-    }
-    
-    const responseIds = responses.map(r => r.id);
-    
-    // Get all custom question responses
-    const { data: questionResponses, error: questionResponsesError } = await supabase
-      .from('custom_question_responses')
-      .select(`
-        id,
-        question_id,
-        answer,
-        response_id
-      `)
-      .in('response_id', responseIds)
-      .in('question_id', surveyQuestions.map(sq => sq.question_id));
-    
-    if (questionResponsesError) {
-      console.error('Error fetching custom question responses:', questionResponsesError);
-      return [];
-    }
-    
-    // Process and group the data
-    const questionMap = new Map();
-    
-    surveyQuestions.forEach(sq => {
-      const question = sq.custom_questions;
-      questionMap.set(question.id, {
+    // Convert the maps to the final format
+    const results = [];
+    questions.forEach((question, questionId) => {
+      results.push({
         question,
-        responses: []
+        responses: responsesMap.get(questionId) || []
       });
     });
     
-    questionResponses.forEach(qr => {
-      if (questionMap.has(qr.question_id)) {
-        questionMap.get(qr.question_id).responses.push(qr.answer);
-      }
-    });
-    
-    return Array.from(questionMap.values());
+    return results;
   } catch (error) {
-    console.error('Error in getCustomQuestionAnalysisResults:', error);
+    console.error('Error processing custom question results:', error);
+    return [];
+  }
+};
+
+// Function to get custom question responses for a particular survey
+export const getCustomQuestionResponses = async (surveyId: string): Promise<any[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('survey_responses')
+      .select(`
+        id,
+        custom_question_responses (
+          id,
+          question_id,
+          answer,
+          custom_questions (
+            id,
+            text,
+            type,
+            options
+          )
+        )
+      `)
+      .eq('survey_template_id', surveyId);
+    
+    if (error) {
+      console.error('Error fetching custom question responses:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Unexpected error in getCustomQuestionResponses:', error);
     return [];
   }
 };

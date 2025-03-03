@@ -29,12 +29,21 @@ export const createCustomQuestion = async (
   options: string[] | null = null
 ): Promise<CustomQuestion | null> => {
   try {
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      console.error('No authenticated user found');
+      return null;
+    }
+    
     const { data, error } = await supabase
       .from('custom_questions')
       .insert({
         text,
         type,
-        options
+        options,
+        creator_id: user.id  // Set the creator_id to the current user's ID
       })
       .select()
       .single();

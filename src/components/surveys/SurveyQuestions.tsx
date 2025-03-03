@@ -1,169 +1,139 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription 
-} from '../ui/card';
-import { Checkbox } from '../ui/checkbox';
-import { Plus, HelpCircle } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
-import { Link } from 'react-router-dom';
-import { QuestionItem } from '../questions/QuestionsList';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "../ui/dialog";
+import QuestionsList from '../questions/QuestionsList';
+import { getUserCustomQuestions } from '../../utils/customQuestionsUtils';
+import { CustomQuestion } from '../../types/customQuestions';
 
 interface SurveyQuestionsProps {
-  userId: string;
   selectedQuestions: string[];
-  onQuestionsChange: (questionIds: string[]) => void;
-  disabled?: boolean;
+  onQuestionsChange: (questions: string[]) => void;
 }
 
 const SurveyQuestions: React.FC<SurveyQuestionsProps> = ({ 
-  userId, 
-  selectedQuestions, 
-  onQuestionsChange,
-  disabled = false
+  selectedQuestions,
+  onQuestionsChange
 }) => {
-  const [questions, setQuestions] = useState<QuestionItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [showDialog, setShowDialog] = useState(false);
+  const [questions, setQuestions] = useState<CustomQuestion[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [localSelected, setLocalSelected] = useState<string[]>([]);
   
   useEffect(() => {
-    const fetchQuestions = async () => {
-      if (!userId) return;
-      
-      try {
-        setIsLoading(true);
-        const { supabase } = await import('../../lib/supabase');
-        
-        const { data, error } = await supabase
-          .from('custom_questions')
-          .select('*')
-          .eq('creator_id', userId);
-        
-        if (error) throw error;
-        
-        setQuestions(data || []);
-      } catch (error) {
-        console.error('Error fetching questions:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchQuestions();
-  }, [userId]);
+    if (showDialog) {
+      fetchQuestions();
+    }
+  }, [showDialog]);
   
-  const handleQuestionToggle = (questionId: string) => {
-    if (disabled) return;
-    
-    const newSelectedQuestions = selectedQuestions.includes(questionId)
-      ? selectedQuestions.filter(id => id !== questionId)
-      : [...selectedQuestions, questionId];
-    
-    onQuestionsChange(newSelectedQuestions);
+  useEffect(() => {
+    setLocalSelected(selectedQuestions);
+  }, [selectedQuestions]);
+  
+  const fetchQuestions = async () => {
+    try {
+      setIsLoading(true);
+      const data = await getUserCustomQuestions();
+      setQuestions(data);
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
   
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <div className="h-6 bg-gray-200 rounded w-1/3 animate-pulse"></div>
-          <div className="h-4 bg-gray-200 rounded w-2/3 animate-pulse"></div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="flex items-center space-x-2">
-                <div className="h-5 w-5 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-5 bg-gray-200 rounded w-3/4 animate-pulse"></div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const handleSelectQuestion = (questionId: string) => {
+    setLocalSelected(prev => {
+      if (prev.includes(questionId)) {
+        return prev.filter(id => id !== questionId);
+      } else {
+        return [...prev, questionId];
+      }
+    });
+  };
   
+  const handleSave = () => {
+    onQuestionsChange(localSelected);
+    setShowDialog(false);
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Custom Questions</CardTitle>
-            <CardDescription>Select custom questions to add to your survey</CardDescription>
-          </div>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="sm" className="px-2">
-                  <HelpCircle size={16} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="w-80">
-                  Custom questions appear at the end of your standard survey questions. 
-                  You can add your own questions to gather specific information from your staff.
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+    <div className="mt-8">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-medium">Custom Questions</h3>
+        <Button 
+          variant="outline" 
+          onClick={() => setShowDialog(true)}
+        >
+          Add Custom Questions
+        </Button>
+      </div>
+      
+      {selectedQuestions.length > 0 ? (
+        <div className="bg-gray-50 p-4 rounded-md">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Questions:</h4>
+          <ul className="space-y-2">
+            {questions
+              .filter(q => selectedQuestions.includes(q.id))
+              .map(question => (
+                <li key={question.id} className="text-sm text-gray-600 flex items-center space-x-2">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                  <span>{question.text}</span>
+                </li>
+              ))}
+          </ul>
         </div>
-      </CardHeader>
-      <CardContent>
-        {questions.length === 0 ? (
-          <div className="text-center py-6">
-            <p className="text-gray-500 mb-4">
-              You haven't created any custom questions yet
-            </p>
-            <Link to="/questions">
-              <Button className="flex items-center gap-2">
-                <Plus size={16} />
-                Create Questions
-              </Button>
-            </Link>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {questions.map((question) => (
-              <div key={question.id} className="flex items-start space-x-2">
-                <Checkbox 
-                  id={`question-${question.id}`} 
-                  checked={selectedQuestions.includes(question.id)}
-                  onCheckedChange={() => handleQuestionToggle(question.id)}
-                  disabled={disabled}
-                />
-                <div>
-                  <label 
-                    htmlFor={`question-${question.id}`} 
-                    className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
-                  >
-                    {question.text}
-                  </label>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {question.type === 'text' ? 'Free Text' : 'Dropdown'}
-                    {question.type === 'dropdown' && question.options && (
-                      <> · {question.options.length} options</>
-                    )}
-                  </p>
-                </div>
-              </div>
-            ))}
-            
-            <div className="mt-4 border-t pt-4">
-              <Link to="/questions">
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
-                  <Plus size={14} />
-                  Create New Question
-                </Button>
-              </Link>
+      ) : (
+        <div className="text-sm text-gray-500 italic">
+          No custom questions selected.
+        </div>
+      )}
+      
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Select Custom Questions</DialogTitle>
+            <DialogDescription>
+              Choose custom questions to include in your survey.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {isLoading ? (
+            <div className="py-8 text-center">
+              <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
+              <p className="mt-4 text-gray-600">Loading questions...</p>
             </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          ) : (
+            <>
+              <div className="max-h-[400px] overflow-y-auto">
+                <QuestionsList 
+                  questions={questions}
+                  onUpdate={() => {}}
+                  isSelectable={true}
+                  selectedQuestions={localSelected}
+                  onSelectQuestion={handleSelectQuestion}
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-2 mt-4">
+                <Button variant="outline" onClick={() => setShowDialog(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSave}>
+                  Add Selected Questions
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 
