@@ -306,17 +306,17 @@ const SurveyForm = () => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    if (name === 'name') {
+    const { name: fieldName, value } = e.target;
+    if (fieldName === 'name') {
       setName(value);
-    } else if (name === 'emails') {
+    } else if (fieldName === 'emails') {
       setEmails(value);
     }
     
     // Update currentSurvey state with type safety
-    setCurrentSurvey(prev => ({
+    setCurrentSurvey((prev: any) => ({
       ...prev,
-      [name]: value
+      [fieldName]: value
     }));
   };
 
