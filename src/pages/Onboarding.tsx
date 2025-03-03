@@ -53,7 +53,8 @@ const Onboarding = () => {
 
       if (success) {
         toast.success('Profile completed successfully!');
-        navigate('/dashboard');
+        // Redirect to profile page instead of dashboard
+        navigate('/profile');
       } else if (error) {
         console.error('Error completing profile:', error);
         toast.error('Failed to complete profile', {
@@ -139,7 +140,7 @@ const Onboarding = () => {
                     Completing profile...
                   </>
                 ) : (
-                  <>Complete profile</>
+                  <>Continue to profile</>
                 )}
               </Button>
             </div>

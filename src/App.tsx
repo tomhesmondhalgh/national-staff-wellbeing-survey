@@ -17,6 +17,7 @@ import SurveyForm from './pages/SurveyForm';
 import SurveyComplete from './pages/SurveyComplete';
 import SurveyClosed from './pages/SurveyClosed';
 import Analysis from './pages/Analysis';
+import Profile from './pages/Profile';
 import NotFound from './pages/NotFound';
 
 import './App.css';
@@ -38,6 +39,7 @@ function App() {
           <Route path="/survey-complete" element={<SurveyComplete />} />
           <Route path="/survey-closed" element={<SurveyClosed />} />
           <Route path="/analysis" element={<Analysis />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster />

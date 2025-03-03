@@ -63,6 +63,12 @@ const Navbar: React.FC = () => {
                 >
                   Analysis
                 </Link>
+                <Link 
+                  to="/profile" 
+                  className={`nav-link ${location.pathname === '/profile' ? 'text-brandPurple-600' : ''}`}
+                >
+                  Profile
+                </Link>
                 <button className="nav-link" onClick={handleSignOut}>Sign Out</button>
               </>
             ) : (
@@ -116,6 +122,13 @@ const Navbar: React.FC = () => {
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Analysis
+                </Link>
+                <Link 
+                  to="/profile" 
+                  className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Profile
                 </Link>
                 <button 
                   className="block w-full text-left px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
