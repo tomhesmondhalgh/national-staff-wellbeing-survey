@@ -181,7 +181,11 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
               
               {survey.url && (
                 <button 
-                  onClick={() => copyToClipboard(survey.id, survey.url!)}
+                  onClick={() => {
+                    // Generate the correct survey URL for participants to complete the survey
+                    const surveyUrl = `${window.location.origin}/survey?id=${survey.id}`;
+                    copyToClipboard(survey.id, surveyUrl);
+                  }}
                   className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors whitespace-nowrap"
                   title="Copy survey link to clipboard"
                 >
