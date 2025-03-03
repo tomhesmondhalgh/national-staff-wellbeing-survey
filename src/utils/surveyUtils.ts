@@ -154,10 +154,57 @@ export const getDashboardStats = async () => {
     
     console.log('Total responses:', responseCount);
     
-    // Calculate response rate (this is a simplified calculation)
-    // In a real app, you'd need more complex logic based on invitations sent vs responses received
-    const avgResponsesPerSurvey = surveyCount ? Math.round((responseCount / surveyCount) * 100) / 100 : 0;
-    const responseRate = Math.min(Math.round(avgResponsesPerSurvey * 10), 100); // Example calculation
+    // Get total number of recipients from emails field (to calculate response rate properly)
+    const { data: surveyTemplates, error: templatesFetchError } = await supabase
+      .from('survey_templates')
+      .select('emails')
+      .not('emails', 'is', null)
+      .not('emails', 'eq', '')
+      .filter('date', 'lt', new Date().toISOString()); // Only include surveys that have been sent (past date)
+    
+    if (templatesFetchError) {
+      console.error('Error fetching templates for response rate:', templatesFetchError);
+      // Fall back to simplified calculation if we can't get the email data
+      const avgResponsesPerSurvey = surveyCount ? Math.round((responseCount / surveyCount) * 100) / 100 : 0;
+      const fallbackResponseRate = Math.min(Math.round(avgResponsesPerSurvey * 10), 100);
+      
+      return {
+        totalSurveys: surveyCount || 0,
+        totalRespondents: responseCount || 0,
+        responseRate: `${fallbackResponseRate}%`,
+        benchmarkScore: "76%" // Placeholder
+      };
+    }
+    
+    // Count total recipients (each email address in the comma-separated list)
+    let totalRecipients = 0;
+    if (surveyTemplates && surveyTemplates.length > 0) {
+      console.log('Calculating total recipients from sent surveys');
+      
+      surveyTemplates.forEach(template => {
+        if (template.emails) {
+          const emailsArray = template.emails
+            .split(',')
+            .map(email => email.trim())
+            .filter(email => email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
+          
+          totalRecipients += emailsArray.length;
+        }
+      });
+    }
+    
+    console.log('Total recipients:', totalRecipients);
+    
+    // Calculate actual response rate based on recipients
+    let responseRate = 0;
+    if (totalRecipients > 0) {
+      responseRate = Math.round((responseCount / totalRecipients) * 100);
+    } else {
+      // Fallback if no recipients found
+      responseRate = surveyCount ? Math.min(Math.round((responseCount / surveyCount) * 20), 100) : 0;
+    }
+    
+    console.log('Calculated response rate:', responseRate);
     
     // Calculate benchmark score (this is a placeholder)
     // In a real app, this would be based on actual survey results
@@ -177,3 +224,4 @@ export const getDashboardStats = async () => {
     return null;
   }
 };
+
