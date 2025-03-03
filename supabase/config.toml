@@ -46,3 +46,6 @@ backend = "postgres"
 [functions]
 [functions.send-survey-email]
 verify_jwt = false
+
+[functions.send-welcome-email]
+verify_jwt = false

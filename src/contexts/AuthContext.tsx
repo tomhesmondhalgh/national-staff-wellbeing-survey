@@ -89,6 +89,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
+      // Send welcome email
+      try {
+        await supabase.functions.invoke('send-welcome-email', {
+          body: {
+            email,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            schoolName: userData.schoolName,
+          },
+        });
+        console.log('Welcome email sent successfully');
+      } catch (emailError) {
+        console.error('Error sending welcome email:', emailError);
+        // Don't fail the signup if the welcome email fails
+      }
+
       toast.success('Account created successfully!', {
         description: 'Please check your email to confirm your account.'
       });
