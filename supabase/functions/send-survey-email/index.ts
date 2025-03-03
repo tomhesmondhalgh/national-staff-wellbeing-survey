@@ -45,7 +45,7 @@ serve(async (req) => {
           : `You're invited to complete the "${surveyName}" wellbeing survey`;
         
         const response = await resend.emails.send({
-          from: "Wellbeing Surveys <no-reply@wellbeingapp.com>",
+          from: "Wellbeing Surveys <no-reply@humankindaward.com>",
           to: email,
           subject: subject,
           html: `
