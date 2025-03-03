@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { toast } from "sonner";
 import { useNavigate } from 'react-router-dom';
@@ -21,7 +20,6 @@ export const useSurveyForm = (surveyId?: string | null) => {
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
   const [customQuestionValues, setCustomQuestionValues] = useState<Record<string, string>>({});
   const [customQuestionErrors, setCustomQuestionErrors] = useState<Record<string, string>>({});
-  // Fix: Properly define currentSurvey state as Record<string, string>
   const [currentSurvey, setCurrentSurvey] = useState<Record<string, string>>({});
   
   const validateForm = () => {
@@ -206,16 +204,16 @@ export const useSurveyForm = (surveyId?: string | null) => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name: fieldName, value } = e.target;
+    
     if (fieldName === 'name') {
       setName(value);
     } else if (fieldName === 'emails') {
       setEmails(value);
     }
     
-    // Now we're properly typing the prev parameter to avoid the error
     setCurrentSurvey(prev => ({
       ...prev,
-      [fieldName]: value
+      [fieldName]: String(value)
     }));
   };
 

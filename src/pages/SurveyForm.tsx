@@ -58,11 +58,12 @@ const SurveyForm = () => {
         const surveyData = await getSurveyById(surveyId);
         if (surveyData) {
           setSurvey(surveyData);
-          setName(surveyData.name);
+          // Cast the values to the proper types before setting state
+          setName(surveyData.name ? String(surveyData.name) : '');
           setDate(surveyData.date ? new Date(surveyData.date) : undefined);
           setCloseDate(surveyData.close_date ? new Date(surveyData.close_date) : undefined);
           if ('emails' in surveyData) {
-            setEmails(surveyData.emails || '');
+            setEmails(surveyData.emails ? String(surveyData.emails) : '');
           }
         }
       } catch (error) {
