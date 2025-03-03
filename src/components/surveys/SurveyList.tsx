@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Send, Copy, Edit } from 'lucide-react';
@@ -28,19 +27,16 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
   const [sendingReminder, setSendingReminder] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  // Completely redesigned copyToClipboard to properly handle the survey URL
   const copyToClipboard = (surveyId: string) => {
     try {
-      // Explicitly construct the survey participation URL
-      const participationUrl = window.location.origin + '/survey?id=' + surveyId;
-      console.log("Generated participation URL:", participationUrl);
+      const surveyUrl = `${window.location.origin}/survey?id=${surveyId}`;
       
-      // Use navigator.clipboard API to copy the URL
-      navigator.clipboard.writeText(participationUrl)
+      console.log("Copying survey URL:", surveyUrl);
+      
+      navigator.clipboard.writeText(surveyUrl)
         .then(() => {
           setCopiedId(surveyId);
           toast.success("Survey link copied to clipboard");
-          console.log("Copied URL to clipboard:", participationUrl);
           setTimeout(() => setCopiedId(null), 2000);
         })
         .catch((error) => {
@@ -54,8 +50,6 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
   };
 
   const handleEditClick = (id: string) => {
-    // Log before navigation to help debug
-    console.log(`Navigating to edit survey: ${id}`);
     navigate(`/surveys/${id}/edit`);
   };
   
@@ -70,7 +64,6 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
     try {
       setSendingReminder(survey.id);
       
-      // Parse the emails string into an array
       const emails = survey.emails
         .split(',')
         .map(email => email.trim())
@@ -83,7 +76,6 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
         return;
       }
       
-      // Call the Supabase function to send reminder emails
       const { data, error } = await supabase.functions.invoke('send-survey-email', {
         body: {
           surveyId: survey.id,
