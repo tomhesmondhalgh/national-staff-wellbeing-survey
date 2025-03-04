@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -65,7 +66,11 @@ const Dashboard = () => {
     <MainLayout>
       <div className="page-container">
         <div className="flex justify-between items-center mb-6">
-          <PageTitle title="Dashboard" subtitle="At a glance overview of your staff wellbeing" />
+          <PageTitle 
+            title="Dashboard" 
+            subtitle="At a glance overview of your staff wellbeing"
+            alignment="left"
+          />
           <Button onClick={() => navigate('/new-survey')}>
             <Plus className="mr-2 h-4 w-4" />
             New Survey
