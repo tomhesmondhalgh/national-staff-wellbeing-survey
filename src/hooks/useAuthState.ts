@@ -11,7 +11,7 @@ export function useAuthState() {
   const location = useLocation();
 
   const isAuthRelatedPage = () => {
-    return ['/login', '/signup'].includes(location.pathname);
+    return ['/login', '/signup', '/email-confirmation'].includes(location.pathname);
   };
 
   // Check if this is a social login user that needs to complete onboarding
@@ -43,14 +43,39 @@ export function useAuthState() {
     const socialLoginFlag = sessionStorage.getItem('socialLoginRedirect');
     if (socialLoginFlag) {
       console.log('Found social login redirect flag in session storage');
-      sessionStorage.removeItem('socialLoginRedirect');
       return true;
     }
     return false;
   };
 
+  // Determine if the user should be redirected to onboarding
+  const shouldRedirectToOnboarding = (user: User | null) => {
+    // If we're already on the onboarding page, no need to redirect
+    if (location.pathname === '/onboarding') {
+      return false;
+    }
+    
+    // If this is a social login that needs to complete profile OR
+    // if our session flag indicates we just came from a social login flow
+    const redirectNeeded = (needsOnboarding(user) || isNewSocialLogin());
+    
+    console.log('Redirect to onboarding decision:', {
+      needsOnboarding: needsOnboarding(user),
+      isNewSocialLogin: isNewSocialLogin(),
+      finalDecision: redirectNeeded
+    });
+    
+    return redirectNeeded;
+  };
+
   useEffect(() => {
     console.log('useAuthState effect running, current path:', location.pathname);
+    console.log('Session storage items:', {
+      socialLoginRedirect: sessionStorage.getItem('socialLoginRedirect'),
+      socialLoginSource: sessionStorage.getItem('socialLoginSource'),
+      socialLoginPreviousPath: sessionStorage.getItem('socialLoginPreviousPath')
+    });
+    
     let authStateSubscription: { data: { subscription: { unsubscribe: () => void } } };
 
     // Get initial session
@@ -68,33 +93,15 @@ export function useAuthState() {
         
         // Handle redirection logic based on session, onboarding needs, and current path
         if (session?.user) {
-          const userNeedsOnboarding = needsOnboarding(session.user);
-          const newSocialLogin = isNewSocialLogin();
-          
-          console.log('Redirect decision factors:', {
-            userNeedsOnboarding,
-            newSocialLogin,
-            currentPath: location.pathname,
-            isAuthPage: isAuthRelatedPage()
-          });
-          
-          // Don't redirect if already on the onboarding page
-          if (location.pathname === '/onboarding') {
-            console.log('Already on onboarding page, no redirect needed');
-            setIsLoading(false);
-            return;
-          }
-          
-          // Handle social login that needs onboarding
-          if (userNeedsOnboarding || newSocialLogin) {
-            console.log('User needs onboarding or is a new social login, redirecting to onboarding page');
+          if (shouldRedirectToOnboarding(session.user)) {
+            console.log('User needs onboarding, redirecting to onboarding page');
             setIsLoading(false);
             navigate('/onboarding');
             return;
           }
           
           // Only redirect from auth pages to dashboard if fully onboarded
-          if (isAuthRelatedPage()) {
+          if (isAuthRelatedPage() && !needsOnboarding(session.user)) {
             console.log('User already onboarded, redirecting to dashboard from auth page');
             setIsLoading(false);
             navigate('/dashboard');
@@ -129,30 +136,15 @@ export function useAuthState() {
         
         if (event === 'SIGNED_IN') {
           console.log('SIGNED_IN event detected');
-          const userNeedsOnboarding = needsOnboarding(session?.user);
-          const newSocialLogin = isNewSocialLogin();
           
-          console.log('After sign-in redirect decision:', {
-            userNeedsOnboarding,
-            newSocialLogin,
-            currentPath: location.pathname
-          });
-          
-          // Don't redirect if already on the onboarding page
-          if (location.pathname === '/onboarding') {
-            console.log('Already on onboarding page, no redirect needed');
-            return;
-          }
-          
-          // If user needs onboarding or this is likely a social login, go to onboarding
-          if (userNeedsOnboarding || newSocialLogin) {
+          if (shouldRedirectToOnboarding(session?.user)) {
             console.log('User needs onboarding after sign in, redirecting');
             navigate('/onboarding');
             return;
           }
           
-          // Otherwise redirect from auth pages to dashboard
-          if (isAuthRelatedPage()) {
+          // Otherwise redirect from auth pages to dashboard if fully onboarded
+          if (isAuthRelatedPage() && !needsOnboarding(session?.user)) {
             console.log('User signed in and onboarded, redirecting to dashboard');
             navigate('/dashboard');
             return;

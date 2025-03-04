@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { Provider } from '@supabase/supabase-js';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
+import { useLocation } from 'react-router-dom';
 
 interface SocialLoginButtonsProps {
   isLoading?: boolean;
@@ -12,17 +13,20 @@ interface SocialLoginButtonsProps {
 const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({ isLoading = false }) => {
   const { signInWithSocialProvider } = useAuth();
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
+  const location = useLocation();
 
   const handleSocialLogin = async (provider: Provider) => {
     try {
       setSocialLoading(provider);
       
-      // Set flag in session storage
+      // Set flag in session storage with current path to help determine where user came from
       sessionStorage.setItem('socialLoginRedirect', 'true');
+      sessionStorage.setItem('socialLoginSource', location.pathname);
       
       // Add more descriptive logging for debugging
       console.log(`Attempting to sign in with ${provider}`);
       console.log(`Current location: ${window.location.href}`);
+      console.log(`Current path: ${location.pathname}`);
       console.log(`Expected redirect: ${window.location.origin}/onboarding`);
       
       const result = await signInWithSocialProvider(provider);

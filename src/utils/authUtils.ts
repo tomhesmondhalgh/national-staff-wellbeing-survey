@@ -88,6 +88,11 @@ export async function signInWithSocialProvider(provider: Provider) {
     // Set a session storage item to indicate this is a social login
     sessionStorage.setItem('socialLoginRedirect', 'true');
     
+    // Important: Make a record of the pre-login URL to determine where to return
+    const currentUrl = window.location.pathname;
+    sessionStorage.setItem('socialLoginPreviousPath', currentUrl);
+    
+    // Force redirect mode to ensure redirect happens correctly
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {

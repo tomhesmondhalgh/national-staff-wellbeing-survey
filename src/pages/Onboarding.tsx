@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -45,19 +44,22 @@ const Onboarding = () => {
     if (socialLoginFlag) {
       console.log('Clearing social login redirect flag in onboarding component');
       sessionStorage.removeItem('socialLoginRedirect');
+      sessionStorage.removeItem('socialLoginSource');
+      sessionStorage.removeItem('socialLoginPreviousPath');
+      
+      // Display welcome message for social login users
+      if (user && user.app_metadata?.provider && user.app_metadata.provider !== 'email') {
+        toast.success('Social login successful!', {
+          description: 'Please complete your profile to continue.'
+        });
+      }
     }
     
-    // Redirect to dashboard if no user is found
+    // Redirect to login if no user is found
     if (!user) {
       console.log('No user found in onboarding, redirecting to login');
       navigate('/login');
       return;
-    }
-
-    // Display welcome message for social login users
-    if (user.app_metadata?.provider && user.app_metadata.provider !== 'email') {
-      console.log('Showing welcome toast for social login user');
-      toast.info(`Welcome! Please complete your profile to continue.`);
     }
 
     // Check if this is a social login user and prefill data if available
@@ -65,7 +67,14 @@ const Onboarding = () => {
       console.log('Social login detected in onboarding, prefilling data');
       prefillSocialLoginData(user);
     }
-  }, [user, navigate, prefillSocialLoginData]);
+    
+    // Handle the case where user got here but is already fully onboarded
+    if (user.user_metadata?.school_name && !isLoading) {
+      console.log('User already has school_name in metadata, redirecting to dashboard');
+      toast.info('Your profile is already complete!');
+      setTimeout(() => navigate('/dashboard'), 1500);
+    }
+  }, [user, navigate, prefillSocialLoginData, isLoading]);
 
   const selectedSchool = formData.schoolName && formData.schoolAddress 
     ? { name: formData.schoolName, address: formData.schoolAddress } 
@@ -84,21 +93,12 @@ const Onboarding = () => {
   // Determine if the user came from social login
   const isSocialLoginUser = user?.app_metadata?.provider && user.app_metadata.provider !== 'email';
 
-  // Handle the case where user got here but is already fully onboarded
-  useEffect(() => {
-    if (user && user.user_metadata?.school_name && !isLoading) {
-      console.log('User already has school_name in metadata, they should be redirected to dashboard');
-      toast.info('Your profile is already complete!');
-      setTimeout(() => navigate('/dashboard'), 1500);
-    }
-  }, [user, navigate, isLoading]);
-
   return (
     <MainLayout>
       <div className="page-container">
         <PageTitle 
           title="Complete your profile" 
-          subtitle={isSocialLoginUser 
+          subtitle={user?.app_metadata?.provider && user.app_metadata.provider !== 'email'
             ? `Welcome! Please provide some additional information to complete your account setup.`
             : "Tell us about your school to finish setting up your account"
           }
