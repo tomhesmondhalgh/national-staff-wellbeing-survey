@@ -15,6 +15,20 @@ export function useAuthState() {
     return ['/login', '/signup'].includes(location.pathname);
   };
 
+  // Check if this is a social login user that needs to complete onboarding
+  const needsOnboarding = (user: User | null) => {
+    if (!user) return false;
+    
+    // Check if this is a social login (has provider and it's not email)
+    const isSocialLogin = user.app_metadata?.provider && 
+                          user.app_metadata.provider !== 'email';
+    
+    // Check if they have already completed onboarding (has school_name in metadata)
+    const hasCompletedProfile = user.user_metadata?.school_name;
+    
+    return isSocialLogin && !hasCompletedProfile;
+  };
+
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -22,16 +36,27 @@ export function useAuthState() {
       setUser(session?.user ?? null);
       setIsLoading(false);
       
-      // If user is authenticated and on an auth-related page, redirect to dashboard
-      // Don't redirect if they're on the onboarding page, as social logins will land there
-      if (session?.user && isAuthRelatedPage() && location.pathname !== '/onboarding') {
-        // Check if the user needs to complete onboarding
-        const needsOnboarding = session.user.app_metadata?.provider && 
-                               !session.user.user_metadata?.school_name;
+      // If user is authenticated and on an auth-related page, determine where to redirect
+      if (session?.user) {
+        console.log("Session user detected:", session.user.id);
+        console.log("Current path:", location.pathname);
+        console.log("User metadata:", session.user.user_metadata);
+        console.log("App metadata:", session.user.app_metadata);
         
-        if (needsOnboarding) {
+        // Don't redirect if already on the onboarding page
+        if (location.pathname === '/onboarding') {
+          console.log("Already on onboarding page, no redirect needed");
+          return;
+        }
+        
+        // Check if user needs to complete onboarding
+        if (needsOnboarding(session.user)) {
+          console.log("User needs onboarding, redirecting to onboarding page");
           navigate('/onboarding');
-        } else {
+        } 
+        // Only redirect from auth pages to dashboard
+        else if (isAuthRelatedPage()) {
+          console.log("User already onboarded, redirecting to dashboard");
           navigate('/dashboard');
         }
       }
@@ -41,21 +66,28 @@ export function useAuthState() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id);
+        console.log('User metadata:', session?.user?.user_metadata);
+        console.log('App metadata:', session?.user?.app_metadata);
+        
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
         
-        // If user signs in and is on an auth-related page, determine where to redirect
-        if (session?.user && isAuthRelatedPage()) {
-          // For social logins, check if they need to complete onboarding
-          const isSocialLogin = session.user.app_metadata?.provider && 
-                               session.user.app_metadata.provider !== 'email';
-          const hasCompletedProfile = session.user.user_metadata?.school_name;
+        if (!session?.user) return;
+        
+        // Handle different events
+        if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+          // Don't redirect if already on the onboarding page
+          if (location.pathname === '/onboarding') {
+            console.log("Already on onboarding page, no redirect needed");
+            return;
+          }
           
-          if (isSocialLogin && !hasCompletedProfile) {
+          // Determine where to redirect the authenticated user
+          if (needsOnboarding(session.user)) {
             console.log('Social login detected, redirecting to onboarding');
             navigate('/onboarding');
-          } else {
+          } else if (isAuthRelatedPage()) {
             console.log('User authenticated, redirecting to dashboard');
             navigate('/dashboard');
           }

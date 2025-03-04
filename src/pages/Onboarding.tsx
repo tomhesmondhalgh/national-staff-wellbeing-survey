@@ -9,6 +9,7 @@ import JobTitleInput from '../components/onboarding/JobTitleInput';
 import SchoolSearch from '../components/onboarding/SchoolSearch';
 import CustomSchoolForm from '../components/onboarding/CustomSchoolForm';
 import SubmitButton from '../components/onboarding/SubmitButton';
+import { toast } from 'sonner';
 
 const Onboarding = () => {
   const navigate = useNavigate();
@@ -34,14 +35,24 @@ const Onboarding = () => {
   } = useOnboardingForm();
 
   useEffect(() => {
+    console.log('Onboarding component mounted');
+    console.log('User:', user);
+    
     // Redirect to dashboard if no user is found
     if (!user) {
+      console.log('No user found, redirecting to login');
       navigate('/login');
       return;
     }
 
+    // Display welcome message for social login users
+    if (user.app_metadata?.provider && user.app_metadata.provider !== 'email') {
+      toast.info(`Welcome! Please complete your profile to continue.`);
+    }
+
     // Check if this is a social login user and prefill data if available
     if (user.app_metadata?.provider && (user.user_metadata?.name || user.user_metadata?.full_name)) {
+      console.log('Social login detected, prefilling data');
       prefillSocialLoginData(user);
     }
   }, [user, navigate, prefillSocialLoginData]);
