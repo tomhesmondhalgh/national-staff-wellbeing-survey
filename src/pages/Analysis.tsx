@@ -20,7 +20,6 @@ import { format } from "date-fns";
 import { cn } from "../lib/utils";
 import { Input } from "../components/ui/input";
 import { Form, FormControl, FormField, FormItem } from "../components/ui/form";
-
 const SummarySection = ({
   summary
 }: {
@@ -54,7 +53,6 @@ const SummarySection = ({
       </div>
     </div>
   </div>;
-
 const RecommendationScoreSection = ({
   score,
   nationalAverage
@@ -77,7 +75,6 @@ const RecommendationScoreSection = ({
       Average score for "How likely would you recommend this organization to others as a place to work?" (0-10)
     </p>
   </Card>;
-
 const LeavingContemplationChart = ({
   data
 }: {
@@ -111,7 +108,6 @@ const LeavingContemplationChart = ({
       </p>
     </Card>;
 };
-
 const WellbeingQuestionChart = ({
   title,
   data,
@@ -135,8 +131,8 @@ const WellbeingQuestionChart = ({
     "Strongly Agree": data.nationalResponses?.["Strongly Agree"] || 0
   }];
   return <Card className="p-4">
-      <h3 className="text-md font-medium mb-2">{title}</h3>
-      {subtitle && <p className="text-xs text-gray-500 mb-2">{subtitle}</p>}
+      <h3 className="text-md mb-2 font-semibold my-0 py-[10px]">{title}</h3>
+      {subtitle}
       <div className="h-52">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} layout="vertical" stackOffset="expand" barSize={30} margin={{
@@ -161,7 +157,6 @@ const WellbeingQuestionChart = ({
       </div>
     </Card>;
 };
-
 const TextResponsesSection = ({
   doingWellResponses,
   improvementResponses
@@ -190,9 +185,10 @@ const TextResponsesSection = ({
       </Card>
     </div>
   </div>;
-
 const Analysis = () => {
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const navigate = useNavigate();
   const analysisRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
@@ -219,7 +215,6 @@ const Analysis = () => {
   const [summary, setSummary] = useState<any>({});
   const [noData, setNoData] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
-
   useEffect(() => {
     const loadSurveyOptions = async () => {
       try {
@@ -240,7 +235,6 @@ const Analysis = () => {
       loadSurveyOptions();
     }
   }, [user]);
-
   useEffect(() => {
     const loadData = async () => {
       if (!selectedSurvey) return;
@@ -248,7 +242,6 @@ const Analysis = () => {
         setLoading(true);
         let startDate = "";
         let endDate = "";
-        
         if (selectedTimeRange === "last-30-days") {
           const thirtyDaysAgo = new Date();
           thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -263,27 +256,12 @@ const Analysis = () => {
             endDate = customDateRange.to.toISOString().split('T')[0];
           }
         }
-        
-        const [recommendationScoreData, leavingContemplationData, detailedResponsesData, textResponsesData] = await Promise.all([
-          getRecommendationScore(selectedSurvey, startDate, endDate),
-          getLeavingContemplation(selectedSurvey, startDate, endDate),
-          getDetailedWellbeingResponses(selectedSurvey, startDate, endDate),
-          getTextResponses(selectedSurvey, startDate, endDate)
-        ]);
-        
+        const [recommendationScoreData, leavingContemplationData, detailedResponsesData, textResponsesData] = await Promise.all([getRecommendationScore(selectedSurvey, startDate, endDate), getLeavingContemplation(selectedSurvey, startDate, endDate), getDetailedWellbeingResponses(selectedSurvey, startDate, endDate), getTextResponses(selectedSurvey, startDate, endDate)]);
         setRecommendationScore(recommendationScoreData);
         setLeavingContemplation(leavingContemplationData);
         setDetailedResponses(detailedResponsesData);
         setTextResponses(textResponsesData);
-        
-        const summaryData = await getSurveySummary(
-          selectedSurvey,
-          recommendationScoreData,
-          leavingContemplationData,
-          detailedResponsesData,
-          textResponsesData
-        );
-        
+        const summaryData = await getSurveySummary(selectedSurvey, recommendationScoreData, leavingContemplationData, detailedResponsesData, textResponsesData);
         setSummary(summaryData);
       } catch (error) {
         console.error('Error loading data:', error);
@@ -294,14 +272,11 @@ const Analysis = () => {
     };
     loadData();
   }, [selectedSurvey, selectedTimeRange, customDateRange]);
-
   const handleSurveyChange = (value: string) => {
     setSelectedSurvey(value);
   };
-
   const handleTimeRangeChange = (value: string) => {
     setSelectedTimeRange(value);
-    
     if (value !== "custom-range") {
       setCustomDateRange({
         from: undefined,
@@ -309,12 +284,10 @@ const Analysis = () => {
       });
     }
   };
-
   const getSurveyName = () => {
     const survey = surveyOptions.find(s => s.id === selectedSurvey);
     return survey ? survey.name : '';
   };
-
   const handleExportPDF = async () => {
     try {
       setExportLoading(true);
@@ -322,12 +295,9 @@ const Analysis = () => {
         toast.error("Cannot generate PDF. Report content not found.");
         return;
       }
-      
       const surveyName = getSurveyName();
       const fileName = `${surveyName.replace(/\s+/g, '-').toLowerCase()}-analysis.pdf`;
-      
       await generatePDF(analysisRef, fileName);
-      
       toast.success("PDF generated successfully!");
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -336,30 +306,19 @@ const Analysis = () => {
       setExportLoading(false);
     }
   };
-
   const handleExportReport = async () => {
     try {
       setExportLoading(true);
-      
       if (!user?.email) {
         toast.error("User email not found. Cannot send report.");
         return;
       }
-      
       const surveyName = getSurveyName();
-      const leavingData = Object.entries(leavingContemplation).map(([name, value]) => ({ name, value }));
-      
-      await sendReportByEmail(
-        user.email,
-        selectedSurvey,
-        surveyName,
-        summary,
-        recommendationScore,
-        leavingData,
-        detailedResponses,
-        textResponses
-      );
-      
+      const leavingData = Object.entries(leavingContemplation).map(([name, value]) => ({
+        name,
+        value
+      }));
+      await sendReportByEmail(user.email, selectedSurvey, surveyName, summary, recommendationScore, leavingData, detailedResponses, textResponses);
       toast.success("Report sent to your email!");
     } catch (error) {
       console.error("Error sending report:", error);
@@ -368,29 +327,21 @@ const Analysis = () => {
       setExportLoading(false);
     }
   };
-
   if (noData) {
-    return (
-      <MainLayout>
+    return <MainLayout>
         <div className="container mx-auto px-4 py-8">
           <PageTitle title="Analysis" subtitle="View insights from your wellbeing surveys" />
           <div className="bg-white p-8 rounded-lg shadow text-center">
             <h2 className="text-2xl font-semibold text-gray-700 mb-4">No surveys found</h2>
             <p className="text-gray-600 mb-6">You haven't created any surveys yet or no responses have been collected.</p>
-            <button
-              onClick={() => navigate('/new-survey')}
-              className="bg-brandPurple-500 hover:bg-brandPurple-600 text-white font-medium py-2 px-6 rounded-md transition-all duration-200"
-            >
+            <button onClick={() => navigate('/new-survey')} className="bg-brandPurple-500 hover:bg-brandPurple-600 text-white font-medium py-2 px-6 rounded-md transition-all duration-200">
               Create Your First Survey
             </button>
           </div>
         </div>
-      </MainLayout>
-    );
+      </MainLayout>;
   }
-
-  return (
-    <MainLayout>
+  return <MainLayout>
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="mb-10 text-center">
           <h1 className="text-3xl font-bold mb-2">Survey Analysis</h1>
@@ -405,11 +356,9 @@ const Analysis = () => {
                 <SelectValue placeholder="Select a survey" />
               </SelectTrigger>
               <SelectContent>
-                {surveyOptions.map(option => (
-                  <SelectItem key={option.id} value={option.id}>
+                {surveyOptions.map(option => <SelectItem key={option.id} value={option.id}>
                     {option.name} ({option.date})
-                  </SelectItem>
-                ))}
+                  </SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -429,102 +378,54 @@ const Analysis = () => {
                 </SelectContent>
               </Select>
               
-              {selectedTimeRange === "custom-range" && (
-                <div className="flex items-center space-x-2 mt-2">
+              {selectedTimeRange === "custom-range" && <div className="flex items-center space-x-2 mt-2">
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button
-                        id="date-from"
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !customDateRange.from && "text-muted-foreground"
-                        )}
-                      >
+                      <Button id="date-from" variant="outline" className={cn("w-full justify-start text-left font-normal", !customDateRange.from && "text-muted-foreground")}>
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {customDateRange.from ? (
-                          format(customDateRange.from, "PPP")
-                        ) : (
-                          <span>From date</span>
-                        )}
+                        {customDateRange.from ? format(customDateRange.from, "PPP") : <span>From date</span>}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={customDateRange.from}
-                        onSelect={(date) => 
-                          setCustomDateRange(prev => ({ ...prev, from: date || undefined }))
-                        }
-                        initialFocus
-                      />
+                      <Calendar mode="single" selected={customDateRange.from} onSelect={date => setCustomDateRange(prev => ({
+                    ...prev,
+                    from: date || undefined
+                  }))} initialFocus />
                     </PopoverContent>
                   </Popover>
                   
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button
-                        id="date-to"
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !customDateRange.to && "text-muted-foreground"
-                        )}
-                      >
+                      <Button id="date-to" variant="outline" className={cn("w-full justify-start text-left font-normal", !customDateRange.to && "text-muted-foreground")}>
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {customDateRange.to ? (
-                          format(customDateRange.to, "PPP")
-                        ) : (
-                          <span>To date</span>
-                        )}
+                        {customDateRange.to ? format(customDateRange.to, "PPP") : <span>To date</span>}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={customDateRange.to}
-                        onSelect={(date) => 
-                          setCustomDateRange(prev => ({ ...prev, to: date || undefined }))
-                        }
-                        disabled={(date) => 
-                          date < (customDateRange.from || new Date(0))
-                        }
-                        initialFocus
-                      />
+                      <Calendar mode="single" selected={customDateRange.to} onSelect={date => setCustomDateRange(prev => ({
+                    ...prev,
+                    to: date || undefined
+                  }))} disabled={date => date < (customDateRange.from || new Date(0))} initialFocus />
                     </PopoverContent>
                   </Popover>
-                </div>
-              )}
+                </div>}
             </div>
           </div>
 
           <div className="flex space-x-4 items-end justify-end">
-            <Button 
-              variant="outline" 
-              className="py-2 px-4 text-sm text-gray-700" 
-              onClick={handleExportReport}
-              disabled={exportLoading}
-            >
+            <Button variant="outline" className="py-2 px-4 text-sm text-gray-700" onClick={handleExportReport} disabled={exportLoading}>
               <Share className="h-4 w-4 mr-2" /> Export report
             </Button>
-            <Button 
-              variant="outline" 
-              className="py-2 px-4 text-sm text-gray-700" 
-              onClick={handleExportPDF}
-              disabled={exportLoading}
-            >
+            <Button variant="outline" className="py-2 px-4 text-sm text-gray-700" onClick={handleExportPDF} disabled={exportLoading}>
               <Download className="h-4 w-4 mr-2" /> Download PDF
             </Button>
           </div>
         </div>
 
-        {loading ? (
-          <div className="text-center py-12">
+        {loading ? <div className="text-center py-12">
             <div className="animate-spin h-8 w-8 border-4 border-brandPurple-500 border-t-transparent rounded-full mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading data...</p>
-          </div>
-        ) : (
-          <div ref={analysisRef}>
+          </div> : <div ref={analysisRef}>
             <SummarySection summary={summary} />
 
             <div className="mb-12">
@@ -538,18 +439,13 @@ const Analysis = () => {
             <div className="mb-12">
               <h2 className="text-xl font-semibold mb-6 text-center">Wellbeing Indicators</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {detailedResponses.map((question, index) => (
-                  <WellbeingQuestionChart key={index} title={question.question} data={question} subtitle="Stacked to 100%" />
-                ))}
+                {detailedResponses.map((question, index) => <WellbeingQuestionChart key={index} title={question.question} data={question} subtitle="Stacked to 100%" />)}
               </div>
             </div>
 
             <TextResponsesSection doingWellResponses={textResponses.doingWell} improvementResponses={textResponses.improvements} />
-          </div>
-        )}
+          </div>}
       </div>
-    </MainLayout>
-  );
+    </MainLayout>;
 };
-
 export default Analysis;
