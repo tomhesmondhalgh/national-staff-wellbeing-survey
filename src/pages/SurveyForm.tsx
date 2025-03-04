@@ -2,255 +2,294 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '../components/ui/button';
-import { useAuth } from '../contexts/AuthContext';
-import { getSurveyById } from '../utils/surveyUtils';
-import CustomQuestions from '../components/survey-form/CustomQuestions';
+import { getSurveyById, isSurveyClosed } from '../utils/surveyUtils';
 import { getSurveyCustomQuestions } from '../utils/customQuestionsUtils';
-import { getUserCustomQuestions } from '../utils/customQuestionsUtils';
-import { CustomQuestion } from '../types/customQuestions';
+import { supabase } from '../lib/supabase';
 import { toast } from "sonner";
-
-// Import refactored components
-import SurveyBasicFields from '../components/survey-form/SurveyBasicFields';
-import SurveyDateFields from '../components/survey-form/SurveyDateFields';
-import CustomQuestionsSection from '../components/survey-form/CustomQuestionsSection';
-import QuestionsDialog from '../components/survey-form/QuestionsDialog';
-import { useSurveyForm } from '../hooks/useSurveyForm';
+import SurveyIntro from '../components/survey-form/SurveyIntro';
+import SurveyLoading from '../components/survey-form/SurveyLoading';
+import SurveyNotFound from '../components/survey-form/SurveyNotFound';
+import RadioQuestion from '../components/survey-form/RadioQuestion';
+import RatingQuestion from '../components/survey-form/RatingQuestion';
+import TextQuestion from '../components/survey-form/TextQuestion';
+import SubmitButton from '../components/survey-form/SubmitButton';
+import RoleSelect from '../components/survey-form/RoleSelect';
+import CustomQuestions from '../components/survey-form/CustomQuestions';
+import { QUESTIONS, RATING_QUESTIONS } from '../components/survey-form/constants';
 
 const SurveyForm = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const surveyId = searchParams.get('id');
 
   const [survey, setSurvey] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showQuestionsDialog, setShowQuestionsDialog] = useState(false);
-  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
-  const [customQuestions, setCustomQuestions] = useState<CustomQuestion[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [customQuestions, setCustomQuestions] = useState<any[]>([]);
 
-  const {
-    name,
-    setName,
-    date,
-    setDate,
-    closeDate,
-    setCloseDate,
-    emails,
-    setEmails,
-    isSubmitting,
-    nameError,
-    dateError,
-    emailsError,
-    selectedQuestions,
-    customQuestionValues,
-    customQuestionErrors,
-    handleSelectQuestion,
-    handleCustomQuestionChange,
-    handleSubmit,
-    handleChange
-  } = useSurveyForm(surveyId);
+  // Form values
+  const [formValues, setFormValues] = useState<Record<string, string>>({
+    role: '',
+    health_state: '',
+    confidence_in_role: '',
+    support_access: '',
+    valued_member: '',
+    work_life_balance: '',
+    manageable_workload: '',
+    leadership_prioritize: '',
+    leaving_contemplation: '',
+    org_pride: '',
+    recommendation_score: '',
+    doing_well: '',
+    improvements: ''
+  });
+
+  // Custom question values
+  const [customQuestionValues, setCustomQuestionValues] = useState<Record<string, string>>({});
+  
+  // Form errors
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [customQuestionErrors, setCustomQuestionErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const loadSurvey = async () => {
       if (!surveyId) {
-        console.error("No survey ID provided in URL parameters");
         setError("No survey ID provided");
         setLoading(false);
         return;
       }
 
       try {
-        console.log("Loading survey with ID:", surveyId);
         setLoading(true);
-        
-        // Debug the API call to getSurveyById
-        console.log("About to call getSurveyById...");
         const surveyData = await getSurveyById(surveyId);
-        console.log("Survey data returned:", surveyData);
         
         if (surveyData) {
-          console.log("Setting survey state with data:", surveyData);
           setSurvey(surveyData);
           
-          // Log the values we're setting
-          console.log("Setting name to:", surveyData.name ? String(surveyData.name) : '');
-          console.log("Setting date to:", surveyData.date ? new Date(surveyData.date) : undefined);
-          console.log("Setting closeDate to:", surveyData.close_date ? new Date(surveyData.close_date) : undefined);
-          
-          // Cast the values to the proper types before setting state
-          setName(surveyData.name ? String(surveyData.name) : '');
-          setDate(surveyData.date ? new Date(surveyData.date) : undefined);
-          setCloseDate(surveyData.close_date ? new Date(surveyData.close_date) : undefined);
-          
-          if ('emails' in surveyData) {
-            console.log("Setting emails to:", surveyData.emails ? String(surveyData.emails) : '');
-            setEmails(surveyData.emails ? String(surveyData.emails) : '');
+          // Check if survey is closed
+          if (isSurveyClosed(surveyData)) {
+            navigate('/survey-closed');
+            return;
           }
+          
+          // Load custom questions for this survey
+          const questions = await getSurveyCustomQuestions(surveyId);
+          setCustomQuestions(questions);
         } else {
-          console.error("Survey data not found for ID:", surveyId);
           setError("Survey not found");
         }
       } catch (error) {
         console.error('Error loading survey:', error);
         setError(`Failed to load survey: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        toast.error("Failed to load survey");
       } finally {
-        console.log("Finished loading survey, setting loading to false");
         setLoading(false);
       }
     };
 
     loadSurvey();
-  }, [surveyId, setName, setDate, setCloseDate, setEmails]);
+  }, [surveyId, navigate]);
 
-  useEffect(() => {
-    const fetchQuestions = async () => {
-      if (!user) {
-        console.log("No user, skipping custom questions fetch");
-        return;
-      }
-      
-      try {
-        setIsLoadingQuestions(true);
-        console.log("Fetching custom questions for user");
-        const questions = await getUserCustomQuestions();
-        console.log("Custom questions fetched:", questions);
-        setCustomQuestions(questions);
-      } catch (error) {
-        console.error('Error loading custom questions:', error);
-      } finally {
-        setIsLoadingQuestions(false);
-      }
-    };
-
-    fetchQuestions();
-  }, [user]);
-
-  useEffect(() => {
-    const loadCustomQuestions = async () => {
-      if (!survey) {
-        console.log("No survey, skipping survey custom questions fetch");
-        return;
-      }
-      
-      try {
-        console.log("Fetching custom questions for survey:", survey.id);
-        const questions = await getSurveyCustomQuestions(survey.id);
-        console.log("Survey custom questions fetched:", questions);
-        setCustomQuestions(questions);
-      } catch (error) {
-        console.error('Error loading custom questions:', error);
-      }
-    };
+  const handleInputChange = (field: string, value: string) => {
+    setFormValues({
+      ...formValues,
+      [field]: value
+    });
     
-    loadCustomQuestions();
-  }, [survey]);
-
-  const onSubmitForm = (e: React.FormEvent) => {
-    console.log("Form submit triggered");
-    handleSubmit(e, customQuestions);
+    // Clear error when user inputs a value
+    if (formErrors[field]) {
+      const newErrors = { ...formErrors };
+      delete newErrors[field];
+      setFormErrors(newErrors);
+    }
   };
 
-  // Show loading state while data is being fetched
+  const handleCustomQuestionChange = (id: string, value: string) => {
+    setCustomQuestionValues({
+      ...customQuestionValues,
+      [id]: value
+    });
+    
+    // Clear error when user inputs a value
+    if (customQuestionErrors[id]) {
+      const newErrors = { ...customQuestionErrors };
+      delete newErrors[id];
+      setCustomQuestionErrors(newErrors);
+    }
+  };
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    const customErrors: Record<string, string> = {};
+    let isValid = true;
+
+    // Check required fields
+    if (!formValues.role) {
+      errors.role = 'Please select your role';
+      isValid = false;
+    }
+    
+    // Validate rating questions
+    RATING_QUESTIONS.forEach(question => {
+      if (!formValues[question.field]) {
+        errors[question.field] = 'Please provide a rating';
+        isValid = false;
+      }
+    });
+
+    // Validate custom questions
+    customQuestions.forEach(question => {
+      if (!customQuestionValues[question.id] || !customQuestionValues[question.id].trim()) {
+        customErrors[question.id] = 'This field is required';
+        isValid = false;
+      }
+    });
+
+    setFormErrors(errors);
+    setCustomQuestionErrors(customErrors);
+    return isValid;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      toast.error("Please complete all required fields");
+      return;
+    }
+    
+    setSubmitting(true);
+    
+    try {
+      // First, insert the main survey response
+      const { data: responseData, error: responseError } = await supabase
+        .from('survey_responses')
+        .insert({
+          survey_template_id: surveyId,
+          role: formValues.role,
+          health_state: formValues.health_state,
+          confidence_in_role: formValues.confidence_in_role,
+          support_access: formValues.support_access,
+          valued_member: formValues.valued_member,
+          work_life_balance: formValues.work_life_balance,
+          manageable_workload: formValues.manageable_workload,
+          leadership_prioritize: formValues.leadership_prioritize,
+          leaving_contemplation: formValues.leaving_contemplation,
+          org_pride: formValues.org_pride,
+          recommendation_score: formValues.recommendation_score,
+          doing_well: formValues.doing_well,
+          improvements: formValues.improvements
+        })
+        .select('id')
+        .single();
+      
+      if (responseError) {
+        throw responseError;
+      }
+      
+      // Then, insert custom question responses if there are any
+      if (customQuestions.length > 0 && responseData.id) {
+        const customResponses = customQuestions.map(question => ({
+          response_id: responseData.id,
+          question_id: question.id,
+          answer: customQuestionValues[question.id] || ''
+        }));
+        
+        const { error: customError } = await supabase
+          .from('custom_question_responses')
+          .insert(customResponses);
+        
+        if (customError) {
+          console.error('Error saving custom question responses:', customError);
+          // Continue to completion page even if custom questions fail
+        }
+      }
+      
+      // Redirect to completion page
+      navigate('/survey-complete');
+    } catch (error) {
+      console.error('Error submitting survey response:', error);
+      toast.error("Failed to submit survey response");
+      setSubmitting(false);
+    }
+  };
+
+  // Loading state
   if (loading) {
-    console.log("Rendering loading state");
-    return (
-      <div className="page-container">
-        <div className="flex justify-center items-center min-h-[60vh]">
-          <div className="animate-spin h-8 w-8 border-4 border-gray-900 border-t-transparent rounded-full"></div>
-          <p className="ml-4 text-gray-700">Loading survey...</p>
-        </div>
-      </div>
-    );
+    return <SurveyLoading />;
   }
 
-  // Show error state if there was a problem
+  // Error state
   if (error) {
-    console.log("Rendering error state:", error);
-    return (
-      <div className="page-container">
-        <div className="card animate-slide-up p-8 text-center">
-          <div className="text-red-500 text-xl mb-4">Error</div>
-          <p className="text-gray-700 mb-6">{error}</p>
-          <Button variant="outline" onClick={() => navigate('/surveys')}>
-            Back to Surveys
-          </Button>
-        </div>
-      </div>
-    );
+    return <SurveyNotFound error={error} />;
   }
 
-  // If survey wasn't found
+  // Survey not found
   if (!survey) {
-    console.log("Rendering survey not found state");
-    return (
-      <div className="page-container">
-        <div className="card animate-slide-up p-8 text-center">
-          <div className="text-amber-500 text-xl mb-4">Survey Not Found</div>
-          <p className="text-gray-700 mb-6">The survey you are looking for doesn't exist or has been removed.</p>
-          <Button variant="outline" onClick={() => navigate('/surveys')}>
-            Back to Surveys
-          </Button>
-        </div>
-      </div>
-    );
+    return <SurveyNotFound />;
   }
-
-  console.log("Rendering survey form with data:", { name, date, closeDate, emails });
 
   return (
-    <div className="page-container">
-      <div className="card animate-slide-up">
-        <form onSubmit={onSubmitForm} className="grid gap-6">
-          <SurveyBasicFields
-            name={name}
-            emails={emails}
-            onNameChange={setName}
-            onEmailsChange={setEmails}
-            nameError={nameError}
-            emailsError={emailsError}
-          />
-
-          <SurveyDateFields
-            date={date}
-            closeDate={closeDate}
-            onDateChange={setDate}
-            onCloseDateChange={setCloseDate}
-            dateError={dateError}
+    <div className="max-w-3xl mx-auto px-4 py-8">
+      <SurveyIntro name={survey.name} />
+      
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <RoleSelect 
+            value={formValues.role} 
+            onChange={(value) => handleInputChange('role', value)} 
+            error={formErrors.role}
           />
           
-          <CustomQuestionsSection
-            selectedQuestions={selectedQuestions}
-            customQuestions={customQuestions}
-            onSelectQuestion={handleSelectQuestion}
-            onShowQuestionsDialog={() => setShowQuestionsDialog(true)}
+          {RATING_QUESTIONS.map((question) => (
+            <RatingQuestion
+              key={question.field}
+              question={question.question}
+              value={formValues[question.field]}
+              onChange={(value) => handleInputChange(question.field, value)}
+              error={formErrors[question.field]}
+            />
+          ))}
+          
+          {QUESTIONS.map((question) => (
+            <RadioQuestion
+              key={question.field}
+              question={question.question}
+              options={question.options}
+              value={formValues[question.field]}
+              onChange={(value) => handleInputChange(question.field, value)}
+              error={formErrors[question.field]}
+            />
+          ))}
+          
+          <TextQuestion
+            label="What is your organization doing well in terms of staff wellbeing?"
+            placeholder="Please share your thoughts..."
+            value={formValues.doing_well}
+            onChange={(value) => handleInputChange('doing_well', value)}
+            error={formErrors.doing_well}
           />
           
-          <div className="custom-questions-section">
-            <CustomQuestions 
+          <TextQuestion
+            label="What improvements would you suggest to enhance staff wellbeing?"
+            placeholder="Please share your suggestions..."
+            value={formValues.improvements}
+            onChange={(value) => handleInputChange('improvements', value)}
+            error={formErrors.improvements}
+          />
+          
+          {customQuestions.length > 0 && (
+            <CustomQuestions
               questions={customQuestions}
               values={customQuestionValues}
               onChange={handleCustomQuestionChange}
               errors={customQuestionErrors}
             />
-          </div>
-
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Creating Survey...' : 'Create Survey'}
-          </Button>
+          )}
+          
+          <SubmitButton isSubmitting={submitting} />
         </form>
       </div>
-      
-      <QuestionsDialog
-        open={showQuestionsDialog}
-        onOpenChange={setShowQuestionsDialog}
-        customQuestions={customQuestions}
-        selectedQuestions={selectedQuestions}
-        onSelectQuestion={handleSelectQuestion}
-        isLoadingQuestions={isLoadingQuestions}
-      />
     </div>
   );
 };
