@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
@@ -12,7 +11,9 @@ export function useAuthState() {
   const location = useLocation();
 
   const isAuthRelatedPage = () => {
-    return ['/login', '/signup', '/onboarding'].includes(location.pathname);
+    // Include onboarding as an auth related page, but we want to keep the user there
+    // if they've been redirected for social login
+    return ['/login', '/signup'].includes(location.pathname);
   };
 
   useEffect(() => {
@@ -23,6 +24,7 @@ export function useAuthState() {
       setIsLoading(false);
       
       // If user is authenticated and on an auth-related page, redirect to dashboard
+      // We don't want to redirect away from onboarding if they're there
       if (session?.user && isAuthRelatedPage()) {
         navigate('/dashboard');
       }
@@ -36,6 +38,7 @@ export function useAuthState() {
         setIsLoading(false);
         
         // If user signs in and is on an auth-related page, redirect to dashboard
+        // We don't want to redirect away from onboarding if they're there
         if (session?.user && isAuthRelatedPage()) {
           navigate('/dashboard');
         }

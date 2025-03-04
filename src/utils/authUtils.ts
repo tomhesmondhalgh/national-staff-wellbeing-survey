@@ -1,4 +1,3 @@
-
 import { User, Provider } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
@@ -82,7 +81,7 @@ export async function signInWithSocialProvider(provider: Provider) {
     console.log(`Initiating sign in with ${provider}`);
     
     // Get the current URL origin for redirection
-    const redirectUrl = `${window.location.origin}/dashboard`;
+    const redirectUrl = `${window.location.origin}/onboarding`;
     console.log(`Setting redirect URL to: ${redirectUrl}`);
     
     const { data, error } = await supabase.auth.signInWithOAuth({

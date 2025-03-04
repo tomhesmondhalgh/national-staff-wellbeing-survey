@@ -29,15 +29,22 @@ const Onboarding = () => {
     selectSchool,
     toggleCustomSchool,
     handleSubmit,
-    setSearchQuery
+    setSearchQuery,
+    prefillSocialLoginData
   } = useOnboardingForm();
 
   useEffect(() => {
     // Redirect to dashboard if no user is found
     if (!user) {
       navigate('/login');
+      return;
     }
-  }, [user, navigate]);
+
+    // Check if this is a social login user and prefill data if available
+    if (user.app_metadata?.provider && (user.user_metadata?.name || user.user_metadata?.full_name)) {
+      prefillSocialLoginData(user);
+    }
+  }, [user, navigate, prefillSocialLoginData]);
 
   const selectedSchool = formData.schoolName && formData.schoolAddress 
     ? { name: formData.schoolName, address: formData.schoolAddress } 
@@ -53,12 +60,18 @@ const Onboarding = () => {
     } as React.ChangeEvent<HTMLInputElement>);
   };
 
+  // Determine if the user came from social login
+  const isSocialLoginUser = user?.app_metadata?.provider && user.app_metadata.provider !== 'email';
+
   return (
     <MainLayout>
       <div className="page-container">
         <PageTitle 
           title="Complete your profile" 
-          subtitle="Tell us about your school to finish setting up your account"
+          subtitle={isSocialLoginUser 
+            ? `Welcome! Please provide some additional information to complete your account setup.`
+            : "Tell us about your school to finish setting up your account"
+          }
         />
         <div className="max-w-2xl mx-auto glass-card rounded-2xl p-8 animate-slide-up">
           <form onSubmit={handleSubmit} className="space-y-6">
