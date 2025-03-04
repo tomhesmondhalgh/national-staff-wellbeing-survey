@@ -1,778 +1,332 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
+import { toast } from "sonner";
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { getSurveyOptions, getRecommendationScore, getLeavingContemplation, getDetailedWellbeingResponses } from '../utils/analysisUtils';
-import type { SurveyOption, DetailedQuestionResponse, TextResponse } from '../utils/analysisUtils';
-import { getTextResponses } from '../utils/analysisUtils';
-import { ArrowDownIcon, ArrowUpIcon, MinusIcon, ChevronLeft, ChevronRight, Mail, Download } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { getSurveyOptions, getRecommendationScore, getLeavingContemplation, getDetailedWellbeingResponses, getTextResponses } from '../utils/analysisUtils';
 import { getSurveySummary } from '../utils/summaryUtils';
-import type { SummaryData } from '../utils/summaryUtils';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
-import { generatePDF, sendReportByEmail } from '../utils/reportUtils';
-import { useToast } from '../hooks/use-toast';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
 
-const SIGNIFICANCE_THRESHOLD = 10;
-const RESPONSES_PER_PAGE = 5;
+const WellbeingChart = ({ data }: { data: any[] }) => (
+  <ResponsiveContainer width="100%" height={400}>
+    <BarChart data={data}>
+      <CartesianGrid strokeDasharray="3 3" />
+      <XAxis dataKey="question" />
+      <YAxis tickFormatter={(value) => `${value}%`} />
+      <Tooltip formatter={(value) => `${value}%`} />
+      <Legend />
+      <Bar dataKey="schoolResponses.Strongly Agree" stackId="a" fill="#82ca9d" name="Strongly Agree" />
+      <Bar dataKey="schoolResponses.Agree" stackId="a" fill="#8884d8" name="Agree" />
+      <Bar dataKey="schoolResponses.Disagree" stackId="a" fill="#ffc658" name="Disagree" />
+      <Bar dataKey="schoolResponses.Strongly Disagree" stackId="a" fill="#ff7373" name="Strongly Disagree" />
+    </BarChart>
+  </ResponsiveContainer>
+);
+
+const LeavingContemplationChart = ({ data }: { data: Record<string, number> }) => {
+  const chartData = Object.entries(data).map(([key, value]) => ({
+    name: key,
+    value,
+  }));
+
+  return (
+    <ResponsiveContainer width="100%" height={300}>
+      <BarChart data={chartData}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="name" />
+        <YAxis />
+        <Tooltip />
+        <Legend />
+        <Bar dataKey="value" fill="#8884d8" name="Responses" />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+};
+
+const TextResponses = ({ title, responses }: { title: string, responses: any[] }) => (
+  <div>
+    <h3 className="text-xl font-semibold mb-4">{title}</h3>
+    {responses.length > 0 ? (
+      <ul>
+        {responses.map((response, index) => (
+          <li key={index} className="mb-2 p-3 rounded-md bg-gray-50 border border-gray-100">
+            <p className="text-gray-800">{response.response}</p>
+            <p className="text-sm text-gray-500 mt-1">Submitted on: {response.created_at}</p>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p className="text-gray-500">No responses found.</p>
+    )}
+  </div>
+);
+
+const SummarySection = ({ summary }: { summary: any }) => (
+  <div>
+    <h2 className="text-2xl font-semibold mb-4">AI Generated Summary</h2>
+    {summary.insufficientData ? (
+      <p className="text-gray-500">Insufficient data to generate a summary.</p>
+    ) : (
+      <>
+        {summary.introduction && (
+          <div className="mb-6">
+            <h3 className="text-xl font-semibold mb-2">Introduction</h3>
+            <p className="text-gray-800">{summary.introduction}</p>
+          </div>
+        )}
+        <div className="mb-6">
+          <h3 className="text-xl font-semibold mb-2">Strengths</h3>
+          {summary.strengths && summary.strengths.length > 0 ? (
+            <ul className="list-disc list-inside text-gray-800">
+              {summary.strengths.map((strength: string, index: number) => (
+                <li key={index}>{strength}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-500">No strengths identified.</p>
+          )}
+        </div>
+        <div>
+          <h3 className="text-xl font-semibold mb-2">Improvements</h3>
+          {summary.improvements && summary.improvements.length > 0 ? (
+            <ul className="list-disc list-inside text-gray-800">
+              {summary.improvements.map((improvement: string, index: number) => (
+                <li key={index}>{improvement}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-500">No improvements suggested.</p>
+          )}
+        </div>
+      </>
+    )}
+  </div>
+);
 
 const Analysis = () => {
   const { user } = useAuth();
-  const [surveys, setSurveys] = useState<SurveyOption[]>([]);
-  const [selectedSurvey, setSelectedSurvey] = useState<string>('');
-  const [dateFilter, setDateFilter] = useState<string>('all');
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [surveyOptions, setSurveyOptions] = useState<any[]>([]);
+  const [selectedSurvey, setSelectedSurvey] = useState<string>("");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const [recommendationScore, setRecommendationScore] = useState({ score: 0, nationalAverage: 0 });
+  const [leavingContemplation, setLeavingContemplation] = useState<Record<string, number>>({});
+  const [detailedResponses, setDetailedResponses] = useState<any[]>([]);
+  const [textResponses, setTextResponses] = useState({ doingWell: [], improvements: [] });
+  const [summary, setSummary] = useState<any>({});
+  const [noData, setNoData] = useState(false);
 
-  const [loading, setLoading] = useState<boolean>(true);
-  const [recommendationScore, setRecommendationScore] = useState<{
-    score: number;
-    nationalAverage: number;
-  }>({
-    score: 0,
-    nationalAverage: 0
-  });
-  const [leavingData, setLeavingData] = useState<{
-    name: string;
-    value: number;
-  }[]>([]);
-  const [detailedWellbeingResponses, setDetailedWellbeingResponses] = useState<DetailedQuestionResponse[]>([]);
-  const [textResponses, setTextResponses] = useState<{
-    doingWell: TextResponse[];
-    improvements: TextResponse[];
-  }>({
-    doingWell: [],
-    improvements: []
-  });
-  const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
-  const [summaryLoading, setSummaryLoading] = useState<boolean>(false);
-  const [hasSurveys, setHasSurveys] = useState<boolean>(false);
-  
-  const [doingWellPage, setDoingWellPage] = useState<number>(1);
-  const [improvementsPage, setImprovementsPage] = useState<number>(1);
-
-  const COLORS = ['#10b981', '#6366f1', '#f59e0b', '#ef4444', '#6b7280'];
-
-  const RESPONSE_COLORS = {
-    'Strongly Agree': '#10b981',
-    'Agree': '#6ee7b7',
-    'Disagree': '#fca5a5',
-    'Strongly Disagree': '#ef4444'
-  };
-
-  const analysisRef = useRef<HTMLDivElement>(null);
-  const [emailDialogOpen, setEmailDialogOpen] = useState<boolean>(false);
-  const [emailAddress, setEmailAddress] = useState<string>('');
-  const [isEmailSending, setIsEmailSending] = useState<boolean>(false);
-  const [isPdfGenerating, setIsPdfGenerating] = useState<boolean>(false);
-  const { toast } = useToast();
-
+  // Function to load survey options
   useEffect(() => {
-    const loadSurveys = async () => {
+    const loadSurveyOptions = async () => {
       try {
-        const options = await getSurveyOptions();
-        setSurveys(options);
-        setHasSurveys(options.length > 0);
+        // Now passing the user ID to filter surveys by creator
+        const options = await getSurveyOptions(user?.id);
+        setSurveyOptions(options);
         
         if (options.length > 0) {
           setSelectedSurvey(options[0].id);
         } else {
-          setRecommendationScore({ score: 0, nationalAverage: 0 });
-          setLeavingData([]);
-          setDetailedWellbeingResponses([]);
-          setTextResponses({ doingWell: [], improvements: [] });
-          setSummaryData(null);
+          setNoData(true);
+          setLoading(false);
         }
       } catch (error) {
-        console.error('Error loading surveys:', error);
-      } finally {
-        setLoading(false);
+        console.error('Error loading survey options:', error);
+        toast.error("Failed to load surveys");
       }
     };
-    loadSurveys();
-  }, []);
 
-  useEffect(() => {
-    const now = new Date();
-    let start = '';
-    let end = now.toISOString();
-    switch (dateFilter) {
-      case 'month':
-        start = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()).toISOString();
-        break;
-      case 'quarter':
-        start = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate()).toISOString();
-        break;
-      case 'year':
-        start = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()).toISOString();
-        break;
-      case 'custom':
-        start = startDate;
-        end = endDate;
-        break;
-      default:
-        start = '';
-        end = '';
+    if (user) {
+      loadSurveyOptions();
     }
-    setStartDate(start);
-    setEndDate(end);
-  }, [dateFilter]);
+  }, [user]);
 
+  // Function to load data based on selected survey and date range
   useEffect(() => {
-    const loadAnalysisData = async () => {
+    const loadData = async () => {
       if (!selectedSurvey) return;
-      
-      setLoading(true);
+
       try {
-        const recScore = await getRecommendationScore(selectedSurvey, startDate, endDate);
-        setRecommendationScore(recScore);
+        setLoading(true);
+        const [
+          recommendationScoreData,
+          leavingContemplationData,
+          detailedResponsesData,
+          textResponsesData,
+        ] = await Promise.all([
+          getRecommendationScore(selectedSurvey, startDate, endDate),
+          getLeavingContemplation(selectedSurvey, startDate, endDate),
+          getDetailedWellbeingResponses(selectedSurvey, startDate, endDate),
+          getTextResponses(selectedSurvey, startDate, endDate),
+        ]);
 
-        const leavingContemplation = await getLeavingContemplation(selectedSurvey, startDate, endDate);
-        const pieData = Object.entries(leavingContemplation).map(([name, value]) => ({
-          name,
-          value
-        }));
-        setLeavingData(pieData);
+        setRecommendationScore(recommendationScoreData);
+        setLeavingContemplation(leavingContemplationData);
+        setDetailedResponses(detailedResponsesData);
+        setTextResponses(textResponsesData);
 
-        const detailedResponses = await getDetailedWellbeingResponses(selectedSurvey, startDate, endDate);
-        setDetailedWellbeingResponses(detailedResponses);
-
-        const responses = await getTextResponses(selectedSurvey, startDate, endDate);
-        setTextResponses(responses);
+        // Load survey summary
+        const summaryData = await getSurveySummary(
+          selectedSurvey,
+          recommendationScoreData,
+          leavingContemplationData,
+          detailedResponsesData,
+          textResponsesData
+        );
+        setSummary(summaryData);
       } catch (error) {
-        console.error('Error loading analysis data:', error);
+        console.error('Error loading data:', error);
+        toast.error("Failed to load data for selected survey");
       } finally {
         setLoading(false);
       }
     };
-    
-    if (hasSurveys && selectedSurvey) {
-      loadAnalysisData();
-    }
-  }, [selectedSurvey, startDate, endDate, hasSurveys]);
 
-  useEffect(() => {
-    const generateSummary = async () => {
-      if (loading || !selectedSurvey || !hasSurveys) return;
-      setSummaryLoading(true);
-      try {
-        const leavingContemplation = Object.fromEntries(leavingData.map(item => [item.name, item.value]));
+    loadData();
+  }, [selectedSurvey, startDate, endDate]);
 
-        const summary = await getSurveySummary(selectedSurvey, recommendationScore, leavingContemplation, detailedWellbeingResponses, textResponses);
-        setSummaryData(summary);
-      } catch (error) {
-        console.error('Error generating summary:', error);
-      } finally {
-        setSummaryLoading(false);
-      }
-    };
-    
-    if (hasSurveys && selectedSurvey) {
-      generateSummary();
-    }
-  }, [selectedSurvey, loading, recommendationScore, leavingData, detailedWellbeingResponses, textResponses, hasSurveys]);
-
-  const customPieTooltip = ({
-    active,
-    payload
-  }: any) => {
-    if (active && payload && payload.length) {
-      const total = leavingData.reduce((sum, item) => sum + item.value, 0);
-      const percentage = total > 0 ? (payload[0].value / total * 100).toFixed(1) : "0.0";
-      return <div className="bg-white p-3 border border-gray-200 shadow-sm rounded-md">
-          <p className="font-medium">{payload[0].name}</p>
-          <p className="text-gray-600">Count: {payload[0].value}</p>
-          <p className="text-gray-600">
-            Percentage: {percentage}%
-          </p>
-        </div>;
-    }
-    return null;
+  // Function to handle survey selection
+  const handleSurveyChange = (e: any) => {
+    setSelectedSurvey(e.target.value);
   };
 
-  const customStackedBarTooltip = ({
-    active,
-    payload,
-    label
-  }: any) => {
-    if (active && payload && payload.length) {
-      return <div className="bg-white p-4 border border-gray-200 shadow-sm rounded-md">
-          <p className="font-medium text-gray-900 mb-2">{label}</p>
-          {payload.map((entry: any, index: number) => <div key={`tooltip-${index}`} className="flex items-center mb-1">
-              <div className="w-3 h-3 rounded-full mr-2" style={{
-            backgroundColor: entry.color
-          }} />
-              <p className="text-gray-700">
-                <span className="font-medium">{entry.name}:</span> {entry.value}%
-              </p>
-            </div>)}
-        </div>;
-    }
-    return null;
-  };
-
-  const getComparisonIndicator = (schoolScore: number, nationalScore: number) => {
-    const difference = schoolScore - nationalScore;
-    if (Math.abs(difference) < SIGNIFICANCE_THRESHOLD) {
-      return <div className="flex items-center justify-center text-gray-500">
-          <MinusIcon size={14} className="mr-1" />
-          <span className="text-sm">Similar to average</span>
-        </div>;
-    } else if (difference > 0) {
-      return <div className="flex items-center justify-center text-green-600">
-          <ArrowUpIcon size={14} className="mr-1" />
-          <span className="text-sm">Above average</span>
-        </div>;
+  // Function to handle date range selection
+  const handleDateRangeChange = (dates: [Date | null, Date | null]) => {
+    const [start, end] = dates;
+    if (start) {
+      setStartDate(start.toISOString().split('T')[0]);
     } else {
-      return <div className="flex items-center justify-center text-red-600">
-          <ArrowDownIcon size={14} className="mr-1" />
-          <span className="text-sm">Below average</span>
-        </div>;
+      setStartDate("");
+    }
+    if (end) {
+      setEndDate(end.toISOString().split('T')[0]);
+    } else {
+      setEndDate("");
     }
   };
 
-  const getPaginatedResponses = (responses: TextResponse[], page: number) => {
-    const startIndex = (page - 1) * RESPONSES_PER_PAGE;
-    return responses.slice(startIndex, startIndex + RESPONSES_PER_PAGE);
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'No Date Selected';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
-  const getTotalPages = (responses: TextResponse[]) => {
-    return Math.max(1, Math.ceil(responses.length / RESPONSES_PER_PAGE));
-  };
-
-  const PaginationControls = ({ 
-    currentPage, 
-    totalPages, 
-    onPageChange 
-  }: { 
-    currentPage: number; 
-    totalPages: number; 
-    onPageChange: (page: number) => void 
-  }) => {
+  // Empty state rendering when no surveys found
+  if (noData) {
     return (
-      <div className="flex items-center justify-center mt-4 space-x-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage <= 1}
-          className="h-8 w-8 p-0"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          <span className="sr-only">Previous page</span>
-        </Button>
-        <span className="text-sm text-gray-600">
-          {currentPage} of {totalPages}
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage >= totalPages}
-          className="h-8 w-8 p-0"
-        >
-          <ChevronRight className="h-4 w-4" />
-          <span className="sr-only">Next page</span>
-        </Button>
-      </div>
+      <MainLayout>
+        <div className="container mx-auto px-4 py-8">
+          <PageTitle 
+            title="Analysis" 
+            subtitle="View insights from your wellbeing surveys"
+          />
+          <div className="bg-white p-8 rounded-lg shadow text-center">
+            <h2 className="text-2xl font-semibold text-gray-700 mb-4">No surveys found</h2>
+            <p className="text-gray-600 mb-6">You haven't created any surveys yet or no responses have been collected.</p>
+            <button
+              onClick={() => navigate('/new-survey')}
+              className="bg-brandPurple-500 hover:bg-brandPurple-600 text-white font-medium py-2 px-6 rounded-md transition-all duration-200"
+            >
+              Create Your First Survey
+            </button>
+          </div>
+        </div>
+      </MainLayout>
     );
-  };
-
-  const handleSendEmail = async () => {
-    if (!emailAddress || !emailAddress.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-      toast({
-        title: "Invalid Email",
-        description: "Please enter a valid email address",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setIsEmailSending(true);
-      
-      const selectedSurveyName = surveys.find(s => s.id === selectedSurvey)?.name || 'Survey Analysis';
-      
-      await sendReportByEmail(
-        emailAddress,
-        selectedSurvey,
-        selectedSurveyName,
-        summaryData,
-        recommendationScore,
-        leavingData,
-        detailedWellbeingResponses,
-        textResponses
-      );
-      
-      setEmailDialogOpen(false);
-      setEmailAddress('');
-      
-      toast({
-        title: "Email Sent",
-        description: `Report has been sent to ${emailAddress}`,
-      });
-    } catch (error) {
-      console.error('Error sending email:', error);
-      toast({
-        title: "Email Failed",
-        description: "Failed to send the report. Please try again later.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsEmailSending(false);
-    }
-  };
-
-  const handleDownloadPdf = async () => {
-    try {
-      setIsPdfGenerating(true);
-      
-      const selectedSurveyName = surveys.find(s => s.id === selectedSurvey)?.name || 'survey';
-      const fileName = `${selectedSurveyName.toLowerCase().replace(/\s+/g, '-')}-analysis.pdf`;
-      
-      await generatePDF(analysisRef, fileName);
-      
-      toast({
-        title: "PDF Generated",
-        description: "Report has been downloaded as PDF",
-      });
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast({
-        title: "PDF Generation Failed",
-        description: "Failed to generate PDF. Please try again later.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsPdfGenerating(false);
-    }
-  };
-
-  const EmptyState = () => (
-    <div className="flex flex-col items-center justify-center space-y-6 py-16 px-4 text-center">
-      <div className="rounded-full bg-gray-100 p-5 w-20 h-20 flex items-center justify-center">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      </div>
-      <h3 className="text-xl font-medium text-gray-900">No Survey Data Available</h3>
-      <p className="text-gray-500 max-w-md">
-        You haven't created any surveys yet. Create your first survey to start collecting feedback and analyzing results.
-      </p>
-      <Link to="/new-survey">
-        <Button className="bg-brandPurple-600 hover:bg-brandPurple-700">
-          Create Your First Survey
-        </Button>
-      </Link>
-    </div>
-  );
+  }
 
   return (
     <MainLayout>
-      <div className="page-container">
-        <PageTitle title="Survey Analysis" subtitle="Compare your school's results with national benchmarks" />
-        
-        <div className="card p-6 mb-8 animate-slide-up">
-          {!loading && !hasSurveys ? (
-            <EmptyState />
-          ) : (
-            <>
-              <div className="flex justify-between items-center mb-6">
-                <div className="bg-gray-50 p-4 rounded-lg flex-grow">
-                  <h3 className="text-md font-semibold text-gray-700 mb-3">Data Filters</h3>
-                  <div className="flex flex-wrap gap-4 items-end">
-                    <div>
-                      <label htmlFor="survey-select" className="block text-sm font-medium text-gray-700 mb-1">
-                        Survey
-                      </label>
-                      <select 
-                        id="survey-select" 
-                        className="form-input min-w-64" 
-                        value={selectedSurvey} 
-                        onChange={e => setSelectedSurvey(e.target.value)} 
-                        disabled={loading || surveys.length === 0}
-                      >
-                        {surveys.length === 0 ? (
-                          <option value="">No surveys available</option>
-                        ) : (
-                          surveys.map(survey => (
-                            <option key={survey.id} value={survey.id}>
-                              {survey.name} ({survey.date})
-                            </option>
-                          ))
-                        )}
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="date-filter" className="block text-sm font-medium text-gray-700 mb-1">
-                        Date Range
-                      </label>
-                      <select 
-                        id="date-filter" 
-                        className="form-input" 
-                        value={dateFilter} 
-                        onChange={e => setDateFilter(e.target.value)} 
-                        disabled={loading || !hasSurveys}
-                      >
-                        <option value="all">All Time</option>
-                        <option value="month">Last Month</option>
-                        <option value="quarter">Last Quarter</option>
-                        <option value="year">Last Year</option>
-                        <option value="custom">Custom Range</option>
-                      </select>
-                    </div>
-                    
-                    {dateFilter === 'custom' && (
-                      <>
-                        <div>
-                          <label htmlFor="start-date" className="block text-sm font-medium text-gray-700 mb-1">
-                            Start Date
-                          </label>
-                          <input 
-                            id="start-date" 
-                            type="date" 
-                            className="form-input" 
-                            value={startDate.split('T')[0]} 
-                            onChange={e => setStartDate(`${e.target.value}T00:00:00Z`)} 
-                            disabled={loading || !hasSurveys} 
-                          />
-                        </div>
-                        
-                        <div>
-                          <label htmlFor="end-date" className="block text-sm font-medium text-gray-700 mb-1">
-                            End Date
-                          </label>
-                          <input 
-                            id="end-date" 
-                            type="date" 
-                            className="form-input" 
-                            value={endDate.split('T')[0]} 
-                            onChange={e => setEndDate(`${e.target.value}T23:59:59Z`)} 
-                            disabled={loading || !hasSurveys} 
-                          />
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="flex gap-2 ml-4">
-                  <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" disabled={loading || !hasSurveys}>
-                        <Mail className="mr-2 h-4 w-4" />
-                        Email Report
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>Email Analysis Report</DialogTitle>
-                        <DialogDescription>
-                          Enter an email address to send this analysis report to.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="py-4">
-                        <Input
-                          type="email"
-                          placeholder="name@example.com"
-                          value={emailAddress}
-                          onChange={(e) => setEmailAddress(e.target.value)}
-                          className="w-full"
-                        />
-                      </div>
-                      <DialogFooter>
-                        <Button variant="secondary" onClick={() => setEmailDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={handleSendEmail} disabled={isEmailSending}>
-                          {isEmailSending ? "Sending..." : "Send Report"}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                  
-                  <Button variant="outline" onClick={handleDownloadPdf} disabled={loading || isPdfGenerating || !hasSurveys}>
-                    <Download className="mr-2 h-4 w-4" />
-                    {isPdfGenerating ? "Generating..." : "Download PDF"}
-                  </Button>
-                </div>
-              </div>
-              
-              {loading ? (
-                <div className="flex items-center justify-center h-64">
-                  <div className="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
-                  <span className="ml-3 text-gray-700">Loading analysis data...</span>
-                </div>
-              ) : (
-                <div ref={analysisRef}>
-                  <div className="mb-8">
-                    <div className="flex items-center justify-between mb-4 border-b pb-2">
-                      <h2 className="text-xl text-gray-900 text-center font-bold w-full">AI-Powered Summary</h2>
-                    </div>
-                    
-                    {summaryLoading ? (
-                      <div className="flex items-center justify-center h-40 bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                        <div className="animate-spin h-6 w-6 border-4 border-indigo-500 border-t-transparent rounded-full mr-3"></div>
-                        <span className="text-gray-700">Generating AI insights...</span>
-                      </div>
-                    ) : summaryData?.insufficientData ? (
-                      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm flex flex-col items-center justify-center h-40">
-                        <div className="text-amber-500 mb-2">
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-10 h-10">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-                          </svg>
-                        </div>
-                        <p className="text-gray-700 text-center">Not enough data available for AI analysis. A minimum of 20 survey responses is required.</p>
-                      </div>
-                    ) : summaryData ? (
-                      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div>
-                            <h3 className="font-semibold text-green-600 mb-3 flex items-center text-xl my-[10px]">
-                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
-                              </svg>
-                              Areas of Strength
-                            </h3>
-                            <ul className="space-y-2">
-                              {summaryData.strengths.map((strength, index) => (
-                                <li key={`strength-${index}`} className="flex items-start my-[10px]">
-                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-green-500 mt-0.5 mr-2 flex-shrink-0">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
-                                  </svg>
-                                  <span className="text-gray-700 text-left my-0">{strength}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                          
-                          <div>
-                            <h3 className="font-semibold text-amber-600 mb-3 flex items-center text-xl py-[10px] my-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
-                              </svg>
-                              Areas for Improvement
-                            </h3>
-                            <ul className="space-y-2">
-                              {summaryData.improvements.map((improvement, index) => (
-                                <li key={`improvement-${index}`} className="flex items-start my-0">
-                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-amber-500 mt-0.5 mr-2 flex-shrink-0">
-                                    <path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
-                                  </svg>
-                                  <span className="text-gray-700 text-left my-[5px] py-0">{improvement}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm flex items-center justify-center h-40">
-                        <span className="text-gray-500">Unable to generate summary. Please try again later.</span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="mb-8">
-                    <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Survey Results</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                        <div className="flex justify-between items-start mb-4">
-                          <h3 className="text-lg font-semibold text-gray-900">Recommendation Score</h3>
-                          {getComparisonIndicator(recommendationScore.score, recommendationScore.nationalAverage)}
-                        </div>
-                        <div className="flex items-center justify-center space-x-12 mt-6">
-                          <div className="text-center">
-                            <div className="text-5xl font-bold text-indigo-600 mb-2">{recommendationScore.score}</div>
-                            <div className="text-sm text-gray-500">Your School</div>
-                          </div>
-                          <div className="h-20 border-l border-gray-200"></div>
-                          <div className="text-center">
-                            <div className="text-5xl font-bold text-gray-500 mb-2">{recommendationScore.nationalAverage}</div>
-                            <div className="text-sm text-gray-500">National Average</div>
-                          </div>
-                        </div>
-                        <p className="text-sm text-gray-600 mt-8 text-center">
-                          Average score for "How likely are you to recommend this organisation to others as a great place to work?" (0-10)
-                        </p>
-                      </div>
-                      
-                      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Staff Contemplating Leaving</h3>
-                        <div className="h-64">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie data={leavingData} cx="50%" cy="50%" labelLine={false} outerRadius={80} fill="#8884d8" dataKey="value" label={({
-                                name,
-                                percent
-                              }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
-                                {leavingData.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                              </Pie>
-                              <Tooltip content={customPieTooltip} />
-                            </PieChart>
-                          </ResponsiveContainer>
-                        </div>
-                        <p className="text-sm text-gray-600 mt-2 text-center">
-                          Responses to "In the last 6 months I have contemplated leaving my role"
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    {detailedWellbeingResponses.map((question, index) => {
-                      const schoolPositive = (question.schoolResponses["Strongly Agree"] || 0) + (question.schoolResponses["Agree"] || 0);
-                      const nationalPositive = (question.nationalResponses["Strongly Agree"] || 0) + (question.nationalResponses["Agree"] || 0);
+      <div className="container mx-auto px-4 py-8">
+        <PageTitle 
+          title="Analysis" 
+          subtitle="View insights from your wellbeing surveys"
+        />
 
-                      const chartData = [{
-                        name: "Your School",
-                        "Strongly Agree": question.schoolResponses["Strongly Agree"] || 0,
-                        "Agree": question.schoolResponses["Agree"] || 0,
-                        "Disagree": question.schoolResponses["Disagree"] || 0,
-                        "Strongly Disagree": question.schoolResponses["Strongly Disagree"] || 0
-                      }, {
-                        name: "National Average",
-                        "Strongly Agree": question.nationalResponses["Strongly Agree"] || 0,
-                        "Agree": question.nationalResponses["Agree"] || 0,
-                        "Disagree": question.nationalResponses["Disagree"] || 0,
-                        "Strongly Disagree": question.nationalResponses["Strongly Disagree"] || 0
-                      }];
-                      return (
-                        <div key={`chart-${index}`} className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                          <h4 className="text-md font-semibold text-gray-900 mb-1 text-center">
-                            {question.question}
-                          </h4>
-                          
-                          <div className="flex justify-center mb-4">
-                            {getComparisonIndicator(schoolPositive, nationalPositive)}
-                          </div>
-                          
-                          <div className="h-64">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <BarChart 
-                                data={chartData} 
-                                margin={{
-                                  top: 20,
-                                  right: 30,
-                                  left: 20,
-                                  bottom: 20
-                                }} 
-                                layout="horizontal" 
-                                barGap={25} 
-                                barCategoryGap="35%"
-                              >
-                                <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={true} />
-                                <XAxis 
-                                  dataKey="name" 
-                                  tick={{
-                                    fill: '#4B5563'
-                                  }} 
-                                />
-                                <YAxis 
-                                  type="number" 
-                                  domain={[0, 100]} 
-                                  tickFormatter={value => `${value}%`} 
-                                  label={{
-                                    value: 'Percentage (%)',
-                                    angle: -90,
-                                    position: 'insideLeft',
-                                    style: {
-                                      textAnchor: 'middle'
-                                    }
-                                  }} 
-                                />
-                                <Tooltip content={customStackedBarTooltip} />
-                                <Legend 
-                                  verticalAlign="bottom" 
-                                  height={20} 
-                                  iconSize={10} 
-                                  wrapperStyle={{
-                                    fontSize: '10px'
-                                  }} 
-                                />
-                                <Bar dataKey="Strongly Disagree" stackId="a" fill={RESPONSE_COLORS['Strongly Disagree']} name="Strongly Disagree" />
-                                <Bar dataKey="Disagree" stackId="a" fill={RESPONSE_COLORS['Disagree']} name="Disagree" />
-                                <Bar dataKey="Agree" stackId="a" fill={RESPONSE_COLORS['Agree']} name="Agree" />
-                                <Bar dataKey="Strongly Agree" stackId="a" fill={RESPONSE_COLORS['Strongly Agree']} name="Strongly Agree" />
-                              </BarChart>
-                            </ResponsiveContainer>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  
-                  <div className="mb-8">
-                    <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Open-ended Feedback</h2>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                        <h4 className="text-md font-semibold text-gray-900 mb-4">
-                          What does your organisation do well?
-                        </h4>
-                        {textResponses.doingWell.length > 0 ? (
-                          <>
-                            <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
-                              {getPaginatedResponses(textResponses.doingWell, doingWellPage).map((item, index) => (
-                                <div key={index} className="pb-4 border-b border-gray-100 last:border-0">
-                                  <p className="text-gray-700">{item.response}</p>
-                                  <p className="text-xs text-gray-500 mt-1">{item.created_at}</p>
-                                </div>
-                              ))}
-                            </div>
-                            
-                            {textResponses.doingWell.length > RESPONSES_PER_PAGE && (
-                              <PaginationControls 
-                                currentPage={doingWellPage}
-                                totalPages={getTotalPages(textResponses.doingWell)}
-                                onPageChange={setDoingWellPage}
-                              />
-                            )}
-                          </>
-                        ) : (
-                          <p className="text-gray-500 italic">No responses available.</p>
-                        )}
-                      </div>
-                      
-                      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                        <h4 className="text-md font-semibold text-gray-900 mb-4">
-                          What could your organisation do better?
-                        </h4>
-                        {textResponses.improvements.length > 0 ? (
-                          <>
-                            <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
-                              {getPaginatedResponses(textResponses.improvements, improvementsPage).map((item, index) => (
-                                <div key={index} className="pb-4 border-b border-gray-100 last:border-0">
-                                  <p className="text-gray-700">{item.response}</p>
-                                  <p className="text-xs text-gray-500 mt-1">{item.created_at}</p>
-                                </div>
-                              ))}
-                            </div>
-                            
-                            {textResponses.improvements.length > RESPONSES_PER_PAGE && (
-                              <PaginationControls 
-                                currentPage={improvementsPage}
-                                totalPages={getTotalPages(textResponses.improvements)}
-                                onPageChange={setImprovementsPage}
-                              />
-                            )}
-                          </>
-                        ) : (
-                          <p className="text-gray-500 italic">No responses available.</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
+        <div className="mb-8 flex items-center space-x-4">
+          <div>
+            <label htmlFor="surveySelect" className="block text-sm font-medium text-gray-700">Select Survey:</label>
+            <select
+              id="surveySelect"
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-brandPurple-500 focus:border-brandPurple-500 sm:text-sm rounded-md"
+              value={selectedSurvey}
+              onChange={handleSurveyChange}
+              disabled={loading}
+            >
+              {surveyOptions.map((option) => (
+                <option key={option.id} value={option.id}>{option.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Select Date Range:</label>
+            <DatePicker
+              selectsRange
+              startDate={startDate ? new Date(startDate) : null}
+              endDate={endDate ? new Date(endDate) : null}
+              onChange={handleDateRangeChange}
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-brandPurple-500 focus:border-brandPurple-500 sm:text-sm rounded-md"
+              placeholderText="Select Date Range"
+            />
+            {startDate || endDate ? (
+              <p className="text-sm text-gray-500 mt-1">
+                {startDate ? formatDate(startDate) : 'Start Date'} - {endDate ? formatDate(endDate) : 'End Date'}
+              </p>
+            ) : null}
+          </div>
         </div>
+
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin h-8 w-8 border-4 border-brandPurple-500 border-t-transparent rounded-full mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading data...</p>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div className="bg-white p-6 rounded-lg shadow">
+                <h2 className="text-xl font-semibold mb-4">Recommendation Score</h2>
+                <p className="text-3xl font-bold text-brandPurple-600">{recommendationScore.score}</p>
+                <p className="text-gray-500">National Average: {recommendationScore.nationalAverage}</p>
+              </div>
+
+              <div className="bg-white p-6 rounded-lg shadow">
+                <h2 className="text-xl font-semibold mb-4">Leaving Contemplation</h2>
+                <LeavingContemplationChart data={leavingContemplation} />
+              </div>
+            </div>
+
+            <div className="mb-8">
+              <div className="bg-white p-6 rounded-lg shadow">
+                <h2 className="text-xl font-semibold mb-4">Detailed Wellbeing Responses</h2>
+                <WellbeingChart data={detailedResponses} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div className="bg-white p-6 rounded-lg shadow">
+                <TextResponses title="What is the organisation doing well?" responses={textResponses.doingWell} />
+              </div>
+
+              <div className="bg-white p-6 rounded-lg shadow">
+                <TextResponses title="What could the organisation do to improve?" responses={textResponses.improvements} />
+              </div>
+            </div>
+
+            <div className="mb-8">
+              <div className="bg-white p-6 rounded-lg shadow">
+                <SummarySection summary={summary} />
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </MainLayout>
   );

@@ -21,12 +21,21 @@ export interface TextResponse {
 }
 
 // Function to get survey options
-export const getSurveyOptions = async (): Promise<SurveyOption[]> => {
+export const getSurveyOptions = async (userId?: string): Promise<SurveyOption[]> => {
   try {
-    // Try to get data from Supabase first
+    // If no userId provided, we can't filter by user
+    if (!userId) {
+      console.log("No user ID provided to getSurveyOptions, returning empty array");
+      return [];
+    }
+    
+    console.log(`Fetching surveys for user ID: ${userId}`);
+    
+    // Try to get data from Supabase with user filter
     const { data, error } = await supabase
       .from('survey_templates')
       .select('id, name, date')
+      .eq('creator_id', userId)
       .order('date', { ascending: false });
     
     if (error) {
