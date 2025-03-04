@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { toast } from "sonner";
 import MainLayout from '../components/layout/MainLayout';
@@ -14,7 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Card } from "../components/ui/card";
 import { Check, ArrowRight } from "lucide-react";
 
-// Component for the AI-generated summary section
 const SummarySection = ({ summary }: { summary: any }) => (
   <div className="mb-12">
     <h2 className="text-xl font-semibold mb-6 text-center">AI-Powered Summary</h2>
@@ -59,7 +57,6 @@ const SummarySection = ({ summary }: { summary: any }) => (
   </div>
 );
 
-// Component for recommendation score
 const RecommendationScoreSection = ({ score, nationalAverage }: { score: number, nationalAverage: number }) => (
   <Card className="p-6">
     <h3 className="text-lg font-medium mb-4">Recommendation Score</h3>
@@ -79,7 +76,6 @@ const RecommendationScoreSection = ({ score, nationalAverage }: { score: number,
   </Card>
 );
 
-// Component for leaving contemplation chart (Pie chart)
 const LeavingContemplationChart = ({ data }: { data: Record<string, number> }) => {
   const chartData = Object.entries(data).map(([key, value]) => ({
     name: key,
@@ -110,7 +106,7 @@ const LeavingContemplationChart = ({ data }: { data: Record<string, number> }) =
               ))}
             </Pie>
             <Tooltip formatter={(value) => [`${value} responses`, 'Count']} />
-            <Legend />
+            <Legend wrapperStyle={{ fontSize: '10px' }} />
           </PieChart>
         </ResponsiveContainer>
       </div>
@@ -121,7 +117,6 @@ const LeavingContemplationChart = ({ data }: { data: Record<string, number> }) =
   );
 };
 
-// Component for individual wellbeing questions
 const WellbeingQuestionChart = ({ 
   title, 
   data,
@@ -174,7 +169,12 @@ const WellbeingQuestionChart = ({
             <Tooltip 
               formatter={(value, name) => [`${(Number(value) * 100).toFixed(0)}%`, name]} 
             />
-            <Legend />
+            <Legend 
+              wrapperStyle={{ fontSize: '10px' }}
+              iconSize={8}
+              layout="horizontal"
+              verticalAlign="bottom"
+            />
             <Bar dataKey="Strongly Disagree" stackId="a" fill="#FF5252" />
             <Bar dataKey="Disagree" stackId="a" fill="#FFA726" />
             <Bar dataKey="Agree" stackId="a" fill="#81C784" />
@@ -186,7 +186,6 @@ const WellbeingQuestionChart = ({
   );
 };
 
-// Component for text responses
 const TextResponsesSection = ({ 
   doingWellResponses, 
   improvementResponses 
@@ -230,7 +229,6 @@ const TextResponsesSection = ({
   </div>
 );
 
-// Main Analysis component
 const Analysis = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -245,11 +243,9 @@ const Analysis = () => {
   const [summary, setSummary] = useState<any>({});
   const [noData, setNoData] = useState(false);
 
-  // Function to load survey options
   useEffect(() => {
     const loadSurveyOptions = async () => {
       try {
-        // Now passing the user ID to filter surveys by creator
         const options = await getSurveyOptions(user?.id);
         setSurveyOptions(options);
         
@@ -270,7 +266,6 @@ const Analysis = () => {
     }
   }, [user]);
 
-  // Function to load data based on selected survey and date range
   useEffect(() => {
     const loadData = async () => {
       if (!selectedSurvey) return;
@@ -278,7 +273,6 @@ const Analysis = () => {
       try {
         setLoading(true);
         
-        // Calculate date range based on selection
         let startDate = "";
         let endDate = "";
         
@@ -309,7 +303,6 @@ const Analysis = () => {
         setDetailedResponses(detailedResponsesData);
         setTextResponses(textResponsesData);
 
-        // Load survey summary
         const summaryData = await getSurveySummary(
           selectedSurvey,
           recommendationScoreData,
@@ -329,23 +322,19 @@ const Analysis = () => {
     loadData();
   }, [selectedSurvey, selectedTimeRange]);
 
-  // Handle survey change
   const handleSurveyChange = (value: string) => {
     setSelectedSurvey(value);
   };
 
-  // Handle time range change
   const handleTimeRangeChange = (value: string) => {
     setSelectedTimeRange(value);
   };
 
-  // Get survey name
   const getSurveyName = () => {
     const survey = surveyOptions.find(s => s.id === selectedSurvey);
     return survey ? survey.name : '';
   };
 
-  // Empty state rendering when no surveys found
   if (noData) {
     return (
       <MainLayout>
@@ -431,7 +420,6 @@ const Analysis = () => {
           </div>
         ) : (
           <>
-            {/* Summary Section */}
             <SummarySection summary={summary} />
 
             <div className="mb-12">
@@ -445,7 +433,6 @@ const Analysis = () => {
               </div>
             </div>
 
-            {/* Wellbeing Questions */}
             <div className="mb-12">
               <h2 className="text-xl font-semibold mb-6 text-center">Wellbeing Indicators</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -460,7 +447,6 @@ const Analysis = () => {
               </div>
             </div>
 
-            {/* Text Responses */}
             <TextResponsesSection
               doingWellResponses={textResponses.doingWell}
               improvementResponses={textResponses.improvements}
