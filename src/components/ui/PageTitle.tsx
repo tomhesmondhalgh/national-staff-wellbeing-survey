@@ -10,7 +10,7 @@ const PageTitle: React.FC<PageTitleProps> = ({
   className = ''
 }) => {
   return <div className={`mb-8 ${className}`}>
-      <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2 text-left">
+      <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2 text-center">
         {title}
       </h1>
       {subtitle && <p className="text-lg text-gray-600">
