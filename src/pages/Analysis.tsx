@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from "sonner";
 import MainLayout from '../components/layout/MainLayout';
@@ -61,9 +62,9 @@ const RecommendationScoreSection = ({
 }: {
   score: number;
   nationalAverage: number;
-}) => <Card className="p-6">
+}) => <Card className="p-6 h-full">
     <h3 className="text-lg font-medium mb-4">Recommendation Score</h3>
-    <div className="flex items-center justify-center space-x-12">
+    <div className="flex items-center justify-center space-x-12 h-52">
       <div className="text-center">
         <p className="text-4xl font-bold text-indigo-600">{score.toFixed(1)}</p>
         <p className="text-sm text-gray-500">Your score</p>
@@ -103,15 +104,14 @@ const LeavingContemplationChart = ({
   const hasData = Object.values(data).some(val => val > 0);
   
   return (
-    <Card className="p-6">
+    <Card className="p-6 h-full">
       <h3 className="text-lg font-medium mb-4">Staff Contemplating Leaving</h3>
-      <div className="h-64">
+      <div className="h-52">
         <ResponsiveContainer width="100%" height="100%">
           {hasData ? (
             <BarChart 
               data={chartData} 
               layout="vertical"
-              stackOffset="expand"
               barSize={30}
               margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
             >
