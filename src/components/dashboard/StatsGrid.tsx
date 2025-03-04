@@ -3,44 +3,40 @@ import React from 'react';
 import { BarChart, Calendar, Users, Send } from 'lucide-react';
 import StatsCard from './StatsCard';
 
-interface DashboardStats {
-  totalSurveys: number;
-  totalRespondents: number;
-  responseRate: string;
-  benchmarkScore: string;
-}
-
 interface StatsGridProps {
-  stats: DashboardStats | null;
+  totalSurveys: number | null;
+  totalRespondents: number | null;
+  responseRate: string | null;
+  benchmarkScore: string | null;
   isLoading: boolean;
 }
 
-const StatsGrid = ({ stats, isLoading }: StatsGridProps) => {
-  const statsData = stats ? [
+const StatsGrid = ({ totalSurveys, totalRespondents, responseRate, benchmarkScore, isLoading }: StatsGridProps) => {
+  const statsData = !isLoading ? [
     { 
       label: 'Total Surveys', 
-      value: stats.totalSurveys.toString(), 
+      value: totalSurveys?.toString() || '0', 
       icon: Calendar, 
       color: 'bg-green-100 text-green-600',
       link: '/surveys'
     },
     { 
       label: 'Total Respondents', 
-      value: stats.totalRespondents.toString(), 
+      value: totalRespondents?.toString() || '0', 
       icon: Users, 
       color: 'bg-blue-100 text-blue-600',
       link: null
     },
     { 
       label: 'Response Rate', 
-      value: stats.responseRate, 
+      value: responseRate || '0%', 
       icon: Send, 
       color: 'bg-purple-100 text-purple-600',
       link: null
     },
     { 
       label: 'Would Recommend', 
-      value: `${stats.benchmarkScore}/10`, 
+      value: benchmarkScore ? `${benchmarkScore}/10` : '0/10', 
       icon: BarChart, 
       color: 'bg-amber-100 text-amber-600',
       link: null
