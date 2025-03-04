@@ -1,4 +1,3 @@
-
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -132,7 +131,8 @@ export const getLeavingContemplation = async (
     const query = supabase
       .from('survey_responses')
       .select('leaving_contemplation')
-      .eq('survey_template_id', surveyId);
+      .eq('survey_template_id', surveyId)
+      .not('leaving_contemplation', 'is', null); // Only select non-null responses
     
     // Apply date filters if provided
     if (startDate) {
@@ -164,6 +164,7 @@ export const getLeavingContemplation = async (
       }
     });
     
+    console.log('Leaving contemplation data:', counts);
     return counts;
   } catch (error) {
     console.error('Error in getLeavingContemplation:', error);

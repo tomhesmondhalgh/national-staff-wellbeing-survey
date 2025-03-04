@@ -20,6 +20,7 @@ import { format } from "date-fns";
 import { cn } from "../lib/utils";
 import { Input } from "../components/ui/input";
 import { Form, FormControl, FormField, FormItem } from "../components/ui/form";
+
 const SummarySection = ({
   summary
 }: {
@@ -53,6 +54,7 @@ const SummarySection = ({
       </div>
     </div>
   </div>;
+
 const RecommendationScoreSection = ({
   score,
   nationalAverage
@@ -75,39 +77,60 @@ const RecommendationScoreSection = ({
       Average score for "How likely would you recommend this organization to others as a place to work?" (0-10)
     </p>
   </Card>;
+
 const LeavingContemplationChart = ({
   data
 }: {
   data: Record<string, number>;
 }) => {
-  const chartData = Object.entries(data).map(([key, value]) => ({
-    name: key,
+  const chartData = Object.entries(data).map(([name, value]) => ({
+    name,
     value
   }));
+  
+  const hasData = chartData.some(item => item.value > 0);
+  
   const COLORS = ['#4CAF50', '#8BC34A', '#FFC107', '#F44336'];
-  return <Card className="p-6">
+  
+  return (
+    <Card className="p-6">
       <h3 className="text-lg font-medium mb-4">Staff Contemplating Leaving</h3>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
-            <Pie data={chartData} cx="50%" cy="50%" innerRadius={0} outerRadius={80} fill="#8884d8" paddingAngle={2} dataKey="value" label={({
-            name,
-            percent
-          }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
-              {chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-            </Pie>
-            <Tooltip formatter={value => [`${value} responses`, 'Count']} />
-            <Legend wrapperStyle={{
-            fontSize: '10px'
-          }} />
+            {hasData ? (
+              <Pie 
+                data={chartData} 
+                cx="50%" 
+                cy="50%" 
+                innerRadius={0} 
+                outerRadius={80} 
+                fill="#8884d8" 
+                paddingAngle={2} 
+                dataKey="value" 
+                label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
+              >
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+            ) : (
+              <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle">
+                No data available
+              </text>
+            )}
+            <Tooltip formatter={(value) => [`${value} responses`, 'Count']} />
+            <Legend wrapperStyle={{ fontSize: '10px' }} />
           </PieChart>
         </ResponsiveContainer>
       </div>
       <p className="text-xs text-gray-500 text-center mt-2">
         Responses to: "I have considered leaving this organization in the past year"
       </p>
-    </Card>;
+    </Card>
+  );
 };
+
 const WellbeingQuestionChart = ({
   title,
   data,
@@ -157,6 +180,7 @@ const WellbeingQuestionChart = ({
       </div>
     </Card>;
 };
+
 const TextResponsesSection = ({
   doingWellResponses,
   improvementResponses
@@ -185,6 +209,7 @@ const TextResponsesSection = ({
       </Card>
     </div>
   </div>;
+
 const Analysis = () => {
   const {
     user
@@ -215,6 +240,7 @@ const Analysis = () => {
   const [summary, setSummary] = useState<any>({});
   const [noData, setNoData] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
+
   useEffect(() => {
     const loadSurveyOptions = async () => {
       try {
@@ -235,6 +261,7 @@ const Analysis = () => {
       loadSurveyOptions();
     }
   }, [user]);
+
   useEffect(() => {
     const loadData = async () => {
       if (!selectedSurvey) return;
@@ -272,9 +299,11 @@ const Analysis = () => {
     };
     loadData();
   }, [selectedSurvey, selectedTimeRange, customDateRange]);
+
   const handleSurveyChange = (value: string) => {
     setSelectedSurvey(value);
   };
+
   const handleTimeRangeChange = (value: string) => {
     setSelectedTimeRange(value);
     if (value !== "custom-range") {
@@ -284,10 +313,12 @@ const Analysis = () => {
       });
     }
   };
+
   const getSurveyName = () => {
     const survey = surveyOptions.find(s => s.id === selectedSurvey);
     return survey ? survey.name : '';
   };
+
   const handleExportPDF = async () => {
     try {
       setExportLoading(true);
@@ -306,6 +337,7 @@ const Analysis = () => {
       setExportLoading(false);
     }
   };
+
   const handleExportReport = async () => {
     try {
       setExportLoading(true);
@@ -327,6 +359,7 @@ const Analysis = () => {
       setExportLoading(false);
     }
   };
+
   if (noData) {
     return <MainLayout>
         <div className="container mx-auto px-4 py-8">
@@ -341,6 +374,7 @@ const Analysis = () => {
         </div>
       </MainLayout>;
   }
+
   return <MainLayout>
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="mb-10 text-center">
@@ -448,4 +482,5 @@ const Analysis = () => {
       </div>
     </MainLayout>;
 };
+
 export default Analysis;
