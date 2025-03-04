@@ -13,8 +13,8 @@ const Navbar: React.FC = () => {
   // Check if user is authenticated
   const isAuthenticated = !!user;
   
-  // Check if current page is a survey response form
-  const isSurveyResponsePage = location.pathname === '/survey';
+  // Check if current page is a survey response or survey completion page
+  const hideAuthButtons = location.pathname === '/survey' || location.pathname === '/survey-complete';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -75,8 +75,8 @@ const Navbar: React.FC = () => {
                 <button className="nav-link" onClick={handleSignOut}>Sign Out</button>
               </>
             ) : (
-              // Only show login/signup options if not on survey response page
-              !isSurveyResponsePage && (
+              // Only show login/signup options if not on survey response or complete pages
+              !hideAuthButtons && (
                 <>
                   <Link to="/login" className="btn-ghost">
                     Log in
@@ -144,8 +144,8 @@ const Navbar: React.FC = () => {
                 </button>
               </>
             ) : (
-              // Only show login/signup options if not on survey response page
-              !isSurveyResponsePage && (
+              // Only show login/signup options if not on survey response or complete pages
+              !hideAuthButtons && (
                 <>
                   <Link 
                     to="/login" 
