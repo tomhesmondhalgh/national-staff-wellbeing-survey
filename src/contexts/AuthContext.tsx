@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session, Provider } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
@@ -122,15 +123,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw metadataError;
       }
 
-      // Update the profiles table manually since the trigger might not have the complete data
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: userId,
-          job_title: userData.jobTitle,
-          school_name: userData.schoolName,
-          school_address: userData.schoolAddress,
-        }, { onConflict: 'id' });
+      // Important: Use service role to bypass RLS policies for initial profile creation
+      // This is only used once during onboarding to create the initial profile
+      const { error: profileError } = await supabase.rpc('create_or_update_profile', {
+        profile_id: userId,
+        profile_first_name: userData.firstName,
+        profile_last_name: userData.lastName,
+        profile_job_title: userData.jobTitle,
+        profile_school_name: userData.schoolName,
+        profile_school_address: userData.schoolAddress,
+      });
 
       if (profileError) {
         throw profileError;
