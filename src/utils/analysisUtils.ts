@@ -178,7 +178,18 @@ export const getLeavingContemplation = async (
     });
     
     console.log('Leaving contemplation data:', counts);
-    return counts;
+    
+    // Convert to percentages for consistency with other charts
+    const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+    const percentages: Record<string, number> = { ...emptyCounts };
+    
+    if (total > 0) {
+      Object.keys(percentages).forEach(key => {
+        percentages[key] = Math.round((counts[key] / total) * 100) / 100; // Return as decimal for stacked charts
+      });
+    }
+    
+    return percentages;
   } catch (error) {
     console.error('Error in getLeavingContemplation:', error);
     // Return empty structure instead of mock data
