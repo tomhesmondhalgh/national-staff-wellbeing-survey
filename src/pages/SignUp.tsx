@@ -31,8 +31,10 @@ const SignUp = () => {
           lastName: data.lastName,
         }));
         
-        // Navigate to onboarding page with the temp user data
-        navigate('/onboarding');
+        // Navigate to email confirmation page instead of onboarding
+        navigate('/email-confirmation', { 
+          state: { email: data.email } 
+        });
       } else if (error) {
         console.error('Detailed signup error:', error);
         toast.error('Failed to create account', {

@@ -8,6 +8,7 @@ import { Toaster as SonnerToaster } from 'sonner';
 import Index from './pages/Index';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
+import EmailConfirmation from './pages/EmailConfirmation';
 import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
 import Surveys from './pages/Surveys';
@@ -30,6 +31,7 @@ function App() {
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/email-confirmation" element={<EmailConfirmation />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/surveys" element={<Surveys />} />

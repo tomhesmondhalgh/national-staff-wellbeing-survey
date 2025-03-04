@@ -12,6 +12,18 @@ export async function signInWithEmail(email: string, password: string) {
     });
 
     if (error) {
+      // Check if the error is related to email confirmation
+      if (error.message.includes('Email not confirmed') || 
+          error.message.toLowerCase().includes('email confirmation')) {
+        return { 
+          error: {
+            ...error,
+            message: 'Please confirm your email address before logging in. Check your inbox for a confirmation link.',
+            isEmailConfirmationError: true
+          }, 
+          success: false 
+        };
+      }
       throw error;
     }
 
