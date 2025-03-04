@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { toast } from "sonner";
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
 import { getSurveyOptions, getRecommendationScore, getLeavingContemplation, getDetailedWellbeingResponses, getTextResponses } from '../utils/analysisUtils';
 import { getSurveySummary } from '../utils/summaryUtils';
+import { generatePDF, sendReportByEmail } from '../utils/reportUtils';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -11,7 +12,7 @@ import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Card } from "../components/ui/card";
-import { Check, ArrowRight, CalendarIcon } from "lucide-react";
+import { Check, ArrowRight, CalendarIcon, Download, Share } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
 import { Calendar } from "../components/ui/calendar";
@@ -193,6 +194,7 @@ const TextResponsesSection = ({
 const Analysis = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const analysisRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [surveyOptions, setSurveyOptions] = useState<any[]>([]);
   const [selectedSurvey, setSelectedSurvey] = useState<string>("");
@@ -216,6 +218,7 @@ const Analysis = () => {
   });
   const [summary, setSummary] = useState<any>({});
   const [noData, setNoData] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
 
   useEffect(() => {
     const loadSurveyOptions = async () => {
@@ -310,6 +313,60 @@ const Analysis = () => {
   const getSurveyName = () => {
     const survey = surveyOptions.find(s => s.id === selectedSurvey);
     return survey ? survey.name : '';
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      setExportLoading(true);
+      if (!analysisRef.current) {
+        toast.error("Cannot generate PDF. Report content not found.");
+        return;
+      }
+      
+      const surveyName = getSurveyName();
+      const fileName = `${surveyName.replace(/\s+/g, '-').toLowerCase()}-analysis.pdf`;
+      
+      await generatePDF(analysisRef, fileName);
+      
+      toast.success("PDF generated successfully!");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast.error("Failed to generate PDF report");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  const handleExportReport = async () => {
+    try {
+      setExportLoading(true);
+      
+      if (!user?.email) {
+        toast.error("User email not found. Cannot send report.");
+        return;
+      }
+      
+      const surveyName = getSurveyName();
+      const leavingData = Object.entries(leavingContemplation).map(([name, value]) => ({ name, value }));
+      
+      await sendReportByEmail(
+        user.email,
+        selectedSurvey,
+        surveyName,
+        summary,
+        recommendationScore,
+        leavingData,
+        detailedResponses,
+        textResponses
+      );
+      
+      toast.success("Report sent to your email!");
+    } catch (error) {
+      console.error("Error sending report:", error);
+      toast.error("Failed to send report to email");
+    } finally {
+      setExportLoading(false);
+    }
   };
 
   if (noData) {
@@ -442,12 +499,22 @@ const Analysis = () => {
           </div>
 
           <div className="flex space-x-4 items-end justify-end">
-            <button className="py-2 px-4 border border-gray-300 rounded-md flex items-center text-sm text-gray-700">
-              <span className="mr-2">📊</span> Export report
-            </button>
-            <button className="py-2 px-4 border border-gray-300 rounded-md flex items-center text-sm text-gray-700">
-              <span className="mr-2">🖨️</span> Download PDF
-            </button>
+            <Button 
+              variant="outline" 
+              className="py-2 px-4 text-sm text-gray-700" 
+              onClick={handleExportReport}
+              disabled={exportLoading}
+            >
+              <Share className="h-4 w-4 mr-2" /> Export report
+            </Button>
+            <Button 
+              variant="outline" 
+              className="py-2 px-4 text-sm text-gray-700" 
+              onClick={handleExportPDF}
+              disabled={exportLoading}
+            >
+              <Download className="h-4 w-4 mr-2" /> Download PDF
+            </Button>
           </div>
         </div>
 
@@ -457,7 +524,7 @@ const Analysis = () => {
             <p className="mt-4 text-gray-600">Loading data...</p>
           </div>
         ) : (
-          <>
+          <div ref={analysisRef}>
             <SummarySection summary={summary} />
 
             <div className="mb-12">
@@ -478,7 +545,7 @@ const Analysis = () => {
             </div>
 
             <TextResponsesSection doingWellResponses={textResponses.doingWell} improvementResponses={textResponses.improvements} />
-          </>
+          </div>
         )}
       </div>
     </MainLayout>
