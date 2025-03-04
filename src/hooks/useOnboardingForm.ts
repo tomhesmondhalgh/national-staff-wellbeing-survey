@@ -15,8 +15,6 @@ export type SchoolSearchResult = {
 };
 
 export type OnboardingFormData = {
-  firstName?: string;
-  lastName?: string;
   jobTitle: string;
   schoolName: string;
   schoolAddress: string;
@@ -41,8 +39,6 @@ export const useOnboardingForm = () => {
   const resultsPerPage = 5;
   
   const [formData, setFormData] = useState<OnboardingFormData>({
-    firstName: '',
-    lastName: '',
     jobTitle: '',
     schoolName: '',
     schoolAddress: '',
@@ -207,25 +203,21 @@ export const useOnboardingForm = () => {
     }
 
     try {
-      // Get name info from either form data or user metadata
-      const firstName = formData.firstName || user.user_metadata?.first_name || '';
-      const lastName = formData.lastName || user.user_metadata?.last_name || '';
-      
       const userData = {
         jobTitle: formData.jobTitle,
         schoolName: useCustomSchool ? 'Custom: ' + (formData.schoolName || formData.customCity) : formData.schoolName,
         schoolAddress: useCustomSchool ? compileCustomAddress() : formData.schoolAddress,
         email: user.email,
-        firstName: firstName,
-        lastName: lastName,
+        firstName: user.user_metadata?.first_name || '',
+        lastName: user.user_metadata?.last_name || '',
       };
 
       const { error, success } = await completeUserProfile(user.id, userData);
 
       if (success) {
         toast.success('Profile completed successfully!');
-        // Redirect to dashboard page instead of profile page after completing onboarding
-        navigate('/dashboard');
+        // Redirect to profile page
+        navigate('/profile');
       } else if (error) {
         console.error('Error completing profile:', error);
         toast.error('Failed to complete profile', {
@@ -259,7 +251,6 @@ export const useOnboardingForm = () => {
     toggleCustomSchool,
     compileCustomAddress,
     handleSubmit,
-    setSearchQuery,
-    setFormData
+    setSearchQuery
   };
 };

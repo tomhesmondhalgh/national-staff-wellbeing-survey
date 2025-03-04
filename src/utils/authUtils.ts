@@ -84,7 +84,7 @@ export async function signInWithSocialProvider(provider: Provider) {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/onboarding`, // Change redirect from dashboard to onboarding
+        redirectTo: `${window.location.origin}/dashboard`,
         scopes: provider === 'azure' ? 'email profile openid' : undefined,
       },
     });
