@@ -1,5 +1,5 @@
 
-import { supabase, getMockSurveyOptions, getMockRecommendationScore, getMockLeavingContemplation, getMockDetailedResponses, getMockTextResponses } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
 // Type definitions
@@ -217,7 +217,7 @@ export const getDetailedWellbeingResponses = async (
       throw error;
     }
     
-    // If no data, return empty structure
+    // If no data, return default structure with national averages
     if (!data || data.length === 0) {
       return wellbeingQuestions.map(question => ({
         question,
@@ -237,8 +237,6 @@ export const getDetailedWellbeingResponses = async (
     }
     
     // Calculate responses for each question
-    // This is a simplified example, in reality you would count each response type
-    // For now, we'll use mock national data but real school data
     const fieldMappings = [
       'valued_member',
       'leadership_prioritize',
@@ -268,13 +266,13 @@ export const getDetailedWellbeingResponses = async (
         }
       });
       
-      // Convert to percentages
+      // Convert to percentages for display in normalized charts
       const total = Object.values(responses).reduce((sum, count) => sum + count, 0);
       const percentages: Record<string, number> = { ...responses };
       
       if (total > 0) {
         Object.keys(percentages).forEach(key => {
-          percentages[key] = Math.round((responses[key] / total) * 100);
+          percentages[key] = Math.round((responses[key] / total) * 100) / 100; // Return as decimal for stacked charts
         });
       }
       
@@ -282,10 +280,10 @@ export const getDetailedWellbeingResponses = async (
         question,
         schoolResponses: percentages,
         nationalResponses: {
-          "Strongly Agree": 25,
-          "Agree": 40,
-          "Disagree": 25,
-          "Strongly Disagree": 10
+          "Strongly Agree": 0.25, // Use decimals for stacked 100% charts
+          "Agree": 0.40,
+          "Disagree": 0.25,
+          "Strongly Disagree": 0.10
         }
       };
     });
