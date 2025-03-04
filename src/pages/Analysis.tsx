@@ -11,7 +11,15 @@ import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Card } from "../components/ui/card";
-import { Check, ArrowRight } from "lucide-react";
+import { Check, ArrowRight, CalendarIcon } from "lucide-react";
+import { Button } from "../components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
+import { Calendar } from "../components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "../lib/utils";
+import { Input } from "../components/ui/input";
+import { Form, FormControl, FormField, FormItem } from "../components/ui/form";
+
 const SummarySection = ({
   summary
 }: {
@@ -45,6 +53,7 @@ const SummarySection = ({
       </div>
     </div>
   </div>;
+
 const RecommendationScoreSection = ({
   score,
   nationalAverage
@@ -67,6 +76,7 @@ const RecommendationScoreSection = ({
       Average score for "How likely would you recommend this organization to others as a place to work?" (0-10)
     </p>
   </Card>;
+
 const LeavingContemplationChart = ({
   data
 }: {
@@ -100,6 +110,7 @@ const LeavingContemplationChart = ({
       </p>
     </Card>;
 };
+
 const WellbeingQuestionChart = ({
   title,
   data,
@@ -149,6 +160,7 @@ const WellbeingQuestionChart = ({
       </div>
     </Card>;
 };
+
 const TextResponsesSection = ({
   doingWellResponses,
   improvementResponses
@@ -177,15 +189,21 @@ const TextResponsesSection = ({
       </Card>
     </div>
   </div>;
+
 const Analysis = () => {
-  const {
-    user
-  } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [surveyOptions, setSurveyOptions] = useState<any[]>([]);
   const [selectedSurvey, setSelectedSurvey] = useState<string>("");
   const [selectedTimeRange, setSelectedTimeRange] = useState<string>("all-time");
+  const [customDateRange, setCustomDateRange] = useState<{
+    from: Date | undefined;
+    to: Date | undefined;
+  }>({
+    from: undefined,
+    to: undefined
+  });
   const [recommendationScore, setRecommendationScore] = useState({
     score: 0,
     nationalAverage: 0
@@ -198,6 +216,7 @@ const Analysis = () => {
   });
   const [summary, setSummary] = useState<any>({});
   const [noData, setNoData] = useState(false);
+
   useEffect(() => {
     const loadSurveyOptions = async () => {
       try {
@@ -218,6 +237,7 @@ const Analysis = () => {
       loadSurveyOptions();
     }
   }, [user]);
+
   useEffect(() => {
     const loadData = async () => {
       if (!selectedSurvey) return;
@@ -225,6 +245,7 @@ const Analysis = () => {
         setLoading(true);
         let startDate = "";
         let endDate = "";
+        
         if (selectedTimeRange === "last-30-days") {
           const thirtyDaysAgo = new Date();
           thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -233,13 +254,33 @@ const Analysis = () => {
           const ninetyDaysAgo = new Date();
           ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
           startDate = ninetyDaysAgo.toISOString().split('T')[0];
+        } else if (selectedTimeRange === "custom-range" && customDateRange.from) {
+          startDate = customDateRange.from.toISOString().split('T')[0];
+          if (customDateRange.to) {
+            endDate = customDateRange.to.toISOString().split('T')[0];
+          }
         }
-        const [recommendationScoreData, leavingContemplationData, detailedResponsesData, textResponsesData] = await Promise.all([getRecommendationScore(selectedSurvey, startDate, endDate), getLeavingContemplation(selectedSurvey, startDate, endDate), getDetailedWellbeingResponses(selectedSurvey, startDate, endDate), getTextResponses(selectedSurvey, startDate, endDate)]);
+        
+        const [recommendationScoreData, leavingContemplationData, detailedResponsesData, textResponsesData] = await Promise.all([
+          getRecommendationScore(selectedSurvey, startDate, endDate),
+          getLeavingContemplation(selectedSurvey, startDate, endDate),
+          getDetailedWellbeingResponses(selectedSurvey, startDate, endDate),
+          getTextResponses(selectedSurvey, startDate, endDate)
+        ]);
+        
         setRecommendationScore(recommendationScoreData);
         setLeavingContemplation(leavingContemplationData);
         setDetailedResponses(detailedResponsesData);
         setTextResponses(textResponsesData);
-        const summaryData = await getSurveySummary(selectedSurvey, recommendationScoreData, leavingContemplationData, detailedResponsesData, textResponsesData);
+        
+        const summaryData = await getSurveySummary(
+          selectedSurvey,
+          recommendationScoreData,
+          leavingContemplationData,
+          detailedResponsesData,
+          textResponsesData
+        );
+        
         setSummary(summaryData);
       } catch (error) {
         console.error('Error loading data:', error);
@@ -249,32 +290,50 @@ const Analysis = () => {
       }
     };
     loadData();
-  }, [selectedSurvey, selectedTimeRange]);
+  }, [selectedSurvey, selectedTimeRange, customDateRange]);
+
   const handleSurveyChange = (value: string) => {
     setSelectedSurvey(value);
   };
+
   const handleTimeRangeChange = (value: string) => {
     setSelectedTimeRange(value);
+    
+    if (value !== "custom-range") {
+      setCustomDateRange({
+        from: undefined,
+        to: undefined
+      });
+    }
   };
+
   const getSurveyName = () => {
     const survey = surveyOptions.find(s => s.id === selectedSurvey);
     return survey ? survey.name : '';
   };
+
   if (noData) {
-    return <MainLayout>
+    return (
+      <MainLayout>
         <div className="container mx-auto px-4 py-8">
           <PageTitle title="Analysis" subtitle="View insights from your wellbeing surveys" />
           <div className="bg-white p-8 rounded-lg shadow text-center">
             <h2 className="text-2xl font-semibold text-gray-700 mb-4">No surveys found</h2>
             <p className="text-gray-600 mb-6">You haven't created any surveys yet or no responses have been collected.</p>
-            <button onClick={() => navigate('/new-survey')} className="bg-brandPurple-500 hover:bg-brandPurple-600 text-white font-medium py-2 px-6 rounded-md transition-all duration-200">
+            <button
+              onClick={() => navigate('/new-survey')}
+              className="bg-brandPurple-500 hover:bg-brandPurple-600 text-white font-medium py-2 px-6 rounded-md transition-all duration-200"
+            >
               Create Your First Survey
             </button>
           </div>
         </div>
-      </MainLayout>;
+      </MainLayout>
+    );
   }
-  return <MainLayout>
+
+  return (
+    <MainLayout>
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="mb-10 text-center">
           <h1 className="text-3xl font-bold mb-2">Survey Analysis</h1>
@@ -289,25 +348,97 @@ const Analysis = () => {
                 <SelectValue placeholder="Select a survey" />
               </SelectTrigger>
               <SelectContent>
-                {surveyOptions.map(option => <SelectItem key={option.id} value={option.id}>
+                {surveyOptions.map(option => (
+                  <SelectItem key={option.id} value={option.id}>
                     {option.name} ({option.date})
-                  </SelectItem>)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Time Range:</label>
-            <Select value={selectedTimeRange} onValueChange={handleTimeRangeChange}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select time range" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all-time">All Time</SelectItem>
-                <SelectItem value="last-30-days">Last 30 Days</SelectItem>
-                <SelectItem value="last-90-days">Last 90 Days</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col space-y-2">
+              <Select value={selectedTimeRange} onValueChange={handleTimeRangeChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select time range" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all-time">All Time</SelectItem>
+                  <SelectItem value="last-30-days">Last 30 Days</SelectItem>
+                  <SelectItem value="last-90-days">Last 90 Days</SelectItem>
+                  <SelectItem value="custom-range">Custom Date Range</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {selectedTimeRange === "custom-range" && (
+                <div className="flex items-center space-x-2 mt-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        id="date-from"
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !customDateRange.from && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {customDateRange.from ? (
+                          format(customDateRange.from, "PPP")
+                        ) : (
+                          <span>From date</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={customDateRange.from}
+                        onSelect={(date) => 
+                          setCustomDateRange(prev => ({ ...prev, from: date || undefined }))
+                        }
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        id="date-to"
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !customDateRange.to && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {customDateRange.to ? (
+                          format(customDateRange.to, "PPP")
+                        ) : (
+                          <span>To date</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={customDateRange.to}
+                        onSelect={(date) => 
+                          setCustomDateRange(prev => ({ ...prev, to: date || undefined }))
+                        }
+                        disabled={(date) => 
+                          date < (customDateRange.from || new Date(0))
+                        }
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex space-x-4 items-end justify-end">
@@ -320,10 +451,13 @@ const Analysis = () => {
           </div>
         </div>
 
-        {loading ? <div className="text-center py-12">
+        {loading ? (
+          <div className="text-center py-12">
             <div className="animate-spin h-8 w-8 border-4 border-brandPurple-500 border-t-transparent rounded-full mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading data...</p>
-          </div> : <>
+          </div>
+        ) : (
+          <>
             <SummarySection summary={summary} />
 
             <div className="mb-12">
@@ -337,13 +471,18 @@ const Analysis = () => {
             <div className="mb-12">
               <h2 className="text-xl font-semibold mb-6 text-center">Wellbeing Indicators</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {detailedResponses.map((question, index) => <WellbeingQuestionChart key={index} title={question.question} data={question} subtitle="Stacked to 100%" />)}
+                {detailedResponses.map((question, index) => (
+                  <WellbeingQuestionChart key={index} title={question.question} data={question} subtitle="Stacked to 100%" />
+                ))}
               </div>
             </div>
 
             <TextResponsesSection doingWellResponses={textResponses.doingWell} improvementResponses={textResponses.improvements} />
-          </>}
+          </>
+        )}
       </div>
-    </MainLayout>;
+    </MainLayout>
+  );
 };
+
 export default Analysis;
