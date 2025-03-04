@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -6,7 +5,7 @@ import PageTitle from '../components/ui/PageTitle';
 import SurveyForm, { SurveyFormData } from '../components/surveys/SurveyForm';
 import { toast } from "sonner";
 import { supabase } from "../lib/supabase";
-import { format, parse } from 'date-fns';
+import { format, parse, isBefore } from 'date-fns';
 import { 
   Breadcrumb, 
   BreadcrumbItem, 
@@ -15,6 +14,7 @@ import {
   BreadcrumbPage, 
   BreadcrumbSeparator 
 } from "@/components/ui/breadcrumb";
+import { useAuth } from '../contexts/AuthContext';
 
 const EditSurvey = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +23,8 @@ const EditSurvey = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [surveyData, setSurveyData] = useState<Partial<SurveyFormData> | null>(null);
   const [originalEmails, setOriginalEmails] = useState<string>('');
+  const [originalCloseDate, setOriginalCloseDate] = useState<Date | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchSurvey = async () => {
@@ -82,6 +84,11 @@ const EditSurvey = () => {
     try {
       setIsSubmitting(true);
       
+      // Check if the survey is being closed (new close date that's in the past)
+      const isClosingSurvey = data.closeDate && 
+        isBefore(data.closeDate, new Date()) && 
+        (!originalCloseDate || isBefore(new Date(), originalCloseDate));
+      
       // Update the survey in the database
       const { error } = await supabase
         .from('survey_templates')
@@ -99,6 +106,27 @@ const EditSurvey = () => {
           description: error.message
         });
         return;
+      }
+
+      // If the survey is being closed, send a notification
+      if (isClosingSurvey && user?.email) {
+        console.log('Survey is being closed, sending notification');
+        
+        try {
+          const { error: notificationError } = await supabase.functions.invoke('send-closure-notification', {
+            body: {
+              surveyId: id,
+              userEmail: user.email
+            }
+          });
+          
+          if (notificationError) {
+            console.error('Error sending closure notification:', notificationError);
+            // Continue with the success flow even if notification fails
+          }
+        } catch (notifyError) {
+          console.error('Exception sending closure notification:', notifyError);
+        }
       }
 
       // Check if email recipients have changed and send emails to new recipients
