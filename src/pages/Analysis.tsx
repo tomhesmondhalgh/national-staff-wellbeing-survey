@@ -478,7 +478,9 @@ const Analysis = () => {
             <div className="mb-12">
               <h2 className="text-xl font-semibold mb-6 text-center">Wellbeing Indicators</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {detailedResponses.map((question, index) => <WellbeingQuestionChart key={index} title={question.question} data={question} subtitle="Stacked to 100%" />)}
+                {detailedResponses.map((question, index) => (
+                  <WellbeingQuestionChart key={index} title={question.question} data={question} />
+                ))}
               </div>
             </div>
 
