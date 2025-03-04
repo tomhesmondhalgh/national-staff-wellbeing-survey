@@ -138,34 +138,69 @@ export const getDashboardStats = async () => {
   try {
     console.log('Fetching dashboard stats');
     
-    // Get total number of surveys
+    // Get the current authenticated user
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      console.error('No authenticated user found when fetching dashboard stats');
+      return null;
+    }
+    
+    // Get total number of surveys for this user only
     const { count: surveyCount, error: surveyError } = await supabase
       .from('survey_templates')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true })
+      .eq('creator_id', user.id);
     
     if (surveyError) {
       console.error('Error counting surveys:', surveyError);
       return null;
     }
     
-    console.log('Total surveys:', surveyCount);
+    console.log('Total surveys for this user:', surveyCount);
     
-    // Get total number of respondents
+    // Get total number of respondents for surveys created by this user
+    const { data: userSurveys, error: userSurveysError } = await supabase
+      .from('survey_templates')
+      .select('id')
+      .eq('creator_id', user.id);
+      
+    if (userSurveysError) {
+      console.error('Error fetching user surveys:', userSurveysError);
+      return null;
+    }
+    
+    // If user has no surveys, return zero counts
+    if (!userSurveys || userSurveys.length === 0) {
+      return {
+        totalSurveys: 0,
+        totalRespondents: 0,
+        responseRate: "0%",
+        benchmarkScore: "0"
+      };
+    }
+    
+    // Extract just the IDs for the IN clause
+    const surveyIds = userSurveys.map(survey => survey.id);
+    
+    // Count responses only for surveys created by this user
     const { count: responseCount, error: responseError } = await supabase
       .from('survey_responses')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true })
+      .in('survey_template_id', surveyIds);
     
     if (responseError) {
       console.error('Error counting responses:', responseError);
       return null;
     }
     
-    console.log('Total responses:', responseCount);
+    console.log('Total responses for this user\'s surveys:', responseCount);
     
-    // Calculate benchmark score based on recommendation scores
+    // Calculate benchmark score based on recommendation scores for this user's surveys
     const { data: recommendationData, error: recommendationError } = await supabase
       .from('survey_responses')
       .select('recommendation_score')
+      .in('survey_template_id', surveyIds)
       .not('recommendation_score', 'is', null);
     
     let benchmarkScore = "0";
@@ -189,6 +224,7 @@ export const getDashboardStats = async () => {
     const { data: surveyTemplates, error: templatesFetchError } = await supabase
       .from('survey_templates')
       .select('emails')
+      .eq('creator_id', user.id)
       .not('emails', 'is', null)
       .not('emails', 'eq', '')
       .filter('date', 'lt', new Date().toISOString()); // Only include surveys that have been sent (past date)
@@ -203,7 +239,7 @@ export const getDashboardStats = async () => {
         totalSurveys: surveyCount || 0,
         totalRespondents: responseCount || 0,
         responseRate: `${fallbackResponseRate}%`,
-        benchmarkScore: benchmarkScore // Now using the calculated benchmark score
+        benchmarkScore: benchmarkScore
       };
     }
     
