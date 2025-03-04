@@ -77,27 +77,14 @@ export async function signOutUser() {
 }
 
 // Handle sign in with social provider
-export async function signInWithSocialProvider(provider: Provider, redirectUrl?: string) {
+export async function signInWithSocialProvider(provider: Provider) {
   try {
     console.log(`Initiating sign in with ${provider}`);
     
-    // Ensure we're using the absolute URL for redirection
-    const finalRedirectUrl = redirectUrl || `${window.location.origin}/onboarding`;
-    console.log(`Using redirect URL: ${finalRedirectUrl}`);
-    
-    // Set a session storage item to indicate this is a social login
-    sessionStorage.setItem('socialLoginRedirect', 'true');
-    sessionStorage.setItem('socialLoginTimestamp', Date.now().toString());
-    
-    // Important: Make a record of the pre-login URL to determine where to return
-    const currentUrl = window.location.pathname;
-    sessionStorage.setItem('socialLoginPreviousPath', currentUrl);
-    
-    // Force redirect mode to ensure redirect happens correctly
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: finalRedirectUrl,
+        redirectTo: `${window.location.origin}/dashboard`,
         scopes: provider === 'azure' ? 'email profile openid' : undefined,
       },
     });
@@ -107,7 +94,6 @@ export async function signInWithSocialProvider(provider: Provider, redirectUrl?:
       throw error;
     }
 
-    console.log('OAuth sign-in initiated successfully, redirecting to provider');
     return { error: null, success: true };
   } catch (error) {
     console.error(`Detailed error signing in with ${provider}:`, error);

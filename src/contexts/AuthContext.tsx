@@ -25,7 +25,7 @@ interface AuthContextType {
     user?: User | null;
   }>;
   signOut: () => Promise<void>;
-  signInWithSocialProvider: (provider: Provider, redirectUrl?: string) => Promise<{
+  signInWithSocialProvider: (provider: Provider) => Promise<{
     error: Error | null;
     success: boolean;
   }>;
@@ -56,8 +56,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const handleSignInWithSocialProvider = async (provider: Provider, redirectUrl?: string) => {
-    return signInWithSocialProvider(provider, redirectUrl);
+  const handleSignInWithSocialProvider = async (provider: Provider) => {
+    return signInWithSocialProvider(provider);
   };
 
   const handleCompleteUserProfile = async (userId: string, userData: any) => {

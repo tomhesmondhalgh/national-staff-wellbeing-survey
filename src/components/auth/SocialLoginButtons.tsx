@@ -4,7 +4,6 @@ import { Loader2 } from 'lucide-react';
 import { Provider } from '@supabase/supabase-js';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
-import { useLocation } from 'react-router-dom';
 
 interface SocialLoginButtonsProps {
   isLoading?: boolean;
@@ -13,27 +12,15 @@ interface SocialLoginButtonsProps {
 const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({ isLoading = false }) => {
   const { signInWithSocialProvider } = useAuth();
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
-  const location = useLocation();
 
   const handleSocialLogin = async (provider: Provider) => {
     try {
       setSocialLoading(provider);
       
-      // Set flags in session storage with more reliable tracking
-      sessionStorage.setItem('socialLoginRedirect', 'true');
-      sessionStorage.setItem('socialLoginSource', location.pathname);
-      sessionStorage.setItem('socialLoginTimestamp', Date.now().toString());
-      
       // Add more descriptive logging for debugging
       console.log(`Attempting to sign in with ${provider}`);
-      console.log(`Current location: ${window.location.href}`);
-      console.log(`Current path: ${location.pathname}`);
       
-      // Make sure to include the absolute URL for the redirect
-      const redirectUrl = `${window.location.origin}/onboarding`;
-      console.log(`Setting explicit redirect URL: ${redirectUrl}`);
-      
-      const result = await signInWithSocialProvider(provider, redirectUrl);
+      const result = await signInWithSocialProvider(provider);
       
       if (!result.success && result.error) {
         console.error(`Error during ${provider} authentication:`, result.error);
@@ -57,7 +44,7 @@ const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({ isLoading = fal
       <div className="flex flex-col space-y-4 mb-6">
         <button
           type="button"
-          className="btn flex items-center justify-center gap-2 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 h-20"
+          className="btn flex items-center justify-center gap-2 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 h-20" // Doubled height from 10 to 20
           onClick={() => handleSocialLogin('google')}
           disabled={isLoading || !!socialLoading}
         >
@@ -88,7 +75,7 @@ const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({ isLoading = fal
         
         <button
           type="button"
-          className="btn flex items-center justify-center gap-2 bg-[#0078d4] hover:bg-[#106ebe] text-white h-20"
+          className="btn flex items-center justify-center gap-2 bg-[#0078d4] hover:bg-[#106ebe] text-white h-20" // Doubled height from 10 to 20
           onClick={() => handleSocialLogin('azure')}
           disabled={isLoading || !!socialLoading}
         >

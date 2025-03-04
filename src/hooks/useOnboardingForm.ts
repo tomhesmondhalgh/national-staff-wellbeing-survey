@@ -1,9 +1,9 @@
-import { useState, useCallback } from 'react';
+
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
-import { User } from '@supabase/supabase-js';
 
 export type SchoolSearchResult = {
   URN: number;
@@ -49,45 +49,6 @@ export const useOnboardingForm = () => {
     customPostalCode: '',
     customCountry: 'United Kingdom',
   });
-
-  const prefillSocialLoginData = useCallback((user: User) => {
-    // Extract name information from user metadata
-    let firstName = '';
-    let lastName = '';
-    
-    // Handle different social providers that might format user data differently
-    if (user.user_metadata?.name) {
-      // Try to split full name into first and last
-      const nameParts = user.user_metadata.name.split(' ');
-      if (nameParts.length > 1) {
-        firstName = nameParts[0];
-        lastName = nameParts.slice(1).join(' ');
-      } else {
-        firstName = user.user_metadata.name;
-      }
-    } else if (user.user_metadata?.full_name) {
-      // Similar splitting logic for full_name
-      const nameParts = user.user_metadata.full_name.split(' ');
-      if (nameParts.length > 1) {
-        firstName = nameParts[0];
-        lastName = nameParts.slice(1).join(' ');
-      } else {
-        firstName = user.user_metadata.full_name;
-      }
-    } else if (user.user_metadata?.given_name && user.user_metadata?.family_name) {
-      // Some providers give explicit first/last name fields
-      firstName = user.user_metadata.given_name;
-      lastName = user.user_metadata.family_name;
-    }
-    
-    // You could also check for any job title info in the metadata, but typically
-    // social logins don't provide this information
-    
-    console.log(`Prefilling form with social login data: ${firstName} ${lastName}`);
-    
-    // We don't directly update firstName/lastName in the form as these may come from auth context
-    // But if we needed to store them in form state, we could do so here
-  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -242,24 +203,13 @@ export const useOnboardingForm = () => {
     }
 
     try {
-      // Get first/last name either from auth metadata or from user metadata (for social login)
-      const firstName = user.user_metadata?.first_name || 
-                       (user.user_metadata?.name?.split(' ')[0]) || 
-                       user.user_metadata?.given_name || 
-                       '';
-                       
-      const lastName = user.user_metadata?.last_name || 
-                      (user.user_metadata?.name?.split(' ').slice(1).join(' ')) || 
-                      user.user_metadata?.family_name || 
-                      '';
-
       const userData = {
         jobTitle: formData.jobTitle,
         schoolName: useCustomSchool ? 'Custom: ' + (formData.schoolName || formData.customCity) : formData.schoolName,
         schoolAddress: useCustomSchool ? compileCustomAddress() : formData.schoolAddress,
         email: user.email,
-        firstName: firstName,
-        lastName: lastName,
+        firstName: user.user_metadata?.first_name || '',
+        lastName: user.user_metadata?.last_name || '',
       };
 
       const { error, success } = await completeUserProfile(user.id, userData);
@@ -301,7 +251,6 @@ export const useOnboardingForm = () => {
     toggleCustomSchool,
     compileCustomAddress,
     handleSubmit,
-    setSearchQuery,
-    prefillSocialLoginData
+    setSearchQuery
   };
 };
