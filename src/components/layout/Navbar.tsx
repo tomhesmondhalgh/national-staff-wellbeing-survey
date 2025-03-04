@@ -12,6 +12,9 @@ const Navbar: React.FC = () => {
   
   // Check if user is authenticated
   const isAuthenticated = !!user;
+  
+  // Check if current page is a survey response form
+  const isSurveyResponsePage = location.pathname === '/survey';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -72,14 +75,17 @@ const Navbar: React.FC = () => {
                 <button className="nav-link" onClick={handleSignOut}>Sign Out</button>
               </>
             ) : (
-              <>
-                <Link to="/login" className="btn-ghost">
-                  Log in
-                </Link>
-                <Link to="/signup" className="btn-primary">
-                  Sign up
-                </Link>
-              </>
+              // Only show login/signup options if not on survey response page
+              !isSurveyResponsePage && (
+                <>
+                  <Link to="/login" className="btn-ghost">
+                    Log in
+                  </Link>
+                  <Link to="/signup" className="btn-primary">
+                    Sign up
+                  </Link>
+                </>
+              )
             )}
           </nav>
           
@@ -138,22 +144,25 @@ const Navbar: React.FC = () => {
                 </button>
               </>
             ) : (
-              <>
-                <Link 
-                  to="/login" 
-                  className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Log in
-                </Link>
-                <Link 
-                  to="/signup" 
-                  className="block px-4 py-2 rounded-md font-medium text-brandPurple-600 hover:bg-brandPurple-50"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Sign up
-                </Link>
-              </>
+              // Only show login/signup options if not on survey response page
+              !isSurveyResponsePage && (
+                <>
+                  <Link 
+                    to="/login" 
+                    className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Log in
+                  </Link>
+                  <Link 
+                    to="/signup" 
+                    className="block px-4 py-2 rounded-md font-medium text-brandPurple-600 hover:bg-brandPurple-50"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Sign up
+                  </Link>
+                </>
+              )
             )}
           </div>
         </div>
