@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Provider } from '@supabase/supabase-js';
 import { useAuth } from '../../contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface SocialLoginButtonsProps {
   isLoading?: boolean;
@@ -12,13 +13,28 @@ const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({ isLoading = fal
   const { signInWithSocialProvider } = useAuth();
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
 
-  const handleSocialLogin = async (provider: 'google' | 'azure') => {
+  const handleSocialLogin = async (provider: Provider) => {
     try {
       setSocialLoading(provider);
-      await signInWithSocialProvider(provider);
+      
+      // Add more descriptive logging for debugging
+      console.log(`Attempting to sign in with ${provider}`);
+      
+      const result = await signInWithSocialProvider(provider);
+      
+      if (!result.success && result.error) {
+        console.error(`Error during ${provider} authentication:`, result.error);
+        toast.error(`Failed to sign in with ${provider}`, {
+          description: result.error.message || "Please try again or use another method."
+        });
+        setSocialLoading(null);
+      }
       // User will be redirected to the provider's authentication page and then to onboarding
     } catch (error) {
       console.error(`Error when trying to sign in with ${provider}:`, error);
+      toast.error(`Failed to sign in with ${provider}`, {
+        description: "An unexpected error occurred. Please try again."
+      });
       setSocialLoading(null);
     }
   };

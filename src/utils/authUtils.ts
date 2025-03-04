@@ -79,20 +79,24 @@ export async function signOutUser() {
 // Handle sign in with social provider
 export async function signInWithSocialProvider(provider: Provider) {
   try {
+    console.log(`Initiating sign in with ${provider}`);
+    
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
         redirectTo: `${window.location.origin}/dashboard`,
+        scopes: provider === 'azure' ? 'email profile openid' : undefined,
       },
     });
 
     if (error) {
+      console.error(`Social sign-in error with ${provider}:`, error);
       throw error;
     }
 
     return { error: null, success: true };
   } catch (error) {
-    console.error(`Error signing in with ${provider}:`, error);
+    console.error(`Detailed error signing in with ${provider}:`, error);
     toast.error(`Failed to sign in with ${provider}`);
     return { error: error as Error, success: false };
   }
