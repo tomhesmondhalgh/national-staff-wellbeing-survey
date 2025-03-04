@@ -19,17 +19,21 @@ const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({ isLoading = fal
     try {
       setSocialLoading(provider);
       
-      // Set flag in session storage with current path to help determine where user came from
+      // Set flags in session storage with more reliable tracking
       sessionStorage.setItem('socialLoginRedirect', 'true');
       sessionStorage.setItem('socialLoginSource', location.pathname);
+      sessionStorage.setItem('socialLoginTimestamp', Date.now().toString());
       
       // Add more descriptive logging for debugging
       console.log(`Attempting to sign in with ${provider}`);
       console.log(`Current location: ${window.location.href}`);
       console.log(`Current path: ${location.pathname}`);
-      console.log(`Expected redirect: ${window.location.origin}/onboarding`);
       
-      const result = await signInWithSocialProvider(provider);
+      // Make sure to include the absolute URL for the redirect
+      const redirectUrl = `${window.location.origin}/onboarding`;
+      console.log(`Setting explicit redirect URL: ${redirectUrl}`);
+      
+      const result = await signInWithSocialProvider(provider, redirectUrl);
       
       if (!result.success && result.error) {
         console.error(`Error during ${provider} authentication:`, result.error);
@@ -53,7 +57,7 @@ const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({ isLoading = fal
       <div className="flex flex-col space-y-4 mb-6">
         <button
           type="button"
-          className="btn flex items-center justify-center gap-2 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 h-20" // Doubled height from 10 to 20
+          className="btn flex items-center justify-center gap-2 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 h-20"
           onClick={() => handleSocialLogin('google')}
           disabled={isLoading || !!socialLoading}
         >
@@ -84,7 +88,7 @@ const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({ isLoading = fal
         
         <button
           type="button"
-          className="btn flex items-center justify-center gap-2 bg-[#0078d4] hover:bg-[#106ebe] text-white h-20" // Doubled height from 10 to 20
+          className="btn flex items-center justify-center gap-2 bg-[#0078d4] hover:bg-[#106ebe] text-white h-20"
           onClick={() => handleSocialLogin('azure')}
           disabled={isLoading || !!socialLoading}
         >
