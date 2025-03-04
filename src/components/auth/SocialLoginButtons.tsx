@@ -44,7 +44,7 @@ const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({ isLoading = fal
       <div className="flex flex-col space-y-4 mb-6">
         <button
           type="button"
-          className="btn flex items-center justify-center gap-2 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300"
+          className="btn flex items-center justify-center gap-2 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 h-20" // Doubled height from 10 to 20
           onClick={() => handleSocialLogin('google')}
           disabled={isLoading || !!socialLoading}
         >
@@ -75,7 +75,7 @@ const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({ isLoading = fal
         
         <button
           type="button"
-          className="btn flex items-center justify-center gap-2 bg-[#0078d4] hover:bg-[#106ebe] text-white"
+          className="btn flex items-center justify-center gap-2 bg-[#0078d4] hover:bg-[#106ebe] text-white h-20" // Doubled height from 10 to 20
           onClick={() => handleSocialLogin('azure')}
           disabled={isLoading || !!socialLoading}
         >
