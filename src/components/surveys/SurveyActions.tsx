@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Send, Copy, Edit } from 'lucide-react';
 import { toast } from "sonner";
@@ -31,26 +30,20 @@ const SurveyActions: React.FC<SurveyActionsProps> = ({
   setSendingReminder,
   onSendReminder
 }) => {
-  const copyToClipboard = (surveyId: string) => {
+  const copyToClipboard = async (surveyId: string) => {
     try {
-      // This is the critical part - creating the correct URL for survey participation
+      // Generate the public survey participation URL
       const surveyUrl = `${window.location.origin}/survey?id=${surveyId}`;
       
-      console.log("Copying survey URL:", surveyUrl);
+      console.log("Copying survey URL to clipboard:", surveyUrl);
       
-      navigator.clipboard.writeText(surveyUrl)
-        .then(() => {
-          setCopiedId(surveyId);
-          toast.success("Survey link copied to clipboard");
-          setTimeout(() => setCopiedId(null), 2000);
-        })
-        .catch((error) => {
-          console.error("Failed to copy link:", error);
-          toast.error("Failed to copy link");
-        });
+      await navigator.clipboard.writeText(surveyUrl);
+      setCopiedId(surveyId);
+      toast.success("Survey link copied to clipboard");
+      setTimeout(() => setCopiedId(null), 2000);
     } catch (error) {
-      console.error("Error in copyToClipboard:", error);
-      toast.error("Failed to copy link");
+      console.error("Failed to copy survey link:", error);
+      toast.error("Failed to copy link to clipboard");
     }
   };
 
