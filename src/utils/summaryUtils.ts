@@ -31,14 +31,12 @@ const getMockSummary = (): SummaryData => {
     strengths: [
       "Strong sense of pride in the organization with 85% of staff responding positively",
       "Staff feel valued as members of the organization, scoring above national average",
-      "Good support systems in place with 75% of staff able to access help when needed",
-      "Staff confidence in their roles is high, with 80% responding positively"
+      "Good support systems in place with 75% of staff able to access help when needed"
     ],
     improvements: [
       "Work-life balance could be improved, with 50% of staff reporting concerns",
       "Workload management requires attention, particularly regarding distribution across departments",
-      "Consider additional planning time for curriculum initiatives based on feedback",
-      "Enhance cross-departmental collaboration opportunities"
+      "Consider additional planning time for curriculum initiatives based on feedback"
     ]
   };
 };
@@ -103,11 +101,11 @@ export const getSurveySummary = async (
         return getInsufficientDataSummary();
       }
       
-      // Return the summary data
+      // Return the summary data, limiting to 3 items each
       return {
         introduction: '', // Return empty introduction as requested
-        strengths: data.strengths || [],
-        improvements: data.improvements || []
+        strengths: (data.strengths || []).slice(0, 3),
+        improvements: (data.improvements || []).slice(0, 3)
       };
     } catch (functionError) {
       console.error('Error calling Edge Function:', functionError);

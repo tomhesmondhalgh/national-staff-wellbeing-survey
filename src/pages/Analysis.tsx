@@ -29,7 +29,8 @@ const SummarySection = ({
   if (summary.insufficientData) {
     return (
       <div className="mb-12">
-        <h2 className="text-xl font-semibold mb-6 text-center">AI-Powered Summary</h2>
+        <h2 className="text-xl font-semibold mb-1 text-center">AI-Powered Summary</h2>
+        <p className="text-sm text-gray-500 italic mb-6 text-center">This is an experimental feature. Results may not be accurate.</p>
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
           <div className="flex flex-col items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -47,32 +48,37 @@ const SummarySection = ({
 
   return (
     <div className="mb-12">
-      <h2 className="text-xl font-semibold mb-6 text-center">AI-Powered Summary</h2>
+      <h2 className="text-xl font-semibold mb-1 text-center">AI-Powered Summary</h2>
+      <p className="text-sm text-gray-500 italic mb-6 text-center">This is an experimental feature. Results may not be accurate.</p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div>
-          <h3 className="text-lg font-medium mb-4 text-green-600 flex items-center">
+        <div className="bg-green-50 rounded-lg p-6 border border-green-200">
+          <h3 className="text-lg font-medium mb-4 text-green-700 flex items-center border-b border-green-200 pb-2">
             <Check className="h-5 w-5 mr-2" /> Areas of Strength
           </h3>
-          <ul className="space-y-3">
+          <ul className="space-y-4">
             {summary.strengths && summary.strengths.length > 0 ? summary.strengths.map((strength: string, index: number) => (
               <li key={index} className="flex items-start">
-                <span className="inline-block h-5 w-5 rounded-full bg-green-500 text-white flex items-center justify-center text-xs mr-2 mt-0.5">•</span>
-                <span>{strength}</span>
+                <span className="inline-flex h-6 w-6 shrink-0 rounded-full bg-green-100 text-green-600 flex items-center justify-center mr-3 mt-0.5">
+                  {index + 1}
+                </span>
+                <span className="text-green-800">{strength}</span>
               </li>
             )) : <li className="text-gray-500">No strengths identified.</li>}
           </ul>
         </div>
         
-        <div>
-          <h3 className="text-lg font-medium mb-4 text-amber-600 flex items-center">
+        <div className="bg-amber-50 rounded-lg p-6 border border-amber-200">
+          <h3 className="text-lg font-medium mb-4 text-amber-700 flex items-center border-b border-amber-200 pb-2">
             <ArrowRight className="h-5 w-5 mr-2" /> Areas for Improvement
           </h3>
-          <ul className="space-y-3">
+          <ul className="space-y-4">
             {summary.improvements && summary.improvements.length > 0 ? summary.improvements.map((improvement: string, index: number) => (
               <li key={index} className="flex items-start">
-                <span className="inline-block h-5 w-5 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs mr-2 mt-0.5">•</span>
-                <span>{improvement}</span>
+                <span className="inline-flex h-6 w-6 shrink-0 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mr-3 mt-0.5">
+                  {index + 1}
+                </span>
+                <span className="text-amber-800">{improvement}</span>
               </li>
             )) : <li className="text-gray-500">No improvements suggested.</li>}
           </ul>

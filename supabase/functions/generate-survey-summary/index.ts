@@ -77,12 +77,11 @@ serve(async (req) => {
       .map((item: any) => item.response)
       .join('\n- ');
 
-    // Create a prompt for the OpenAI API
+    // Create a prompt for the OpenAI API - updated to request only 3 bullet points
     const prompt = `
     You are an educational analyst reviewing staff wellbeing survey data. Analyze the following data and provide:
-    1. A brief introduction paragraph
-    2. 3-5 bullet points highlighting areas of strength
-    3. 3-5 bullet points highlighting areas for improvement/development
+    1. 3 bullet points highlighting areas of strength (no more than 3)
+    2. 3 bullet points highlighting areas for improvement/development (no more than 3)
     
     SURVEY DATA:
     Recommendation Score: ${recommendationScore.score} (National Average: ${recommendationScore.nationalAverage})
@@ -102,11 +101,11 @@ serve(async (req) => {
     FORMAT YOUR RESPONSE IN THIS EXACT FORMAT:
     {
       "introduction": "A brief paragraph summarizing the overall findings...",
-      "strengths": ["Strength 1", "Strength 2", "Strength 3", "Strength 4", "Strength 5"],
-      "improvements": ["Area for improvement 1", "Area for improvement 2", "Area for improvement 3", "Area for improvement 4", "Area for improvement 5"]
+      "strengths": ["Strength 1", "Strength 2", "Strength 3"],
+      "improvements": ["Area for improvement 1", "Area for improvement 2", "Area for improvement 3"]
     }
 
-    Only include strengths and improvements that are clearly supported by the data. If there are fewer than 5 clear points for either category, include only those that are well-supported. Keep bullet points concise and actionable.
+    Only include strengths and improvements that are clearly supported by the data. Keep bullet points concise, actionable, and limited to exactly 3 in each category.
     `;
 
     // Call the OpenAI API
