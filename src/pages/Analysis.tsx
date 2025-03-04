@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { getSurveyOptions, getRecommendationScore, getLeavingContemplation, getDetailedWellbeingResponses, getCustomQuestionAnalysisResults } from '../utils/analysisUtils';
+import { getSurveyOptions, getRecommendationScore, getLeavingContemplation, getDetailedWellbeingResponses } from '../utils/analysisUtils';
 import type { SurveyOption, DetailedQuestionResponse, TextResponse } from '../utils/analysisUtils';
 import { getTextResponses } from '../utils/analysisUtils';
-import { ArrowDownIcon, ArrowUpIcon, MinusIcon, ChevronLeft, ChevronRight, Mail, Download, CalendarIcon, FilterIcon, BarChart4Icon } from 'lucide-react';
+import { ArrowDownIcon, ArrowUpIcon, MinusIcon, ChevronLeft, ChevronRight, Mail, Download } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { getSurveySummary } from '../utils/summaryUtils';
 import type { SummaryData } from '../utils/summaryUtils';
@@ -14,11 +14,6 @@ import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { generatePDF, sendReportByEmail } from '../utils/reportUtils';
 import { useToast } from '../hooks/use-toast';
-import { CustomQuestionResults } from '../components/analysis';
-import { Separator } from '../components/ui/separator';
-import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
-import { Calendar } from '../components/ui/calendar';
-import { format } from 'date-fns';
 
 const SIGNIFICANCE_THRESHOLD = 10;
 const RESPONSES_PER_PAGE = 5;
@@ -52,8 +47,7 @@ const Analysis = () => {
   });
   const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
   const [summaryLoading, setSummaryLoading] = useState<boolean>(false);
-  const [customQuestionResults, setCustomQuestionResults] = useState<any[]>([]);
-
+  
   const [doingWellPage, setDoingWellPage] = useState<number>(1);
   const [improvementsPage, setImprovementsPage] = useState<number>(1);
 
@@ -130,10 +124,6 @@ const Analysis = () => {
 
         const responses = await getTextResponses(selectedSurvey, startDate, endDate);
         setTextResponses(responses);
-
-        // Load custom question results
-        const customResults = await getCustomQuestionAnalysisResults(selectedSurvey);
-        setCustomQuestionResults(customResults);
       } catch (error) {
         console.error('Error loading analysis data:', error);
       } finally {
@@ -168,15 +158,13 @@ const Analysis = () => {
     if (active && payload && payload.length) {
       const total = leavingData.reduce((sum, item) => sum + item.value, 0);
       const percentage = total > 0 ? (payload[0].value / total * 100).toFixed(1) : "0.0";
-      return (
-        <div className="bg-white p-3 border border-gray-200 shadow-sm rounded-md">
+      return <div className="bg-white p-3 border border-gray-200 shadow-sm rounded-md">
           <p className="font-medium">{payload[0].name}</p>
           <p className="text-gray-600">Count: {payload[0].value}</p>
           <p className="text-gray-600">
             Percentage: {percentage}%
           </p>
-        </div>
-      );
+        </div>;
     }
     return null;
   };
@@ -187,24 +175,17 @@ const Analysis = () => {
     label
   }: any) => {
     if (active && payload && payload.length) {
-      return (
-        <div className="bg-white p-4 border border-gray-200 shadow-sm rounded-md">
+      return <div className="bg-white p-4 border border-gray-200 shadow-sm rounded-md">
           <p className="font-medium text-gray-900 mb-2">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <div key={`tooltip-${index}`} className="flex items-center mb-1">
-              <div 
-                className="w-3 h-3 rounded-full mr-2" 
-                style={{
-                  backgroundColor: entry.color
-                }} 
-              />
+          {payload.map((entry: any, index: number) => <div key={`tooltip-${index}`} className="flex items-center mb-1">
+              <div className="w-3 h-3 rounded-full mr-2" style={{
+            backgroundColor: entry.color
+          }} />
               <p className="text-gray-700">
                 <span className="font-medium">{entry.name}:</span> {entry.value}%
               </p>
-            </div>
-          ))}
-        </div>
-      );
+            </div>)}
+        </div>;
     }
     return null;
   };
@@ -212,26 +193,20 @@ const Analysis = () => {
   const getComparisonIndicator = (schoolScore: number, nationalScore: number) => {
     const difference = schoolScore - nationalScore;
     if (Math.abs(difference) < SIGNIFICANCE_THRESHOLD) {
-      return (
-        <div className="flex items-center justify-center text-gray-500">
+      return <div className="flex items-center justify-center text-gray-500">
           <MinusIcon size={14} className="mr-1" />
           <span className="text-sm">Similar to average</span>
-        </div>
-      );
+        </div>;
     } else if (difference > 0) {
-      return (
-        <div className="flex items-center justify-center text-green-600">
+      return <div className="flex items-center justify-center text-green-600">
           <ArrowUpIcon size={14} className="mr-1" />
           <span className="text-sm">Above average</span>
-        </div>
-      );
+        </div>;
     } else {
-      return (
-        <div className="flex items-center justify-center text-red-600">
+      return <div className="flex items-center justify-center text-red-600">
           <ArrowDownIcon size={14} className="mr-1" />
           <span className="text-sm">Below average</span>
-        </div>
-      );
+        </div>;
     }
   };
 
@@ -358,191 +333,94 @@ const Analysis = () => {
         <PageTitle title="Survey Analysis" subtitle="Compare your school's results with national benchmarks" />
         
         <div className="card p-6 mb-8 animate-slide-up">
-          {/* Redesigned filters and action buttons section */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-100 mb-6 overflow-hidden">
-            <div className="flex flex-col md:flex-row items-stretch">
-              {/* Filters section with visual indicator */}
-              <div className="bg-[#F1F0FB] p-5 flex-grow md:max-w-[70%]">
-                <div className="flex items-center gap-2 mb-4 text-[#403E43]">
-                  <FilterIcon size={18} />
-                  <h3 className="text-md font-semibold">Data Filters</h3>
+          <div className="flex justify-between items-center mb-6">
+            <div className="bg-gray-50 p-4 rounded-lg flex-grow">
+              <h3 className="text-md font-semibold text-gray-700 mb-3">Data Filters</h3>
+              <div className="flex flex-wrap gap-4 items-end">
+                <div>
+                  <label htmlFor="survey-select" className="block text-sm font-medium text-gray-700 mb-1">
+                    Survey
+                  </label>
+                  <select id="survey-select" className="form-input min-w-64" value={selectedSurvey} onChange={e => setSelectedSurvey(e.target.value)} disabled={loading}>
+                    <option value="">All Surveys</option>
+                    {surveys.map(survey => (
+                      <option key={survey.id} value={survey.id}>
+                        {survey.name} ({survey.date})
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {/* Survey selection */}
-                  <div>
-                    <label htmlFor="survey-select" className="block text-sm font-medium text-gray-700 mb-1">
-                      Survey
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <BarChart4Icon size={16} className="text-gray-400" />
-                      </div>
-                      <select 
-                        id="survey-select" 
-                        className="form-input pl-10 w-full" 
-                        value={selectedSurvey} 
-                        onChange={e => setSelectedSurvey(e.target.value)} 
-                        disabled={loading}
-                      >
-                        <option value="">All Surveys</option>
-                        {surveys.map(survey => (
-                          <option key={survey.id} value={survey.id}>
-                            {survey.name} ({survey.date})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  
-                  {/* Date range filter */}
-                  <div>
-                    <label htmlFor="date-filter" className="block text-sm font-medium text-gray-700 mb-1">
-                      Date Range
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <CalendarIcon size={16} className="text-gray-400" />
-                      </div>
-                      <select 
-                        id="date-filter" 
-                        className="form-input pl-10 w-full" 
-                        value={dateFilter} 
-                        onChange={e => setDateFilter(e.target.value)} 
-                        disabled={loading}
-                      >
-                        <option value="all">All Time</option>
-                        <option value="month">Last Month</option>
-                        <option value="quarter">Last Quarter</option>
-                        <option value="year">Last Year</option>
-                        <option value="custom">Custom Range</option>
-                      </select>
-                    </div>
-                  </div>
-                  
-                  {/* Custom date inputs */}
-                  {dateFilter === 'custom' && (
-                    <>
-                      <div>
-                        <label htmlFor="start-date" className="block text-sm font-medium text-gray-700 mb-1">
-                          Start Date
-                        </label>
-                        <div className="relative">
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="outline"
-                                className="w-full pl-3 text-left font-normal"
-                                disabled={loading}
-                              >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {startDate ? format(new Date(startDate), 'PPP') : 'Pick a date'}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={startDate ? new Date(startDate) : undefined}
-                                onSelect={(date) => date && setStartDate(date.toISOString())}
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <label htmlFor="end-date" className="block text-sm font-medium text-gray-700 mb-1">
-                          End Date
-                        </label>
-                        <div className="relative">
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="outline"
-                                className="w-full pl-3 text-left font-normal"
-                                disabled={loading}
-                              >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {endDate ? format(new Date(endDate), 'PPP') : 'Pick a date'}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={endDate ? new Date(endDate) : undefined}
-                                onSelect={(date) => date && setEndDate(date.toISOString())}
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                      </div>
-                    </>
-                  )}
+                <div>
+                  <label htmlFor="date-filter" className="block text-sm font-medium text-gray-700 mb-1">
+                    Date Range
+                  </label>
+                  <select id="date-filter" className="form-input" value={dateFilter} onChange={e => setDateFilter(e.target.value)} disabled={loading}>
+                    <option value="all">All Time</option>
+                    <option value="month">Last Month</option>
+                    <option value="quarter">Last Quarter</option>
+                    <option value="year">Last Year</option>
+                    <option value="custom">Custom Range</option>
+                  </select>
                 </div>
-              </div>
-              
-              {/* Vertical separator */}
-              <div className="hidden md:block">
-                <Separator orientation="vertical" className="h-full bg-gray-200" />
-              </div>
-              
-              {/* Action buttons section */}
-              <div className="p-5 flex flex-col justify-center md:w-[30%] space-y-3 bg-[#F6F6F7]">
-                <h3 className="text-md font-semibold text-[#403E43] mb-2 flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
-                  </svg>
-                  Report Actions
-                </h3>
                 
-                <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      className="w-full py-2 px-4 bg-white hover:bg-[#D3E4FD] border border-gray-200 transition-all duration-300 shadow-sm"
-                      disabled={loading}
-                    >
-                      <Mail className="mr-2 h-4 w-4 text-[#0EA5E9]" />
-                      Email Report
+                {dateFilter === 'custom' && (
+                  <>
+                    <div>
+                      <label htmlFor="start-date" className="block text-sm font-medium text-gray-700 mb-1">
+                        Start Date
+                      </label>
+                      <input id="start-date" type="date" className="form-input" value={startDate.split('T')[0]} onChange={e => setStartDate(`${e.target.value}T00:00:00Z`)} disabled={loading} />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="end-date" className="block text-sm font-medium text-gray-700 mb-1">
+                        End Date
+                      </label>
+                      <input id="end-date" type="date" className="form-input" value={endDate.split('T')[0]} onChange={e => setEndDate(`${e.target.value}T23:59:59Z`)} disabled={loading} />
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex gap-2 ml-4">
+              <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" disabled={loading}>
+                    <Mail className="mr-2 h-4 w-4" />
+                    Email Report
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Email Analysis Report</DialogTitle>
+                    <DialogDescription>
+                      Enter an email address to send this analysis report to.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="py-4">
+                    <Input
+                      type="email"
+                      placeholder="name@example.com"
+                      value={emailAddress}
+                      onChange={(e) => setEmailAddress(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  <DialogFooter>
+                    <Button variant="secondary" onClick={() => setEmailDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={handleSendEmail} disabled={isEmailSending}>
+                      {isEmailSending ? "Sending..." : "Send Report"}
                     </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Email Analysis Report</DialogTitle>
-                      <DialogDescription>
-                        Enter an email address to send this analysis report to.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4">
-                      <Input
-                        type="email"
-                        placeholder="name@example.com"
-                        value={emailAddress}
-                        onChange={(e) => setEmailAddress(e.target.value)}
-                        className="w-full"
-                      />
-                    </div>
-                    <DialogFooter className="gap-2 sm:gap-0">
-                      <Button variant="secondary" onClick={() => setEmailDialogOpen(false)}>Cancel</Button>
-                      <Button onClick={handleSendEmail} disabled={isEmailSending}>
-                        {isEmailSending ? "Sending..." : "Send Report"}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-                
-                <Button 
-                  variant="outline" 
-                  className="w-full py-2 px-4 bg-white hover:bg-[#D3E4FD] border border-gray-200 transition-all duration-300 shadow-sm"
-                  onClick={handleDownloadPdf} 
-                  disabled={loading || isPdfGenerating}
-                >
-                  <Download className="mr-2 h-4 w-4 text-[#0EA5E9]" />
-                  {isPdfGenerating ? "Generating..." : "Download PDF"}
-                </Button>
-              </div>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              
+              <Button variant="outline" onClick={handleDownloadPdf} disabled={loading || isPdfGenerating}>
+                <Download className="mr-2 h-4 w-4" />
+                {isPdfGenerating ? "Generating..." : "Download PDF"}
+              </Button>
             </div>
           </div>
           
@@ -650,19 +528,10 @@ const Analysis = () => {
                     <div className="h-64">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
-                          <Pie 
-                            data={leavingData} 
-                            cx="50%" 
-                            cy="50%" 
-                            labelLine={false} 
-                            outerRadius={80} 
-                            fill="#8884d8" 
-                            dataKey="value" 
-                            label={({
-                              name,
-                              percent
-                            }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                          >
+                          <Pie data={leavingData} cx="50%" cy="50%" labelLine={false} outerRadius={80} fill="#8884d8" dataKey="value" label={({
+                            name,
+                            percent
+                          }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
                             {leavingData.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))}
@@ -696,7 +565,6 @@ const Analysis = () => {
                     "Disagree": question.nationalResponses["Disagree"] || 0,
                     "Strongly Disagree": question.nationalResponses["Strongly Disagree"] || 0
                   }];
-                  
                   return (
                     <div key={`chart-${index}`} className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
                       <h4 className="text-md font-semibold text-gray-900 mb-1 text-center">
@@ -707,27 +575,53 @@ const Analysis = () => {
                         {getComparisonIndicator(schoolPositive, nationalPositive)}
                       </div>
                       
-                      <div className="h-60">
+                      <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
-                          <BarChart
-                            data={chartData}
-                            layout="vertical"
+                          <BarChart 
+                            data={chartData} 
                             margin={{
                               top: 20,
                               right: 30,
                               left: 20,
-                              bottom: 5,
-                            }}
+                              bottom: 20
+                            }} 
+                            layout="horizontal" 
+                            barGap={25} 
+                            barCategoryGap="35%"
                           >
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
-                            <YAxis dataKey="name" type="category" width={100} />
+                            <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={true} />
+                            <XAxis 
+                              dataKey="name" 
+                              tick={{
+                                fill: '#4B5563'
+                              }} 
+                            />
+                            <YAxis 
+                              type="number" 
+                              domain={[0, 100]} 
+                              tickFormatter={value => `${value}%`} 
+                              label={{
+                                value: 'Percentage (%)',
+                                angle: -90,
+                                position: 'insideLeft',
+                                style: {
+                                  textAnchor: 'middle'
+                                }
+                              }} 
+                            />
                             <Tooltip content={customStackedBarTooltip} />
-                            <Legend />
-                            <Bar dataKey="Strongly Agree" stackId="a" fill={RESPONSE_COLORS['Strongly Agree']} />
-                            <Bar dataKey="Agree" stackId="a" fill={RESPONSE_COLORS['Agree']} />
-                            <Bar dataKey="Disagree" stackId="a" fill={RESPONSE_COLORS['Disagree']} />
-                            <Bar dataKey="Strongly Disagree" stackId="a" fill={RESPONSE_COLORS['Strongly Disagree']} />
+                            <Legend 
+                              verticalAlign="bottom" 
+                              height={20} 
+                              iconSize={10} 
+                              wrapperStyle={{
+                                fontSize: '10px'
+                              }} 
+                            />
+                            <Bar dataKey="Strongly Disagree" stackId="a" fill={RESPONSE_COLORS['Strongly Disagree']} name="Strongly Disagree" />
+                            <Bar dataKey="Disagree" stackId="a" fill={RESPONSE_COLORS['Disagree']} name="Disagree" />
+                            <Bar dataKey="Agree" stackId="a" fill={RESPONSE_COLORS['Agree']} name="Agree" />
+                            <Bar dataKey="Strongly Agree" stackId="a" fill={RESPONSE_COLORS['Strongly Agree']} name="Strongly Agree" />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -736,76 +630,67 @@ const Analysis = () => {
                 })}
               </div>
               
-              {customQuestionResults.length > 0 && (
-                <div className="mb-8">
-                  <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Custom Question Results</h2>
-                  <CustomQuestionResults results={customQuestionResults} />
-                </div>
-              )}
-              
-              {textResponses.doingWell.length > 0 || textResponses.improvements.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                  {textResponses.doingWell.length > 0 && (
-                    <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                      <h3 className="text-lg font-semibold text-green-600 mb-4 flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6.633 10.25c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V2.75a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282m0 0h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23H5.904m10.598-9.75H14.25M5.904 18.5c.083.205.173.405.27.602.197.4-.078.898-.523.898h-.908c-.889 0-1.713-.518-1.972-1.368a12 12 0 0 1-.521-3.507c0-1.553.295-3.036.831-4.398C3.387 9.953 4.167 9.5 5 9.5h1.053c.472 0 .745.556.5.96a8.958 8.958 0 0 0-1.302 4.665c0 1.194.232 2.333.654 3.375Z" />
-                        </svg>
-                        Doing Well
-                      </h3>
-                      
-                      <div className="space-y-4">
-                        {getPaginatedResponses(textResponses.doingWell, doingWellPage).map((response, index) => (
-                          <div key={`doing-well-${index}`} className="p-3 bg-gray-50 rounded-md">
-                            <p className="text-gray-700">{response.response}</p>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {response.created_at && <span>{new Date(response.created_at).toLocaleDateString()}</span>}
+              <div className="mb-8">
+                <h2 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">Open-ended Feedback</h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+                    <h4 className="text-md font-semibold text-gray-900 mb-4">
+                      What does your organisation do well?
+                    </h4>
+                    {textResponses.doingWell.length > 0 ? (
+                      <>
+                        <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                          {getPaginatedResponses(textResponses.doingWell, doingWellPage).map((item, index) => (
+                            <div key={index} className="pb-4 border-b border-gray-100 last:border-0">
+                              <p className="text-gray-700">{item.response}</p>
+                              <p className="text-xs text-gray-500 mt-1">{item.created_at}</p>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                      
-                      {textResponses.doingWell.length > RESPONSES_PER_PAGE && (
-                        <PaginationControls 
-                          currentPage={doingWellPage} 
-                          totalPages={getTotalPages(textResponses.doingWell)} 
-                          onPageChange={setDoingWellPage} 
-                        />
-                      )}
-                    </div>
-                  )}
+                          ))}
+                        </div>
+                        
+                        {textResponses.doingWell.length > RESPONSES_PER_PAGE && (
+                          <PaginationControls 
+                            currentPage={doingWellPage}
+                            totalPages={getTotalPages(textResponses.doingWell)}
+                            onPageChange={setDoingWellPage}
+                          />
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-gray-500 italic">No responses available.</p>
+                    )}
+                  </div>
                   
-                  {textResponses.improvements.length > 0 && (
-                    <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                      <h3 className="text-lg font-semibold text-amber-600 mb-4 flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-                        </svg>
-                        Could Improve
-                      </h3>
-                      
-                      <div className="space-y-4">
-                        {getPaginatedResponses(textResponses.improvements, improvementsPage).map((response, index) => (
-                          <div key={`improvement-${index}`} className="p-3 bg-gray-50 rounded-md">
-                            <p className="text-gray-700">{response.response}</p>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {response.created_at && <span>{new Date(response.created_at).toLocaleDateString()}</span>}
+                  <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+                    <h4 className="text-md font-semibold text-gray-900 mb-4">
+                      What could your organisation do better?
+                    </h4>
+                    {textResponses.improvements.length > 0 ? (
+                      <>
+                        <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                          {getPaginatedResponses(textResponses.improvements, improvementsPage).map((item, index) => (
+                            <div key={index} className="pb-4 border-b border-gray-100 last:border-0">
+                              <p className="text-gray-700">{item.response}</p>
+                              <p className="text-xs text-gray-500 mt-1">{item.created_at}</p>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                      
-                      {textResponses.improvements.length > RESPONSES_PER_PAGE && (
-                        <PaginationControls 
-                          currentPage={improvementsPage} 
-                          totalPages={getTotalPages(textResponses.improvements)} 
-                          onPageChange={setImprovementsPage} 
-                        />
-                      )}
-                    </div>
-                  )}
+                          ))}
+                        </div>
+                        
+                        {textResponses.improvements.length > RESPONSES_PER_PAGE && (
+                          <PaginationControls 
+                            currentPage={improvementsPage}
+                            totalPages={getTotalPages(textResponses.improvements)}
+                            onPageChange={setImprovementsPage}
+                          />
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-gray-500 italic">No responses available.</p>
+                    )}
+                  </div>
                 </div>
-              ) : null}
+              </div>
             </div>
           )}
         </div>

@@ -4,12 +4,11 @@ import { cn } from '../../lib/utils';
 
 interface TextQuestionProps { 
   label: string; 
-  name?: string; 
+  name: string; 
   value: string;
-  onChange: (value: string) => void;
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   subtitle?: string;
   error?: string;
-  placeholder?: string;
   required?: boolean;
 }
 
@@ -20,8 +19,7 @@ const TextQuestion: React.FC<TextQuestionProps> = ({
   onChange,
   subtitle,
   error,
-  placeholder = "Please share your thoughts...",
-  required = false 
+  required = true 
 }) => (
   <div className="mb-10">
     <label htmlFor={name} className="block text-lg font-medium mb-2 text-left">
@@ -33,8 +31,7 @@ const TextQuestion: React.FC<TextQuestionProps> = ({
       name={name}
       rows={4}
       value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
+      onChange={onChange}
       className={cn(
         "w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-brandPurple-500 focus:border-transparent",
         error ? "border-red-500" : "border-gray-300"

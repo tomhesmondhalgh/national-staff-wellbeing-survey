@@ -4,11 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import MainLayout from '../layout/MainLayout';
 import PageTitle from '../ui/PageTitle';
 
-interface SurveyNotFoundProps {
-  error?: string;
-}
-
-const SurveyNotFound: React.FC<SurveyNotFoundProps> = ({ error }) => {
+const SurveyNotFound: React.FC = () => {
   const navigate = useNavigate();
   
   return (
@@ -19,7 +15,7 @@ const SurveyNotFound: React.FC<SurveyNotFoundProps> = ({ error }) => {
         />
         <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center">
           <p className="text-gray-700 mb-6">
-            {error || "The survey you are looking for could not be found or has expired."}
+            The survey you are looking for could not be found or has expired.
           </p>
           <button 
             onClick={() => navigate('/')}

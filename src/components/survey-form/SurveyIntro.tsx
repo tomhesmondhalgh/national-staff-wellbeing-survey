@@ -1,16 +1,17 @@
 
 import React from 'react';
 import PageTitle from '../ui/PageTitle';
+import { SurveyTemplate } from '../../utils/surveyUtils';
 
 interface SurveyIntroProps {
-  name: string;
+  surveyTemplate: SurveyTemplate | null;
 }
 
-const SurveyIntro: React.FC<SurveyIntroProps> = ({ name }) => {
+const SurveyIntro: React.FC<SurveyIntroProps> = ({ surveyTemplate }) => {
   return (
     <>
       <PageTitle 
-        title={name || "Complete the National Staff Wellbeing Survey"}
+        title={surveyTemplate?.name ? surveyTemplate.name : "Complete the National Staff Wellbeing Survey"}
       />
       
       <div className="mb-8 text-left">

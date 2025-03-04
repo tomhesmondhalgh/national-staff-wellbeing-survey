@@ -9,72 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      custom_question_responses: {
-        Row: {
-          answer: string
-          created_at: string | null
-          id: string
-          question_id: string
-          response_id: string
-        }
-        Insert: {
-          answer: string
-          created_at?: string | null
-          id?: string
-          question_id: string
-          response_id: string
-        }
-        Update: {
-          answer?: string
-          created_at?: string | null
-          id?: string
-          question_id?: string
-          response_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "custom_question_responses_question_id_fkey"
-            columns: ["question_id"]
-            isOneToOne: false
-            referencedRelation: "custom_questions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "custom_question_responses_response_id_fkey"
-            columns: ["response_id"]
-            isOneToOne: false
-            referencedRelation: "survey_responses"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      custom_questions: {
-        Row: {
-          created_at: string | null
-          creator_id: string
-          id: string
-          options: string[] | null
-          text: string
-          type: string
-        }
-        Insert: {
-          created_at?: string | null
-          creator_id: string
-          id?: string
-          options?: string[] | null
-          text: string
-          type: string
-        }
-        Update: {
-          created_at?: string | null
-          creator_id?: string
-          id?: string
-          options?: string[] | null
-          text?: string
-          type?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           created_at: string
@@ -521,42 +455,6 @@ export type Database = {
           URN?: number
         }
         Relationships: []
-      }
-      survey_questions: {
-        Row: {
-          created_at: string | null
-          id: string
-          question_id: string
-          survey_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          question_id: string
-          survey_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          question_id?: string
-          survey_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "survey_questions_question_id_fkey"
-            columns: ["question_id"]
-            isOneToOne: false
-            referencedRelation: "custom_questions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "survey_questions_survey_id_fkey"
-            columns: ["survey_id"]
-            isOneToOne: false
-            referencedRelation: "survey_templates"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       survey_responses: {
         Row: {
