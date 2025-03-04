@@ -661,7 +661,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_or_update_profile: {
+        Args: {
+          profile_id: string
+          profile_first_name: string
+          profile_last_name: string
+          profile_job_title: string
+          profile_school_name: string
+          profile_school_address: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

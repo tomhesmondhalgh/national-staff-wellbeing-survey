@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session, Provider } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
@@ -43,6 +42,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
+      
+      // If user is authenticated, redirect to dashboard
+      if (session?.user) {
+        navigate('/dashboard');
+      }
     });
 
     // Listen for auth changes
@@ -51,13 +55,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
+        
+        // If user signs in, redirect to dashboard
+        if (session?.user) {
+          navigate('/dashboard');
+        }
       }
     );
 
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -181,7 +190,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/onboarding`,
+          redirectTo: `${window.location.origin}/dashboard`,
         },
       });
 
