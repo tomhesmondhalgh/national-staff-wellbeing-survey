@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session, Provider } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
@@ -152,7 +153,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw profileError;
       }
 
-      // Send welcome email
+      // Send welcome email to the user
       try {
         await supabase.functions.invoke('send-welcome-email', {
           body: {
@@ -166,6 +167,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (emailError) {
         console.error('Error sending welcome email:', emailError);
         // Don't fail the signup if the welcome email fails
+      }
+      
+      // Send admin notification email
+      try {
+        await supabase.functions.invoke('send-admin-notification', {
+          body: {
+            email: userData.email,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            jobTitle: userData.jobTitle,
+            schoolName: userData.schoolName,
+            schoolAddress: userData.schoolAddress,
+          },
+        });
+        console.log('Admin notification email sent successfully');
+      } catch (adminEmailError) {
+        console.error('Error sending admin notification email:', adminEmailError);
+        // Don't fail the signup if the admin notification email fails
       }
 
       toast.success('Account setup completed successfully!', {
