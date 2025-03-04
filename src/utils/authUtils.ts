@@ -81,10 +81,14 @@ export async function signInWithSocialProvider(provider: Provider) {
   try {
     console.log(`Initiating sign in with ${provider}`);
     
+    // Get the current URL origin for redirection
+    const redirectUrl = `${window.location.origin}/dashboard`;
+    console.log(`Setting redirect URL to: ${redirectUrl}`);
+    
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/dashboard`,
+        redirectTo: redirectUrl,
         scopes: provider === 'azure' ? 'email profile openid' : undefined,
       },
     });
@@ -94,6 +98,7 @@ export async function signInWithSocialProvider(provider: Provider) {
       throw error;
     }
 
+    console.log('OAuth sign-in initiated successfully, redirecting to provider');
     return { error: null, success: true };
   } catch (error) {
     console.error(`Detailed error signing in with ${provider}:`, error);
