@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from "sonner";
 import MainLayout from '../components/layout/MainLayout';
@@ -21,7 +20,6 @@ import { format } from "date-fns";
 import { cn } from "../lib/utils";
 import { Input } from "../components/ui/input";
 import { Form, FormControl, FormField, FormItem } from "../components/ui/form";
-
 const SummarySection = ({
   summary
 }: {
@@ -55,7 +53,6 @@ const SummarySection = ({
       </div>
     </div>
   </div>;
-
 const RecommendationScoreSection = ({
   score,
   nationalAverage
@@ -63,7 +60,7 @@ const RecommendationScoreSection = ({
   score: number;
   nationalAverage: number;
 }) => <Card className="p-6 h-full">
-    <h3 className="text-lg font-medium mb-4">Recommendation Score</h3>
+    <h3 className="text-lg mb-4 font-semibold">Recommendation Score</h3>
     <div className="flex items-center justify-center space-x-12 h-52">
       <div className="text-center">
         <p className="text-4xl font-bold text-indigo-600">{score.toFixed(1)}</p>
@@ -78,67 +75,56 @@ const RecommendationScoreSection = ({
       Average score for "How likely would you recommend this organization to others as a place to work?" (0-10)
     </p>
   </Card>;
-
 const LeavingContemplationChart = ({
   data
 }: {
   data: Record<string, number>;
 }) => {
-  const chartData = [
-    {
-      name: "Your School",
-      "Strongly Disagree": data["Strongly Disagree"] || 0,
-      "Disagree": data["Disagree"] || 0,
-      "Agree": data["Agree"] || 0,
-      "Strongly Agree": data["Strongly Agree"] || 0
-    },
-    {
-      name: "National Average",
-      "Strongly Disagree": 0.25,
-      "Disagree": 0.25,
-      "Agree": 0.40,
-      "Strongly Agree": 0.10
-    }
-  ];
-  
+  const chartData = [{
+    name: "Your School",
+    "Strongly Disagree": data["Strongly Disagree"] || 0,
+    "Disagree": data["Disagree"] || 0,
+    "Agree": data["Agree"] || 0,
+    "Strongly Agree": data["Strongly Agree"] || 0
+  }, {
+    name: "National Average",
+    "Strongly Disagree": 0.25,
+    "Disagree": 0.25,
+    "Agree": 0.40,
+    "Strongly Agree": 0.10
+  }];
   const hasData = Object.values(data).some(val => val > 0);
-  
-  return (
-    <Card className="p-6 h-full">
-      <h3 className="text-lg font-medium mb-4">Staff Contemplating Leaving</h3>
+  return <Card className="p-6 h-full">
+      <h3 className="text-lg mb-4 font-semibold">Staff Contemplating Leaving</h3>
       <div className="h-52">
         <ResponsiveContainer width="100%" height="100%">
-          {hasData ? (
-            <BarChart 
-              data={chartData} 
-              layout="vertical"
-              barSize={30}
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-            >
+          {hasData ? <BarChart data={chartData} layout="vertical" barSize={30} margin={{
+          top: 5,
+          right: 30,
+          left: 20,
+          bottom: 5
+        }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis type="number" tickFormatter={value => `${(value * 100).toFixed(0)}%`} />
               <YAxis type="category" dataKey="name" width={100} />
               <Tooltip formatter={(value, name) => [`${(Number(value) * 100).toFixed(0)}%`, name]} />
-              <Legend wrapperStyle={{ fontSize: '10px' }} iconSize={8} layout="horizontal" verticalAlign="bottom" />
+              <Legend wrapperStyle={{
+            fontSize: '10px'
+          }} iconSize={8} layout="horizontal" verticalAlign="bottom" />
               <Bar dataKey="Strongly Disagree" stackId="a" fill="#FF5252" />
               <Bar dataKey="Disagree" stackId="a" fill="#FFA726" />
               <Bar dataKey="Agree" stackId="a" fill="#81C784" />
               <Bar dataKey="Strongly Agree" stackId="a" fill="#00C853" />
-            </BarChart>
-          ) : (
-            <div className="flex items-center justify-center h-full">
+            </BarChart> : <div className="flex items-center justify-center h-full">
               <p className="text-gray-500">No data available</p>
-            </div>
-          )}
+            </div>}
         </ResponsiveContainer>
       </div>
       <p className="text-xs text-gray-500 text-center mt-2">
         Responses to: "I have considered leaving this organization in the past year"
       </p>
-    </Card>
-  );
+    </Card>;
 };
-
 const WellbeingQuestionChart = ({
   title,
   data
@@ -185,7 +171,6 @@ const WellbeingQuestionChart = ({
       </div>
     </Card>;
 };
-
 const TextResponsesSection = ({
   doingWellResponses,
   improvementResponses
@@ -214,7 +199,6 @@ const TextResponsesSection = ({
       </Card>
     </div>
   </div>;
-
 const Analysis = () => {
   const {
     user
@@ -245,7 +229,6 @@ const Analysis = () => {
   const [summary, setSummary] = useState<any>({});
   const [noData, setNoData] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
-
   useEffect(() => {
     const loadSurveyOptions = async () => {
       try {
@@ -266,7 +249,6 @@ const Analysis = () => {
       loadSurveyOptions();
     }
   }, [user]);
-
   useEffect(() => {
     const loadData = async () => {
       if (!selectedSurvey) return;
@@ -304,11 +286,9 @@ const Analysis = () => {
     };
     loadData();
   }, [selectedSurvey, selectedTimeRange, customDateRange]);
-
   const handleSurveyChange = (value: string) => {
     setSelectedSurvey(value);
   };
-
   const handleTimeRangeChange = (value: string) => {
     setSelectedTimeRange(value);
     if (value !== "custom-range") {
@@ -318,12 +298,10 @@ const Analysis = () => {
       });
     }
   };
-
   const getSurveyName = () => {
     const survey = surveyOptions.find(s => s.id === selectedSurvey);
     return survey ? survey.name : '';
   };
-
   const handleExportPDF = async () => {
     try {
       setExportLoading(true);
@@ -342,7 +320,6 @@ const Analysis = () => {
       setExportLoading(false);
     }
   };
-
   const handleExportReport = async () => {
     try {
       setExportLoading(true);
@@ -364,7 +341,6 @@ const Analysis = () => {
       setExportLoading(false);
     }
   };
-
   if (noData) {
     return <MainLayout>
         <div className="container mx-auto px-4 py-8">
@@ -379,7 +355,6 @@ const Analysis = () => {
         </div>
       </MainLayout>;
   }
-
   return <MainLayout>
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="mb-10 text-center">
@@ -478,9 +453,7 @@ const Analysis = () => {
             <div className="mb-12">
               <h2 className="text-xl font-semibold mb-6 text-center">Wellbeing Indicators</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {detailedResponses.map((question, index) => (
-                  <WellbeingQuestionChart key={index} title={question.question} data={question} />
-                ))}
+                {detailedResponses.map((question, index) => <WellbeingQuestionChart key={index} title={question.question} data={question} />)}
               </div>
             </div>
 
@@ -489,5 +462,4 @@ const Analysis = () => {
       </div>
     </MainLayout>;
 };
-
 export default Analysis;
