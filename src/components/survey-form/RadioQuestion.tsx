@@ -6,7 +6,7 @@ interface RadioQuestionProps {
   name: string; 
   options: string[]; 
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange: (value: string) => void;
   error?: string;
   required?: boolean;
 }
@@ -34,7 +34,7 @@ const RadioQuestion: React.FC<RadioQuestionProps> = ({
               name={name}
               value={option}
               checked={value === option}
-              onChange={onChange}
+              onChange={(e) => onChange(e.target.value)}
               className="h-4 w-4 text-brandPurple-600 focus:ring-brandPurple-500 border-gray-300"
             />
             <label htmlFor={`${name}-${option}`} className="ml-2 text-sm text-gray-700">

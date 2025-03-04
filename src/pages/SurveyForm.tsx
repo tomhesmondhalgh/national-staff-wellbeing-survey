@@ -15,7 +15,7 @@ import TextQuestion from '../components/survey-form/TextQuestion';
 import SubmitButton from '../components/survey-form/SubmitButton';
 import RoleSelect from '../components/survey-form/RoleSelect';
 import CustomQuestions from '../components/survey-form/CustomQuestions';
-import { QUESTIONS, RATING_QUESTIONS } from '../components/survey-form/constants';
+import { QUESTIONS, RATING_QUESTIONS, roleOptions } from '../components/survey-form/constants';
 
 const SurveyForm = () => {
   const navigate = useNavigate();
@@ -238,13 +238,15 @@ const SurveyForm = () => {
           <RoleSelect 
             value={formValues.role} 
             onChange={(value) => handleInputChange('role', value)} 
+            options={roleOptions}
             error={formErrors.role}
           />
           
           {RATING_QUESTIONS.map((question) => (
             <RatingQuestion
               key={question.field}
-              question={question.question}
+              label={question.question}
+              name={question.field}
               value={formValues[question.field]}
               onChange={(value) => handleInputChange(question.field, value)}
               error={formErrors[question.field]}
@@ -254,7 +256,8 @@ const SurveyForm = () => {
           {QUESTIONS.map((question) => (
             <RadioQuestion
               key={question.field}
-              question={question.question}
+              label={question.question}
+              name={question.field}
               options={question.options}
               value={formValues[question.field]}
               onChange={(value) => handleInputChange(question.field, value)}
@@ -264,18 +267,20 @@ const SurveyForm = () => {
           
           <TextQuestion
             label="What is your organization doing well in terms of staff wellbeing?"
-            placeholder="Please share your thoughts..."
+            name="doing_well"
             value={formValues.doing_well}
             onChange={(value) => handleInputChange('doing_well', value)}
             error={formErrors.doing_well}
+            placeholder="Please share your thoughts..."
           />
           
           <TextQuestion
             label="What improvements would you suggest to enhance staff wellbeing?"
-            placeholder="Please share your suggestions..."
+            name="improvements"
             value={formValues.improvements}
             onChange={(value) => handleInputChange('improvements', value)}
             error={formErrors.improvements}
+            placeholder="Please share your suggestions..."
           />
           
           {customQuestions.length > 0 && (
