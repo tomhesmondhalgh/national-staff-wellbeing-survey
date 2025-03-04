@@ -53,6 +53,7 @@ const Login = () => {
         <PageTitle 
           title="Welcome back" 
           subtitle="Log in to access your surveys and analytics"
+          alignment="center"
         />
         <AuthForm mode="login" onSubmit={handleSubmit} isLoading={isLoading} />
       </div>
