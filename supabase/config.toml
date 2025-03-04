@@ -26,8 +26,17 @@ file_size_limit = "50MiB"
 
 [auth]
 enabled = true
-site_url = "http://localhost:3000"
-additional_redirect_urls = ["https://localhost:3000", "http://localhost:3000/login", "http://localhost:3000/onboarding", "https://localhost:3000/onboarding"]
+site_url = "https://national-staff-wellbeing-survey.lovable.app"
+additional_redirect_urls = [
+  "http://localhost:3000",
+  "https://localhost:3000", 
+  "http://localhost:3000/login", 
+  "http://localhost:3000/onboarding", 
+  "https://localhost:3000/onboarding",
+  "https://national-staff-wellbeing-survey.lovable.app",
+  "https://national-staff-wellbeing-survey.lovable.app/login",
+  "https://national-staff-wellbeing-survey.lovable.app/onboarding"
+]
 jwt_expiry = 3600
 enable_refresh_token_rotation = true
 refresh_token_reuse_interval = 10
