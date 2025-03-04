@@ -37,22 +37,32 @@ const Onboarding = () => {
   useEffect(() => {
     console.log('Onboarding component mounted');
     console.log('User:', user);
+    console.log('User app metadata:', user?.app_metadata);
+    console.log('User user metadata:', user?.user_metadata);
+    
+    // Check if we need to clear social login redirect flag
+    const socialLoginFlag = sessionStorage.getItem('socialLoginRedirect');
+    if (socialLoginFlag) {
+      console.log('Clearing social login redirect flag in onboarding component');
+      sessionStorage.removeItem('socialLoginRedirect');
+    }
     
     // Redirect to dashboard if no user is found
     if (!user) {
-      console.log('No user found, redirecting to login');
+      console.log('No user found in onboarding, redirecting to login');
       navigate('/login');
       return;
     }
 
     // Display welcome message for social login users
     if (user.app_metadata?.provider && user.app_metadata.provider !== 'email') {
+      console.log('Showing welcome toast for social login user');
       toast.info(`Welcome! Please complete your profile to continue.`);
     }
 
     // Check if this is a social login user and prefill data if available
-    if (user.app_metadata?.provider && (user.user_metadata?.name || user.user_metadata?.full_name)) {
-      console.log('Social login detected, prefilling data');
+    if (user.app_metadata?.provider && user.app_metadata.provider !== 'email') {
+      console.log('Social login detected in onboarding, prefilling data');
       prefillSocialLoginData(user);
     }
   }, [user, navigate, prefillSocialLoginData]);
@@ -73,6 +83,15 @@ const Onboarding = () => {
 
   // Determine if the user came from social login
   const isSocialLoginUser = user?.app_metadata?.provider && user.app_metadata.provider !== 'email';
+
+  // Handle the case where user got here but is already fully onboarded
+  useEffect(() => {
+    if (user && user.user_metadata?.school_name && !isLoading) {
+      console.log('User already has school_name in metadata, they should be redirected to dashboard');
+      toast.info('Your profile is already complete!');
+      setTimeout(() => navigate('/dashboard'), 1500);
+    }
+  }, [user, navigate, isLoading]);
 
   return (
     <MainLayout>

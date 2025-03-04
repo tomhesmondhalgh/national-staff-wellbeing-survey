@@ -17,8 +17,13 @@ const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({ isLoading = fal
     try {
       setSocialLoading(provider);
       
+      // Set flag in session storage
+      sessionStorage.setItem('socialLoginRedirect', 'true');
+      
       // Add more descriptive logging for debugging
       console.log(`Attempting to sign in with ${provider}`);
+      console.log(`Current location: ${window.location.href}`);
+      console.log(`Expected redirect: ${window.location.origin}/onboarding`);
       
       const result = await signInWithSocialProvider(provider);
       

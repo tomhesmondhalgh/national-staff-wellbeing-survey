@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
@@ -17,7 +16,10 @@ export function useAuthState() {
 
   // Check if this is a social login user that needs to complete onboarding
   const needsOnboarding = (user: User | null) => {
-    if (!user) return false;
+    if (!user) {
+      console.log('No user found, cannot determine if onboarding is needed');
+      return false;
+    }
     
     // Check if this is a social login (has provider and it's not email)
     const isSocialLogin = user.app_metadata?.provider && 
@@ -26,44 +28,97 @@ export function useAuthState() {
     // Check if they have already completed onboarding (has school_name in metadata)
     const hasCompletedProfile = user.user_metadata?.school_name;
     
+    console.log('Social login check:', { 
+      isSocialLogin, 
+      provider: user.app_metadata?.provider,
+      hasCompletedProfile,
+      schoolName: user.user_metadata?.school_name
+    });
+    
     return isSocialLogin && !hasCompletedProfile;
   };
 
+  // Check if this appears to be a new social login session
+  const isNewSocialLogin = () => {
+    const socialLoginFlag = sessionStorage.getItem('socialLoginRedirect');
+    if (socialLoginFlag) {
+      console.log('Found social login redirect flag in session storage');
+      sessionStorage.removeItem('socialLoginRedirect');
+      return true;
+    }
+    return false;
+  };
+
   useEffect(() => {
+    console.log('useAuthState effect running, current path:', location.pathname);
+    let authStateSubscription: { data: { subscription: { unsubscribe: () => void } } };
+
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-      
-      // If user is authenticated and on an auth-related page, determine where to redirect
-      if (session?.user) {
-        console.log("Session user detected:", session.user.id);
-        console.log("Current path:", location.pathname);
-        console.log("User metadata:", session.user.user_metadata);
-        console.log("App metadata:", session.user.app_metadata);
+    const initializeAuthState = async () => {
+      try {
+        console.log('Initializing auth state...');
+        const { data: { session } } = await supabase.auth.getSession();
         
-        // Don't redirect if already on the onboarding page
-        if (location.pathname === '/onboarding') {
-          console.log("Already on onboarding page, no redirect needed");
+        console.log('Initial session retrieved:', session?.user?.id);
+        console.log('User metadata:', session?.user?.user_metadata);
+        console.log('App metadata:', session?.user?.app_metadata);
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        // Handle redirection logic based on session, onboarding needs, and current path
+        if (session?.user) {
+          const userNeedsOnboarding = needsOnboarding(session.user);
+          const newSocialLogin = isNewSocialLogin();
+          
+          console.log('Redirect decision factors:', {
+            userNeedsOnboarding,
+            newSocialLogin,
+            currentPath: location.pathname,
+            isAuthPage: isAuthRelatedPage()
+          });
+          
+          // Don't redirect if already on the onboarding page
+          if (location.pathname === '/onboarding') {
+            console.log('Already on onboarding page, no redirect needed');
+            setIsLoading(false);
+            return;
+          }
+          
+          // Handle social login that needs onboarding
+          if (userNeedsOnboarding || newSocialLogin) {
+            console.log('User needs onboarding or is a new social login, redirecting to onboarding page');
+            setIsLoading(false);
+            navigate('/onboarding');
+            return;
+          }
+          
+          // Only redirect from auth pages to dashboard if fully onboarded
+          if (isAuthRelatedPage()) {
+            console.log('User already onboarded, redirecting to dashboard from auth page');
+            setIsLoading(false);
+            navigate('/dashboard');
+            return;
+          }
+        } else if (!isAuthRelatedPage() && location.pathname !== '/onboarding') {
+          // If no user and not on auth page or onboarding, redirect to login
+          console.log('No user detected and not on auth page, redirecting to login');
+          setIsLoading(false);
+          navigate('/login');
           return;
         }
         
-        // Check if user needs to complete onboarding
-        if (needsOnboarding(session.user)) {
-          console.log("User needs onboarding, redirecting to onboarding page");
-          navigate('/onboarding');
-        } 
-        // Only redirect from auth pages to dashboard
-        else if (isAuthRelatedPage()) {
-          console.log("User already onboarded, redirecting to dashboard");
-          navigate('/dashboard');
-        }
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error in auth state initialization:', error);
+        setIsLoading(false);
       }
-    });
+    };
+
+    initializeAuthState();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    authStateSubscription = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id);
         console.log('User metadata:', session?.user?.user_metadata);
@@ -71,32 +126,50 @@ export function useAuthState() {
         
         setSession(session);
         setUser(session?.user ?? null);
-        setIsLoading(false);
         
-        if (!session?.user) return;
-        
-        // Handle different events
-        if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        if (event === 'SIGNED_IN') {
+          console.log('SIGNED_IN event detected');
+          const userNeedsOnboarding = needsOnboarding(session?.user);
+          const newSocialLogin = isNewSocialLogin();
+          
+          console.log('After sign-in redirect decision:', {
+            userNeedsOnboarding,
+            newSocialLogin,
+            currentPath: location.pathname
+          });
+          
           // Don't redirect if already on the onboarding page
           if (location.pathname === '/onboarding') {
-            console.log("Already on onboarding page, no redirect needed");
+            console.log('Already on onboarding page, no redirect needed');
             return;
           }
           
-          // Determine where to redirect the authenticated user
-          if (needsOnboarding(session.user)) {
-            console.log('Social login detected, redirecting to onboarding');
+          // If user needs onboarding or this is likely a social login, go to onboarding
+          if (userNeedsOnboarding || newSocialLogin) {
+            console.log('User needs onboarding after sign in, redirecting');
             navigate('/onboarding');
-          } else if (isAuthRelatedPage()) {
-            console.log('User authenticated, redirecting to dashboard');
+            return;
+          }
+          
+          // Otherwise redirect from auth pages to dashboard
+          if (isAuthRelatedPage()) {
+            console.log('User signed in and onboarded, redirecting to dashboard');
             navigate('/dashboard');
+            return;
+          }
+        } else if (event === 'SIGNED_OUT') {
+          // Redirect to login page when signed out
+          if (!isAuthRelatedPage()) {
+            console.log('User signed out, redirecting to login');
+            navigate('/login');
           }
         }
       }
     );
 
     return () => {
-      subscription.unsubscribe();
+      console.log('Cleaning up auth subscription');
+      authStateSubscription.data.subscription.unsubscribe();
     };
   }, [navigate, location.pathname]);
 
