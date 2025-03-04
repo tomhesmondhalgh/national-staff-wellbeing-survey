@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session, Provider } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 
 interface AuthContextType {
@@ -35,6 +35,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isAuthRelatedPage = () => {
+    return ['/login', '/signup', '/onboarding'].includes(location.pathname);
+  };
 
   useEffect(() => {
     // Get initial session
@@ -43,8 +48,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null);
       setIsLoading(false);
       
-      // If user is authenticated, redirect to dashboard
-      if (session?.user) {
+      // If user is authenticated and on an auth-related page, redirect to dashboard
+      if (session?.user && isAuthRelatedPage()) {
         navigate('/dashboard');
       }
     });
@@ -56,8 +61,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         setIsLoading(false);
         
-        // If user signs in, redirect to dashboard
-        if (session?.user) {
+        // If user signs in and is on an auth-related page, redirect to dashboard
+        if (session?.user && isAuthRelatedPage()) {
           navigate('/dashboard');
         }
       }
@@ -66,7 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, location.pathname]);
 
   const signIn = async (email: string, password: string) => {
     try {
