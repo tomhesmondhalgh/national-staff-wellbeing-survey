@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import AuthForm from '../components/auth/AuthForm';
 import PageTitle from '../components/ui/PageTitle';
@@ -9,8 +9,19 @@ import { toast } from 'sonner';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { signIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+
+  // Check for email confirmation success in the URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('email_confirmed') === 'true') {
+      toast.success('Email confirmed successfully!', {
+        description: 'You can now log in to your account.'
+      });
+    }
+  }, [location]);
 
   const handleSubmit = async (data: any) => {
     setIsLoading(true);
