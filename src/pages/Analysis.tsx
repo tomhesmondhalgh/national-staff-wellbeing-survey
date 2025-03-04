@@ -20,39 +20,68 @@ import { format } from "date-fns";
 import { cn } from "../lib/utils";
 import { Input } from "../components/ui/input";
 import { Form, FormControl, FormField, FormItem } from "../components/ui/form";
+
 const SummarySection = ({
   summary
 }: {
   summary: any;
-}) => <div className="mb-12">
-    <h2 className="text-xl font-semibold mb-6 text-center">AI-Powered Summary</h2>
-    
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-      <div>
-        <h3 className="text-lg font-medium mb-4 text-green-600 flex items-center">
-          <Check className="h-5 w-5 mr-2" /> Areas of Strength
-        </h3>
-        <ul className="space-y-3">
-          {summary.strengths && summary.strengths.length > 0 ? summary.strengths.map((strength: string, index: number) => <li key={index} className="flex items-start">
+}) => {
+  if (summary.insufficientData) {
+    return (
+      <div className="mb-12">
+        <h2 className="text-xl font-semibold mb-6 text-center">AI-Powered Summary</h2>
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+          <div className="flex flex-col items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+            <h3 className="text-lg font-medium text-gray-700 mb-2">AI-Powered Summary Coming Soon</h3>
+            <p className="text-gray-500 max-w-md">
+              An intelligent analysis of your survey data will be available when you have 10 or more responses.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-12">
+      <h2 className="text-xl font-semibold mb-6 text-center">AI-Powered Summary</h2>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div>
+          <h3 className="text-lg font-medium mb-4 text-green-600 flex items-center">
+            <Check className="h-5 w-5 mr-2" /> Areas of Strength
+          </h3>
+          <ul className="space-y-3">
+            {summary.strengths && summary.strengths.length > 0 ? summary.strengths.map((strength: string, index: number) => (
+              <li key={index} className="flex items-start">
                 <span className="inline-block h-5 w-5 rounded-full bg-green-500 text-white flex items-center justify-center text-xs mr-2 mt-0.5">•</span>
                 <span>{strength}</span>
-              </li>) : <li className="text-gray-500">No strengths identified.</li>}
-        </ul>
-      </div>
-      
-      <div>
-        <h3 className="text-lg font-medium mb-4 text-amber-600 flex items-center">
-          <ArrowRight className="h-5 w-5 mr-2" /> Areas for Improvement
-        </h3>
-        <ul className="space-y-3">
-          {summary.improvements && summary.improvements.length > 0 ? summary.improvements.map((improvement: string, index: number) => <li key={index} className="flex items-start">
+              </li>
+            )) : <li className="text-gray-500">No strengths identified.</li>}
+          </ul>
+        </div>
+        
+        <div>
+          <h3 className="text-lg font-medium mb-4 text-amber-600 flex items-center">
+            <ArrowRight className="h-5 w-5 mr-2" /> Areas for Improvement
+          </h3>
+          <ul className="space-y-3">
+            {summary.improvements && summary.improvements.length > 0 ? summary.improvements.map((improvement: string, index: number) => (
+              <li key={index} className="flex items-start">
                 <span className="inline-block h-5 w-5 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs mr-2 mt-0.5">•</span>
                 <span>{improvement}</span>
-              </li>) : <li className="text-gray-500">No improvements suggested.</li>}
-        </ul>
+              </li>
+            )) : <li className="text-gray-500">No improvements suggested.</li>}
+          </ul>
+        </div>
       </div>
     </div>
-  </div>;
+  );
+};
+
 const RecommendationScoreSection = ({
   score,
   nationalAverage
@@ -75,6 +104,7 @@ const RecommendationScoreSection = ({
       Average score for "How likely would you recommend this organization to others as a place to work?" (0-10)
     </p>
   </Card>;
+
 const LeavingContemplationChart = ({
   data
 }: {
@@ -125,6 +155,7 @@ const LeavingContemplationChart = ({
       </p>
     </Card>;
 };
+
 const WellbeingQuestionChart = ({
   title,
   data
@@ -171,6 +202,7 @@ const WellbeingQuestionChart = ({
       </div>
     </Card>;
 };
+
 const TextResponsesSection = ({
   doingWellResponses,
   improvementResponses
@@ -199,6 +231,7 @@ const TextResponsesSection = ({
       </Card>
     </div>
   </div>;
+
 const Analysis = () => {
   const {
     user
@@ -229,6 +262,7 @@ const Analysis = () => {
   const [summary, setSummary] = useState<any>({});
   const [noData, setNoData] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
+
   useEffect(() => {
     const loadSurveyOptions = async () => {
       try {
@@ -249,6 +283,7 @@ const Analysis = () => {
       loadSurveyOptions();
     }
   }, [user]);
+
   useEffect(() => {
     const loadData = async () => {
       if (!selectedSurvey) return;
@@ -286,9 +321,11 @@ const Analysis = () => {
     };
     loadData();
   }, [selectedSurvey, selectedTimeRange, customDateRange]);
+
   const handleSurveyChange = (value: string) => {
     setSelectedSurvey(value);
   };
+
   const handleTimeRangeChange = (value: string) => {
     setSelectedTimeRange(value);
     if (value !== "custom-range") {
@@ -298,10 +335,12 @@ const Analysis = () => {
       });
     }
   };
+
   const getSurveyName = () => {
     const survey = surveyOptions.find(s => s.id === selectedSurvey);
     return survey ? survey.name : '';
   };
+
   const handleExportPDF = async () => {
     try {
       setExportLoading(true);
@@ -320,6 +359,7 @@ const Analysis = () => {
       setExportLoading(false);
     }
   };
+
   const handleExportReport = async () => {
     try {
       setExportLoading(true);
@@ -341,6 +381,7 @@ const Analysis = () => {
       setExportLoading(false);
     }
   };
+
   if (noData) {
     return <MainLayout>
         <div className="container mx-auto px-4 py-8">
@@ -355,6 +396,7 @@ const Analysis = () => {
         </div>
       </MainLayout>;
   }
+
   return <MainLayout>
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="mb-10 text-center">
@@ -462,4 +504,5 @@ const Analysis = () => {
       </div>
     </MainLayout>;
 };
+
 export default Analysis;

@@ -55,8 +55,8 @@ export const getSurveySummary = async (
     // Calculate total responses to check if we have enough data
     const totalResponses = Object.values(leavingContemplation).reduce((sum, value) => sum + value, 0);
     
-    // If we don't have enough data, return a message
-    if (totalResponses < 20) {
+    // If we don't have enough data (now checking for at least 10 responses), return a message
+    if (totalResponses < 10) {
       return getInsufficientDataSummary();
     }
     

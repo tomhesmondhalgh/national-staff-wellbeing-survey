@@ -24,9 +24,9 @@ serve(async (req) => {
       textResponses 
     } = await req.json();
 
-    // Check if we have enough data
+    // Check if we have enough data (changed from 20 to 10)
     const totalResponses = Object.values(leavingContemplation).reduce((sum: number, value: number) => sum + value, 0);
-    if (totalResponses < 20) {
+    if (totalResponses < 10) {
       return new Response(JSON.stringify({ insufficientData: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
