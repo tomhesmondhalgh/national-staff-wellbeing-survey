@@ -14,6 +14,16 @@ export interface SummaryData {
   insufficientData?: boolean;
 }
 
+// Default summary for when there's insufficient data
+const getInsufficientDataSummary = (): SummaryData => {
+  return {
+    introduction: '',
+    strengths: [],
+    improvements: [],
+    insufficientData: true
+  };
+};
+
 // Mock AI summary for when the Edge Function is unavailable
 const getMockSummary = (): SummaryData => {
   return {
@@ -47,12 +57,7 @@ export const getSurveySummary = async (
     
     // If we don't have enough data, return a message
     if (totalResponses < 20) {
-      return {
-        introduction: '',
-        strengths: [],
-        improvements: [],
-        insufficientData: true
-      };
+      return getInsufficientDataSummary();
     }
     
     // Try to call the Supabase Edge Function to generate the summary
@@ -75,12 +80,7 @@ export const getSurveySummary = async (
       
       // If API returns insufficient data flag
       if (data.insufficientData) {
-        return {
-          introduction: '',
-          strengths: [],
-          improvements: [],
-          insufficientData: true
-        };
+        return getInsufficientDataSummary();
       }
       
       // Return the summary data

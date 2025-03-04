@@ -1,5 +1,6 @@
 
 import { supabase, getMockSurveyOptions, getMockRecommendationScore, getMockLeavingContemplation, getMockDetailedResponses, getMockTextResponses } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 // Type definitions
 export interface SurveyOption {
@@ -33,20 +34,17 @@ export const getSurveyOptions = async (): Promise<SurveyOption[]> => {
       throw error;
     }
     
-    // If we got empty data from Supabase, use mock data
-    if (!data || data.length === 0) {
-      console.info('No surveys found in database, using mock data');
-      return getMockSurveyOptions();
-    }
-    
-    return data.map(survey => ({
+    // Return the actual data, even if empty
+    return data?.map(survey => ({
       id: survey.id,
       name: survey.name,
       date: new Date(survey.date).toLocaleDateString(),
-    }));
+    })) || [];
+    
   } catch (error) {
-    console.error('Error in getSurveyOptions, falling back to mock data:', error);
-    return getMockSurveyOptions();
+    console.error('Error in getSurveyOptions:', error);
+    // Return empty array instead of mock data to accurately reflect no surveys
+    return [];
   }
 };
 
@@ -57,9 +55,6 @@ export const getRecommendationScore = async (
   endDate?: string
 ): Promise<{ score: number, nationalAverage: number }> => {
   try {
-    // Start with mock data in case real data fetch fails
-    const mockData = getMockRecommendationScore(surveyId);
-    
     // Try to get real data from Supabase
     const query = supabase
       .from('survey_responses')
@@ -81,9 +76,12 @@ export const getRecommendationScore = async (
       throw error;
     }
     
-    // If no data, return mock data
+    // If no data, return zeros instead of mock data
     if (!data || data.length === 0) {
-      return mockData;
+      return {
+        score: 0,
+        nationalAverage: 7.8 // Keep the benchmark
+      };
     }
     
     // Calculate average score from responses
@@ -100,8 +98,9 @@ export const getRecommendationScore = async (
       nationalAverage: 7.8 // Hardcoded benchmark
     };
   } catch (error) {
-    console.error('Error in getRecommendationScore, using mock data:', error);
-    return getMockRecommendationScore(surveyId);
+    console.error('Error in getRecommendationScore:', error);
+    // Return zeros instead of mock data
+    return { score: 0, nationalAverage: 7.8 };
   }
 };
 
@@ -112,8 +111,13 @@ export const getLeavingContemplation = async (
   endDate?: string
 ): Promise<Record<string, number>> => {
   try {
-    // Start with mock data in case real data fetch fails
-    const mockData = getMockLeavingContemplation(surveyId);
+    // Define empty structure
+    const emptyCounts: Record<string, number> = {
+      "Strongly Agree": 0,
+      "Agree": 0,
+      "Disagree": 0, 
+      "Strongly Disagree": 0
+    };
     
     // Try to get real data from Supabase
     const query = supabase
@@ -136,18 +140,13 @@ export const getLeavingContemplation = async (
       throw error;
     }
     
-    // If no data, return mock data
+    // If no data, return empty structure
     if (!data || data.length === 0) {
-      return mockData;
+      return emptyCounts;
     }
     
     // Count responses for each option
-    const counts: Record<string, number> = {
-      "Strongly Agree": 0,
-      "Agree": 0,
-      "Disagree": 0, 
-      "Strongly Disagree": 0
-    };
+    const counts = { ...emptyCounts };
     
     data.forEach(response => {
       const option = response.leaving_contemplation;
@@ -158,8 +157,14 @@ export const getLeavingContemplation = async (
     
     return counts;
   } catch (error) {
-    console.error('Error in getLeavingContemplation, using mock data:', error);
-    return getMockLeavingContemplation(surveyId);
+    console.error('Error in getLeavingContemplation:', error);
+    // Return empty structure instead of mock data
+    return {
+      "Strongly Agree": 0,
+      "Agree": 0,
+      "Disagree": 0, 
+      "Strongly Disagree": 0
+    };
   }
 };
 
@@ -170,17 +175,115 @@ export const getDetailedWellbeingResponses = async (
   endDate?: string
 ): Promise<DetailedQuestionResponse[]> => {
   try {
-    // Start with mock data
-    const mockData = getMockDetailedResponses(surveyId);
+    // Define the wellbeing questions
+    const wellbeingQuestions = [
+      "I feel valued as a member of this organisation",
+      "Leadership prioritises staff wellbeing",
+      "My workload is manageable",
+      "I have a good work-life balance",
+      "I am in good physical and mental health",
+      "I can access support when I need it",
+      "I feel confident in my role",
+      "I am proud to work for this organisation"
+    ];
     
-    // For a real implementation, we would fetch data from Supabase here
-    // with complex queries to aggregate results for each question
+    // Query for getting responses from Supabase
+    const query = supabase
+      .from('survey_responses')
+      .select('valued_member, leadership_prioritize, manageable_workload, work_life_balance, health_state, support_access, confidence_in_role, org_pride')
+      .eq('survey_template_id', surveyId);
     
-    // For demo purposes, let's return mock data directly
-    return mockData;
+    // Apply date filters
+    if (startDate) {
+      query.gte('created_at', startDate);
+    }
+    if (endDate) {
+      query.lte('created_at', endDate);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching wellbeing responses:', error);
+      throw error;
+    }
+    
+    // If no data, return empty structure
+    if (!data || data.length === 0) {
+      return wellbeingQuestions.map(question => ({
+        question,
+        schoolResponses: {
+          "Strongly Agree": 0,
+          "Agree": 0,
+          "Disagree": 0,
+          "Strongly Disagree": 0
+        },
+        nationalResponses: {
+          "Strongly Agree": 25,
+          "Agree": 40,
+          "Disagree": 25,
+          "Strongly Disagree": 10
+        }
+      }));
+    }
+    
+    // Calculate responses for each question
+    // This is a simplified example, in reality you would count each response type
+    // For now, we'll use mock national data but real school data
+    const fieldMappings = [
+      'valued_member',
+      'leadership_prioritize',
+      'manageable_workload',
+      'work_life_balance', 
+      'health_state',
+      'support_access',
+      'confidence_in_role',
+      'org_pride'
+    ];
+    
+    return wellbeingQuestions.map((question, index) => {
+      const field = fieldMappings[index];
+      
+      // Count responses for this question
+      const responses: Record<string, number> = {
+        "Strongly Agree": 0,
+        "Agree": 0,
+        "Disagree": 0,
+        "Strongly Disagree": 0
+      };
+      
+      data.forEach(row => {
+        const answer = row[field as keyof typeof row];
+        if (answer && typeof answer === 'string' && responses[answer] !== undefined) {
+          responses[answer]++;
+        }
+      });
+      
+      // Convert to percentages
+      const total = Object.values(responses).reduce((sum, count) => sum + count, 0);
+      const percentages: Record<string, number> = { ...responses };
+      
+      if (total > 0) {
+        Object.keys(percentages).forEach(key => {
+          percentages[key] = Math.round((responses[key] / total) * 100);
+        });
+      }
+      
+      return {
+        question,
+        schoolResponses: percentages,
+        nationalResponses: {
+          "Strongly Agree": 25,
+          "Agree": 40,
+          "Disagree": 25,
+          "Strongly Disagree": 10
+        }
+      };
+    });
+    
   } catch (error) {
-    console.error('Error in getDetailedWellbeingResponses, using mock data:', error);
-    return getMockDetailedResponses(surveyId);
+    console.error('Error in getDetailedWellbeingResponses:', error);
+    return [];
   }
 };
 
@@ -191,16 +294,67 @@ export const getTextResponses = async (
   endDate?: string
 ): Promise<{ doingWell: TextResponse[], improvements: TextResponse[] }> => {
   try {
-    // Start with mock data
-    const mockData = getMockTextResponses(surveyId);
+    // Query for getting text responses from Supabase
+    const query = supabase
+      .from('survey_responses')
+      .select('doing_well, improvements, created_at')
+      .eq('survey_template_id', surveyId);
     
-    // For real implementation, we would query Supabase here
-    // Select doing_well and improvements columns with timestamps
+    // Apply date filters
+    if (startDate) {
+      query.gte('created_at', startDate);
+    }
+    if (endDate) {
+      query.lte('created_at', endDate);
+    }
     
-    // For demo purposes, let's return mock data directly
-    return mockData;
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching text responses:', error);
+      throw error;
+    }
+    
+    // If no data, return empty arrays
+    if (!data || data.length === 0) {
+      return {
+        doingWell: [],
+        improvements: []
+      };
+    }
+    
+    // Format the responses
+    const doingWell: TextResponse[] = [];
+    const improvements: TextResponse[] = [];
+    
+    data.forEach(row => {
+      const createdAt = new Date(row.created_at).toLocaleDateString();
+      
+      if (row.doing_well) {
+        doingWell.push({
+          response: row.doing_well,
+          created_at: createdAt
+        });
+      }
+      
+      if (row.improvements) {
+        improvements.push({
+          response: row.improvements,
+          created_at: createdAt
+        });
+      }
+    });
+    
+    return {
+      doingWell,
+      improvements
+    };
+    
   } catch (error) {
-    console.error('Error in getTextResponses, using mock data:', error);
-    return getMockTextResponses(surveyId);
+    console.error('Error in getTextResponses:', error);
+    return {
+      doingWell: [],
+      improvements: []
+    };
   }
 };
