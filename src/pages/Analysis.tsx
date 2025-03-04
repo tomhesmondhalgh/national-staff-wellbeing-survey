@@ -20,6 +20,7 @@ import { format } from "date-fns";
 import { cn } from "../lib/utils";
 import { Input } from "../components/ui/input";
 import { Form, FormControl, FormField, FormItem } from "../components/ui/form";
+
 const SummarySection = ({
   summary
 }: {
@@ -77,6 +78,7 @@ const SummarySection = ({
       </div>
     </div>;
 };
+
 const RecommendationScoreSection = ({
   score,
   nationalAverage
@@ -99,6 +101,7 @@ const RecommendationScoreSection = ({
       Average score for "How likely would you recommend this organization to others as a place to work?" (0-10)
     </p>
   </Card>;
+
 const LeavingContemplationChart = ({
   data
 }: {
@@ -149,6 +152,7 @@ const LeavingContemplationChart = ({
       </p>
     </Card>;
 };
+
 const WellbeingQuestionChart = ({
   title,
   data
@@ -195,6 +199,7 @@ const WellbeingQuestionChart = ({
       </div>
     </Card>;
 };
+
 const TextResponsesSection = ({
   doingWellResponses,
   improvementResponses
@@ -223,6 +228,7 @@ const TextResponsesSection = ({
       </Card>
     </div>
   </div>;
+
 const Analysis = () => {
   const {
     user
@@ -253,6 +259,7 @@ const Analysis = () => {
   const [summary, setSummary] = useState<any>({});
   const [noData, setNoData] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
+
   useEffect(() => {
     const loadSurveyOptions = async () => {
       try {
@@ -273,6 +280,7 @@ const Analysis = () => {
       loadSurveyOptions();
     }
   }, [user]);
+
   useEffect(() => {
     const loadData = async () => {
       if (!selectedSurvey) return;
@@ -310,9 +318,11 @@ const Analysis = () => {
     };
     loadData();
   }, [selectedSurvey, selectedTimeRange, customDateRange]);
+
   const handleSurveyChange = (value: string) => {
     setSelectedSurvey(value);
   };
+
   const handleTimeRangeChange = (value: string) => {
     setSelectedTimeRange(value);
     if (value !== "custom-range") {
@@ -322,10 +332,12 @@ const Analysis = () => {
       });
     }
   };
+
   const getSurveyName = () => {
     const survey = surveyOptions.find(s => s.id === selectedSurvey);
     return survey ? survey.name : '';
   };
+
   const handleExportPDF = async () => {
     try {
       setExportLoading(true);
@@ -344,6 +356,7 @@ const Analysis = () => {
       setExportLoading(false);
     }
   };
+
   const handleExportReport = async () => {
     try {
       setExportLoading(true);
@@ -365,10 +378,15 @@ const Analysis = () => {
       setExportLoading(false);
     }
   };
+
   if (noData) {
     return <MainLayout>
         <div className="container mx-auto px-4 py-8">
-          <PageTitle title="Analysis" subtitle="View insights from your wellbeing surveys" />
+          <PageTitle 
+            title="Analysis" 
+            subtitle="View insights from your wellbeing surveys" 
+            alignment="center"
+          />
           <div className="bg-white p-8 rounded-lg shadow text-center">
             <h2 className="text-2xl font-semibold text-gray-700 mb-4">No surveys found</h2>
             <p className="text-gray-600 mb-6">You haven't created any surveys yet or no responses have been collected.</p>
@@ -379,6 +397,7 @@ const Analysis = () => {
         </div>
       </MainLayout>;
   }
+
   return <MainLayout>
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="mb-10 text-center">
@@ -486,4 +505,5 @@ const Analysis = () => {
       </div>
     </MainLayout>;
 };
+
 export default Analysis;
