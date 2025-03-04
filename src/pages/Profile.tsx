@@ -277,6 +277,7 @@ const Profile = () => {
         <PageTitle 
           title="Your Profile" 
           subtitle="Manage your personal and school information"
+          alignment="center"
         />
         
         <div className="max-w-2xl mx-auto glass-card rounded-2xl p-8 animate-slide-up">
