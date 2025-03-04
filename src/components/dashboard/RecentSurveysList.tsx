@@ -53,9 +53,7 @@ const RecentSurveysList = ({ surveys, isLoading }: RecentSurveysListProps) => {
   if (surveys.length === 0) {
     return (
       <div className="p-6 text-center">
-        <p className="text-gray-500">
-          No surveys found. <Link to="/new-survey" className="text-brandPurple-600 hover:text-brandPurple-700 hover:underline">Create your first survey</Link> to get started.
-        </p>
+        <p className="text-gray-500">No surveys found. Create your first survey to get started.</p>
       </div>
     );
   }

@@ -1,5 +1,4 @@
 import { supabase } from "../lib/supabase";
-import { useAuth } from "../contexts/AuthContext";
 
 export interface SurveyTemplate {
   id: string;
@@ -76,24 +75,16 @@ export const getAllSurveyTemplates = async (): Promise<SurveyTemplate[]> => {
   }
 };
 
-export const getRecentSurveys = async (limit: number = 3, userId?: string): Promise<SurveyWithResponses[]> => {
+export const getRecentSurveys = async (limit: number = 3): Promise<SurveyWithResponses[]> => {
   try {
-    console.log(`Fetching recent surveys, limit: ${limit}, userId: ${userId}`);
+    console.log(`Fetching recent surveys, limit: ${limit}`);
     
-    // Build the query
-    let query = supabase
+    // First fetch the survey templates
+    const { data: templates, error: templatesError } = await supabase
       .from('survey_templates')
       .select('*')
       .order('date', { ascending: false })
       .limit(limit);
-    
-    // If userId is provided, filter by creator_id
-    if (userId) {
-      query = query.eq('creator_id', userId);
-    }
-    
-    // Execute the query
-    const { data: templates, error: templatesError } = await query;
     
     if (templatesError) {
       console.error('Error fetching recent surveys:', templatesError);

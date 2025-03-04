@@ -6,7 +6,6 @@ import PageTitle from '../components/ui/PageTitle';
 import { getRecentSurveys, getDashboardStats, SurveyWithResponses } from '../utils/surveyUtils';
 import StatsGrid from '../components/dashboard/StatsGrid';
 import RecentSurveysList from '../components/dashboard/RecentSurveysList';
-import { useAuth } from '../contexts/AuthContext';
 
 interface DashboardStats {
   totalSurveys: number;
@@ -16,18 +15,12 @@ interface DashboardStats {
 }
 
 const Dashboard = () => {
-  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentSurveys, setRecentSurveys] = useState<SurveyWithResponses[]>([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      if (!user) {
-        setIsLoading(false);
-        return;
-      }
-
       setIsLoading(true);
       try {
         console.log("Fetching dashboard data...");
@@ -37,8 +30,7 @@ const Dashboard = () => {
           setStats(dashboardStats);
         }
         
-        // Pass the current user's ID to getRecentSurveys
-        const surveys = await getRecentSurveys(3, user.id);
+        const surveys = await getRecentSurveys(3);
         console.log("Recent surveys:", surveys);
         setRecentSurveys(surveys);
       } catch (error) {
@@ -49,7 +41,7 @@ const Dashboard = () => {
     };
     
     fetchDashboardData();
-  }, [user]);
+  }, []);
 
   return (
     <MainLayout>
