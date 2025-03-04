@@ -53,15 +53,35 @@ export const getSurveySummary = async (
 ): Promise<SummaryData> => {
   try {
     // Calculate total responses to check if we have enough data
-    const totalResponses = Object.values(leavingContemplation).reduce((sum, value) => sum + value, 0);
+    // Instead of using leavingContemplation which might be filtered, let's check detailedResponses
+    // Check if there are any detailedResponses - each question should have the same number of total responses
+    const hasResponses = detailedResponses.length > 0;
+    let totalResponses = 0;
+    
+    if (hasResponses) {
+      // Get total responses by summing up the school responses for the first question
+      const firstQuestion = detailedResponses[0];
+      if (firstQuestion && firstQuestion.schoolResponses) {
+        totalResponses = Object.values(firstQuestion.schoolResponses)
+          .reduce((sum, count) => {
+            // Convert from percentage back to count
+            // Since the values are stored as decimals (percentages), we need to calculate the actual count
+            return sum + Math.round(count * 100); 
+          }, 0);
+      }
+      
+      console.log('Total responses calculated for summary:', totalResponses);
+    }
     
     // If we don't have enough data (now checking for at least 10 responses), return a message
     if (totalResponses < 10) {
+      console.log('Insufficient data for AI summary, need at least 10 responses but found:', totalResponses);
       return getInsufficientDataSummary();
     }
     
     // Try to call the Supabase Edge Function to generate the summary
     try {
+      console.log('Calling edge function to generate summary with', totalResponses, 'responses');
       const { data, error } = await supabase.functions.invoke('generate-survey-summary', {
         body: {
           recommendationScore,

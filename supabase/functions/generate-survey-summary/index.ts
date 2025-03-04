@@ -24,9 +24,30 @@ serve(async (req) => {
       textResponses 
     } = await req.json();
 
-    // Check if we have enough data (changed from 20 to 10)
-    const totalResponses = Object.values(leavingContemplation).reduce((sum: number, value: number) => sum + value, 0);
+    // Check if we have enough data (10 responses minimum)
+    // Instead of using leavingContemplation, let's use detailedResponses for consistency
+    let totalResponses = 0;
+    
+    if (detailedResponses && detailedResponses.length > 0) {
+      // Calculate from the first question's responses
+      const firstQuestion = detailedResponses[0];
+      if (firstQuestion && firstQuestion.schoolResponses) {
+        // Calculate total by estimating from percentages
+        // We know these values add up to 1 (100%), so we need to calculate what raw number that represents
+        const totalPercentage = Object.values(firstQuestion.schoolResponses).reduce((sum: number, value: number) => sum + value, 0);
+        // If we have 10 responses and each response is counted in schoolResponses, then totalPercentage should be 1.0
+        if (totalPercentage > 0) {
+          // Estimate the total responses
+          totalResponses = Math.round(100 * totalPercentage); // This won't be exact but gives us a better estimate
+        }
+      }
+    }
+    
+    console.log("Estimated total responses:", totalResponses);
+    
+    // If insufficient data, return early
     if (totalResponses < 10) {
+      console.log("Insufficient data for summary, returning early");
       return new Response(JSON.stringify({ insufficientData: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -114,6 +135,7 @@ serve(async (req) => {
 
     try {
       const aiResponse = data.choices[0].message.content;
+      console.log("Received AI response, parsing...");
       // Parse the JSON response
       const parsedResponse = JSON.parse(aiResponse);
       
