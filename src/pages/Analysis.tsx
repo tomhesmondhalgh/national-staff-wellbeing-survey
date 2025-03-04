@@ -20,15 +20,13 @@ import { format } from "date-fns";
 import { cn } from "../lib/utils";
 import { Input } from "../components/ui/input";
 import { Form, FormControl, FormField, FormItem } from "../components/ui/form";
-
 const SummarySection = ({
   summary
 }: {
   summary: any;
 }) => {
   if (summary.insufficientData) {
-    return (
-      <div className="mb-12">
+    return <div className="mb-12">
         <h2 className="text-xl font-semibold mb-1 text-center">AI-Powered Summary</h2>
         <p className="text-sm text-gray-500 italic mb-6 text-center">This is an experimental feature. Results may not be accurate.</p>
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
@@ -42,12 +40,9 @@ const SummarySection = ({
             </p>
           </div>
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="mb-12">
+  return <div className="mb-12">
       <h2 className="text-xl font-semibold mb-1 text-center">AI-Powered Summary</h2>
       <p className="text-sm text-gray-500 italic mb-6 text-center">This is an experimental feature. Results may not be accurate.</p>
       
@@ -57,14 +52,12 @@ const SummarySection = ({
             <Check className="h-5 w-5 mr-2" /> Areas of Strength
           </h3>
           <ul className="space-y-4">
-            {summary.strengths && summary.strengths.length > 0 ? summary.strengths.map((strength: string, index: number) => (
-              <li key={index} className="flex items-start">
+            {summary.strengths && summary.strengths.length > 0 ? summary.strengths.map((strength: string, index: number) => <li key={index} className="flex items-start">
                 <span className="inline-flex h-6 w-6 shrink-0 rounded-full bg-green-100 text-green-600 flex items-center justify-center mr-3 mt-0.5">
                   {index + 1}
                 </span>
-                <span className="text-green-800">{strength}</span>
-              </li>
-            )) : <li className="text-gray-500">No strengths identified.</li>}
+                <span className="text-green-800 text-left">{strength}</span>
+              </li>) : <li className="text-gray-500">No strengths identified.</li>}
           </ul>
         </div>
         
@@ -73,21 +66,17 @@ const SummarySection = ({
             <ArrowRight className="h-5 w-5 mr-2" /> Areas for Improvement
           </h3>
           <ul className="space-y-4">
-            {summary.improvements && summary.improvements.length > 0 ? summary.improvements.map((improvement: string, index: number) => (
-              <li key={index} className="flex items-start">
+            {summary.improvements && summary.improvements.length > 0 ? summary.improvements.map((improvement: string, index: number) => <li key={index} className="flex items-start">
                 <span className="inline-flex h-6 w-6 shrink-0 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mr-3 mt-0.5">
                   {index + 1}
                 </span>
-                <span className="text-amber-800">{improvement}</span>
-              </li>
-            )) : <li className="text-gray-500">No improvements suggested.</li>}
+                <span className="text-amber-800 text-left">{improvement}</span>
+              </li>) : <li className="text-gray-500">No improvements suggested.</li>}
           </ul>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 const RecommendationScoreSection = ({
   score,
   nationalAverage
@@ -110,7 +99,6 @@ const RecommendationScoreSection = ({
       Average score for "How likely would you recommend this organization to others as a place to work?" (0-10)
     </p>
   </Card>;
-
 const LeavingContemplationChart = ({
   data
 }: {
@@ -161,7 +149,6 @@ const LeavingContemplationChart = ({
       </p>
     </Card>;
 };
-
 const WellbeingQuestionChart = ({
   title,
   data
@@ -208,7 +195,6 @@ const WellbeingQuestionChart = ({
       </div>
     </Card>;
 };
-
 const TextResponsesSection = ({
   doingWellResponses,
   improvementResponses
@@ -237,7 +223,6 @@ const TextResponsesSection = ({
       </Card>
     </div>
   </div>;
-
 const Analysis = () => {
   const {
     user
@@ -268,7 +253,6 @@ const Analysis = () => {
   const [summary, setSummary] = useState<any>({});
   const [noData, setNoData] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
-
   useEffect(() => {
     const loadSurveyOptions = async () => {
       try {
@@ -289,7 +273,6 @@ const Analysis = () => {
       loadSurveyOptions();
     }
   }, [user]);
-
   useEffect(() => {
     const loadData = async () => {
       if (!selectedSurvey) return;
@@ -327,11 +310,9 @@ const Analysis = () => {
     };
     loadData();
   }, [selectedSurvey, selectedTimeRange, customDateRange]);
-
   const handleSurveyChange = (value: string) => {
     setSelectedSurvey(value);
   };
-
   const handleTimeRangeChange = (value: string) => {
     setSelectedTimeRange(value);
     if (value !== "custom-range") {
@@ -341,12 +322,10 @@ const Analysis = () => {
       });
     }
   };
-
   const getSurveyName = () => {
     const survey = surveyOptions.find(s => s.id === selectedSurvey);
     return survey ? survey.name : '';
   };
-
   const handleExportPDF = async () => {
     try {
       setExportLoading(true);
@@ -365,7 +344,6 @@ const Analysis = () => {
       setExportLoading(false);
     }
   };
-
   const handleExportReport = async () => {
     try {
       setExportLoading(true);
@@ -387,7 +365,6 @@ const Analysis = () => {
       setExportLoading(false);
     }
   };
-
   if (noData) {
     return <MainLayout>
         <div className="container mx-auto px-4 py-8">
@@ -402,7 +379,6 @@ const Analysis = () => {
         </div>
       </MainLayout>;
   }
-
   return <MainLayout>
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="mb-10 text-center">
@@ -510,5 +486,4 @@ const Analysis = () => {
       </div>
     </MainLayout>;
 };
-
 export default Analysis;
