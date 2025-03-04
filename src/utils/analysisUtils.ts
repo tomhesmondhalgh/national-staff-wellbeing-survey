@@ -1,3 +1,4 @@
+
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -119,7 +120,7 @@ export const getLeavingContemplation = async (
   endDate?: string
 ): Promise<Record<string, number>> => {
   try {
-    // Define empty structure
+    // Define the expected response categories
     const emptyCounts: Record<string, number> = {
       "Strongly Agree": 0,
       "Agree": 0,
@@ -157,10 +158,22 @@ export const getLeavingContemplation = async (
     // Count responses for each option
     const counts = { ...emptyCounts };
     
+    // Map the database values to our expected categories
+    const valueMapping: Record<string, string> = {
+      'Often': 'Strongly Agree',
+      'Sometimes': 'Agree',
+      'Rarely': 'Disagree',
+      'Never': 'Strongly Disagree'
+    };
+    
     data.forEach(response => {
-      const option = response.leaving_contemplation;
-      if (option && counts[option] !== undefined) {
-        counts[option]++;
+      const dbValue = response.leaving_contemplation;
+      if (dbValue) {
+        // Map the database value to the expected category
+        const mappedValue = valueMapping[dbValue] || dbValue;
+        if (counts[mappedValue] !== undefined) {
+          counts[mappedValue]++;
+        }
       }
     });
     
@@ -229,10 +242,10 @@ export const getDetailedWellbeingResponses = async (
           "Strongly Disagree": 0
         },
         nationalResponses: {
-          "Strongly Agree": 25,
-          "Agree": 40,
-          "Disagree": 25,
-          "Strongly Disagree": 10
+          "Strongly Agree": 0.25,
+          "Agree": 0.40,
+          "Disagree": 0.25,
+          "Strongly Disagree": 0.10
         }
       }));
     }
