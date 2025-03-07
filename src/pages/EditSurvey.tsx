@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -84,11 +85,6 @@ const EditSurvey = () => {
     try {
       setIsSubmitting(true);
       
-      // Check if the survey is being closed (new close date that's in the past)
-      const isClosingSurvey = data.closeDate && 
-        isBefore(data.closeDate, new Date()) && 
-        (!originalCloseDate || isBefore(new Date(), originalCloseDate));
-      
       // Update the survey in the database
       const { error } = await supabase
         .from('survey_templates')
@@ -106,27 +102,6 @@ const EditSurvey = () => {
           description: error.message
         });
         return;
-      }
-
-      // If the survey is being closed, send a notification
-      if (isClosingSurvey && user?.email) {
-        console.log('Survey is being closed, sending notification');
-        
-        try {
-          const { error: notificationError } = await supabase.functions.invoke('send-closure-notification', {
-            body: {
-              surveyId: id,
-              userEmail: user.email
-            }
-          });
-          
-          if (notificationError) {
-            console.error('Error sending closure notification:', notificationError);
-            // Continue with the success flow even if notification fails
-          }
-        } catch (notifyError) {
-          console.error('Exception sending closure notification:', notifyError);
-        }
       }
 
       // Check if email recipients have changed and send emails to new recipients

@@ -52,3 +52,6 @@ verify_jwt = false
 
 [functions.send-admin-notification]
 verify_jwt = false
+
+[functions.send-test-emails]
+verify_jwt = false

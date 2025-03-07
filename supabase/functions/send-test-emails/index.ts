@@ -110,73 +110,12 @@ serve(async (req) => {
       `,
     });
     
-    // Send test analysis email
-    const analysisResponse = await resend.emails.send({
-      from: "SchoolPulse <onboarding@resend.dev>",
-      to: email,
-      subject: `[TEST] Survey Analysis Report: ${surveyName}`,
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Survey Analysis Report: ${surveyName}</title>
-        </head>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px;">
-          <h1 style="text-align: center; color: #3b82f6; margin-bottom: 30px;">[TEST] Survey Analysis Report</h1>
-          <h2 style="text-align: center; color: #4b5563; margin-bottom: 30px;">${surveyName}</h2>
-          
-          <div style="margin: 20px 0; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; background-color: #f9fafb;">
-            <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 18px; color: #111827;">AI-Powered Summary</h3>
-            
-            <div style="margin-bottom: 15px;">
-              <h4 style="margin-top: 0; margin-bottom: 10px; font-size: 16px; color: #047857;">Areas of Strength</h4>
-              <ul style="padding-left: 20px; margin-top: 0;">
-                <li style="margin-bottom: 8px;">Staff feel valued by leadership</li>
-                <li style="margin-bottom: 8px;">Good work-life balance compared to national average</li>
-                <li style="margin-bottom: 8px;">High scores for team collaboration</li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 style="margin-top: 0; margin-bottom: 10px; font-size: 16px; color: #b45309;">Areas for Improvement</h4>
-              <ul style="padding-left: 20px; margin-top: 0;">
-                <li style="margin-bottom: 8px;">Communication during periods of change</li>
-                <li style="margin-bottom: 8px;">Professional development opportunities</li>
-                <li style="margin-bottom: 8px;">Recognition of individual contributions</li>
-              </ul>
-            </div>
-          </div>
-          
-          <div style="margin: 30px 0; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; background-color: #f9fafb;">
-            <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 18px; color: #111827;">Recommendation Score</h3>
-            <div style="display: flex; justify-content: center; text-align: center;">
-              <div style="margin: 0 30px;">
-                <p style="font-size: 24px; font-weight: bold; color: #4f46e5; margin-bottom: 5px;">7.8</p>
-                <p style="margin-top: 0; color: #6b7280;">Your School</p>
-              </div>
-              <div style="margin: 0 30px;">
-                <p style="font-size: 24px; font-weight: bold; color: #6b7280; margin-bottom: 5px;">6.5</p>
-                <p style="margin-top: 0; color: #6b7280;">National Average</p>
-              </div>
-            </div>
-          </div>
-          
-          <p style="color: #6b7280; font-size: 14px; text-align: center; margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
-            This is a test email. No action is required.
-          </p>
-        </body>
-        </html>
-      `,
-    });
-    
     const responseData = {
       success: true,
       message: `Test emails sent to ${email}`,
       results: {
         invitation: invitationResponse,
-        reminder: reminderResponse,
-        analysis: analysisResponse
+        reminder: reminderResponse
       },
     };
     

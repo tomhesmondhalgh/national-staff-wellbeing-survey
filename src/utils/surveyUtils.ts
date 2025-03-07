@@ -1,3 +1,4 @@
+
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -285,59 +286,5 @@ export const getDashboardStats = async () => {
   } catch (error) {
     console.error('Unexpected error in getDashboardStats:', error);
     return null;
-  }
-};
-
-export const checkForClosedSurveys = async (userId: string): Promise<void> => {
-  try {
-    console.log('Checking for recently closed surveys for user:', userId);
-    
-    // Get current date in ISO format
-    const now = new Date();
-    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    
-    // Find surveys that have closed in the last 24 hours
-    const { data: closedSurveys, error } = await supabase
-      .from('survey_templates')
-      .select('id, name')
-      .eq('creator_id', userId)
-      .lt('close_date', now.toISOString())
-      .gte('close_date', twentyFourHoursAgo.toISOString())
-      .not('close_date', 'is', null);
-    
-    if (error) {
-      console.error('Error checking for closed surveys:', error);
-      return;
-    }
-    
-    if (!closedSurveys || closedSurveys.length === 0) {
-      console.log('No recently closed surveys found');
-      return;
-    }
-    
-    console.log(`Found ${closedSurveys.length} recently closed surveys`);
-    
-    // Send notification for each closed survey
-    for (const survey of closedSurveys) {
-      console.log(`Sending closure notification for survey: ${survey.id} - ${survey.name}`);
-      
-      try {
-        const { data, error: notificationError } = await supabase.functions.invoke('send-closure-notification', {
-          body: {
-            surveyId: survey.id
-          }
-        });
-        
-        if (notificationError) {
-          console.error(`Error sending closure notification for survey ${survey.id}:`, notificationError);
-        } else {
-          console.log(`Closure notification sent for survey ${survey.id}:`, data);
-        }
-      } catch (notifyError) {
-        console.error(`Exception sending closure notification for survey ${survey.id}:`, notifyError);
-      }
-    }
-  } catch (error) {
-    console.error('Unexpected error in checkForClosedSurveys:', error);
   }
 };
