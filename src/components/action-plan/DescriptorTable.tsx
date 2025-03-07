@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, FileText, Download, Plus } from 'lucide-react';
+import { Search, FileText, Plus } from 'lucide-react';
 import { ActionPlanDescriptor, DescriptorStatus } from '@/types/actionPlan';
 import { updateDescriptor, getActionPlanDescriptors } from '@/utils/actionPlanUtils';
 import ProgressNoteDialog from './ProgressNoteDialog';
@@ -40,7 +40,14 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
         if (!b.index_number) return -1;
         return a.index_number.localeCompare(b.index_number, undefined, { numeric: true });
       });
-      setDescriptors(sortedDescriptors);
+      
+      const uniqueDescriptors = Array.from(
+        new Map(sortedDescriptors.map(descriptor => 
+          [descriptor.index_number + descriptor.reference, descriptor]
+        )).values()
+      );
+      
+      setDescriptors(uniqueDescriptors);
     } else {
       toast.error('Failed to load data');
     }

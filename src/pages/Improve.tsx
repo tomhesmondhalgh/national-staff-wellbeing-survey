@@ -31,11 +31,17 @@ const Improve = () => {
 
   const initializeActionPlanData = async () => {
     setIsLoading(true);
-    if (user?.id) {
-      await initializeActionPlan(user.id);
-      await fetchSummaryData();
+    try {
+      if (user?.id) {
+        await initializeActionPlan(user.id);
+        await fetchSummaryData();
+      }
+    } catch (error) {
+      console.error("Error initializing action plan:", error);
+      toast.error("Failed to initialize action plan");
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const fetchSummaryData = async () => {
