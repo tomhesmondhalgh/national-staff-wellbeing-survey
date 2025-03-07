@@ -7,7 +7,6 @@ import { Button } from '../components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/card';
 import { useSubscription } from '../hooks/useSubscription';
 import { useToast } from '../hooks/use-toast';
-
 const Improve = () => {
   const navigate = useNavigate();
   const {
@@ -160,16 +159,13 @@ const Improve = () => {
                   </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>1 space on in-depth training to improve staff wellbeing in your organisation</span>
+                    <span>1 space on our in-depth staff wellbeing training</span>
                   </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>Quarterly live staff wellbeing networks for one person</span>
+                    <span>Quarterly live staff wellbeing networks</span>
                   </li>
-                  <li className="flex items-start">
-                    <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>Review of your evidence by one of our experienced coaches</span>
-                  </li>
+                  
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
                     <span>Formal accreditation and a logo you can use on your website</span>
