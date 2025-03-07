@@ -16,23 +16,36 @@ import {
 import { useSubscription } from '../hooks/useSubscription';
 import { useToast } from '../hooks/use-toast';
 
+// Let's create an upgradePlan function in useSubscription hook
 const Improve = () => {
   const navigate = useNavigate();
-  const { hasActiveSubscription, upgradePlan } = useSubscription();
+  const { subscription, isLoading } = useSubscription();
   const { toast } = useToast();
 
   const handleUpgrade = async (priceId: string, planType: 'foundation' | 'progress' | 'premium', purchaseType: 'subscription' | 'one-time') => {
     try {
-      const response = await upgradePlan({
-        priceId,
-        planType,
-        purchaseType,
-        successUrl: `${window.location.origin}/dashboard?payment=success`,
-        cancelUrl: `${window.location.origin}/improve?payment=cancelled`,
+      // Call Supabase Edge Function to create a payment session
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('supabase.auth.token')}`
+        },
+        body: JSON.stringify({
+          priceId,
+          planType,
+          purchaseType,
+          successUrl: `${window.location.origin}/dashboard?payment=success`,
+          cancelUrl: `${window.location.origin}/improve?payment=cancelled`
+        })
       });
 
-      if (response?.url) {
-        window.location.href = response.url;
+      const data = await response.json();
+
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL returned');
       }
     } catch (error) {
       console.error('Error upgrading plan:', error);
@@ -44,40 +57,19 @@ const Improve = () => {
     }
   };
 
-  const benefits = [
-    {
-      title: "Shows Staff You Value Them",
-      description: "Your staff give so much to the young people they teach and support. Focussing on staff wellbeing shows that you support and value their contribution to the life of the school."
-    },
-    {
-      title: "Happy Staff Get Great Results",
-      description: "How can children achieve their full potential if the adults that teach and support them are stressed, exhausted and demotivated? Developing wellbeing creates an environment where staff can do their best every single day."
-    },
-    {
-      title: "Less Recruitment Saves Money",
-      description: "The whole recruitment process – advertising, readvertising, interviewing and recruitment fees – can be incredibly expensive. Happy staff in good working environments are more likely to stay with you, helping you save thousands of pounds every year."
-    }
-  ];
-
   return (
     <MainLayout>
       <div className="container mx-auto px-4 py-8">
         <PageTitle 
-          title="Improvement Strategies" 
-          subtitle="Enhance your wellbeing program with our premium plans"
+          title="Improving Staff Wellbeing Made Easy" 
+          subtitle="Effective evidence-based strategies in an easy-to-use plan"
           alignment="center"
         />
         
-        <div className="max-w-3xl mx-auto my-8 text-center">
-          <h2 className="text-2xl font-bold mb-6">Key Benefits of Upgrading</h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            {benefits.map((benefit, index) => (
-              <div key={index} className="p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
-                <h3 className="text-lg font-semibold text-brandPurple-700 mb-3">{benefit.title}</h3>
-                <p className="text-gray-600">{benefit.description}</p>
-              </div>
-            ))}
-          </div>
+        <div className="max-w-4xl mx-auto my-8 text-center">
+          <p className="text-lg leading-relaxed text-gray-700 mb-8">
+            Now you know the challenges staff face in your organisation, and the areas they'd like to change, how do you go about making that change happen? The Human Kind Award framework is a detailed set of 59 strategies you can use in your organisation to improve staff wellbeing. These 59 strategies are divided across 8 domains: Leadership, workload, health, life-work balance, connection, growth, support and values. Each domain matches exactly to a wellbeing indicator in your survey, so if you spot an area of weakness from your responses its easy to hone in and identify the set of strategies that will make the biggest difference. Sign up for our Foundation package below to access the Human Kind Framework and action planning tool online, or sign up for one of our more complete packages to access a huge range of support alongside it - to help you meet your goals faster.
+          </p>
         </div>
         
         <div className="mt-12">
