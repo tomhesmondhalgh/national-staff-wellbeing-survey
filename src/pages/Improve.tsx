@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -55,7 +56,9 @@ const Improve = () => {
         <PageTitle title="Improving Staff Wellbeing Made Easy" subtitle="Effective evidence-based strategies in an easy-to-use plan" alignment="center" />
         
         <div className="max-w-4xl mx-auto my-8 text-center">
-          <p className="text-lg leading-relaxed text-gray-700 mb-8">Now you know the challenges staff face in your organisation, and the areas they'd like to change, how do you go about making that change happen? The Human Kind Award framework is a detailed set of 59 strategies you can use in your organisation to improve staff wellbeing. These 59 strategies are divided across 8 domains: Leadership, workload, health, life-work balance, connection, growth, support and values. Each domain matches exactly to a wellbeing indicator in your survey, so if you spot an area of weakness from your responses its easy to hone in and identify the set of strategies that will make the biggest difference. Sign up for our Foundation package below to access the Human Kind Framework and action planning tool online, or sign up for one of our more complete packages to access a huge range of support alongside it - to help you meet your goals faster.</p>
+          <p className="text-lg leading-relaxed text-gray-700 mb-4">Now you know the challenges staff face in your organisation, and the areas they'd like to change, how do you go about making that change happen? The Human Kind Award framework is a detailed set of 59 strategies you can use in your organisation to improve staff wellbeing.</p>
+          
+          <p className="text-lg leading-relaxed text-gray-700 mb-8">Sign up for our Foundation package below to access the Human Kind Framework and action planning tool online, or sign up for one of our more complete packages to access a huge range of support alongside it - to help you meet your goals faster.</p>
         </div>
         
         <div className="mt-12">
