@@ -5,20 +5,28 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface ProtectedRouteProps {
   children: ReactNode;
+  requireAdmin?: boolean;
 }
 
-const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { user, isLoading } = useAuth();
+const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps) => {
+  const { user, isLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      // Store the path the user was trying to access
-      const returnTo = encodeURIComponent(location.pathname + location.search);
-      navigate(`/login?returnTo=${returnTo}`);
+    if (!isLoading) {
+      // Check if user is not authenticated
+      if (!user) {
+        // Store the path the user was trying to access
+        const returnTo = encodeURIComponent(location.pathname + location.search);
+        navigate(`/login?returnTo=${returnTo}`);
+      }
+      // Check if route requires admin access but user is not an admin
+      else if (requireAdmin && !isAdmin) {
+        navigate('/dashboard');
+      }
     }
-  }, [user, isLoading, navigate, location]);
+  }, [user, isLoading, isAdmin, requireAdmin, navigate, location]);
 
   // Don't render anything until we've checked authentication
   if (isLoading) {
@@ -29,8 +37,8 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
-  // If user is authenticated, render the protected content
-  return user ? <>{children}</> : null;
+  // If user is authenticated and admin check passes, render the protected content
+  return user && (!requireAdmin || isAdmin) ? <>{children}</> : null;
 };
 
 export default ProtectedRoute;

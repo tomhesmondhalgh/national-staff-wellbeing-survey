@@ -9,7 +9,7 @@ const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   
   // Check if user is authenticated
   const isAuthenticated = !!user;
@@ -67,6 +67,14 @@ const Navbar: React.FC = () => {
                 >
                   Analyse
                 </Link>
+                {isAdmin && (
+                  <Link 
+                    to="/admin" 
+                    className={`nav-link ${location.pathname.startsWith('/admin') ? 'text-brandPurple-600' : ''}`}
+                  >
+                    Admin
+                  </Link>
+                )}
                 <Link 
                   to="/profile" 
                   className={`nav-link ${location.pathname === '/profile' ? 'text-brandPurple-600' : ''}`}
@@ -130,6 +138,15 @@ const Navbar: React.FC = () => {
                 >
                   Analyse
                 </Link>
+                {isAdmin && (
+                  <Link 
+                    to="/admin" 
+                    className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Admin
+                  </Link>
+                )}
                 <Link 
                   to="/profile" 
                   className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"

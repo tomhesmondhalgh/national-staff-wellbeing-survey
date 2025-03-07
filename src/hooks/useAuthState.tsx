@@ -4,14 +4,38 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { useLocation } from 'react-router-dom';
 import { toast } from '../components/ui/use-toast';
+import { UserRole } from '../contexts/AuthContext';
 
 export function useAuthState() {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
   const location = useLocation();
 
   console.log('Current route:', location.pathname);
+
+  const fetchUserRole = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching user role:', error);
+        setUserRole('user'); // Default to 'user' if there's an error
+        return;
+      }
+      
+      setUserRole(data?.role || 'user');
+      console.log('User role:', data?.role || 'user');
+    } catch (error) {
+      console.error('Error in fetchUserRole:', error);
+      setUserRole('user'); // Default to 'user' if there's an error
+    }
+  };
 
   const checkProfileCompletion = async (user: User) => {
     try {
@@ -54,12 +78,14 @@ export function useAuthState() {
       console.log('Initial session check:', session ? 'Logged in' : 'Not logged in');
       setSession(session);
       setUser(session?.user ?? null);
-      setIsLoading(false);
       
-      // If user is authenticated, check profile completion
+      // If user is authenticated, fetch role and check profile completion
       if (session?.user) {
+        fetchUserRole(session.user.id);
         checkProfileCompletion(session.user);
       }
+      
+      setIsLoading(false);
     }).catch(error => {
       console.error('Error getting session:', error);
       setIsLoading(false);
@@ -72,12 +98,16 @@ export function useAuthState() {
           console.log('Auth state changed, event:', _event);
           setSession(session);
           setUser(session?.user ?? null);
-          setIsLoading(false);
           
-          // If user just signed in, check profile completion
+          // If user just signed in, fetch role and check profile completion
           if (session?.user) {
+            fetchUserRole(session.user.id);
             checkProfileCompletion(session.user);
+          } else {
+            setUserRole(null);
           }
+          
+          setIsLoading(false);
         }
       );
 
@@ -92,5 +122,5 @@ export function useAuthState() {
     }
   }, []);
 
-  return { user, session, isLoading };
+  return { user, session, isLoading, userRole };
 }
