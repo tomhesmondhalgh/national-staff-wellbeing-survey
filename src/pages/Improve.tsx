@@ -76,58 +76,55 @@ const Improve = () => {
           
           <div className="grid md:grid-cols-3 gap-8">
             <PricingPlan
-              name="Basic"
-              price="£29"
-              period="month"
+              title="Basic"
+              price="£29/month"
               description="Essential features for small schools"
               features={[
-                "Up to 5 active surveys",
-                "Basic analytics",
-                "Email support",
-                "Data export (CSV)"
+                { name: "Up to 5 active surveys", included: true },
+                { name: "Basic analytics", included: true },
+                { name: "Email support", included: true },
+                { name: "Data export (CSV)", included: true }
               ]}
-              priceId="price_basic123"
-              onSubscribe={() => handleSubscription('price_basic123', 'Basic')}
-              isLoading={isLoading}
-              highlighted={false}
+              buttonText="Subscribe"
+              onSelect={() => handleSubscription('price_basic123', 'Basic')}
+              disabled={isLoading}
+              popular={false}
             />
             
             <PricingPlan
-              name="Professional"
-              price="£79"
-              period="month"
+              title="Professional"
+              price="£79/month"
               description="Advanced features for growing schools"
               features={[
-                "Unlimited active surveys",
-                "Advanced analytics",
-                "Priority email support",
-                "Data export (CSV, PDF)",
-                "Custom branding",
-                "API access"
+                { name: "Unlimited active surveys", included: true },
+                { name: "Advanced analytics", included: true },
+                { name: "Priority email support", included: true },
+                { name: "Data export (CSV, PDF)", included: true },
+                { name: "Custom branding", included: true },
+                { name: "API access", included: true }
               ]}
-              priceId="price_pro123"
-              onSubscribe={() => handleSubscription('price_pro123', 'Professional')}
-              isLoading={isLoading}
-              highlighted={true}
+              buttonText="Subscribe"
+              onSelect={() => handleSubscription('price_pro123', 'Professional')}
+              disabled={isLoading}
+              popular={true}
             />
             
             <PricingPlan
-              name="Enterprise"
-              price="£199"
-              period="month"
+              title="Enterprise"
+              price="£199/month"
               description="Complete solution for large schools"
               features={[
-                "All Professional features",
-                "Dedicated account manager",
-                "Phone support",
-                "Custom reporting",
-                "Staff training sessions",
-                "SLA guarantee"
+                { name: "All Professional features", included: true },
+                { name: "Dedicated account manager", included: true },
+                { name: "Phone support", included: true },
+                { name: "Custom reporting", included: true },
+                { name: "Staff training sessions", included: true },
+                { name: "SLA guarantee", included: true }
               ]}
-              priceId="price_enterprise123"
-              onSubscribe={() => handleSubscription('price_enterprise123', 'Enterprise')}
-              isLoading={isLoading}
-              highlighted={false}
+              buttonText="Subscribe"
+              onSelect={() => handleSubscription('price_enterprise123', 'Enterprise')}
+              disabled={isLoading}
+              popular={false}
             />
           </div>
           
