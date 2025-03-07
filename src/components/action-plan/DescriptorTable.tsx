@@ -113,6 +113,15 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
     onRefreshSummary();
   };
 
+  // Helper function to safely format the note count
+  const formatNoteCount = (count: number | null | undefined) => {
+    // Check if count is a valid number
+    if (typeof count === 'number') {
+      return `${count} Notes`;
+    }
+    return '0 Notes';
+  };
+
   return (
     <div className="space-y-4">
       <div className="relative">
@@ -232,7 +241,7 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
                         className="h-7 px-2 text-xs w-full justify-start"
                       >
                         <FileText className="h-3 w-3 mr-1" />
-                        {descriptor.progress_notes_count ? `${descriptor.progress_notes_count} Notes` : '0 Notes'}
+                        {formatNoteCount(descriptor.progress_notes_count)}
                       </Button>
                       <Button 
                         size="sm" 
