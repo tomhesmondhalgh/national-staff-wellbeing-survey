@@ -22,6 +22,7 @@ import SurveyClosed from './pages/SurveyClosed';
 import Analysis from './pages/Analysis';
 import Profile from './pages/Profile';
 import NotFound from './pages/NotFound';
+import ResetPassword from './pages/ResetPassword';
 
 import './App.css';
 
@@ -38,6 +39,7 @@ function App() {
           <Route path="/survey" element={<SurveyForm />} />
           <Route path="/survey-complete" element={<SurveyComplete />} />
           <Route path="/survey-closed" element={<SurveyClosed />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           
           {/* Protected routes */}
           <Route path="/onboarding" element={
