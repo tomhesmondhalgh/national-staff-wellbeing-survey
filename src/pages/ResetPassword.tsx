@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
@@ -15,56 +15,71 @@ const ResetPassword = () => {
   const [passwordError, setPasswordError] = useState('');
   const [pageState, setPageState] = useState<'checking' | 'ready' | 'invalid' | 'success'>('checking');
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Debug information
+  useEffect(() => {
+    console.log("Reset Password Page Loaded");
+    console.log("Current URL:", window.location.href);
+    console.log("Location state:", location);
+    console.log("URL hash:", window.location.hash);
+    console.log("URL search params:", window.location.search);
+  }, [location]);
 
   // Check for recovery token in URL hash or query params
   useEffect(() => {
     const checkSession = async () => {
-      console.log("Reset Password Page: Checking session...");
-      console.log("Current URL:", window.location.href);
-      
       try {
-        // Get the current session
-        const { data: sessionData } = await supabase.auth.getSession();
+        // First try to get the access token from the URL
+        let accessToken = null;
         
-        if (sessionData?.session) {
-          console.log("User has a valid session for password reset");
-          setPageState('ready');
-          return;
+        // 1. Check hash fragment first (most common format)
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        if (hashParams.get('access_token')) {
+          accessToken = hashParams.get('access_token');
+          console.log("Found access token in hash fragment");
         }
         
-        // No session found, check URL for tokens
-        const hash = window.location.hash.substring(1);
-        const query = window.location.search.substring(1);
-        const params = new URLSearchParams(hash || query);
+        // 2. If not in hash, check query params
+        if (!accessToken) {
+          const queryParams = new URLSearchParams(window.location.search);
+          if (queryParams.get('token')) {
+            accessToken = queryParams.get('token');
+            console.log("Found access token in query params");
+          }
+        }
         
-        const type = params.get('type');
-        const accessToken = params.get('access_token');
-        
-        console.log("URL Parameters:", { type, accessToken: accessToken ? "Found" : "Not found" });
-        
-        if (type === 'recovery' && accessToken) {
-          console.log("Found recovery token, attempting to use it");
-          
-          // Set session with the recovery token
+        // 3. If we found a token, try to set the session
+        if (accessToken) {
+          console.log("Setting session with access token");
           const { error } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: '',
           });
           
           if (error) {
-            console.error("Error setting session with recovery token:", error);
+            console.error("Error setting session:", error);
             setPageState('invalid');
             return;
           }
           
-          console.log("Successfully set session with recovery token");
+          console.log("Session set successfully");
           setPageState('ready');
-        } else {
-          console.log("No valid recovery token found in URL");
-          setPageState('invalid');
+          return;
         }
+        
+        // 4. If no token found in URL, check if we already have a valid session
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          console.log("Found existing valid session");
+          setPageState('ready');
+          return;
+        }
+        
+        console.log("No valid token or session found");
+        setPageState('invalid');
       } catch (error) {
-        console.error("Error checking reset password session:", error);
+        console.error("Error in checkSession:", error);
         setPageState('invalid');
       }
     };
@@ -91,9 +106,11 @@ const ResetPassword = () => {
     setIsSubmitting(true);
     
     try {
+      console.log("Submitting password update");
       const { error, success } = await updatePassword(password);
       
       if (success) {
+        console.log("Password updated successfully");
         setPageState('success');
         toast.success('Password updated successfully', {
           description: 'You can now log in with your new password'
@@ -107,6 +124,7 @@ const ResetPassword = () => {
           navigate('/login');
         }, 3000);
       } else if (error) {
+        console.error("Error updating password:", error);
         throw error;
       }
     } catch (error: any) {

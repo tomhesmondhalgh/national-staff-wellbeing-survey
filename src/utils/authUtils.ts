@@ -176,14 +176,17 @@ export async function completeUserProfile(userId: string, userData: any) {
   }
 }
 
-// Handle password reset request - simplified approach
+// Handle password reset request - direct approach
 export async function requestPasswordReset(email: string) {
   try {
-    console.log("Simplified password reset request for:", email);
+    console.log("Starting password reset request for:", email);
     
-    // Use the direct Supabase method with the correct redirect URL
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://national-staff-wellbeing-survey.lovable.app/reset-password'
+    // Direct Supabase method with absolute URL to ensure consistency
+    const redirectTo = 'https://national-staff-wellbeing-survey.lovable.app/reset-password';
+    console.log("Using redirect URL:", redirectTo);
+    
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo
     });
     
     if (error) {
@@ -191,6 +194,7 @@ export async function requestPasswordReset(email: string) {
       throw error;
     }
     
+    console.log("Password reset email sent successfully");
     return { error: null, success: true };
   } catch (error) {
     console.error('Error requesting password reset:', error);

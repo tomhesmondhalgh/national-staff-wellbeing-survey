@@ -28,7 +28,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
       
       if (success) {
         toast.success('Password reset email sent', {
-          description: 'Please check your email for the password reset link'
+          description: 'Please check your email for the password reset link. The link will expire in 1 hour.'
         });
         onClose();
       } else if (error) {
