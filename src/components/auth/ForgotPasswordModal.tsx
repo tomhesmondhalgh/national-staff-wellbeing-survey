@@ -22,8 +22,10 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
     setIsSubmitting(true);
     
     try {
-      // Make sure we send the complete URL including /reset-password path
-      const fullRedirectUrl = `${window.location.origin}/reset-password`;
+      // Ensure we use the full origin URL without any trailing slash
+      const origin = window.location.origin;
+      const fullRedirectUrl = `${origin}/reset-password`;
+      
       console.log("Using redirect URL for password reset:", fullRedirectUrl);
       
       // Call the custom edge function to send the reset email

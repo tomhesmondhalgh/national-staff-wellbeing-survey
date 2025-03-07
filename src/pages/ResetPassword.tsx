@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
@@ -14,23 +14,51 @@ const ResetPassword = () => {
   const [passwordError, setPasswordError] = useState('');
   const [hasToken, setHasToken] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Check if we have access token in the URL
   useEffect(() => {
+    // First check URL hash parameters (Supabase default behavior)
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const accessToken = hashParams.get('access_token');
     const type = hashParams.get('type');
+    
+    // Then check URL search parameters (alternate flow)
+    const urlParams = new URLSearchParams(location.search);
+    const urlToken = urlParams.get('token');
+    const urlType = urlParams.get('type');
     
     console.log("URL hash params:", {
       accessToken: accessToken ? 'Present' : 'Missing',
       type: type || 'Missing'
     });
     
+    console.log("URL search params:", {
+      token: urlToken ? 'Present' : 'Missing',
+      type: urlType || 'Missing'
+    });
+    
+    // Check for Supabase's default hash-based flow
     if (accessToken && type === 'recovery') {
       setHasToken(true);
-    } else {
-      const errorCode = hashParams.get('error_code');
-      const errorDesc = hashParams.get('error_description');
+      console.log("Using hash-based access token for password reset");
+    } 
+    // Check for alternative query param-based flow
+    else if (urlToken && urlType === 'recovery') {
+      // Handle URL parameter based token
+      console.log("Using URL-based token for password reset");
+      setHasToken(true);
+    } 
+    // No valid token found
+    else {
+      const errorCode = hashParams.get('error_code') || urlParams.get('error_code');
+      const errorDesc = hashParams.get('error_description') || urlParams.get('error_description');
+      
+      console.error("Password reset error:", {
+        errorCode,
+        errorDesc,
+        url: window.location.href,
+      });
       
       if (errorCode || errorDesc) {
         toast.error(`Error: ${errorDesc || 'Invalid reset link'}`, {
@@ -47,7 +75,7 @@ const ResetPassword = () => {
         navigate('/login');
       }, 3000);
     }
-  }, [navigate]);
+  }, [navigate, location]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
