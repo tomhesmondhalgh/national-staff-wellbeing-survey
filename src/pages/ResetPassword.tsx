@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
-import { supabase } from '../lib/supabase/client';
+import { supabase } from '../lib/supabase';
 import { updatePassword } from '../utils/authUtils';
 import { toast } from 'sonner';
 
@@ -18,12 +18,12 @@ const ResetPassword = () => {
   const location = useLocation();
 
   useEffect(() => {
-    const checkSession = async () => {
+    const processAuthCode = async () => {
       console.log("Reset Password Page Loaded");
       console.log("Current URL:", window.location.href);
       
       try {
-        // Check if we have a "code" parameter in the URL (PKCE flow)
+        // Check for the 'code' parameter in the URL (PKCE flow)
         const searchParams = new URLSearchParams(window.location.search);
         const code = searchParams.get('code');
         
@@ -31,12 +31,16 @@ const ResetPassword = () => {
           console.log("Auth code found in URL:", code);
           
           try {
-            // Exchange the code for a session
+            // Exchange the code for a session using Supabase's PKCE flow
             const { data, error } = await supabase.auth.exchangeCodeForSession(code);
             
             if (error) {
               console.error("Error exchanging code for session:", error);
               setPageState('invalid');
+              // Redirect to login after a delay
+              setTimeout(() => {
+                navigate('/login');
+              }, 3000);
               return;
             }
             
@@ -46,61 +50,32 @@ const ResetPassword = () => {
               return;
             }
           } catch (error) {
-            console.error("Error processing code:", error);
+            console.error("Error processing auth code:", error);
             setPageState('invalid');
             return;
           }
         } else {
-          console.log("No code parameter found, checking for existing session");
-        }
-        
-        // If we didn't find a code or couldn't process it, check for an existing session
-        const { data: sessionData } = await supabase.auth.getSession();
-        
-        if (sessionData.session) {
-          console.log("Session found:", sessionData.session.user.id);
-          setPageState('ready');
-        } else {
-          console.log("No session found");
+          console.log("No code parameter found in URL");
           
-          // Check for other auth parameters in the URL that might not have been processed
-          const hasAuthParams = 
-            window.location.hash.includes('access_token') || 
-            window.location.search.includes('token=');
-            
-          if (hasAuthParams) {
-            console.log("Auth parameters found in URL, attempting to process manually");
-            
-            try {
-              // Let Supabase try to process the URL parameters
-              await supabase.auth.getUser();
-              
-              // Check again for session
-              const { data: refreshedSession } = await supabase.auth.getSession();
-              if (refreshedSession.session) {
-                console.log("Successfully created session from URL parameters");
-                setPageState('ready');
-              } else {
-                console.log("Failed to create session from URL parameters");
-                setPageState('invalid');
-              }
-            } catch (error) {
-              console.error("Error processing URL auth:", error);
-              setPageState('invalid');
-            }
+          // Check for an existing session
+          const { data: sessionData } = await supabase.auth.getSession();
+          
+          if (sessionData.session) {
+            console.log("Existing session found:", sessionData.session.user.id);
+            setPageState('ready');
           } else {
-            console.log("No auth parameters found in URL");
+            console.log("No session found and no auth code in URL");
             setPageState('invalid');
           }
         }
       } catch (error) {
-        console.error("Error in checkSession:", error);
+        console.error("Error in processAuthCode:", error);
         setPageState('invalid');
       }
     };
     
-    checkSession();
-  }, []);
+    processAuthCode();
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,7 +115,9 @@ const ResetPassword = () => {
         }, 3000);
       } else if (error) {
         console.error("Error updating password:", error);
-        throw error;
+        toast.error('Failed to update password', {
+          description: error.message || 'Please try again or request a new reset link'
+        });
       }
     } catch (error: any) {
       console.error('Error updating password:', error);

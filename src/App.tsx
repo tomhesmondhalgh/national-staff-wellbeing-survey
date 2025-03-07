@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from './components/ui/toaster';
 import { AuthProvider } from './contexts/AuthContext';
@@ -28,14 +29,15 @@ import Improve from './pages/Improve';
 import './App.css';
 
 function App() {
-  // Helper to check for password reset code and redirect if needed
+  // Enhanced helper to check for auth codes and redirect appropriately
   const handleRoot = () => {
-    // Check if URL has a code parameter (password reset)
+    // Check URL for code parameter (used by Supabase auth flows)
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     
     // If there's a code, redirect to reset-password with the code
     if (code) {
+      console.log('Auth code detected in URL, redirecting to reset-password');
       return <Navigate to={`/reset-password?code=${code}`} replace />;
     }
     

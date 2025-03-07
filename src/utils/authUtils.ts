@@ -1,4 +1,3 @@
-
 import { User, Provider } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
@@ -12,7 +11,6 @@ export async function signInWithEmail(email: string, password: string) {
     });
 
     if (error) {
-      // Check if the error is related to email confirmation
       if (error.message.includes('Email not confirmed') || 
           error.message.toLowerCase().includes('email confirmation')) {
         return { 
@@ -38,7 +36,6 @@ export async function signInWithEmail(email: string, password: string) {
 // Handle sign up with email and password
 export async function signUpWithEmail(email: string, password: string, userData?: any) {
   try {
-    // If userData is provided, it means we're completing the final signup step
     const options = userData ? {
       data: {
         first_name: userData.firstName,
@@ -105,7 +102,6 @@ export async function signInWithSocialProvider(provider: Provider) {
 // Handle profile completion
 export async function completeUserProfile(userId: string, userData: any) {
   try {
-    // Update user metadata with school information
     const { error: metadataError } = await supabase.auth.updateUser({
       data: {
         job_title: userData.jobTitle,
@@ -118,7 +114,6 @@ export async function completeUserProfile(userId: string, userData: any) {
       throw metadataError;
     }
 
-    // Use service role to bypass RLS policies for initial profile creation
     const { error: profileError } = await supabase.rpc('create_or_update_profile', {
       profile_id: userId,
       profile_first_name: userData.firstName,
@@ -132,7 +127,6 @@ export async function completeUserProfile(userId: string, userData: any) {
       throw profileError;
     }
 
-    // Send welcome email to the user
     try {
       await supabase.functions.invoke('send-welcome-email', {
         body: {
@@ -145,10 +139,8 @@ export async function completeUserProfile(userId: string, userData: any) {
       console.log('Welcome email sent successfully');
     } catch (emailError) {
       console.error('Error sending welcome email:', emailError);
-      // Don't fail the signup if the welcome email fails
     }
     
-    // Send admin notification email
     try {
       await supabase.functions.invoke('send-admin-notification', {
         body: {
@@ -163,7 +155,6 @@ export async function completeUserProfile(userId: string, userData: any) {
       console.log('Admin notification email sent successfully');
     } catch (adminEmailError) {
       console.error('Error sending admin notification email:', adminEmailError);
-      // Don't fail the signup if the admin notification email fails
     }
 
     toast.success('Account setup completed successfully!', {
@@ -177,19 +168,16 @@ export async function completeUserProfile(userId: string, userData: any) {
   }
 }
 
-// Updated to ensure the redirect is specifically to the reset-password page
+// Improved password reset request function that ensures redirection is proper
 export async function requestPasswordReset(email: string) {
   try {
     console.log("Starting password reset request for:", email);
     
-    // Get the current origin for dynamic redirect
     const origin = window.location.origin;
-    // Make sure to redirect specifically to the reset-password path
     const resetRedirectUrl = `${origin}/reset-password`;
     
     console.log("Using redirect URL:", resetRedirectUrl);
     
-    // Use Supabase's native resetPasswordForEmail method with the dynamic redirect
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: resetRedirectUrl,
     });
