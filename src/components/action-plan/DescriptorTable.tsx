@@ -150,7 +150,7 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
                   <td className="p-2 border border-gray-200 font-medium text-gray-700">
                     {descriptor.index_number}
                   </td>
-                  <td className="p-2 border border-gray-200 text-sm">
+                  <td className="p-2 border border-gray-200 text-sm text-left">
                     {descriptor.descriptor_text}
                   </td>
                   <td className="p-2 border border-gray-200">
@@ -216,7 +216,7 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
                       </div>
                     ) : (
                       <div
-                        className="cursor-pointer min-h-[40px] text-sm"
+                        className="cursor-pointer min-h-[40px] text-sm flex items-center text-left"
                         onClick={() => handleEditStart(descriptor.id, 'key_actions', descriptor.key_actions || '')}
                       >
                         {descriptor.key_actions || <span className="text-gray-400 text-xs">Click to add key actions</span>}
@@ -232,7 +232,7 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
                         className="h-7 px-2 text-xs w-full justify-start"
                       >
                         <FileText className="h-3 w-3 mr-1" />
-                        {descriptor.progress_notes_count ? String(descriptor.progress_notes_count) : '0'}
+                        {descriptor.progress_notes_count ? `${descriptor.progress_notes_count} Notes` : '0 Notes'}
                       </Button>
                       <Button 
                         size="sm" 
