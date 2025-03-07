@@ -7,7 +7,6 @@ import { Button } from '../components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/card';
 import { useSubscription } from '../hooks/useSubscription';
 import { useToast } from '../hooks/use-toast';
-
 const Improve = () => {
   const navigate = useNavigate();
   const {
@@ -21,7 +20,6 @@ const Improve = () => {
   const {
     toast
   } = useToast();
-
   const handleUpgrade = async (priceId: string, planType: 'foundation' | 'progress' | 'premium', purchaseType: 'subscription' | 'one-time') => {
     try {
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment-session`, {
@@ -53,61 +51,41 @@ const Improve = () => {
       });
     }
   };
-
   const getButtonText = (planType: 'free' | 'foundation' | 'progress' | 'premium') => {
-    if (
-      (planType === 'free' && isFree) ||
-      (planType === 'foundation' && isFoundation) ||
-      (planType === 'progress' && isProgress) ||
-      (planType === 'premium' && isPremium)
-    ) {
+    if (planType === 'free' && isFree || planType === 'foundation' && isFoundation || planType === 'progress' && isProgress || planType === 'premium' && isPremium) {
       return 'Your Current Plan';
     }
-
     if (planType === 'free') {
       return 'Get Started';
     }
-
     const planLevels = {
       free: 0,
       foundation: 1,
       progress: 2,
       premium: 3
     };
-
-    const currentPlanLevel = isFree ? 0 : (isFoundation ? 1 : (isProgress ? 2 : (isPremium ? 3 : 0)));
+    const currentPlanLevel = isFree ? 0 : isFoundation ? 1 : isProgress ? 2 : isPremium ? 3 : 0;
     const targetPlanLevel = planLevels[planType];
-
     if (targetPlanLevel > currentPlanLevel) {
       return `Upgrade to ${planType.charAt(0).toUpperCase() + planType.slice(1)}`;
     } else {
       return `Downgrade to ${planType.charAt(0).toUpperCase() + planType.slice(1)}`;
     }
   };
-
   const getButtonVariant = (planType: 'free' | 'foundation' | 'progress' | 'premium') => {
-    if (
-      (planType === 'free' && isFree) ||
-      (planType === 'foundation' && isFoundation) ||
-      (planType === 'progress' && isProgress) ||
-      (planType === 'premium' && isPremium)
-    ) {
+    if (planType === 'free' && isFree || planType === 'foundation' && isFoundation || planType === 'progress' && isProgress || planType === 'premium' && isPremium) {
       return 'outline';
     }
-
     const planLevels = {
       free: 0,
       foundation: 1,
       progress: 2,
       premium: 3
     };
-
-    const currentPlanLevel = isFree ? 0 : (isFoundation ? 1 : (isProgress ? 2 : (isPremium ? 3 : 0)));
+    const currentPlanLevel = isFree ? 0 : isFoundation ? 1 : isProgress ? 2 : isPremium ? 3 : 0;
     const targetPlanLevel = planLevels[planType];
-
     return targetPlanLevel > currentPlanLevel ? 'default' : 'outline';
   };
-
   return <MainLayout>
       <div className="container mx-auto px-4 py-8">
         <PageTitle title="Improving Staff Wellbeing Made Easy" subtitle="Effective evidence-based strategies in an easy-to-use plan" alignment="center" />
@@ -158,11 +136,7 @@ const Improve = () => {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Button 
-                  onClick={() => navigate('/dashboard')} 
-                  className="w-full" 
-                  variant={getButtonVariant('free')}
-                >
+                <Button onClick={() => navigate('/dashboard')} className="w-full" variant={getButtonVariant('free')}>
                   {getButtonText('free')}
                 </Button>
               </CardFooter>
@@ -193,12 +167,7 @@ const Improve = () => {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Button 
-                  onClick={() => isFree || isLoading ? handleUpgrade('price_foundation', 'foundation', 'one-time') : null} 
-                  className="w-full" 
-                  variant={getButtonVariant('foundation')}
-                  disabled={isFoundation || isProgress || isPremium}
-                >
+                <Button onClick={() => isFree || isLoading ? handleUpgrade('price_foundation', 'foundation', 'one-time') : null} className="w-full" variant={getButtonVariant('foundation')} disabled={isFoundation || isProgress || isPremium}>
                   {getButtonText('foundation')}
                 </Button>
               </CardFooter>
@@ -225,7 +194,7 @@ const Improve = () => {
                   </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>1 space on in-depth training to improve staff wellbeing in your organisation</span>
+                    <span>1 space on our course 'Leading Staff Wellbeing'</span>
                   </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
@@ -246,12 +215,7 @@ const Improve = () => {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Button 
-                  onClick={() => isFree || isFoundation || isLoading ? handleUpgrade('price_progress', 'progress', 'subscription') : null} 
-                  className="w-full" 
-                  variant={getButtonVariant('progress')}
-                  disabled={isProgress || isPremium}
-                >
+                <Button onClick={() => isFree || isFoundation || isLoading ? handleUpgrade('price_progress', 'progress', 'subscription') : null} className="w-full" variant={getButtonVariant('progress')} disabled={isProgress || isPremium}>
                   {getButtonText('progress')}
                 </Button>
               </CardFooter>
@@ -278,12 +242,7 @@ const Improve = () => {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Button 
-                  onClick={() => isFree || isFoundation || isProgress || isLoading ? handleUpgrade('price_premium', 'premium', 'subscription') : null} 
-                  className="w-full" 
-                  variant={getButtonVariant('premium')}
-                  disabled={isPremium}
-                >
+                <Button onClick={() => isFree || isFoundation || isProgress || isLoading ? handleUpgrade('price_premium', 'premium', 'subscription') : null} className="w-full" variant={getButtonVariant('premium')} disabled={isPremium}>
                   {getButtonText('premium')}
                 </Button>
               </CardFooter>
