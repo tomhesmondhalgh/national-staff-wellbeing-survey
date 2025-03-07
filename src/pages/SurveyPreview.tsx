@@ -9,6 +9,7 @@ import RatingQuestion from '../components/survey-form/RatingQuestion';
 import TextQuestion from '../components/survey-form/TextQuestion';
 import SubmitButton from '../components/survey-form/SubmitButton';
 import { roleOptions } from '../components/survey-form/constants';
+import { SurveyTemplate } from '../utils/surveyUtils';
 
 const SurveyPreview = () => {
   const [surveyData, setSurveyData] = useState<SurveyFormData | null>(null);
@@ -55,6 +56,16 @@ const SurveyPreview = () => {
     );
   }
 
+  // Create a complete SurveyTemplate object with all required properties
+  const surveyTemplate: SurveyTemplate = {
+    id: 'preview',
+    name: surveyData.name,
+    date: surveyData.date ? new Date(surveyData.date).toISOString() : new Date().toISOString(),
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    status: 'Scheduled'
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto bg-white shadow-sm rounded-lg p-6 sm:p-10">
@@ -71,7 +82,7 @@ const SurveyPreview = () => {
         </div>
 
         <div className="border-t border-gray-200 pt-6 mt-6">
-          <SurveyIntro surveyTemplate={{ name: surveyData.name }} />
+          <SurveyIntro surveyTemplate={surveyTemplate} />
           
           <form className="mt-8 space-y-6" onSubmit={(e) => e.preventDefault()}>
             <RoleSelect 
