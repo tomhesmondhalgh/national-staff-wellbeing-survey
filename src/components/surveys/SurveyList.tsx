@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Send, Copy, Edit } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface Survey {
   id: string;
@@ -23,10 +23,18 @@ interface SurveyListProps {
   onSendReminder: (id: string) => void;
 }
 
+const ADMIN_EMAILS = ['tomhesmondhalghce@gmail.com'];
+
 const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [sendingReminder, setSendingReminder] = useState<string | null>(null);
+  const [sendingTestEmails, setSendingTestEmails] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  const isAdmin = user && ADMIN_EMAILS.includes(user.email || '');
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const showTestButton = isAdmin || isDevelopment;
 
   const copyToClipboard = (id: string, text: string) => {
     navigator.clipboard.writeText(text)
@@ -57,7 +65,6 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
     try {
       setSendingReminder(survey.id);
       
-      // Parse the emails string into an array
       const emails = survey.emails
         .split(',')
         .map(email => email.trim())
@@ -70,7 +77,6 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
         return;
       }
       
-      // Call the Supabase function to send reminder emails
       const { data, error } = await supabase.functions.invoke('send-survey-email', {
         body: {
           surveyId: survey.id,
@@ -105,6 +111,34 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
     }
   };
 
+  const handleSendTestEmails = async () => {
+    try {
+      setSendingTestEmails(true);
+      
+      const { data, error } = await supabase.functions.invoke('send-test-emails', {
+        body: {
+          email: user?.email || 'tomhesmondhalghce@gmail.com'
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      console.log("Test emails result:", data);
+      toast.success("Test emails sent", {
+        description: "Check your inbox for the test emails."
+      });
+    } catch (error) {
+      console.error("Error sending test emails:", error);
+      toast.error("Failed to send test emails", {
+        description: "There was a problem sending the test emails. Please try again."
+      });
+    } finally {
+      setSendingTestEmails(false);
+    }
+  };
+
   if (surveys.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 text-center py-12">
@@ -112,12 +146,36 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
         <Link to="/new-survey" className="bg-brandPurple-500 hover:bg-brandPurple-600 text-white font-medium py-2 px-6 rounded-md transition-all duration-200 inline-block">
           Create Your First Survey
         </Link>
+        
+        {showTestButton && (
+          <div className="mt-8 border-t border-gray-100 pt-4">
+            <button
+              onClick={handleSendTestEmails}
+              disabled={sendingTestEmails}
+              className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-1 px-3 rounded-md transition-all duration-200"
+            >
+              {sendingTestEmails ? "Sending..." : "Send Test Emails (Admin Only)"}
+            </button>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+      {showTestButton && (
+        <div className="px-6 py-2 bg-gray-50 border-b border-gray-100 flex justify-end">
+          <button
+            onClick={handleSendTestEmails}
+            disabled={sendingTestEmails}
+            className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-1 px-3 rounded-md transition-all duration-200"
+          >
+            {sendingTestEmails ? "Sending..." : "Send Test Emails (Admin Only)"}
+          </button>
+        </div>
+      )}
+      
       <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-100 text-sm font-medium text-gray-500 uppercase">
         <div className="col-span-3">Survey</div>
         <div className="col-span-2">Date</div>
