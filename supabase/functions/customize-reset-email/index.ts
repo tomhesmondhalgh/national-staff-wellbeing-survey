@@ -88,15 +88,34 @@ serve(async (req) => {
             .header { 
               text-align: center;
               margin-bottom: 30px;
+              padding: 20px 0;
+            }
+            .logo {
+              width: 180px;
+              margin: 0 auto 20px;
+              display: block;
             }
             .title {
-              color: #5a3ab6;
+              color: #8b5cf6;
               font-size: 24px;
               font-weight: bold;
+              margin-bottom: 5px;
+            }
+            .subtitle {
+              color: #6b7280;
+              font-size: 16px;
+              margin-top: 0;
+            }
+            .content {
+              background-color: #f9fafb;
+              border-radius: 8px;
+              padding: 30px;
+              margin-bottom: 30px;
+              border: 1px solid #e5e7eb;
             }
             .btn {
               display: inline-block;
-              background-color: #5a3ab6;
+              background-color: #8b5cf6;
               color: white;
               text-decoration: none;
               padding: 12px 24px;
@@ -107,27 +126,32 @@ serve(async (req) => {
             .footer {
               margin-top: 40px;
               font-size: 12px;
-              color: #666;
+              color: #6b7280;
               text-align: center;
+              padding-top: 20px;
+              border-top: 1px solid #e5e7eb;
             }
           </style>
         </head>
         <body>
           <div class="header">
             <div class="title">Wellbeing Surveys</div>
+            <p class="subtitle">Reset Your Password</p>
           </div>
           
-          <p>Hello,</p>
-          
-          <p>We received a request to reset your password for your Wellbeing Surveys account. Click the button below to set a new password:</p>
-          
-          <div style="text-align: center;">
-            <a href="${resetLink}" class="btn">Reset Password</a>
+          <div class="content">
+            <p>Hello,</p>
+            
+            <p>We received a request to reset your password for your Wellbeing Surveys account. Click the button below to set a new password:</p>
+            
+            <div style="text-align: center;">
+              <a href="${resetLink}" class="btn">Reset Password</a>
+            </div>
+            
+            <p><strong>Important:</strong> This link will expire in 1 hour for security reasons. If you don't use it within that time, you'll need to request a new password reset.</p>
+            
+            <p>If you didn't request this password reset, you can safely ignore this email.</p>
           </div>
-          
-          <p>If you didn't request this password reset, you can safely ignore this email.</p>
-          
-          <p>This link will expire in 24 hours.</p>
           
           <p>Best regards,<br>The Wellbeing Surveys Team</p>
           
