@@ -22,6 +22,10 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
     setIsSubmitting(true);
     
     try {
+      // Log current location for debugging
+      console.log("Current location:", window.location.href);
+      console.log("Origin:", window.location.origin);
+      
       const { error, success } = await requestPasswordReset(email);
       
       if (success) {

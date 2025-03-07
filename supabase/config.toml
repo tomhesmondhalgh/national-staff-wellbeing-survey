@@ -29,8 +29,10 @@ enabled = true
 site_url = "https://national-staff-wellbeing-survey.lovable.app"
 additional_redirect_urls = [
   "https://localhost:3000", 
+  "http://localhost:3000",
   "http://localhost:3000/login", 
   "http://localhost:3000/reset-password",
+  "https://national-staff-wellbeing-survey.lovable.app",
   "https://national-staff-wellbeing-survey.lovable.app/reset-password",
   "https://national-staff-wellbeing-survey.lovable.app/login"
 ]

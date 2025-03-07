@@ -179,18 +179,22 @@ export async function completeUserProfile(userId: string, userData: any) {
 // Handle password reset request
 export async function requestPasswordReset(email: string) {
   try {
-    // Get the full origin URL for redirect
+    console.log("Initiating password reset for email:", email);
+    
+    // Explicitly construct the full redirect URL from the current domain
     const origin = window.location.origin;
+    // Using absolute URL rather than relative path
     const redirectTo = `${origin}/reset-password`;
     
-    console.log("Initiating password reset for email:", email);
     console.log("Using redirect URL:", redirectTo);
     
+    // Call the Supabase API for password reset
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo
     });
     
     if (error) {
+      console.error("Password reset error:", error);
       throw error;
     }
     
@@ -220,4 +224,3 @@ export async function updatePassword(newPassword: string) {
     return { error: error as Error, success: false };
   }
 }
-
