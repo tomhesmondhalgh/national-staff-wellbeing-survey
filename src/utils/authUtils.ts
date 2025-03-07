@@ -1,3 +1,4 @@
+
 import { User, Provider } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
@@ -181,24 +182,46 @@ export async function requestPasswordReset(email: string) {
   try {
     console.log("Initiating password reset for email:", email);
     
-    // Explicitly construct the full redirect URL from the current domain
-    const origin = window.location.origin;
-    // Using absolute URL rather than relative path
-    const redirectTo = `${origin}/reset-password`;
+    // Explicitly construct the full redirect URL
+    // Use the prod URL for consistency regardless of where the request is made
+    const redirectTo = "https://national-staff-wellbeing-survey.lovable.app/reset-password";
     
-    console.log("Using redirect URL:", redirectTo);
+    console.log("Using hardcoded redirect URL:", redirectTo);
     
-    // Call the Supabase API for password reset
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo
-    });
-    
-    if (error) {
-      console.error("Password reset error:", error);
-      throw error;
+    // Try using the custom edge function instead
+    try {
+      const { data, error: funcError } = await supabase.functions.invoke('customize-reset-email', {
+        body: { 
+          email: email,
+          redirect_url: redirectTo
+        }
+      });
+      
+      console.log("Edge function response:", data);
+      
+      if (funcError) {
+        console.error("Edge function error:", funcError);
+        throw funcError;
+      }
+      
+      return { error: null, success: true };
+    } catch (edgeFuncError) {
+      console.error("Failed to call custom edge function:", edgeFuncError);
+      
+      // Fall back to the built-in method if the edge function fails
+      console.log("Falling back to built-in reset method");
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectTo
+      });
+      
+      if (error) {
+        console.error("Built-in password reset error:", error);
+        throw error;
+      }
+      
+      return { error: null, success: true };
     }
-    
-    return { error: null, success: true };
   } catch (error) {
     console.error('Error requesting password reset:', error);
     return { error: error as Error, success: false };

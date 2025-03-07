@@ -34,7 +34,10 @@ additional_redirect_urls = [
   "http://localhost:3000/reset-password",
   "https://national-staff-wellbeing-survey.lovable.app",
   "https://national-staff-wellbeing-survey.lovable.app/reset-password",
-  "https://national-staff-wellbeing-survey.lovable.app/login"
+  "https://national-staff-wellbeing-survey.lovable.app/login",
+  "https://national-staff-wellbeing-survey.lovable.app/reset-password#",
+  "https://national-staff-wellbeing-survey.lovable.app/#",
+  "https://national-staff-wellbeing-survey.lovable.app#"
 ]
 jwt_expiry = 3600
 enable_refresh_token_rotation = true

@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
+import { supabase } from '../lib/supabase';
 import { updatePassword } from '../utils/authUtils';
 import { toast } from 'sonner';
 
@@ -14,28 +15,82 @@ const ResetPassword = () => {
   const [passwordError, setPasswordError] = useState('');
   const [pageState, setPageState] = useState<'checking' | 'ready' | 'invalid' | 'success'>('checking');
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Check if we have a valid session with recovery token
+  // Extract tokens from URL if present
   useEffect(() => {
-    const checkSession = async () => {
+    const handleHashParams = async () => {
+      // First, log everything for debugging
+      console.log("--- Reset Password Debug ---");
+      console.log("Current URL:", window.location.href);
+      console.log("URL hash:", window.location.hash);
+      console.log("URL search params:", window.location.search);
+      
       try {
-        // The Supabase resetPasswordForEmail flow should ensure the user has a valid session
-        // by the time they reach this page via the email link
-        const { data } = await fetch('https://bagaaqkmewkuwtudwnqw.supabase.co/auth/v1/user', {
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhZ2FhcWttZXdrdXd0dWR3bnF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA2NjQwMzIsImV4cCI6MjA1NjI0MDAzMn0.Eu_xDUDDk188oE0dB7W7KJ4oWjB6nQNuUBBnZUMrsvE'
-          },
-          credentials: 'include'
-        }).then(res => res.json());
-
-        console.log("Session check result:", data);
+        // Get URL fragments
+        const hash = window.location.hash.substring(1);
+        const query = new URLSearchParams(hash || window.location.search);
         
-        if (data && data.id) {
-          // User has a valid session
+        // Check for error
+        const errorCode = query.get('error');
+        const errorDescription = query.get('error_description');
+        
+        if (errorCode || errorDescription) {
+          console.error("Auth error from URL:", errorCode, errorDescription);
+          setPageState('invalid');
+          toast.error('Reset link error', {
+            description: errorDescription || 'Please request a new password reset link'
+          });
+          return;
+        }
+        
+        // Extract token from hash - either using type+access_token pattern or direct token approach
+        const tokenType = query.get('type');
+        const accessToken = query.get('access_token');
+        const token = query.get('token');
+        
+        console.log("Token analysis:", { tokenType, accessToken, token });
+        
+        let hasValidSession = false;
+        
+        // First try to verify the current session
+        const { data: sessionData } = await supabase.auth.getSession();
+        console.log("Current session:", sessionData);
+        
+        if (sessionData?.session) {
+          hasValidSession = true;
+          console.log("User has an active session already");
+        }
+        // If we have recovery token parameters, try to use them
+        else if ((tokenType === 'recovery' && accessToken) || token) {
+          console.log("Found recovery tokens in URL, attempting to process");
+          
+          // Try to exchange the token for a session
+          const { data, error } = await supabase.auth.verifyOtp({
+            token_hash: token || accessToken || '',
+            type: 'recovery',
+          });
+          
+          if (error) {
+            console.error("Error verifying recovery token:", error);
+            setPageState('invalid');
+            toast.error('Invalid or expired reset link', {
+              description: 'Please request a new password reset link'
+            });
+            return;
+          }
+          
+          console.log("Recovery verification result:", data);
+          
+          if (data?.session) {
+            hasValidSession = true;
+            console.log("Successfully verified recovery token");
+          }
+        }
+        
+        if (hasValidSession) {
           setPageState('ready');
         } else {
-          // No valid session
           setPageState('invalid');
           toast.error('Invalid or expired reset link', {
             description: 'Please request a new password reset link'
@@ -47,13 +102,13 @@ const ResetPassword = () => {
           }, 3000);
         }
       } catch (error) {
-        console.error("Error checking session:", error);
+        console.error("Error processing reset tokens:", error);
         setPageState('invalid');
       }
     };
 
-    checkSession();
-  }, [navigate]);
+    handleHashParams();
+  }, [navigate, location]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,6 +136,9 @@ const ResetPassword = () => {
         toast.success('Password updated successfully', {
           description: 'You can now log in with your new password'
         });
+        
+        // Sign out the user to clear the recovery session
+        await supabase.auth.signOut();
         
         // Redirect to login page after success
         setTimeout(() => {
