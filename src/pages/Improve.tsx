@@ -79,7 +79,35 @@ const Improve = () => {
         <div className="mt-12">
           <h2 className="text-2xl font-bold text-center mb-10">Choose the Right Plan for Your Organisation</h2>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-4 gap-8">
+            {/* Free Plan */}
+            <Card className="relative border-brandPurple-200 hover:border-brandPurple-400 transition-colors duration-300">
+              <CardHeader className="text-center pb-2">
+                <CardTitle className="text-xl font-bold text-brandPurple-700">Free</CardTitle>
+                <CardDescription>Establish priority areas</CardDescription>
+              </CardHeader>
+              <CardContent className="text-center pt-4">
+                <p className="text-3xl font-bold">Free</p>
+                <p className="text-sm text-gray-500 mb-6">&nbsp;</p>
+                
+                <ul className="text-left space-y-3 mb-6">
+                  <li className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
+                    <span>Easily issue surveys to staff by email or survey link</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
+                    <span>Analyse survey results for your school</span>
+                  </li>
+                </ul>
+              </CardContent>
+              <CardFooter>
+                <Button onClick={() => navigate('/dashboard')} className="w-full" variant="outline">
+                  Get Started
+                </Button>
+              </CardFooter>
+            </Card>
+            
             {/* Foundation Plan */}
             <Card className="relative border-brandPurple-200 hover:border-brandPurple-400 transition-colors duration-300">
               <CardHeader className="text-center pb-2">
@@ -91,6 +119,14 @@ const Improve = () => {
                 <p className="text-sm text-gray-500 mb-6">+ VAT (one-off payment)</p>
                 
                 <ul className="text-left space-y-3 mb-6">
+                  <li className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
+                    <span>Easily issue surveys to staff by email or survey link</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
+                    <span>Analyse survey results for your school and compare with national averages</span>
+                  </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
                     <span>The complete Human Kind Framework and online planning tool</span>
@@ -120,6 +156,14 @@ const Improve = () => {
                 <p className="text-sm text-gray-500 mb-6">+ VAT (3-year subscription)</p>
                 
                 <ul className="text-left space-y-3 mb-6">
+                  <li className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
+                    <span>Easily issue surveys to staff by email or survey link</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
+                    <span>Analyse survey results for your school and compare with national averages</span>
+                  </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
                     <span>The complete Human Kind Framework and online planning tool</span>
@@ -164,6 +208,14 @@ const Improve = () => {
                 <p className="text-sm text-gray-500 mb-6">+ VAT (3-year subscription)</p>
                 
                 <ul className="text-left space-y-3 mb-6">
+                  <li className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
+                    <span>Easily issue surveys to staff by email or survey link</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
+                    <span>Analyse survey results for your school and compare with national averages</span>
+                  </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
                     <span>The complete Human Kind Framework and online planning tool</span>
