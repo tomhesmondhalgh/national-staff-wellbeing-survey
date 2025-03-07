@@ -30,7 +30,7 @@ serve(async (req) => {
     console.log(`Processing password reset request for email: ${email}`);
     console.log(`Redirect URL: ${redirect_url}`);
 
-    // Use the correct method for password reset
+    // Using the correct admin API for password reset
     const { data, error } = await supabase.auth.admin.generateLink({
       type: 'recovery',
       email: email,
