@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
-import { supabase } from '../../lib/supabase/client';
+import { requestPasswordReset } from '../../utils/authUtils';
 import { toast } from 'sonner';
 
 interface ForgotPasswordModalProps {
@@ -22,37 +22,16 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
     setIsSubmitting(true);
     
     try {
-      // Ensure we use the full origin URL without any trailing slash
-      const origin = window.location.origin;
-      const fullRedirectUrl = `${origin}/reset-password`;
+      const { error, success } = await requestPasswordReset(email);
       
-      console.log("Using redirect URL for password reset:", fullRedirectUrl);
-      
-      // Try using the built-in Supabase resetPasswordForEmail method first
-      const { error: directResetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: fullRedirectUrl
-      });
-      
-      if (directResetError) {
-        console.warn("Direct reset failed, falling back to edge function:", directResetError);
-        
-        // Fall back to custom edge function
-        const { error } = await supabase.functions.invoke('customize-reset-email', {
-          body: { 
-            email,
-            redirect_url: fullRedirectUrl
-          }
+      if (success) {
+        toast.success('Password reset email sent', {
+          description: 'Please check your email for the password reset link'
         });
-        
-        if (error) {
-          throw error;
-        }
+        onClose();
+      } else if (error) {
+        throw error;
       }
-      
-      toast.success('Password reset email sent', {
-        description: 'Please check your email for the password reset link'
-      });
-      onClose();
     } catch (error: any) {
       console.error('Error sending password reset email:', error);
       toast.error('Failed to send reset email', {

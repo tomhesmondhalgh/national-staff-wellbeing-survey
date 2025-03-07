@@ -1,4 +1,3 @@
-
 import { User, Provider } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
@@ -176,3 +175,49 @@ export async function completeUserProfile(userId: string, userData: any) {
     return { error: error as Error, success: false };
   }
 }
+
+// Handle password reset request
+export async function requestPasswordReset(email: string) {
+  try {
+    // Get the full origin URL for redirect
+    const origin = window.location.origin;
+    const redirectTo = `${origin}/reset-password`;
+    
+    console.log("Initiating password reset for email:", email);
+    console.log("Using redirect URL:", redirectTo);
+    
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo
+    });
+    
+    if (error) {
+      throw error;
+    }
+    
+    return { error: null, success: true };
+  } catch (error) {
+    console.error('Error requesting password reset:', error);
+    return { error: error as Error, success: false };
+  }
+}
+
+// Handle password update
+export async function updatePassword(newPassword: string) {
+  try {
+    console.log("Updating password...");
+    
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+    
+    if (error) {
+      throw error;
+    }
+    
+    return { error: null, success: true };
+  } catch (error) {
+    console.error('Error updating password:', error);
+    return { error: error as Error, success: false };
+  }
+}
+
