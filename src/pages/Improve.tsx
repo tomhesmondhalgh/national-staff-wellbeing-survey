@@ -17,15 +17,17 @@ const Improve = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('summary');
   const [isLoading, setIsLoading] = useState(true);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const [summaryData, setSummaryData] = useState<any[]>([]);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    if (user && !hasInitialized) {
       initializeActionPlanData();
+      setHasInitialized(true);
     }
-  }, [user]);
+  }, [user, hasInitialized]);
 
   const initializeActionPlanData = async () => {
     setIsLoading(true);

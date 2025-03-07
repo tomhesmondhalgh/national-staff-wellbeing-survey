@@ -7,16 +7,13 @@ import 'jspdf-autotable';
 // Initialize action plan for a user
 export const initializeActionPlan = async (userId: string) => {
   try {
-    // Check if user already has descriptors
-    const { data: existingDescriptors } = await supabase
+    // Delete existing descriptors for this user
+    const { error: deleteError } = await supabase
       .from('action_plan_descriptors')
-      .select('id')
-      .eq('user_id', userId)
-      .limit(1);
+      .delete()
+      .eq('user_id', userId);
 
-    if (existingDescriptors && existingDescriptors.length > 0) {
-      return { success: true };
-    }
+    if (deleteError) throw deleteError;
 
     // Create descriptors for all sections
     const descriptorsToInsert = ACTION_PLAN_SECTIONS.flatMap(section => 

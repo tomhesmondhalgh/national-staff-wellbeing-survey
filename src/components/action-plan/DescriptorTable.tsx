@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,7 +35,12 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
     setIsLoading(false);
 
     if (result.success && result.data) {
-      setDescriptors(result.data);
+      const sortedDescriptors = result.data.sort((a, b) => {
+        if (!a.index_number) return 1;
+        if (!b.index_number) return -1;
+        return a.index_number.localeCompare(b.index_number, undefined, { numeric: true });
+      });
+      setDescriptors(sortedDescriptors);
     } else {
       toast.error('Failed to load data');
     }
