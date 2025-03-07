@@ -129,13 +129,15 @@ const Improve = () => {
             
             {ACTION_PLAN_SECTIONS.map((section) => (
               <TabsContent key={section.key} value={section.key} className="mt-6">
-                {user && (
-                  <DescriptorTable 
-                    userId={user.id}
-                    section={section.title}
-                    onRefreshSummary={fetchSummaryData}
-                  />
-                )}
+                <div className="overflow-x-auto">
+                  {user && (
+                    <DescriptorTable 
+                      userId={user.id}
+                      section={section.title}
+                      onRefreshSummary={fetchSummaryData}
+                    />
+                  )}
+                </div>
               </TabsContent>
             ))}
           </Tabs>
