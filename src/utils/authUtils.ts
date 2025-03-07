@@ -1,4 +1,3 @@
-
 import { User, Provider } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
@@ -177,62 +176,29 @@ export async function completeUserProfile(userId: string, userData: any) {
   }
 }
 
-// Handle password reset request
+// Handle password reset request - simplified approach
 export async function requestPasswordReset(email: string) {
   try {
-    console.log("Initiating password reset for email:", email);
+    console.log("Simplified password reset request for:", email);
     
-    // Use the production URL for the actual reset link
-    const productionDomain = "national-staff-wellbeing-survey.lovable.app";
+    // Use the direct Supabase method with the correct redirect URL
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://national-staff-wellbeing-survey.lovable.app/reset-password'
+    });
     
-    // Ensure we have a clean, full URL for the redirect
-    const redirectTo = `https://${productionDomain}/reset-password`;
-    
-    console.log("Using redirect URL:", redirectTo);
-    
-    // Try using the custom edge function for maximum control
-    try {
-      console.log("Calling customize-reset-email edge function");
-      
-      const { data, error: funcError } = await supabase.functions.invoke('customize-reset-email', {
-        body: { 
-          email: email,
-          redirect_url: redirectTo
-        }
-      });
-      
-      console.log("Edge function response:", data);
-      
-      if (funcError) {
-        console.error("Edge function error:", funcError);
-        throw funcError;
-      }
-      
-      return { error: null, success: true };
-    } catch (edgeFuncError) {
-      console.error("Failed to call custom edge function:", edgeFuncError);
-      
-      // Fall back to the built-in method if the edge function fails
-      console.log("Falling back to built-in reset method");
-      
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectTo
-      });
-      
-      if (error) {
-        console.error("Built-in password reset error:", error);
-        throw error;
-      }
-      
-      return { error: null, success: true };
+    if (error) {
+      console.error("Password reset error:", error);
+      throw error;
     }
+    
+    return { error: null, success: true };
   } catch (error) {
     console.error('Error requesting password reset:', error);
     return { error: error as Error, success: false };
   }
 }
 
-// Handle password update
+// Handle password update - simplified
 export async function updatePassword(newPassword: string) {
   try {
     console.log("Updating password...");

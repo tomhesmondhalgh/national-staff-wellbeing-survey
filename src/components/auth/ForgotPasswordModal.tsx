@@ -22,14 +22,8 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
     setIsSubmitting(true);
     
     try {
-      // Enhanced logging for debugging
-      console.log("--- Password Reset Request Debug ---");
-      console.log("Current location:", window.location.href);
-      console.log("Origin:", window.location.origin);
-      console.log("Environment:", import.meta.env.MODE);
-      console.log("Email:", email);
+      console.log("Initiating password reset for:", email);
       
-      // Use the direct edge function approach for maximum control
       const { error, success } = await requestPasswordReset(email);
       
       if (success) {

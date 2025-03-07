@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase/client';
 import { updatePassword } from '../utils/authUtils';
 import { toast } from 'sonner';
 
@@ -15,89 +15,62 @@ const ResetPassword = () => {
   const [passwordError, setPasswordError] = useState('');
   const [pageState, setPageState] = useState<'checking' | 'ready' | 'invalid' | 'success'>('checking');
   const navigate = useNavigate();
-  const location = useLocation();
 
-  // Extract tokens from URL if present
+  // Check for recovery token in URL hash or query params
   useEffect(() => {
-    const handleHashParams = async () => {
-      // First, log everything for debugging
-      console.log("--- Reset Password Debug ---");
+    const checkSession = async () => {
+      console.log("Reset Password Page: Checking session...");
       console.log("Current URL:", window.location.href);
-      console.log("URL hash:", window.location.hash);
-      console.log("URL search params:", window.location.search);
       
       try {
-        // Let Supabase handle the token exchange automatically
-        const { data: authData, error: authError } = await supabase.auth.getSession();
-        console.log("Current auth state:", authData);
-          
-        if (authError) {
-          console.error("Auth error:", authError);
-        }
+        // Get the current session
+        const { data: sessionData } = await supabase.auth.getSession();
         
-        // Check if we need to process the URL for recovery tokens
-        // Extract hash params - could be a hash or query string
-        const hashParams = location.hash.substring(1);
-        const queryParams = location.search.substring(1);
-        
-        // Try both hash and query params
-        const paramsString = hashParams || queryParams;
-        const params = new URLSearchParams(paramsString);
-        
-        // Check for type and token params
-        const type = params.get('type');
-        const token = params.get('token');
-        const accessToken = params.get('access_token');
-        
-        console.log("Token parameters:", { type, token, accessToken });
-        
-        // If we have recovery tokens but no session, try to exchange them
-        if ((type === 'recovery' || type === 'email') && (token || accessToken)) {
-          console.log("Found recovery tokens, attempting to exchange");
-          
-          try {
-            const { data, error } = await supabase.auth.verifyOtp({
-              token_hash: token || accessToken || '',
-              type: 'recovery',
-            });
-            
-            if (error) {
-              console.error("Token verification error:", error);
-              setPageState('invalid');
-              return;
-            }
-            
-            console.log("Token exchange successful:", data);
-            setPageState('ready');
-            return;
-          } catch (verifyError) {
-            console.error("Error verifying token:", verifyError);
-          }
-        }
-        
-        // Check if we already have a valid session
-        if (authData.session) {
-          console.log("User has valid session");
+        if (sessionData?.session) {
+          console.log("User has a valid session for password reset");
           setPageState('ready');
           return;
         }
         
-        // If we reach here without a valid session or token, the link is invalid
-        console.log("No valid session or token found");
-        setPageState('invalid');
+        // No session found, check URL for tokens
+        const hash = window.location.hash.substring(1);
+        const query = window.location.search.substring(1);
+        const params = new URLSearchParams(hash || query);
         
-        // After a delay, navigate to login
-        setTimeout(() => {
-          navigate('/login');
-        }, 3000);
+        const type = params.get('type');
+        const accessToken = params.get('access_token');
+        
+        console.log("URL Parameters:", { type, accessToken: accessToken ? "Found" : "Not found" });
+        
+        if (type === 'recovery' && accessToken) {
+          console.log("Found recovery token, attempting to use it");
+          
+          // Set session with the recovery token
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: '',
+          });
+          
+          if (error) {
+            console.error("Error setting session with recovery token:", error);
+            setPageState('invalid');
+            return;
+          }
+          
+          console.log("Successfully set session with recovery token");
+          setPageState('ready');
+        } else {
+          console.log("No valid recovery token found in URL");
+          setPageState('invalid');
+        }
       } catch (error) {
-        console.error("Error processing reset tokens:", error);
+        console.error("Error checking reset password session:", error);
         setPageState('invalid');
       }
     };
-
-    handleHashParams();
-  }, [navigate, location]);
+    
+    checkSession();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,6 +135,12 @@ const ResetPassword = () => {
             <AlertCircle size={40} className="text-red-500 mb-4" />
             <p className="text-gray-600 text-center">Invalid or expired reset link.</p>
             <p className="text-sm text-gray-500 mt-2">You'll be redirected to the login page shortly.</p>
+            <button 
+              onClick={() => navigate('/login')} 
+              className="mt-4 btn-primary"
+            >
+              Return to Login
+            </button>
           </div>
         );
         
