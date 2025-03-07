@@ -120,12 +120,12 @@ const Improve = () => {
           <h2 className="text-2xl font-bold text-center mb-10 py-[30px]">Choose the Right Plan for Your Organisation</h2>
           
           <div className="grid md:grid-cols-4 gap-8">
-            <Card className="relative border-brandPurple-200 hover:border-brandPurple-400 transition-colors duration-300">
+            <Card className="relative border-brandPurple-200 hover:border-brandPurple-400 transition-colors duration-300 flex flex-col">
               <CardHeader className="text-center pb-2">
                 <CardTitle className="text-xl font-bold text-brandPurple-700">Free</CardTitle>
                 <CardDescription>Establish priority areas</CardDescription>
               </CardHeader>
-              <CardContent className="text-center pt-4">
+              <CardContent className="text-center pt-4 flex-grow">
                 <p className="text-3xl font-bold">Free</p>
                 <p className="text-sm text-gray-500 mb-6">&nbsp;</p>
                 
@@ -140,19 +140,19 @@ const Improve = () => {
                   </li>
                 </ul>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="mt-auto">
                 <Button onClick={() => navigate('/dashboard')} className="w-full" variant={getButtonVariant('free')}>
                   {getButtonText('free')}
                 </Button>
               </CardFooter>
             </Card>
             
-            <Card className="relative border-brandPurple-200 hover:border-brandPurple-400 transition-colors duration-300">
+            <Card className="relative border-brandPurple-200 hover:border-brandPurple-400 transition-colors duration-300 flex flex-col">
               <CardHeader className="text-center pb-2">
                 <CardTitle className="text-xl font-bold text-brandPurple-700">Foundation</CardTitle>
-                <CardDescription>Essential tools for wellbeing</CardDescription>
+                <CardDescription>Plan for improvement</CardDescription>
               </CardHeader>
-              <CardContent className="text-center pt-4">
+              <CardContent className="text-center pt-4 flex-grow">
                 <p className="text-3xl font-bold">£299</p>
                 <p className="text-sm text-gray-500 mb-6">+ VAT (one-off payment)</p>
                 
@@ -171,14 +171,14 @@ const Improve = () => {
                   </li>
                 </ul>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="mt-auto">
                 <Button onClick={() => isFree || isLoading ? handleUpgrade('price_foundation', 'foundation', 'one-time') : null} className="w-full" variant={getButtonVariant('foundation')} disabled={isFoundation || isProgress || isPremium}>
                   {getButtonText('foundation')}
                 </Button>
               </CardFooter>
             </Card>
             
-            <Card className="relative border-brandPurple-400 shadow-lg hover:shadow-xl transition-shadow duration-300 scale-105 z-10">
+            <Card className="relative border-brandPurple-400 shadow-lg hover:shadow-xl transition-shadow duration-300 scale-105 z-10 flex flex-col">
               <div className="absolute -top-4 left-0 right-0 flex justify-center">
                 <span className="bg-brandPurple-600 text-white text-sm font-semibold px-3 py-1 rounded-full">
                   Most Popular
@@ -188,7 +188,7 @@ const Improve = () => {
                 <CardTitle className="text-xl font-bold text-brandPurple-700">Progress</CardTitle>
                 <CardDescription>Comprehensive support & accreditation</CardDescription>
               </CardHeader>
-              <CardContent className="text-center pt-4">
+              <CardContent className="text-center pt-4 flex-grow">
                 <p className="text-3xl font-bold">£1,499</p>
                 <p className="text-sm text-gray-500 mb-6">+ VAT (3-year subscription)</p>
                 
@@ -199,39 +199,31 @@ const Improve = () => {
                   </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>1 space on in-depth training to improve staff wellbeing in your organisation</span>
+                    <span>1 space on our course 'Leading Staff Wellbeing'</span>
                   </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>Quarterly live staff wellbeing networks for one person</span>
-                  </li>
-                  <li className="flex items-start">
-                    <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>Review of your evidence by one of our experienced coaches</span>
+                    <span>Quarterly live staff wellbeing networks</span>
                   </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
                     <span>Formal accreditation and a logo you can use on your website</span>
                   </li>
-                  <li className="flex items-start">
-                    <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>Unlimited email support</span>
-                  </li>
                 </ul>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="mt-auto">
                 <Button onClick={() => isFree || isFoundation || isLoading ? handleUpgrade('price_progress', 'progress', 'subscription') : null} className="w-full" variant={getButtonVariant('progress')} disabled={isProgress || isPremium}>
                   {getButtonText('progress')}
                 </Button>
               </CardFooter>
             </Card>
             
-            <Card className="relative border-brandPurple-200 hover:border-brandPurple-400 transition-colors duration-300">
+            <Card className="relative border-brandPurple-200 hover:border-brandPurple-400 transition-colors duration-300 flex flex-col">
               <CardHeader className="text-center pb-2">
                 <CardTitle className="text-xl font-bold text-brandPurple-700">Premium</CardTitle>
                 <CardDescription>Maximum support & coaching</CardDescription>
               </CardHeader>
-              <CardContent className="text-center pt-4">
+              <CardContent className="text-center pt-4 flex-grow">
                 <p className="text-3xl font-bold">£2,499</p>
                 <p className="text-sm text-gray-500 mb-6">+ VAT (3-year subscription)</p>
                 
@@ -250,7 +242,7 @@ const Improve = () => {
                   </li>
                 </ul>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="mt-auto">
                 <Button onClick={() => isFree || isFoundation || isProgress || isLoading ? handleUpgrade('price_premium', 'premium', 'subscription') : null} className="w-full" variant={getButtonVariant('premium')} disabled={isPremium}>
                   {getButtonText('premium')}
                 </Button>
