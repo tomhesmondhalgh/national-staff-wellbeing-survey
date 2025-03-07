@@ -17,57 +17,64 @@ const ResetPassword = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Enhanced logging for debugging
-  useEffect(() => {
-    console.log("Reset Password Page Loaded");
-    console.log("Current full URL:", window.location.href);
-    console.log("URL hash:", window.location.hash);
-    console.log("URL search params:", window.location.search);
-    console.log("Path:", location.pathname);
-  }, [location]);
-
-  // Simplified token verification logic
+  // Enhanced logging and session detection
   useEffect(() => {
     const checkSession = async () => {
+      console.log("Reset Password Page Loaded");
+      console.log("Current URL:", window.location.href);
+      
       try {
-        // Check if we have an active session
-        const { data: sessionData } = await supabase.auth.getSession();
+        // Try to get auth parameters from URL
+        // This will be automatically processed by Supabase due to detectSessionInUrl: true
         
-        if (sessionData.session) {
-          console.log("Found active session");
-          setPageState('ready');
-          return;
-        }
-        
-        console.log("No active session found, checking for auth parameters in URL");
-        
-        // Check if there's a hash fragment with access_token in the URL
-        const hash = window.location.hash.substring(1);
-        if (hash && hash.includes('access_token')) {
-          console.log("Found access_token in URL hash");
+        // Wait to check if we have a session after Supabase processes the URL
+        setTimeout(async () => {
+          const { data: sessionData } = await supabase.auth.getSession();
           
-          // Let Supabase handle the session creation from the URL
-          // Note: We're not using getSessionFromUrl() as it doesn't exist
-          // Supabase will automatically extract the session if detectSessionInUrl is enabled
-          
-          // Wait a moment for Supabase to process the URL parameters
-          setTimeout(async () => {
-            const { data: refreshedSession } = await supabase.auth.getSession();
-            if (refreshedSession.session) {
-              console.log("Successfully established session from URL parameters");
-              setPageState('ready');
+          if (sessionData.session) {
+            console.log("Session found:", sessionData.session.user.id);
+            setPageState('ready');
+          } else {
+            console.log("No session found after URL processing");
+            
+            // Check if we have token in the URL 
+            // (for cases where Supabase didn't automatically process it)
+            const hasToken = 
+              window.location.hash.includes('access_token') || 
+              window.location.search.includes('token=');
+              
+            if (hasToken) {
+              console.log("Token found in URL, attempting to process manually");
+              
+              // If we have a token but no session, try to manually process it
+              try {
+                // Attempt to set Supabase session from URL
+                const { error } = await supabase.auth.getSessionFromUrl();
+                
+                if (error) {
+                  console.error("Error getting session from URL:", error);
+                  setPageState('invalid');
+                } else {
+                  // Check again for session
+                  const { data: refreshedSession } = await supabase.auth.getSession();
+                  if (refreshedSession.session) {
+                    console.log("Successfully created session from URL");
+                    setPageState('ready');
+                  } else {
+                    console.log("Failed to create session from URL");
+                    setPageState('invalid');
+                  }
+                }
+              } catch (error) {
+                console.error("Error processing URL auth:", error);
+                setPageState('invalid');
+              }
             } else {
-              console.log("Failed to establish session from URL parameters");
+              console.log("No token found in URL");
               setPageState('invalid');
             }
-          }, 500);
-          
-          return;
-        }
-        
-        // If we reach this point, no valid session or token was found
-        console.log("No valid token or session found");
-        setPageState('invalid');
+          }
+        }, 1000); // Give Supabase time to process the URL
       } catch (error) {
         console.error("Error in checkSession:", error);
         setPageState('invalid');
@@ -120,7 +127,7 @@ const ResetPassword = () => {
     } catch (error: any) {
       console.error('Error updating password:', error);
       toast.error('Failed to update password', {
-        description: error.message || 'Please try again later'
+        description: error.message || 'Please try again or request a new reset link'
       });
     } finally {
       setIsSubmitting(false);

@@ -1,4 +1,3 @@
-
 import { User, Provider } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
@@ -177,14 +176,20 @@ export async function completeUserProfile(userId: string, userData: any) {
   }
 }
 
-// Revert to using Supabase's native password reset functionality
+// Simplified to use Supabase's native password reset functionality without custom edge function
 export async function requestPasswordReset(email: string) {
   try {
     console.log("Starting password reset request for:", email);
     
-    // Use Supabase's native resetPasswordForEmail method
+    // Get the current origin for dynamic redirect
+    const origin = window.location.origin;
+    const resetRedirectUrl = `${origin}/reset-password`;
+    
+    console.log("Using redirect URL:", resetRedirectUrl);
+    
+    // Use Supabase's native resetPasswordForEmail method with the dynamic redirect
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://national-staff-wellbeing-survey.lovable.app/reset-password',
+      redirectTo: resetRedirectUrl,
     });
     
     if (error) {
@@ -200,7 +205,7 @@ export async function requestPasswordReset(email: string) {
   }
 }
 
-// Handle password update with better logging
+// Enhanced password update handler with better error handling
 export async function updatePassword(newPassword: string) {
   try {
     console.log("Updating password...");
@@ -209,7 +214,7 @@ export async function updatePassword(newPassword: string) {
     if (!sessionData.session) {
       console.error("No active session found when trying to update password");
       return { 
-        error: new Error("No active session. Please try the reset link again."), 
+        error: new Error("No active session. Please try the reset link again or request a new one."), 
         success: false 
       };
     }
