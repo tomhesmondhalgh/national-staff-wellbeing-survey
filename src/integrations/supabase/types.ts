@@ -9,6 +9,115 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      action_plan_descriptors: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          deadline: string | null
+          descriptor_text: string
+          id: string
+          key_actions: string | null
+          last_updated: string | null
+          reference: string
+          section: string
+          status: Database["public"]["Enums"]["descriptor_status"]
+          template_id: string | null
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          deadline?: string | null
+          descriptor_text: string
+          id?: string
+          key_actions?: string | null
+          last_updated?: string | null
+          reference: string
+          section: string
+          status?: Database["public"]["Enums"]["descriptor_status"]
+          template_id?: string | null
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          deadline?: string | null
+          descriptor_text?: string
+          id?: string
+          key_actions?: string | null
+          last_updated?: string | null
+          reference?: string
+          section?: string
+          status?: Database["public"]["Enums"]["descriptor_status"]
+          template_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_plan_descriptors_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "action_plan_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      action_plan_progress_notes: {
+        Row: {
+          created_at: string
+          descriptor_id: string
+          id: string
+          note_date: string
+          note_text: string
+        }
+        Insert: {
+          created_at?: string
+          descriptor_id: string
+          id?: string
+          note_date?: string
+          note_text: string
+        }
+        Update: {
+          created_at?: string
+          descriptor_id?: string
+          id?: string
+          note_date?: string
+          note_text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_plan_progress_notes_descriptor_id_fkey"
+            columns: ["descriptor_id"]
+            isOneToOne: false
+            referencedRelation: "action_plan_descriptors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      action_plan_templates: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       custom_question_responses: {
         Row: {
           answer: string
@@ -807,6 +916,12 @@ export type Database = {
     }
     Enums: {
       app_role: "administrator" | "user"
+      descriptor_status:
+        | "Not Started"
+        | "In Progress"
+        | "Blocked"
+        | "Completed"
+        | "Not Applicable"
       payment_method: "stripe" | "invoice" | "manual"
       plan_type: "free" | "foundation" | "progress" | "premium"
       subscription_status: "active" | "canceled" | "expired" | "pending"
