@@ -178,8 +178,11 @@ export async function requestPasswordReset(email: string) {
     
     console.log("Using redirect URL:", resetRedirectUrl);
     
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: resetRedirectUrl,
+    const { data, error } = await supabase.functions.invoke('customize-reset-email', {
+      body: { 
+        email, 
+        redirect_url: resetRedirectUrl 
+      }
     });
     
     if (error) {

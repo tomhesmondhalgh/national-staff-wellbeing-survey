@@ -37,6 +37,7 @@ const ResetPassword = () => {
             if (error) {
               console.error("Error exchanging code for session:", error);
               setPageState('invalid');
+              toast.error('Invalid or expired reset link');
               // Redirect to login after a delay
               setTimeout(() => {
                 navigate('/login');
