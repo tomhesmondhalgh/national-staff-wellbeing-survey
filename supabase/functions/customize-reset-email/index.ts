@@ -41,24 +41,14 @@ serve(async (req) => {
     const { email, redirect_url }: ResetPasswordRequest = await req.json();
 
     console.log(`Processing password reset request for email: ${email}`);
-    console.log(`Original Redirect URL: ${redirect_url}`);
-    
-    // Ensure the redirect URL doesn't have a trailing hash
-    let finalRedirectUrl = redirect_url.replace(/#$/, '');
-    
-    // Ensure reset-password is in the URL path
-    if (!finalRedirectUrl.includes('reset-password')) {
-      finalRedirectUrl = `${finalRedirectUrl.replace(/\/$/, '')}/reset-password`;
-    }
-    
-    console.log(`Final Redirect URL before generating link: ${finalRedirectUrl}`);
+    console.log(`Redirect URL: ${redirect_url}`);
 
     // Generate a password reset token using Supabase
     const { data, error } = await supabase.auth.admin.generateLink({
       type: 'recovery',
       email: email,
       options: {
-        redirectTo: finalRedirectUrl,
+        redirectTo: redirect_url,
       }
     });
 
@@ -74,25 +64,6 @@ serve(async (req) => {
     // Get the reset link from Supabase response
     const resetLink = data.properties.action_link;
     console.log("Generated reset link:", resetLink);
-
-    // Validate the reset link format
-    if (!resetLink.includes('token=') || !resetLink.includes('type=recovery')) {
-      console.error("Generated reset link appears to be malformed:", resetLink);
-    }
-
-    // Add project URL configuration check
-    console.log("Checking Supabase project configuration...");
-    const appUrl = new URL(redirect_url).origin;
-    try {
-      const { data: projectData, error: projectError } = await supabase.rpc('get_project_settings');
-      if (projectError) {
-        console.error("Error checking project settings:", projectError);
-      } else if (projectData) {
-        console.log("Project settings:", projectData);
-      }
-    } catch (settingsError) {
-      console.log("Could not fetch project settings, continuing with email send");
-    }
 
     // Send the email using Resend directly
     const emailResponse = await resend.emails.send({
@@ -118,11 +89,6 @@ serve(async (req) => {
               text-align: center;
               margin-bottom: 30px;
               padding: 20px 0;
-            }
-            .logo {
-              width: 180px;
-              margin: 0 auto 20px;
-              display: block;
             }
             .title {
               color: #8b5cf6;

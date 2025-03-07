@@ -176,17 +176,17 @@ export async function completeUserProfile(userId: string, userData: any) {
   }
 }
 
-// Handle password reset request - direct approach
+// Handle password reset request using edge function instead of direct approach
 export async function requestPasswordReset(email: string) {
   try {
     console.log("Starting password reset request for:", email);
     
-    // Direct Supabase method with absolute URL to ensure consistency
-    const redirectTo = 'https://national-staff-wellbeing-survey.lovable.app/reset-password';
-    console.log("Using redirect URL:", redirectTo);
-    
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo
+    // Use our custom edge function instead of the direct method
+    const { data, error } = await supabase.functions.invoke('customize-reset-email', {
+      body: { 
+        email,
+        redirect_url: 'https://national-staff-wellbeing-survey.lovable.app/reset-password'
+      }
     });
     
     if (error) {
