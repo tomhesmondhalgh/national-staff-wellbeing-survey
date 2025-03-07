@@ -22,6 +22,7 @@ import SurveyClosed from './pages/SurveyClosed';
 import Analysis from './pages/Analysis';
 import Profile from './pages/Profile';
 import ResetPassword from './pages/ResetPassword';
+import Admin from './pages/Admin';
 import NotFound from './pages/NotFound';
 
 import './App.css';
@@ -80,6 +81,11 @@ function App() {
           <Route path="/profile" element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin" element={
+            <ProtectedRoute>
+              <Admin />
             </ProtectedRoute>
           } />
           <Route path="*" element={<NotFound />} />

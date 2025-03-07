@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAdminRole } from '../../hooks/useAdminRole';
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -10,6 +11,7 @@ const Navbar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { isAdmin } = useAdminRole();
   
   // Check if user is authenticated
   const isAuthenticated = !!user;
@@ -73,6 +75,14 @@ const Navbar: React.FC = () => {
                 >
                   Profile
                 </Link>
+                {isAdmin && (
+                  <Link 
+                    to="/admin" 
+                    className={`nav-link ${location.pathname === '/admin' ? 'text-brandPurple-600' : ''}`}
+                  >
+                    Admin
+                  </Link>
+                )}
                 <button className="nav-link" onClick={handleSignOut}>Sign Out</button>
               </>
             ) : (
@@ -137,6 +147,15 @@ const Navbar: React.FC = () => {
                 >
                   Profile
                 </Link>
+                {isAdmin && (
+                  <Link 
+                    to="/admin" 
+                    className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Admin
+                  </Link>
+                )}
                 <button 
                   className="block w-full text-left px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
                   onClick={handleSignOut}
