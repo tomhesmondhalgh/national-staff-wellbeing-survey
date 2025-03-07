@@ -54,18 +54,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading = false }) =>
         </div>
         
         <div>
-          <div className="flex items-center justify-between mb-1">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <button 
-              type="button"
-              onClick={() => setForgotPasswordOpen(true)}
-              className="text-sm text-brandPurple-600 hover:text-brandPurple-700 font-medium"
-            >
-              Forgot password?
-            </button>
-          </div>
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1 text-center">
+            Password
+          </label>
           <input
             id="password"
             name="password"
@@ -77,6 +68,15 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading = false }) =>
             onChange={handleChange}
             disabled={isLoading}
           />
+          <div className="mt-2 text-center">
+            <button 
+              type="button"
+              onClick={() => setForgotPasswordOpen(true)}
+              className="text-sm text-brandPurple-600 hover:text-brandPurple-700 font-medium"
+            >
+              Forgot password?
+            </button>
+          </div>
         </div>
         
         <div>
