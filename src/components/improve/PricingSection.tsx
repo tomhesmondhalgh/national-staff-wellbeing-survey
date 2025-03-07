@@ -169,7 +169,7 @@ const PricingSection: React.FC = () => {
         },
         {
           text: "Gold award' logo when accredited to celebrate your achievement",
-          icon: 'trophy'
+          icon: 'trophy' as const
         }
       ],
       planType: 'premium' as PlanType,
