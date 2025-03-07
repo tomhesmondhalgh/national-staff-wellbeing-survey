@@ -78,6 +78,20 @@ serve(async (req) => {
       console.error("Generated reset link appears to be malformed:", resetLink);
     }
 
+    // Add project URL configuration check
+    console.log("Checking Supabase project configuration...");
+    const appUrl = new URL(redirect_url).origin;
+    try {
+      const { data: projectData, error: projectError } = await supabase.rpc('get_project_settings');
+      if (projectError) {
+        console.error("Error checking project settings:", projectError);
+      } else if (projectData) {
+        console.log("Project settings:", projectData);
+      }
+    } catch (settingsError) {
+      console.log("Could not fetch project settings, continuing with email send");
+    }
+
     // Send the email using Resend directly
     const emailResponse = await resend.emails.send({
       from: "Wellbeing Surveys <no-reply@humankindaward.com>",
@@ -136,6 +150,12 @@ serve(async (req) => {
               margin: 20px 0;
               font-weight: bold;
             }
+            .reset-link {
+              word-break: break-all;
+              color: #8b5cf6;
+              margin-top: 20px;
+              font-size: 14px;
+            }
             .footer {
               margin-top: 40px;
               font-size: 12px;
@@ -162,6 +182,9 @@ serve(async (req) => {
             </div>
             
             <p><strong>Important:</strong> This link will expire in 1 hour for security reasons. If you don't use it within that time, you'll need to request a new password reset.</p>
+            
+            <p>If the button doesn't work, copy and paste this link into your browser:</p>
+            <div class="reset-link">${resetLink}</div>
             
             <p>If you didn't request this password reset, you can safely ignore this email.</p>
           </div>

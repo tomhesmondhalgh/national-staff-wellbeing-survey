@@ -28,16 +28,25 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
       
       console.log("Using redirect URL for password reset:", fullRedirectUrl);
       
-      // Call the custom edge function to send the reset email
-      const { error } = await supabase.functions.invoke('customize-reset-email', {
-        body: { 
-          email,
-          redirect_url: fullRedirectUrl
-        }
+      // Try using the built-in Supabase resetPasswordForEmail method first
+      const { error: directResetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: fullRedirectUrl
       });
       
-      if (error) {
-        throw error;
+      if (directResetError) {
+        console.warn("Direct reset failed, falling back to edge function:", directResetError);
+        
+        // Fall back to custom edge function
+        const { error } = await supabase.functions.invoke('customize-reset-email', {
+          body: { 
+            email,
+            redirect_url: fullRedirectUrl
+          }
+        });
+        
+        if (error) {
+          throw error;
+        }
       }
       
       toast.success('Password reset email sent', {
