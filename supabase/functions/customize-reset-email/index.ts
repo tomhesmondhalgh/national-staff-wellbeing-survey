@@ -41,14 +41,22 @@ serve(async (req) => {
     const { email, redirect_url }: ResetPasswordRequest = await req.json();
 
     console.log(`Processing password reset request for email: ${email}`);
-    console.log(`Redirect URL: ${redirect_url}`);
+    console.log(`Original Redirect URL: ${redirect_url}`);
+    
+    // Ensure redirect URL is properly formatted
+    let finalRedirectUrl = redirect_url;
+    if (!finalRedirectUrl.includes('reset-password')) {
+      finalRedirectUrl = `${redirect_url.replace(/\/$/, '')}/reset-password`;
+    }
+    
+    console.log(`Final Redirect URL: ${finalRedirectUrl}`);
 
     // Generate a password reset token using Supabase
     const { data, error } = await supabase.auth.admin.generateLink({
       type: 'recovery',
       email: email,
       options: {
-        redirectTo: redirect_url,
+        redirectTo: finalRedirectUrl,
       }
     });
 
@@ -64,6 +72,11 @@ serve(async (req) => {
     // Get the reset link from Supabase response
     const resetLink = data.properties.action_link;
     console.log("Reset link generated:", resetLink);
+
+    // Validate the reset link format
+    if (!resetLink.includes('token=') || !resetLink.includes('type=recovery')) {
+      console.error("Generated reset link appears to be malformed:", resetLink);
+    }
 
     // Send the email using Resend directly
     const emailResponse = await resend.emails.send({
