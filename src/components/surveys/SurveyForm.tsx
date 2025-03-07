@@ -8,6 +8,13 @@ import { Button } from '../ui/button';
 import SurveyFormInputs from './SurveyFormInputs';
 import { Form } from '../ui/form';
 import SurveyLink from './SurveyLink';
+import { InfoIcon } from 'lucide-react';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip";
 
 // Form schema
 const surveyFormSchema = z.object({
@@ -67,13 +74,27 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
     }
   };
 
+  const handlePreviewClick = () => {
+    // Get current form values
+    const formData = form.getValues();
+    
+    // Store data in sessionStorage (will be cleared when tab is closed)
+    sessionStorage.setItem('previewSurveyData', JSON.stringify(formData));
+    
+    // Open preview in new tab
+    window.open('/survey-preview', '_blank');
+  };
+
+  // Check if survey name is valid for preview
+  const canPreview = form.watch('name')?.length >= 3;
+
   return (
     <div className="space-y-8">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-8">
           <SurveyFormInputs form={form} />
           
-          <div className={`mt-8 ${isEdit ? 'flex justify-between' : 'text-center'}`}>
+          <div className={`mt-8 ${isEdit ? 'flex justify-between' : 'flex justify-center gap-4'}`}>
             <Button 
               type="submit" 
               className="px-8" 
@@ -81,6 +102,29 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
             >
               {isSubmitting ? 'Saving...' : submitButtonText}
             </Button>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      className="px-8" 
+                      onClick={handlePreviewClick}
+                      disabled={!canPreview}
+                    >
+                      Preview Survey
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                {!canPreview && (
+                  <TooltipContent>
+                    <p>Please complete the Survey Name first</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </form>
       </Form>

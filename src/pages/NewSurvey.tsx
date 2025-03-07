@@ -136,7 +136,7 @@ const NewSurvey = () => {
         <SurveyForm 
           onSubmit={handleSubmit} 
           submitButtonText="Create Survey"
-          isEdit={true} // This prop controls button centering
+          isEdit={false} // This controls button centering - setting to false to center both buttons
           isSubmitting={isSubmitting}
         />
       </div>
