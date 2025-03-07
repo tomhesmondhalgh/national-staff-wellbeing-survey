@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
@@ -12,6 +11,7 @@ import { ACTION_PLAN_SECTIONS } from '../types/actionPlan';
 import DescriptorTable from '../components/action-plan/DescriptorTable';
 import SaveTemplateDialog from '../components/action-plan/SaveTemplateDialog';
 import SectionSummary from '../components/action-plan/SectionSummary';
+import BottomNavigation from '../components/action-plan/BottomNavigation';
 
 const Improve = () => {
   const { user } = useAuth();
@@ -65,6 +65,11 @@ const Improve = () => {
     }
   };
 
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <MainLayout>
       <div className="container mx-auto px-4 py-8">
@@ -101,7 +106,7 @@ const Improve = () => {
             </div>
           </div>
         ) : (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="w-full mb-6 overflow-x-auto flex flex-nowrap justify-start">
               <TabsTrigger value="summary" className="flex-shrink-0">
                 Summary
@@ -146,6 +151,8 @@ const Improve = () => {
                 )}
               </TabsContent>
             ))}
+            
+            <BottomNavigation activeTab={activeTab} onTabChange={handleTabChange} />
           </Tabs>
         )}
       </div>
