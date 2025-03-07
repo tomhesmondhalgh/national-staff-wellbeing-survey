@@ -8,7 +8,7 @@ import RadioQuestion from '../components/survey-form/RadioQuestion';
 import RatingQuestion from '../components/survey-form/RatingQuestion';
 import TextQuestion from '../components/survey-form/TextQuestion';
 import SubmitButton from '../components/survey-form/SubmitButton';
-import { ROLE_OPTIONS } from '../components/survey-form/constants';
+import { roleOptions } from '../components/survey-form/constants';
 
 const SurveyPreview = () => {
   const [surveyData, setSurveyData] = useState<SurveyFormData | null>(null);
@@ -16,7 +16,7 @@ const SurveyPreview = () => {
     role: '',
     worklife: '',
     wellbeing: '',
-    recommendation: 5,
+    recommendation: '5',
     feedback: '',
   });
 
@@ -39,12 +39,20 @@ const SurveyPreview = () => {
     setFormState(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleRatingChange = (value: number) => {
+  const handleRatingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
     setFormState(prev => ({ ...prev, recommendation: value }));
   };
 
   if (!surveyData) {
-    return <SurveyNotFound message="Preview data not found. Please go back and try again." />;
+    return (
+      <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto bg-white shadow-sm rounded-lg p-6 sm:p-10">
+          <SurveyNotFound />
+          <p className="text-center text-gray-600 mt-4">Preview data not found. Please go back and try again.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -63,13 +71,13 @@ const SurveyPreview = () => {
         </div>
 
         <div className="border-t border-gray-200 pt-6 mt-6">
-          <SurveyIntro surveyName={surveyData.name} />
+          <SurveyIntro surveyTemplate={{ name: surveyData.name }} />
           
           <form className="mt-8 space-y-6" onSubmit={(e) => e.preventDefault()}>
             <RoleSelect 
               value={formState.role}
               onChange={handleChange}
-              options={ROLE_OPTIONS}
+              options={roleOptions}
             />
             
             <RadioQuestion
@@ -89,6 +97,10 @@ const SurveyPreview = () => {
             />
             
             <RatingQuestion
+              label="How likely are you to recommend this organization to others?"
+              name="recommendation"
+              min={1}
+              max={10}
               value={formState.recommendation}
               onChange={handleRatingChange}
             />
