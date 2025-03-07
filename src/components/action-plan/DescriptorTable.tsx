@@ -36,21 +36,7 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
     setIsLoading(false);
 
     if (result.success && result.data) {
-      // Sort descriptors by reference (assuming reference is in format like "1.1", "1.2", etc.)
-      const sortedDescriptors = result.data.sort((a, b) => {
-        // Extract numbers from reference strings for proper numerical sorting
-        const aRef = a.reference.split('.').map(Number);
-        const bRef = b.reference.split('.').map(Number);
-        
-        // Compare first number
-        if (aRef[0] !== bRef[0]) {
-          return aRef[0] - bRef[0];
-        }
-        // If first number is the same, compare second number
-        return aRef[1] - bRef[1];
-      });
-      
-      setDescriptors(sortedDescriptors);
+      setDescriptors(result.data);
     } else {
       toast.error('Failed to load data');
     }
@@ -136,7 +122,6 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-gray-100">
-                <th className="p-2 text-left font-medium text-gray-600 border border-gray-200 w-20">Reference</th>
                 <th className="p-2 text-left font-medium text-gray-600 border border-gray-200">Descriptor</th>
                 <th className="p-2 text-left font-medium text-gray-600 border border-gray-200 w-32">Status</th>
                 <th className="p-2 text-left font-medium text-gray-600 border border-gray-200 w-32">Deadline</th>
@@ -150,8 +135,6 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
                 <tr key={descriptor.id} className="hover:bg-gray-50">
                   <td className="p-2 border border-gray-200">
                     <div className="font-medium text-gray-900">{descriptor.reference}</div>
-                  </td>
-                  <td className="p-2 border border-gray-200">
                     {descriptor.descriptor_text}
                   </td>
                   <td className="p-2 border border-gray-200">
