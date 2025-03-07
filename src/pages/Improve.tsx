@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -77,7 +76,7 @@ const Improve = () => {
         </div>
         
         <div className="mt-12">
-          <h2 className="text-2xl font-bold text-center mb-10">Choose the Right Plan for Your Organisation</h2>
+          <h2 className="text-2xl font-bold text-center mb-10 py-[30px]">Choose the Right Plan for Your Organisation</h2>
           
           <div className="grid md:grid-cols-4 gap-8">
             {/* Free Plan */}
