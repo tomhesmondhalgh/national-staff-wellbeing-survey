@@ -27,8 +27,11 @@ serve(async (req) => {
 
     const { email, redirect_url }: ResetPasswordRequest = await req.json();
 
+    console.log(`Processing password reset request for email: ${email}`);
+    console.log(`Redirect URL: ${redirect_url}`);
+
     // Use Supabase Admin API to send the password reset email
-    const { error } = await supabase.auth.admin.resetUserPasswordByEmail(email, {
+    const { data, error } = await supabase.auth.admin.resetUserPasswordByEmail(email, {
       redirectTo: redirect_url,
       email_template: {
         subject: 'Reset your password',
@@ -104,7 +107,10 @@ serve(async (req) => {
       },
     });
 
+    console.log("Password reset response:", data);
+    
     if (error) {
+      console.error("Password reset error:", error);
       throw error;
     }
 

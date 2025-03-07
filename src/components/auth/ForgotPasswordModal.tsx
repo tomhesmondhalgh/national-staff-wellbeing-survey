@@ -22,8 +22,12 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
     setIsSubmitting(true);
     
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      // Call the custom edge function to send the reset email
+      const { error } = await supabase.functions.invoke('customize-reset-email', {
+        body: { 
+          email,
+          redirect_url: `${window.location.origin}/reset-password`
+        }
       });
       
       if (error) {
