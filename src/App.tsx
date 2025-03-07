@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from './components/ui/toaster';
 import { AuthProvider } from './contexts/AuthContext';
 import { Toaster as SonnerToaster } from 'sonner';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 
 // Pages
 import Index from './pages/Index';
@@ -29,21 +30,56 @@ function App() {
     <Router>
       <AuthProvider>
         <Routes>
+          {/* Public routes */}
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/email-confirmation" element={<EmailConfirmation />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/surveys" element={<Surveys />} />
-          <Route path="/surveys/:id/edit" element={<EditSurvey />} />
-          <Route path="/new-survey" element={<NewSurvey />} />
           <Route path="/survey" element={<SurveyForm />} />
-          <Route path="/survey-preview" element={<SurveyPreview />} />
           <Route path="/survey-complete" element={<SurveyComplete />} />
           <Route path="/survey-closed" element={<SurveyClosed />} />
-          <Route path="/analysis" element={<Analysis />} />
-          <Route path="/profile" element={<Profile />} />
+          
+          {/* Protected routes */}
+          <Route path="/onboarding" element={
+            <ProtectedRoute>
+              <Onboarding />
+            </ProtectedRoute>
+          } />
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/surveys" element={
+            <ProtectedRoute>
+              <Surveys />
+            </ProtectedRoute>
+          } />
+          <Route path="/surveys/:id/edit" element={
+            <ProtectedRoute>
+              <EditSurvey />
+            </ProtectedRoute>
+          } />
+          <Route path="/new-survey" element={
+            <ProtectedRoute>
+              <NewSurvey />
+            </ProtectedRoute>
+          } />
+          <Route path="/survey-preview" element={
+            <ProtectedRoute>
+              <SurveyPreview />
+            </ProtectedRoute>
+          } />
+          <Route path="/analysis" element={
+            <ProtectedRoute>
+              <Analysis />
+            </ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          } />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster />

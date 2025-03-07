@@ -2,21 +2,16 @@
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { toast } from '../components/ui/use-toast';
 
 export function useAuthState() {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
   const location = useLocation();
 
   console.log('Current route:', location.pathname);
-
-  const isAuthRelatedPage = () => {
-    return ['/login', '/signup', '/onboarding'].includes(location.pathname);
-  };
 
   const checkProfileCompletion = async (user: User) => {
     try {
@@ -62,14 +57,8 @@ export function useAuthState() {
       setIsLoading(false);
       
       // If user is authenticated, check profile completion
-      if (session?.user && !isAuthRelatedPage()) {
+      if (session?.user) {
         checkProfileCompletion(session.user);
-      }
-      
-      // If user is authenticated and on an auth-related page, redirect to dashboard
-      if (session?.user && isAuthRelatedPage()) {
-        console.log('User is authenticated and on auth page, redirecting to dashboard');
-        navigate('/dashboard');
       }
     }).catch(error => {
       console.error('Error getting session:', error);
@@ -85,14 +74,8 @@ export function useAuthState() {
           setUser(session?.user ?? null);
           setIsLoading(false);
           
-          // If user signs in and is on an auth-related page, redirect to dashboard
-          if (session?.user && isAuthRelatedPage()) {
-            console.log('User signed in and on auth page, redirecting to dashboard');
-            navigate('/dashboard');
-          }
-          
-          // If user just signed in and not on auth page, check profile completion
-          if (session?.user && !isAuthRelatedPage()) {
+          // If user just signed in, check profile completion
+          if (session?.user) {
             checkProfileCompletion(session.user);
           }
         }
@@ -107,7 +90,7 @@ export function useAuthState() {
       setIsLoading(false);
       return () => {}; // Return empty cleanup function
     }
-  }, [navigate, location.pathname]);
+  }, []);
 
   return { user, session, isLoading };
 }

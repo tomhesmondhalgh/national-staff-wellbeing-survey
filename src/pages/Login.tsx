@@ -10,8 +10,21 @@ import { toast } from 'sonner';
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signIn } = useAuth();
+  const { signIn, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+
+  // Extract returnTo path from URL if present
+  const getReturnPath = () => {
+    const params = new URLSearchParams(location.search);
+    return params.get('returnTo') || '/dashboard';
+  };
+
+  // Redirect authenticated users
+  useEffect(() => {
+    if (user) {
+      navigate(getReturnPath());
+    }
+  }, [user, navigate, location.search]);
 
   // Check for email confirmation success in the URL
   useEffect(() => {
@@ -30,8 +43,8 @@ const Login = () => {
       const { error, success } = await signIn(data.email, data.password);
       
       if (success) {
-        // Redirect to the dashboard page after successful login
-        navigate('/dashboard');
+        // Redirect to the return path or dashboard after successful login
+        navigate(getReturnPath());
       } else if (error) {
         toast.error('Failed to log in', {
           description: error.message || 'Please check your credentials and try again.'
