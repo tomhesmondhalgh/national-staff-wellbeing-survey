@@ -80,7 +80,7 @@ export const ACTION_PLAN_SECTIONS: ActionPlanSection[] = [
       { reference: '3.4', text: 'Supervision, reflective practice or other mechanisms for support and emotional offloading are in place which enable staff to hold appropriate boundaries when supporting the emotional wellbeing of others.' },
       { reference: '3.5', text: 'New parents/carers are appropriately supported as they enter this new phase of their life and career and those caring for older or sick relatives are appropriately supported.' },
       { reference: '3.6', text: 'All members of staff, including leaders, should be able to spot the early signs of burnout in each other and intervene accordingly.' },
-      { reference: '3.7', text: 'Internal and external meetings are scheduled at times that minimise disruption to staff's personal lives where possible.' },
+      { reference: '3.7', text: 'Internal and external meetings are scheduled at times that minimise disruption to staff\'s personal lives where possible.' },
       { reference: '3.8', text: 'Staff recognise their role and responsibility in helping to maintain a life-work balance' }
     ]
   },
