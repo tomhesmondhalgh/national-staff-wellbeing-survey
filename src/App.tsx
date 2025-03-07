@@ -21,6 +21,7 @@ import SurveyComplete from './pages/SurveyComplete';
 import SurveyClosed from './pages/SurveyClosed';
 import Analysis from './pages/Analysis';
 import Upgrade from './pages/Upgrade';
+import Improve from './pages/Improve';
 import Profile from './pages/Profile';
 import ResetPassword from './pages/ResetPassword';
 import Admin from './pages/Admin';
@@ -82,6 +83,11 @@ function App() {
           <Route path="/upgrade" element={
             <ProtectedRoute>
               <Upgrade />
+            </ProtectedRoute>
+          } />
+          <Route path="/improve" element={
+            <ProtectedRoute>
+              <Improve />
             </ProtectedRoute>
           } />
           <Route path="/profile" element={
