@@ -55,6 +55,21 @@ const Improve = () => {
       <div className="container mx-auto px-4 py-8">
         <PageTitle title="Improving Staff Wellbeing Made Easy" subtitle="Effective evidence-based strategies in an easy-to-use plan" alignment="center" />
         
+        <div className="flex justify-center gap-6 mt-6 mb-8">
+          <div className="flex items-center">
+            <Check className="h-5 w-5 text-green-500 mr-2 shrink-0" />
+            <span className="text-gray-700 font-medium">Show Staff You Value Them</span>
+          </div>
+          <div className="flex items-center">
+            <Check className="h-5 w-5 text-green-500 mr-2 shrink-0" />
+            <span className="text-gray-700 font-medium">Keep Your Best Staff</span>
+          </div>
+          <div className="flex items-center">
+            <Check className="h-5 w-5 text-green-500 mr-2 shrink-0" />
+            <span className="text-gray-700 font-medium">Save Money on Recruitment</span>
+          </div>
+        </div>
+        
         <div className="max-w-4xl mx-auto my-8 text-center">
           <p className="text-lg leading-relaxed text-gray-700 mb-4">Now you know the challenges staff face in your organisation, and the areas they'd like to change, how do you go about making that change happen? The Human Kind Award framework is a detailed set of 59 strategies you can use in your organisation to improve staff wellbeing.</p>
           
