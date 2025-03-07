@@ -29,6 +29,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
       console.log("Environment:", import.meta.env.MODE);
       console.log("Email:", email);
       
+      // Use the direct edge function approach for maximum control
       const { error, success } = await requestPasswordReset(email);
       
       if (success) {

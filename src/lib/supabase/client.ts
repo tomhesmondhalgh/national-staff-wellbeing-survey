@@ -10,9 +10,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    // Explicitly disable built-in redirects to prevent them interfering with our custom handling
     flowType: 'pkce',
-    detectSessionInUrl: false,
+    detectSessionInUrl: true, // Enable session detection in URL for reset password flow
+    storageKey: 'supabase.auth.token',
   },
 });
 

@@ -27,80 +27,69 @@ const ResetPassword = () => {
       console.log("URL search params:", window.location.search);
       
       try {
-        // Get URL fragments
-        const hash = window.location.hash.substring(1);
-        const query = new URLSearchParams(hash || window.location.search);
+        // Let Supabase handle the token exchange automatically
+        const { data: authData, error: authError } = await supabase.auth.getSession();
+        console.log("Current auth state:", authData);
+          
+        if (authError) {
+          console.error("Auth error:", authError);
+        }
         
-        // Check for error
-        const errorCode = query.get('error');
-        const errorDescription = query.get('error_description');
+        // Check if we need to process the URL for recovery tokens
+        // Extract hash params - could be a hash or query string
+        const hashParams = location.hash.substring(1);
+        const queryParams = location.search.substring(1);
         
-        if (errorCode || errorDescription) {
-          console.error("Auth error from URL:", errorCode, errorDescription);
-          setPageState('invalid');
-          toast.error('Reset link error', {
-            description: errorDescription || 'Please request a new password reset link'
-          });
+        // Try both hash and query params
+        const paramsString = hashParams || queryParams;
+        const params = new URLSearchParams(paramsString);
+        
+        // Check for type and token params
+        const type = params.get('type');
+        const token = params.get('token');
+        const accessToken = params.get('access_token');
+        
+        console.log("Token parameters:", { type, token, accessToken });
+        
+        // If we have recovery tokens but no session, try to exchange them
+        if ((type === 'recovery' || type === 'email') && (token || accessToken)) {
+          console.log("Found recovery tokens, attempting to exchange");
+          
+          try {
+            const { data, error } = await supabase.auth.verifyOtp({
+              token_hash: token || accessToken || '',
+              type: 'recovery',
+            });
+            
+            if (error) {
+              console.error("Token verification error:", error);
+              setPageState('invalid');
+              return;
+            }
+            
+            console.log("Token exchange successful:", data);
+            setPageState('ready');
+            return;
+          } catch (verifyError) {
+            console.error("Error verifying token:", verifyError);
+          }
+        }
+        
+        // Check if we already have a valid session
+        if (authData.session) {
+          console.log("User has valid session");
+          setPageState('ready');
           return;
         }
         
-        // Extract token from hash - either using type+access_token pattern or direct token approach
-        const tokenType = query.get('type');
-        const accessToken = query.get('access_token');
-        const token = query.get('token');
+        // If we reach here without a valid session or token, the link is invalid
+        console.log("No valid session or token found");
+        setPageState('invalid');
         
-        console.log("Token analysis:", { tokenType, accessToken, token });
-        
-        let hasValidSession = false;
-        
-        // First try to verify the current session
-        const { data: sessionData } = await supabase.auth.getSession();
-        console.log("Current session:", sessionData);
-        
-        if (sessionData?.session) {
-          hasValidSession = true;
-          console.log("User has an active session already");
-        }
-        // If we have recovery token parameters, try to use them
-        else if ((tokenType === 'recovery' && accessToken) || token) {
-          console.log("Found recovery tokens in URL, attempting to process");
-          
-          // Try to exchange the token for a session
-          const { data, error } = await supabase.auth.verifyOtp({
-            token_hash: token || accessToken || '',
-            type: 'recovery',
-          });
-          
-          if (error) {
-            console.error("Error verifying recovery token:", error);
-            setPageState('invalid');
-            toast.error('Invalid or expired reset link', {
-              description: 'Please request a new password reset link'
-            });
-            return;
-          }
-          
-          console.log("Recovery verification result:", data);
-          
-          if (data?.session) {
-            hasValidSession = true;
-            console.log("Successfully verified recovery token");
-          }
-        }
-        
-        if (hasValidSession) {
-          setPageState('ready');
-        } else {
-          setPageState('invalid');
-          toast.error('Invalid or expired reset link', {
-            description: 'Please request a new password reset link'
-          });
-          
-          // Redirect after a delay
-          setTimeout(() => {
-            navigate('/login');
-          }, 3000);
-        }
+        // After a delay, navigate to login
+        setTimeout(() => {
+          navigate('/login');
+        }, 3000);
       } catch (error) {
         console.error("Error processing reset tokens:", error);
         setPageState('invalid');

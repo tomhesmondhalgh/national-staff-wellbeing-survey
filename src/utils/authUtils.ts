@@ -182,14 +182,18 @@ export async function requestPasswordReset(email: string) {
   try {
     console.log("Initiating password reset for email:", email);
     
-    // Explicitly construct the full redirect URL
-    // Use the prod URL for consistency regardless of where the request is made
-    const redirectTo = "https://national-staff-wellbeing-survey.lovable.app/reset-password";
+    // Use the production URL for the actual reset link
+    const productionDomain = "national-staff-wellbeing-survey.lovable.app";
     
-    console.log("Using hardcoded redirect URL:", redirectTo);
+    // Ensure we have a clean, full URL for the redirect
+    const redirectTo = `https://${productionDomain}/reset-password`;
     
-    // Try using the custom edge function instead
+    console.log("Using redirect URL:", redirectTo);
+    
+    // Try using the custom edge function for maximum control
     try {
+      console.log("Calling customize-reset-email edge function");
+      
       const { data, error: funcError } = await supabase.functions.invoke('customize-reset-email', {
         body: { 
           email: email,
