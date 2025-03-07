@@ -9,7 +9,7 @@ const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut, isAdmin } = useAuth();
+  const { user, signOut } = useAuth();
   
   // Check if user is authenticated
   const isAuthenticated = !!user;
@@ -67,20 +67,6 @@ const Navbar: React.FC = () => {
                 >
                   Analyse
                 </Link>
-                <Link 
-                  to="/improve" 
-                  className={`nav-link ${location.pathname === '/improve' ? 'text-brandPurple-600' : ''}`}
-                >
-                  Improve
-                </Link>
-                {isAdmin && (
-                  <Link 
-                    to="/admin" 
-                    className={`nav-link ${location.pathname.startsWith('/admin') ? 'text-brandPurple-600' : ''}`}
-                  >
-                    Admin
-                  </Link>
-                )}
                 <Link 
                   to="/profile" 
                   className={`nav-link ${location.pathname === '/profile' ? 'text-brandPurple-600' : ''}`}
@@ -144,22 +130,6 @@ const Navbar: React.FC = () => {
                 >
                   Analyse
                 </Link>
-                <Link 
-                  to="/improve" 
-                  className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Improve
-                </Link>
-                {isAdmin && (
-                  <Link 
-                    to="/admin" 
-                    className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Admin
-                  </Link>
-                )}
                 <Link 
                   to="/profile" 
                   className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"

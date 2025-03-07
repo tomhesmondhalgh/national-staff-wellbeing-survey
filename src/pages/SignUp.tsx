@@ -6,7 +6,6 @@ import AuthForm from '../components/auth/AuthForm';
 import PageTitle from '../components/ui/PageTitle';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
-import { supabase } from '../lib/supabase';
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -17,25 +16,6 @@ const SignUp = () => {
     setIsLoading(true);
     
     try {
-      // First check if user exists using our edge function
-      const { data: checkData, error: checkError } = await supabase.functions.invoke('check-user-exists', {
-        body: { email: data.email }
-      });
-      
-      if (checkError) {
-        console.error('Error checking if user exists:', checkError);
-      }
-      
-      // If user exists, show error and redirect to login
-      if (checkData && checkData.exists) {
-        toast.error('Email already registered', {
-          description: 'This email address is already associated with an account. Please try logging in instead.'
-        });
-        setTimeout(() => navigate('/login'), 1000);
-        setIsLoading(false);
-        return;
-      }
-      
       // Only pass the basic information for the first step
       const { error, success, user } = await signUp(data.email, data.password, {
         firstName: data.firstName,
@@ -57,22 +37,9 @@ const SignUp = () => {
         });
       } else if (error) {
         console.error('Detailed signup error:', error);
-        
-        // Improved error message for email already in use
-        if (error.message && (
-            error.message.includes('already registered') || 
-            error.message.includes('already in use') ||
-            error.message.includes('already exists')
-          )) {
-          toast.error('Email already registered', {
-            description: 'This email address is already associated with an account. Please try logging in instead.'
-          });
-          setTimeout(() => navigate('/login'), 1000);
-        } else {
-          toast.error('Failed to create account', {
-            description: error.message || 'Please check your information and try again.'
-          });
-        }
+        toast.error('Failed to create account', {
+          description: error.message || 'Please check your information and try again.'
+        });
       }
     } catch (err: any) {
       console.error('Signup error details:', err);

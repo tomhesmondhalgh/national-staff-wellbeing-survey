@@ -1,3 +1,4 @@
+
 import { User, Provider } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
@@ -11,6 +12,7 @@ export async function signInWithEmail(email: string, password: string) {
     });
 
     if (error) {
+      // Check if the error is related to email confirmation
       if (error.message.includes('Email not confirmed') || 
           error.message.toLowerCase().includes('email confirmation')) {
         return { 
@@ -36,6 +38,7 @@ export async function signInWithEmail(email: string, password: string) {
 // Handle sign up with email and password
 export async function signUpWithEmail(email: string, password: string, userData?: any) {
   try {
+    // If userData is provided, it means we're completing the final signup step
     const options = userData ? {
       data: {
         first_name: userData.firstName,
@@ -102,6 +105,7 @@ export async function signInWithSocialProvider(provider: Provider) {
 // Handle profile completion
 export async function completeUserProfile(userId: string, userData: any) {
   try {
+    // Update user metadata with school information
     const { error: metadataError } = await supabase.auth.updateUser({
       data: {
         job_title: userData.jobTitle,
@@ -114,6 +118,7 @@ export async function completeUserProfile(userId: string, userData: any) {
       throw metadataError;
     }
 
+    // Use service role to bypass RLS policies for initial profile creation
     const { error: profileError } = await supabase.rpc('create_or_update_profile', {
       profile_id: userId,
       profile_first_name: userData.firstName,
@@ -127,6 +132,7 @@ export async function completeUserProfile(userId: string, userData: any) {
       throw profileError;
     }
 
+    // Send welcome email to the user
     try {
       await supabase.functions.invoke('send-welcome-email', {
         body: {
@@ -139,8 +145,10 @@ export async function completeUserProfile(userId: string, userData: any) {
       console.log('Welcome email sent successfully');
     } catch (emailError) {
       console.error('Error sending welcome email:', emailError);
+      // Don't fail the signup if the welcome email fails
     }
     
+    // Send admin notification email
     try {
       await supabase.functions.invoke('send-admin-notification', {
         body: {
@@ -155,6 +163,7 @@ export async function completeUserProfile(userId: string, userData: any) {
       console.log('Admin notification email sent successfully');
     } catch (adminEmailError) {
       console.error('Error sending admin notification email:', adminEmailError);
+      // Don't fail the signup if the admin notification email fails
     }
 
     toast.success('Account setup completed successfully!', {
@@ -164,68 +173,6 @@ export async function completeUserProfile(userId: string, userData: any) {
     return { error: null, success: true };
   } catch (error) {
     console.error('Error completing user profile:', error);
-    return { error: error as Error, success: false };
-  }
-}
-
-// Improved password reset request function that ensures redirection is proper
-export async function requestPasswordReset(email: string) {
-  try {
-    console.log("Starting password reset request for:", email);
-    
-    const origin = window.location.origin;
-    const resetRedirectUrl = `${origin}/reset-password`;
-    
-    console.log("Using redirect URL:", resetRedirectUrl);
-    
-    const { data, error } = await supabase.functions.invoke('customize-reset-email', {
-      body: { 
-        email, 
-        redirect_url: resetRedirectUrl 
-      }
-    });
-    
-    if (error) {
-      console.error("Password reset error:", error);
-      throw error;
-    }
-    
-    console.log("Password reset email sent successfully");
-    return { error: null, success: true };
-  } catch (error) {
-    console.error('Error requesting password reset:', error);
-    return { error: error as Error, success: false };
-  }
-}
-
-// Enhanced password update handler with better error handling
-export async function updatePassword(newPassword: string) {
-  try {
-    console.log("Updating password...");
-    
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (!sessionData.session) {
-      console.error("No active session found when trying to update password");
-      return { 
-        error: new Error("No active session. Please try the reset link again or request a new one."), 
-        success: false 
-      };
-    }
-    
-    console.log("Active session found, proceeding with password update");
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword
-    });
-    
-    if (error) {
-      console.error("Error from updateUser:", error);
-      throw error;
-    }
-    
-    console.log("Password updated successfully");
-    return { error: null, success: true };
-  } catch (error) {
-    console.error('Error updating password:', error);
     return { error: error as Error, success: false };
   }
 }

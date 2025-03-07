@@ -656,27 +656,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_roles: {
-        Row: {
-          created_at: string | null
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
@@ -693,15 +672,9 @@ export type Database = {
         }
         Returns: undefined
       }
-      get_user_role: {
-        Args: {
-          user_id: string
-        }
-        Returns: Database["public"]["Enums"]["app_role"]
-      }
     }
     Enums: {
-      app_role: "administrator" | "user"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
