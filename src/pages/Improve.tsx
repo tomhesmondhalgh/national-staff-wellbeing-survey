@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Check, Trophy } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -95,7 +96,7 @@ const Improve = () => {
       <div className="container mx-auto px-4 py-8">
         <PageTitle title="Improving Staff Wellbeing Made Easy" subtitle="Effective evidence-based strategies in an easy-to-use plan" alignment="center" />
         
-        <div className="flex justify-center gap-6 mt-6 mb-8">
+        <div className="flex flex-col md:flex-row md:justify-center gap-4 md:gap-6 mt-6 mb-8">
           <div className="flex items-center">
             <Check className="h-5 w-5 text-green-500 mr-2 shrink-0" />
             <span className="text-gray-700 font-medium">Show Staff You Value Them</span>
