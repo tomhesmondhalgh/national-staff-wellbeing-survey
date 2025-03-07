@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check } from 'lucide-react';
+import { Check, Trophy } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
@@ -7,6 +7,7 @@ import { Button } from '../components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/card';
 import { useSubscription } from '../hooks/useSubscription';
 import { useToast } from '../hooks/use-toast';
+
 const Improve = () => {
   const navigate = useNavigate();
   const {
@@ -20,6 +21,7 @@ const Improve = () => {
   const {
     toast
   } = useToast();
+
   const handleUpgrade = async (priceId: string, planType: 'foundation' | 'progress' | 'premium', purchaseType: 'subscription' | 'one-time') => {
     try {
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment-session`, {
@@ -51,6 +53,7 @@ const Improve = () => {
       });
     }
   };
+
   const getButtonText = (planType: 'free' | 'foundation' | 'progress' | 'premium') => {
     if (planType === 'free' && isFree || planType === 'foundation' && isFoundation || planType === 'progress' && isProgress || planType === 'premium' && isPremium) {
       return 'Your Current Plan';
@@ -72,6 +75,7 @@ const Improve = () => {
       return `Downgrade to ${planType.charAt(0).toUpperCase() + planType.slice(1)}`;
     }
   };
+
   const getButtonVariant = (planType: 'free' | 'foundation' | 'progress' | 'premium') => {
     if (planType === 'free' && isFree || planType === 'foundation' && isFoundation || planType === 'progress' && isProgress || planType === 'premium' && isPremium) {
       return 'outline';
@@ -86,6 +90,7 @@ const Improve = () => {
     const targetPlanLevel = planLevels[planType];
     return targetPlanLevel > currentPlanLevel ? 'default' : 'outline';
   };
+
   return <MainLayout>
       <div className="container mx-auto px-4 py-8">
         <PageTitle title="Improving Staff Wellbeing Made Easy" subtitle="Effective evidence-based strategies in an easy-to-use plan" alignment="center" />
@@ -194,11 +199,11 @@ const Improve = () => {
                   </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>1 space on our course 'Leading Staff Wellbeing'</span>
+                    <span>1 space on in-depth training to improve staff wellbeing in your organisation</span>
                   </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>Quarterly live staff wellbeing networks</span>
+                    <span>Quarterly live staff wellbeing networks for one person</span>
                   </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
@@ -239,6 +244,10 @@ const Improve = () => {
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
                     <span>Termly coaching meetings throughout your 3 year accreditation period</span>
                   </li>
+                  <li className="flex items-start">
+                    <Trophy className="h-5 w-5 text-yellow-500 mr-2 shrink-0 mt-0.5" />
+                    <span>'Gold award' logo when accredited to celebrate your achievement</span>
+                  </li>
                 </ul>
               </CardContent>
               <CardFooter>
@@ -256,4 +265,5 @@ const Improve = () => {
       </div>
     </MainLayout>;
 };
+
 export default Improve;
