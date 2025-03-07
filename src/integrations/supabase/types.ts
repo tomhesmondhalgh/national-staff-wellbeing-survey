@@ -75,6 +75,50 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_history: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          invoice_number: string | null
+          payment_date: string
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          stripe_payment_id: string | null
+          subscription_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          id?: string
+          invoice_number?: string | null
+          payment_date?: string
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          stripe_payment_id?: string | null
+          subscription_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          invoice_number?: string | null
+          payment_date?: string
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          stripe_payment_id?: string | null
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_history_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -522,6 +566,51 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          created_at: string
+          end_date: string | null
+          id: string
+          invoice_number: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          plan_type: Database["public"]["Enums"]["plan_type"]
+          purchase_type: string
+          start_date: string | null
+          status: Database["public"]["Enums"]["subscription_status"]
+          stripe_subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          invoice_number?: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          plan_type?: Database["public"]["Enums"]["plan_type"]
+          purchase_type?: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          invoice_number?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          plan_type?: Database["public"]["Enums"]["plan_type"]
+          purchase_type?: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       survey_questions: {
         Row: {
           created_at: string | null
@@ -699,9 +788,28 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_user_subscription: {
+        Args: {
+          user_uuid: string
+        }
+        Returns: {
+          plan: Database["public"]["Enums"]["plan_type"]
+          is_active: boolean
+        }[]
+      }
+      user_has_access: {
+        Args: {
+          user_uuid: string
+          required_plan: Database["public"]["Enums"]["plan_type"]
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "administrator" | "user"
+      payment_method: "stripe" | "invoice" | "manual"
+      plan_type: "free" | "foundation" | "progress" | "premium"
+      subscription_status: "active" | "canceled" | "expired" | "pending"
     }
     CompositeTypes: {
       [_ in never]: never

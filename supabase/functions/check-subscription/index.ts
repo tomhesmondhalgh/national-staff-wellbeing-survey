@@ -42,15 +42,60 @@ serve(async (req: Request) => {
       );
     }
 
-    // In a real implementation, you would:
-    // 1. Query your database for the user's subscription status
-    // 2. Or query Stripe for the user's subscription status if you store Stripe customer IDs
-    
-    // For now, we'll just return a placeholder response
+    // Check the database for the user's subscription status
+    const { data: subscriptionData, error: subscriptionError } = await supabase
+      .rpc('get_user_subscription', { user_uuid: user.id });
+
+    if (subscriptionError) {
+      console.error('Error checking subscription:', subscriptionError);
+      return new Response(
+        JSON.stringify({ error: 'Error checking subscription status' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // If user has a Stripe subscription, verify it's still valid with Stripe
+    const { data: subscriptions, error: dbError } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .eq('payment_method', 'stripe')
+      .is('stripe_subscription_id', 'not.null')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (dbError) {
+      console.error('Database error:', dbError);
+    }
+
+    let stripeStatus = null;
+    if (subscriptions && subscriptions.length > 0 && subscriptions[0].stripe_subscription_id) {
+      try {
+        const stripeSubscription = await stripe.subscriptions.retrieve(
+          subscriptions[0].stripe_subscription_id
+        );
+        stripeStatus = stripeSubscription.status;
+        
+        // Update local subscription record if Stripe status doesn't match
+        if ((stripeStatus !== 'active' && stripeStatus !== 'trialing') && 
+            subscriptions[0].status === 'active') {
+          await supabase
+            .from('subscriptions')
+            .update({ status: 'canceled' })
+            .eq('id', subscriptions[0].id);
+        }
+      } catch (stripeError) {
+        console.error('Stripe error:', stripeError);
+      }
+    }
+
+    // Return the subscription information
     return new Response(
       JSON.stringify({ 
-        hasActiveSubscription: false,
-        message: "This is a placeholder. You'll need to implement actual subscription checking logic."
+        hasActiveSubscription: subscriptionData && subscriptionData.length > 0 ? subscriptionData[0].is_active : false,
+        plan: subscriptionData && subscriptionData.length > 0 ? subscriptionData[0].plan : 'free',
+        stripeStatus
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
