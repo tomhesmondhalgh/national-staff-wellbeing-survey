@@ -183,11 +183,14 @@ export const checkForClosedSurveys = async () => {
           continue;
         }
         
+        // The profiles property is a nested object, not an array
+        const creatorProfile = survey.profiles;
+        
         const creator = {
           id: survey.creator_id,
-          email: survey.profiles.email,
-          firstName: survey.profiles.first_name,
-          lastName: survey.profiles.last_name
+          email: creatorProfile.email,
+          firstName: creatorProfile.first_name,
+          lastName: creatorProfile.last_name
         };
         
         // Generate the analysis URL
