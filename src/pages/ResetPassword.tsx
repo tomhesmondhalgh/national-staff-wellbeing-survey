@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
@@ -17,7 +16,6 @@ const ResetPassword = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Enhanced logging and session detection
   useEffect(() => {
     const checkSession = async () => {
       console.log("Reset Password Page Loaded");
@@ -48,22 +46,18 @@ const ResetPassword = () => {
               
               // If we have a token but no session, try to manually process it
               try {
-                // Attempt to set Supabase session from URL
-                const { error } = await supabase.auth.getSessionFromUrl();
+                // Use the correct method to set auth session from URL parameters
+                // The previous getSessionFromUrl() method doesn't exist in current SDK
+                await supabase.auth.getUser();
                 
-                if (error) {
-                  console.error("Error getting session from URL:", error);
-                  setPageState('invalid');
+                // Check again for session
+                const { data: refreshedSession } = await supabase.auth.getSession();
+                if (refreshedSession.session) {
+                  console.log("Successfully created session from URL");
+                  setPageState('ready');
                 } else {
-                  // Check again for session
-                  const { data: refreshedSession } = await supabase.auth.getSession();
-                  if (refreshedSession.session) {
-                    console.log("Successfully created session from URL");
-                    setPageState('ready');
-                  } else {
-                    console.log("Failed to create session from URL");
-                    setPageState('invalid');
-                  }
+                  console.log("Failed to create session from URL");
+                  setPageState('invalid');
                 }
               } catch (error) {
                 console.error("Error processing URL auth:", error);
