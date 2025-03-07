@@ -232,7 +232,7 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
                         className="h-7 px-2 text-xs w-full justify-start"
                       >
                         <FileText className="h-3 w-3 mr-1" />
-                        {descriptor.progress_notes_count || 0}
+                        {descriptor.progress_notes_count ? String(descriptor.progress_notes_count) : '0'}
                       </Button>
                       <Button 
                         size="sm" 
