@@ -8,17 +8,25 @@ import RadioQuestion from '../components/survey-form/RadioQuestion';
 import RatingQuestion from '../components/survey-form/RatingQuestion';
 import TextQuestion from '../components/survey-form/TextQuestion';
 import SubmitButton from '../components/survey-form/SubmitButton';
-import { roleOptions } from '../components/survey-form/constants';
+import { roleOptions, agreementOptions, frequencyOptions } from '../components/survey-form/constants';
 import { SurveyTemplate } from '../utils/surveyUtils';
 
 const SurveyPreview = () => {
   const [surveyData, setSurveyData] = useState<SurveyFormData | null>(null);
   const [formState, setFormState] = useState({
     role: '',
-    worklife: '',
-    wellbeing: '',
-    recommendation: '5',
-    feedback: '',
+    leadershipPrioritize: '',
+    manageableWorkload: '',
+    workLifeBalance: '',
+    healthState: '',
+    valuedMember: '',
+    supportAccess: '',
+    confidenceInRole: '',
+    orgPride: '',
+    recommendationScore: '5',
+    leavingContemplation: '',
+    doingWell: '',
+    improvements: '',
   });
 
   useEffect(() => {
@@ -42,7 +50,7 @@ const SurveyPreview = () => {
 
   const handleRatingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
-    setFormState(prev => ({ ...prev, recommendation: value }));
+    setFormState(prev => ({ ...prev, recommendationScore: value }));
   };
 
   if (!surveyData) {
@@ -91,37 +99,105 @@ const SurveyPreview = () => {
               options={roleOptions}
             />
             
-            <RadioQuestion
-              label="How would you rate your work-life balance?"
-              name="worklife"
-              options={["Very Poor", "Poor", "Average", "Good", "Excellent"]}
-              value={formState.worklife}
+            {/* Agreement Scale Questions */}
+            <RadioQuestion 
+              label="Leadership prioritise staff wellbeing in our organisation" 
+              name="leadershipPrioritize" 
+              options={agreementOptions}
+              value={formState.leadershipPrioritize}
               onChange={handleChange}
             />
             
-            <RadioQuestion
-              label="How would you rate your overall wellbeing at work?"
-              name="wellbeing"
-              options={["Very Poor", "Poor", "Average", "Good", "Excellent"]}
-              value={formState.wellbeing}
+            <RadioQuestion 
+              label="I have a manageable workload" 
+              name="manageableWorkload" 
+              options={agreementOptions}
+              value={formState.manageableWorkload}
               onChange={handleChange}
             />
             
-            <RatingQuestion
-              label="How likely are you to recommend this organization to others?"
-              name="recommendation"
-              min={1}
+            <RadioQuestion 
+              label="I have a good work-life balance" 
+              name="workLifeBalance" 
+              options={agreementOptions}
+              value={formState.workLifeBalance}
+              onChange={handleChange}
+            />
+            
+            <RadioQuestion 
+              label="I am in good physical and mental health" 
+              name="healthState" 
+              options={agreementOptions}
+              value={formState.healthState}
+              onChange={handleChange}
+            />
+            
+            <RadioQuestion 
+              label="I feel a valued member of the team" 
+              name="valuedMember" 
+              options={agreementOptions}
+              value={formState.valuedMember}
+              onChange={handleChange}
+            />
+            
+            <RadioQuestion 
+              label="I know where to get support when needed and feel confident to do so" 
+              name="supportAccess" 
+              options={agreementOptions}
+              value={formState.supportAccess}
+              onChange={handleChange}
+            />
+            
+            <RadioQuestion 
+              label="I feel confident performing my role and am given opportunities to grow" 
+              name="confidenceInRole" 
+              options={agreementOptions}
+              value={formState.confidenceInRole}
+              onChange={handleChange}
+            />
+            
+            <RadioQuestion 
+              label="I am proud to be part of this organisation" 
+              name="orgPride" 
+              options={agreementOptions}
+              value={formState.orgPride}
+              onChange={handleChange}
+            />
+            
+            {/* Numeric Rating */}
+            <RatingQuestion 
+              label="On a Scale of 1-10 How Likely Are You to Recommend This Organisation to Others as a Great Place to Work?" 
+              name="recommendationScore" 
+              min={1} 
               max={10}
-              value={formState.recommendation}
+              value={formState.recommendationScore}
               onChange={handleRatingChange}
             />
             
-            <TextQuestion
-              label="Do you have any suggestions to improve wellbeing in your workplace?"
-              name="feedback"
-              value={formState.feedback}
+            {/* Frequency Question */}
+            <RadioQuestion 
+              label="In the last 6 months I have contemplated leaving my role" 
+              name="leavingContemplation" 
+              options={frequencyOptions}
+              value={formState.leavingContemplation}
               onChange={handleChange}
-              required={false}
+            />
+            
+            {/* Text Questions */}
+            <TextQuestion 
+              label="Thinking about staff wellbeing, what does your organisation do well?" 
+              name="doingWell"
+              value={formState.doingWell}
+              onChange={handleChange}
+              subtitle="This is an anonymous survey, please do not include any personal identifiable data." 
+            />
+            
+            <TextQuestion 
+              label="Thinking about staff wellbeing, what could your organisation do better?" 
+              name="improvements"
+              value={formState.improvements}
+              onChange={handleChange}
+              subtitle="This is an anonymous survey, please do not include any personal identifiable data." 
             />
             
             <SubmitButton isSubmitting={false} />
