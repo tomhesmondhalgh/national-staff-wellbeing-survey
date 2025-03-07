@@ -156,10 +156,9 @@ export const checkForClosedSurveys = async () => {
         close_date,
         creator_id,
         profiles(
-          id,
+          email,
           first_name,
-          last_name,
-          email
+          last_name
         )
       `)
       .gte('close_date', todayStart)
@@ -183,8 +182,15 @@ export const checkForClosedSurveys = async () => {
           continue;
         }
         
-        // The profiles property is a nested object, not an array
-        const creatorProfile = survey.profiles;
+        // Handle the profile data correctly - it's either an object or the first item in an array
+        const creatorProfile = Array.isArray(survey.profiles) 
+          ? survey.profiles[0] 
+          : survey.profiles;
+        
+        if (!creatorProfile || !creatorProfile.email) {
+          console.log(`Survey ${survey.id} has no valid creator profile, skipping notification`);
+          continue;
+        }
         
         const creator = {
           id: survey.creator_id,
