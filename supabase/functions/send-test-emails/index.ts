@@ -37,6 +37,7 @@ serve(async (req) => {
     // Prepare example data for emails
     const surveyName = "Test Survey";
     const surveyUrl = "https://example.com/survey?id=test-123";
+    const analysisUrl = "https://example.com/analysis?id=test-123";
     
     // Send test survey invitation email
     const invitationResponse = await resend.emails.send({
@@ -110,12 +111,52 @@ serve(async (req) => {
       `,
     });
     
+    // Send test closure notification email
+    const closureResponse = await resend.emails.send({
+      from: "Wellbeing Surveys <no-reply@humankindaward.com>",
+      to: email,
+      subject: `[TEST] Your survey "${surveyName}" has now closed - see the results...`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
+          <h1 style="color: #1f2937; font-size: 24px; margin-bottom: 16px;">[TEST] Survey Closed</h1>
+          
+          <p style="color: #4b5563; font-size: 16px; line-height: 1.5; margin-bottom: 24px;">
+            This is a <strong>TEST EMAIL</strong>. Your wellbeing survey "${surveyName}" has now closed.
+          </p>
+          
+          <p style="color: #4b5563; font-size: 16px; line-height: 1.5; margin-bottom: 24px;">
+            Thank you for gathering valuable feedback from your staff. You can now view the complete analysis and insights from the survey responses.
+          </p>
+          
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${analysisUrl}" style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+              View Survey Results
+            </a>
+          </div>
+          
+          <p style="color: #4b5563; font-size: 16px; line-height: 1.5; margin-bottom: 24px;">
+            These insights will help you understand the wellbeing of your staff and identify areas where support may be needed.
+          </p>
+          
+          <p style="color: #6b7280; font-size: 14px; line-height: 1.5; margin-top: 32px;">
+            If the button above doesn't work, copy and paste this link into your browser: 
+            <a href="${analysisUrl}" style="color: #3b82f6; text-decoration: underline;">${analysisUrl}</a>
+          </p>
+          
+          <p style="color: #6b7280; font-size: 14px; text-align: center; margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+            This is a test email. No action is required.
+          </p>
+        </div>
+      `,
+    });
+    
     const responseData = {
       success: true,
       message: `Test emails sent to ${email}`,
       results: {
         invitation: invitationResponse,
-        reminder: reminderResponse
+        reminder: reminderResponse,
+        closure: closureResponse
       },
     };
     

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -54,11 +53,9 @@ const Dashboard = () => {
 
     fetchDashboardData();
 
-    // Add check for closed surveys
-    if (user?.id) {
-      checkForClosedSurveys(user.id).catch(error => {
-        console.error('Error checking for closed surveys:', error);
-      });
+    // Check for closed surveys when the dashboard loads
+    if (user) {
+      checkForClosedSurveys();
     }
   }, [user]);
 

@@ -135,6 +135,89 @@ export const getRecentSurveys = async (limit: number = 3, userId?: string): Prom
   }
 };
 
+export const checkForClosedSurveys = async () => {
+  try {
+    console.log('Checking for surveys that have recently closed');
+    
+    // Get current date in ISO format
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+    
+    // Get the date range for today (start and end of the day)
+    const todayStart = `${todayStr}T00:00:00.000Z`;
+    const todayEnd = `${todayStr}T23:59:59.999Z`;
+    
+    // Find surveys that closed today (close_date is between start and end of today)
+    const { data: closedSurveys, error } = await supabase
+      .from('survey_templates')
+      .select(`
+        id,
+        name,
+        close_date,
+        creator_id,
+        profiles(
+          id,
+          first_name,
+          last_name,
+          email
+        )
+      `)
+      .gte('close_date', todayStart)
+      .lte('close_date', todayEnd)
+      .not('creator_id', 'is', null)
+      .not('close_date', 'is', null);
+    
+    if (error) {
+      console.error('Error fetching closed surveys:', error);
+      return;
+    }
+    
+    console.log(`Found ${closedSurveys?.length || 0} surveys that closed today:`, closedSurveys);
+    
+    // For each closed survey, send a notification to the creator
+    if (closedSurveys && closedSurveys.length > 0) {
+      for (const survey of closedSurveys) {
+        // Skip if there's no creator
+        if (!survey.creator_id || !survey.profiles) {
+          console.log(`Survey ${survey.id} has no creator, skipping notification`);
+          continue;
+        }
+        
+        const creator = {
+          id: survey.creator_id,
+          email: survey.profiles.email,
+          firstName: survey.profiles.first_name,
+          lastName: survey.profiles.last_name
+        };
+        
+        // Generate the analysis URL
+        const baseUrl = window.location.origin;
+        const analysisUrl = `${baseUrl}/analysis?id=${survey.id}`;
+        
+        console.log(`Sending closure notification for survey ${survey.id} to ${creator.email}`);
+        
+        // Call the Edge Function to send the notification
+        const { data, error: notificationError } = await supabase.functions.invoke('send-closure-notification', {
+          body: {
+            surveyId: survey.id,
+            surveyName: survey.name,
+            creator: creator,
+            analysisUrl: analysisUrl
+          }
+        });
+        
+        if (notificationError) {
+          console.error(`Error sending closure notification for survey ${survey.id}:`, notificationError);
+        } else {
+          console.log(`Closure notification sent for survey ${survey.id}:`, data);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Unexpected error in checkForClosedSurveys:', error);
+  }
+};
+
 export const getDashboardStats = async () => {
   try {
     console.log('Fetching dashboard stats');
