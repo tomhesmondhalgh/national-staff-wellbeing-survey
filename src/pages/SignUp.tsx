@@ -37,9 +37,21 @@ const SignUp = () => {
         });
       } else if (error) {
         console.error('Detailed signup error:', error);
-        toast.error('Failed to create account', {
-          description: error.message || 'Please check your information and try again.'
-        });
+        
+        // Improved error message for email already in use
+        if (error.message && (
+            error.message.includes('already registered') || 
+            error.message.includes('already in use') ||
+            error.message.includes('already exists')
+          )) {
+          toast.error('Email already registered', {
+            description: 'This email address is already associated with an account. Please try logging in instead.'
+          });
+        } else {
+          toast.error('Failed to create account', {
+            description: error.message || 'Please check your information and try again.'
+          });
+        }
       }
     } catch (err: any) {
       console.error('Signup error details:', err);
