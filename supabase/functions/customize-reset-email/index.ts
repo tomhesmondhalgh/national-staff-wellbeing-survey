@@ -22,6 +22,10 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Missing Supabase environment variables');
+    }
+
     // Create Supabase client with service role key
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -30,7 +34,7 @@ serve(async (req) => {
     console.log(`Processing password reset request for email: ${email}`);
     console.log(`Redirect URL: ${redirect_url}`);
 
-    // Using the correct admin API for password reset
+    // Using the admin.generateLink API for password recovery
     const { data, error } = await supabase.auth.admin.generateLink({
       type: 'recovery',
       email: email,
@@ -38,8 +42,9 @@ serve(async (req) => {
         redirectTo: redirect_url,
         // Custom email template
         data: {
+          email: email,
           email_template: {
-            subject: 'Reset your password',
+            subject: 'Reset your Wellbeing Surveys password',
             email_from: 'Wellbeing Surveys <noreply@humankindaward.com>',
             email_html: `
             <!DOCTYPE html>
@@ -114,10 +119,10 @@ serve(async (req) => {
       }
     });
 
-    console.log("Password reset response:", data);
+    console.log("Password reset response:", data ? "Success" : "Error");
     
     if (error) {
-      console.error("Password reset error:", error);
+      console.error("Password reset error details:", error);
       throw error;
     }
 
