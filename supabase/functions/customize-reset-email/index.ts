@@ -43,12 +43,16 @@ serve(async (req) => {
     console.log(`Processing password reset request for email: ${email}`);
     console.log(`Redirect URL: ${redirect_url}`);
 
+    // Ensure the redirect URL is clean (no trailing slashes)
+    const cleanRedirectUrl = redirect_url.replace(/\/+$/, '');
+    console.log(`Cleaned redirect URL: ${cleanRedirectUrl}`);
+
     // Generate a password reset token using Supabase
     const { data, error } = await supabase.auth.admin.generateLink({
       type: 'recovery',
       email: email,
       options: {
-        redirectTo: redirect_url,
+        redirectTo: cleanRedirectUrl,
       }
     });
 

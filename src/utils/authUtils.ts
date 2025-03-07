@@ -185,6 +185,7 @@ export async function requestPasswordReset(email: string) {
     const { data, error } = await supabase.functions.invoke('customize-reset-email', {
       body: { 
         email,
+        // Use absolute URL with no trailing slashes or hashes
         redirect_url: 'https://national-staff-wellbeing-survey.lovable.app/reset-password'
       }
     });
@@ -202,19 +203,31 @@ export async function requestPasswordReset(email: string) {
   }
 }
 
-// Handle password update - simplified
+// Handle password update with better logging
 export async function updatePassword(newPassword: string) {
   try {
     console.log("Updating password...");
     
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      console.error("No active session found when trying to update password");
+      return { 
+        error: new Error("No active session. Please try the reset link again."), 
+        success: false 
+      };
+    }
+    
+    console.log("Active session found, proceeding with password update");
     const { error } = await supabase.auth.updateUser({
       password: newPassword
     });
     
     if (error) {
+      console.error("Error from updateUser:", error);
       throw error;
     }
     
+    console.log("Password updated successfully");
     return { error: null, success: true };
   } catch (error) {
     console.error('Error updating password:', error);
