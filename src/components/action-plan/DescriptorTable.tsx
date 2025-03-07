@@ -1,14 +1,16 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, FileText, Plus } from 'lucide-react';
+import { Search, FileText, Plus, CalendarIcon } from 'lucide-react';
 import { ActionPlanDescriptor, DescriptorStatus } from '@/types/actionPlan';
 import { updateDescriptor, getActionPlanDescriptors } from '@/utils/actionPlanUtils';
 import ProgressNoteDialog from './ProgressNoteDialog';
 import ProgressNotesList from './ProgressNotesList';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface DescriptorTableProps {
   userId: string;
@@ -134,13 +136,12 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-gray-100">
-                <th className="p-2 text-left font-medium text-gray-600 border border-gray-200 w-20">Index</th>
-                <th className="p-2 text-left font-medium text-gray-600 border border-gray-200">Descriptor</th>
-                <th className="p-2 text-left font-medium text-gray-600 border border-gray-200 w-32">Status</th>
-                <th className="p-2 text-left font-medium text-gray-600 border border-gray-200 w-32">Deadline</th>
-                <th className="p-2 text-left font-medium text-gray-600 border border-gray-200 w-36">Assigned To</th>
+                <th className="p-2 text-left font-medium text-gray-600 border border-gray-200 w-16">Index</th>
+                <th className="p-2 text-left font-medium text-gray-600 border border-gray-200 w-1/4">Descriptor</th>
+                <th className="p-2 text-left font-medium text-gray-600 border border-gray-200 w-44">Status & Deadline</th>
+                <th className="p-2 text-left font-medium text-gray-600 border border-gray-200 w-32">Assigned To</th>
                 <th className="p-2 text-left font-medium text-gray-600 border border-gray-200">Key Actions</th>
-                <th className="p-2 text-left font-medium text-gray-600 border border-gray-200 w-32">Progress Notes</th>
+                <th className="p-2 text-left font-medium text-gray-600 border border-gray-200 w-28">Notes</th>
               </tr>
             </thead>
             <tbody>
@@ -149,33 +150,37 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
                   <td className="p-2 border border-gray-200 font-medium text-gray-700">
                     {descriptor.index_number}
                   </td>
-                  <td className="p-2 border border-gray-200">
+                  <td className="p-2 border border-gray-200 text-sm">
                     {descriptor.descriptor_text}
                   </td>
                   <td className="p-2 border border-gray-200">
-                    <Select
-                      value={descriptor.status}
-                      onValueChange={(value) => handleStatusChange(descriptor.id, value as DescriptorStatus)}
-                    >
-                      <SelectTrigger className={`${getStatusColor(descriptor.status)} h-8 text-sm`}>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Not Started">Not Started</SelectItem>
-                        <SelectItem value="In Progress">In Progress</SelectItem>
-                        <SelectItem value="Blocked">Blocked</SelectItem>
-                        <SelectItem value="Completed">Completed</SelectItem>
-                        <SelectItem value="Not Applicable">Not Applicable</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </td>
-                  <td className="p-2 border border-gray-200">
-                    <Input
-                      type="date"
-                      value={descriptor.deadline || ''}
-                      onChange={(e) => handleDateChange(descriptor.id, e.target.value)}
-                      className="h-8 text-sm"
-                    />
+                    <div className="flex flex-col space-y-2">
+                      <Select
+                        value={descriptor.status}
+                        onValueChange={(value) => handleStatusChange(descriptor.id, value as DescriptorStatus)}
+                      >
+                        <SelectTrigger className={cn("h-8 text-xs", getStatusColor(descriptor.status))}>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Not Started">Not Started</SelectItem>
+                          <SelectItem value="In Progress">In Progress</SelectItem>
+                          <SelectItem value="Blocked">Blocked</SelectItem>
+                          <SelectItem value="Completed">Completed</SelectItem>
+                          <SelectItem value="Not Applicable">Not Applicable</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      
+                      <div className="flex items-center">
+                        <CalendarIcon className="h-3 w-3 mr-1 text-gray-500" />
+                        <Input
+                          type="date"
+                          value={descriptor.deadline || ''}
+                          onChange={(e) => handleDateChange(descriptor.id, e.target.value)}
+                          className="h-7 text-xs"
+                        />
+                      </div>
+                    </div>
                   </td>
                   <td className="p-2 border border-gray-200">
                     {editingCell?.id === descriptor.id && editingCell?.field === 'assigned_to' ? (
@@ -185,16 +190,16 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
                           onChange={(e) => setEditValue(e.target.value)}
                           onBlur={handleEditSave}
                           onKeyDown={(e) => e.key === 'Enter' && handleEditSave()}
-                          className="h-8 text-sm"
+                          className="h-8 text-xs"
                           autoFocus
                         />
                       </div>
                     ) : (
                       <div
-                        className="cursor-pointer h-8 flex items-center"
+                        className="cursor-pointer h-8 flex items-center text-sm"
                         onClick={() => handleEditStart(descriptor.id, 'assigned_to', descriptor.assigned_to || '')}
                       >
-                        {descriptor.assigned_to || <span className="text-gray-400">Click to assign</span>}
+                        {descriptor.assigned_to || <span className="text-gray-400 text-xs">Click to assign</span>}
                       </div>
                     )}
                   </td>
@@ -211,31 +216,32 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
                       </div>
                     ) : (
                       <div
-                        className="cursor-pointer min-h-[40px]"
+                        className="cursor-pointer min-h-[40px] text-sm"
                         onClick={() => handleEditStart(descriptor.id, 'key_actions', descriptor.key_actions || '')}
                       >
-                        {descriptor.key_actions || <span className="text-gray-400">Click to add key actions</span>}
+                        {descriptor.key_actions || <span className="text-gray-400 text-xs">Click to add key actions</span>}
                       </div>
                     )}
                   </td>
                   <td className="p-2 border border-gray-200">
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => setViewNotesId(descriptor.id)}
-                        className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
-                      >
-                        <FileText className="h-4 w-4 mr-1" />
-                        {descriptor.progress_notes_count 
-                          ? `${descriptor.progress_notes_count}${descriptor.progress_notes_count > 1 ? ' notes' : ' note'}`
-                          : 'No notes'}
-                      </button>
+                    <div className="flex flex-col space-y-1">
                       <Button 
                         size="sm" 
-                        variant="ghost" 
-                        onClick={() => setProgressNoteId(descriptor.id)}
-                        className="h-7 px-2"
+                        variant="outline" 
+                        onClick={() => setViewNotesId(descriptor.id)}
+                        className="h-7 px-2 text-xs w-full justify-start"
                       >
-                        <Plus className="h-4 w-4" />
+                        <FileText className="h-3 w-3 mr-1" />
+                        {descriptor.progress_notes_count || 0}
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => setProgressNoteId(descriptor.id)}
+                        className="h-7 px-2 text-xs w-full justify-start"
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Add
                       </Button>
                     </div>
                   </td>
