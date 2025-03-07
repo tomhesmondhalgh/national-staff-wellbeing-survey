@@ -2,11 +2,11 @@
 import React from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
-import BenefitsSection from '../components/improve/BenefitsSection';
-import IntroSection from '../components/improve/IntroSection';
-import PricingSection from '../components/improve/PricingSection';
+import BenefitsSection from '../components/upgrade/BenefitsSection';
+import IntroSection from '../components/upgrade/IntroSection';
+import PricingSection from '../components/upgrade/PricingSection';
 
-const Improve = () => {
+const Upgrade = () => {
   return (
     <MainLayout>
       <div className="container mx-auto px-4 py-8">
@@ -24,4 +24,4 @@ const Improve = () => {
   );
 };
 
-export default Improve;
+export default Upgrade;

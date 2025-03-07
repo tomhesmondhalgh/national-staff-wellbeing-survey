@@ -70,10 +70,10 @@ const Navbar: React.FC = () => {
                   Analyse
                 </Link>
                 <Link 
-                  to="/improve" 
-                  className={`nav-link ${location.pathname === '/improve' ? 'text-brandPurple-600' : ''}`}
+                  to="/upgrade" 
+                  className={`nav-link ${location.pathname === '/upgrade' ? 'text-brandPurple-600' : ''}`}
                 >
-                  Improve
+                  Upgrade
                 </Link>
                 <Link 
                   to="/profile" 
@@ -147,11 +147,11 @@ const Navbar: React.FC = () => {
                   Analyse
                 </Link>
                 <Link 
-                  to="/improve" 
+                  to="/upgrade" 
                   className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Improve
+                  Upgrade
                 </Link>
                 <Link 
                   to="/profile" 
@@ -202,6 +202,6 @@ const Navbar: React.FC = () => {
       )}
     </header>
   );
-};
+}
 
 export default Navbar;
