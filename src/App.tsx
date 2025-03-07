@@ -21,6 +21,7 @@ import SurveyComplete from './pages/SurveyComplete';
 import SurveyClosed from './pages/SurveyClosed';
 import Analysis from './pages/Analysis';
 import Profile from './pages/Profile';
+import ResetPassword from './pages/ResetPassword';
 import NotFound from './pages/NotFound';
 
 import './App.css';
@@ -35,6 +36,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/email-confirmation" element={<EmailConfirmation />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/survey" element={<SurveyForm />} />
           <Route path="/survey-complete" element={<SurveyComplete />} />
           <Route path="/survey-closed" element={<SurveyClosed />} />

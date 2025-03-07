@@ -26,7 +26,7 @@ const Login = () => {
     }
   }, [user, navigate, location.search]);
 
-  // Check for email confirmation success or password reset in the URL
+  // Check for email confirmation success, password reset, or password reset success in the URL
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     
@@ -39,6 +39,12 @@ const Login = () => {
     if (params.get('email_reset') === 'true') {
       toast.success('Password reset email sent!', {
         description: 'Please check your inbox for instructions to reset your password.'
+      });
+    }
+    
+    if (params.get('password_reset') === 'true') {
+      toast.success('Password reset successfully!', {
+        description: 'You can now log in with your new password.'
       });
     }
   }, [location]);
