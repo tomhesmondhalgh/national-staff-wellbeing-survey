@@ -1,3 +1,4 @@
+
 import { User, Provider } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
@@ -176,13 +177,14 @@ export async function completeUserProfile(userId: string, userData: any) {
   }
 }
 
-// Simplified to use Supabase's native password reset functionality without custom edge function
+// Updated to ensure the redirect is specifically to the reset-password page
 export async function requestPasswordReset(email: string) {
   try {
     console.log("Starting password reset request for:", email);
     
     // Get the current origin for dynamic redirect
     const origin = window.location.origin;
+    // Make sure to redirect specifically to the reset-password path
     const resetRedirectUrl = `${origin}/reset-password`;
     
     console.log("Using redirect URL:", resetRedirectUrl);

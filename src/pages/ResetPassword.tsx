@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
@@ -22,53 +23,76 @@ const ResetPassword = () => {
       console.log("Current URL:", window.location.href);
       
       try {
-        // Try to get auth parameters from URL
-        // This will be automatically processed by Supabase due to detectSessionInUrl: true
+        // Check if we have a "code" parameter in the URL (PKCE flow)
+        const searchParams = new URLSearchParams(window.location.search);
+        const code = searchParams.get('code');
         
-        // Wait to check if we have a session after Supabase processes the URL
-        setTimeout(async () => {
-          const { data: sessionData } = await supabase.auth.getSession();
+        if (code) {
+          console.log("Auth code found in URL:", code);
           
-          if (sessionData.session) {
-            console.log("Session found:", sessionData.session.user.id);
-            setPageState('ready');
-          } else {
-            console.log("No session found after URL processing");
+          try {
+            // Exchange the code for a session
+            const { data, error } = await supabase.auth.exchangeCodeForSession(code);
             
-            // Check if we have token in the URL 
-            // (for cases where Supabase didn't automatically process it)
-            const hasToken = 
-              window.location.hash.includes('access_token') || 
-              window.location.search.includes('token=');
+            if (error) {
+              console.error("Error exchanging code for session:", error);
+              setPageState('invalid');
+              return;
+            }
+            
+            if (data.session) {
+              console.log("Successfully created session from code");
+              setPageState('ready');
+              return;
+            }
+          } catch (error) {
+            console.error("Error processing code:", error);
+            setPageState('invalid');
+            return;
+          }
+        } else {
+          console.log("No code parameter found, checking for existing session");
+        }
+        
+        // If we didn't find a code or couldn't process it, check for an existing session
+        const { data: sessionData } = await supabase.auth.getSession();
+        
+        if (sessionData.session) {
+          console.log("Session found:", sessionData.session.user.id);
+          setPageState('ready');
+        } else {
+          console.log("No session found");
+          
+          // Check for other auth parameters in the URL that might not have been processed
+          const hasAuthParams = 
+            window.location.hash.includes('access_token') || 
+            window.location.search.includes('token=');
+            
+          if (hasAuthParams) {
+            console.log("Auth parameters found in URL, attempting to process manually");
+            
+            try {
+              // Let Supabase try to process the URL parameters
+              await supabase.auth.getUser();
               
-            if (hasToken) {
-              console.log("Token found in URL, attempting to process manually");
-              
-              // If we have a token but no session, try to manually process it
-              try {
-                // Use the correct method to set auth session from URL parameters
-                // The previous getSessionFromUrl() method doesn't exist in current SDK
-                await supabase.auth.getUser();
-                
-                // Check again for session
-                const { data: refreshedSession } = await supabase.auth.getSession();
-                if (refreshedSession.session) {
-                  console.log("Successfully created session from URL");
-                  setPageState('ready');
-                } else {
-                  console.log("Failed to create session from URL");
-                  setPageState('invalid');
-                }
-              } catch (error) {
-                console.error("Error processing URL auth:", error);
+              // Check again for session
+              const { data: refreshedSession } = await supabase.auth.getSession();
+              if (refreshedSession.session) {
+                console.log("Successfully created session from URL parameters");
+                setPageState('ready');
+              } else {
+                console.log("Failed to create session from URL parameters");
                 setPageState('invalid');
               }
-            } else {
-              console.log("No token found in URL");
+            } catch (error) {
+              console.error("Error processing URL auth:", error);
               setPageState('invalid');
             }
+          } else {
+            console.log("No auth parameters found in URL");
+            setPageState('invalid');
           }
-        }, 1000); // Give Supabase time to process the URL
+        }
       } catch (error) {
         console.error("Error in checkSession:", error);
         setPageState('invalid');

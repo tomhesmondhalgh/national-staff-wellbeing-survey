@@ -1,5 +1,4 @@
-
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from './components/ui/toaster';
 import { AuthProvider } from './contexts/AuthContext';
 import { Toaster as SonnerToaster } from 'sonner';
@@ -29,12 +28,27 @@ import Improve from './pages/Improve';
 import './App.css';
 
 function App() {
+  // Helper to check for password reset code and redirect if needed
+  const handleRoot = () => {
+    // Check if URL has a code parameter (password reset)
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    
+    // If there's a code, redirect to reset-password with the code
+    if (code) {
+      return <Navigate to={`/reset-password?code=${code}`} replace />;
+    }
+    
+    // Otherwise, render the Index page
+    return <Index />;
+  };
+
   return (
     <Router>
       <AuthProvider>
         <Routes>
           {/* Public routes */}
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={handleRoot()} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/email-confirmation" element={<EmailConfirmation />} />
