@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import SocialLoginButtons from './SocialLoginButtons';
+import ForgotPasswordModal from './ForgotPasswordModal';
 
 interface LoginFormProps {
   onSubmit: (data: any) => void;
@@ -14,6 +15,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading = false }) =>
     email: '',
     password: '',
   });
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -68,6 +70,17 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading = false }) =>
           />
         </div>
         
+        <div className="text-right">
+          <button 
+            type="button"
+            className="text-sm text-brandPurple-600 hover:text-brandPurple-800 font-medium"
+            onClick={() => setForgotPasswordOpen(true)}
+            disabled={isLoading}
+          >
+            Forgot password?
+          </button>
+        </div>
+        
         <div>
           <button 
             type="submit" 
@@ -94,6 +107,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading = false }) =>
           </Link>
         </p>
       </div>
+
+      <ForgotPasswordModal 
+        isOpen={forgotPasswordOpen} 
+        onClose={() => setForgotPasswordOpen(false)} 
+      />
     </div>
   );
 };
