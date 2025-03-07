@@ -200,10 +200,7 @@ const Improve = () => {
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
                     <span>Quarterly live staff wellbeing networks</span>
                   </li>
-                  <li className="flex items-start">
-                    <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>Review of your evidence by one of our experienced coaches</span>
-                  </li>
+                  
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
                     <span>Formal accreditation and a logo you can use on your website</span>
