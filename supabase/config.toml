@@ -64,3 +64,6 @@ verify_jwt = false
 
 [functions.customize-reset-email]
 verify_jwt = false
+
+[functions.create-stripe-checkout]
+verify_jwt = false

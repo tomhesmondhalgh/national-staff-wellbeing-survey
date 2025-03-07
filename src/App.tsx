@@ -24,6 +24,7 @@ import Profile from './pages/Profile';
 import Admin from './pages/Admin';
 import NotFound from './pages/NotFound';
 import ResetPassword from './pages/ResetPassword';
+import Improve from './pages/Improve';
 
 import './App.css';
 
@@ -41,6 +42,7 @@ function App() {
           <Route path="/survey-complete" element={<SurveyComplete />} />
           <Route path="/survey-closed" element={<SurveyClosed />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/improve" element={<Improve />} />
           
           {/* Protected routes */}
           <Route path="/onboarding" element={
