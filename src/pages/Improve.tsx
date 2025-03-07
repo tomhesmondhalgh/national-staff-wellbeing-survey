@@ -8,7 +8,6 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { useSubscription } from '../hooks/useSubscription';
 import { useToast } from '../hooks/use-toast';
 
-// Let's create an upgradePlan function in useSubscription hook
 const Improve = () => {
   const navigate = useNavigate();
   const {
@@ -120,15 +119,15 @@ const Improve = () => {
                 <ul className="text-left space-y-3 mb-6">
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>Easily issue surveys to staff by email or survey link</span>
+                    <span>Everything in the Free plan, plus...</span>
                   </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>Analyse survey results for your school and compare with national averages</span>
+                    <span>Compare your survey results to national averages</span>
                   </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>The complete Human Kind Framework and online planning tool</span>
+                    <span>Easily plan for improvement with the Human Kind Framework and planning tool</span>
                   </li>
                 </ul>
               </CardContent>
@@ -157,27 +156,19 @@ const Improve = () => {
                 <ul className="text-left space-y-3 mb-6">
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>Easily issue surveys to staff by email or survey link</span>
+                    <span>Everything in the Foundation plan, plus...</span>
                   </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>Analyse survey results for your school and compare with national averages</span>
-                  </li>
-                  <li className="flex items-start">
-                    <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>The complete Human Kind Framework and online planning tool</span>
-                  </li>
-                  <li className="flex items-start">
-                    <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>1 space on in-depth training to improve staff wellbeing</span>
-                  </li>
-                  <li className="flex items-start">
-                    <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>Review of your evidence by one of our experienced coaches</span>
+                    <span>1 space on in-depth training to improve staff wellbeing in your organisation</span>
                   </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
                     <span>Quarterly live staff wellbeing networks for one person</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
+                    <span>Review of your evidence by one of our experienced coaches</span>
                   </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
@@ -209,39 +200,11 @@ const Improve = () => {
                 <ul className="text-left space-y-3 mb-6">
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>Easily issue surveys to staff by email or survey link</span>
+                    <span>Everything in the Progress plan, plus...</span>
                   </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>Analyse survey results for your school and compare with national averages</span>
-                  </li>
-                  <li className="flex items-start">
-                    <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>The complete Human Kind Framework and online planning tool</span>
-                  </li>
-                  <li className="flex items-start">
-                    <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>1 space on in-depth training to improve staff wellbeing</span>
-                  </li>
-                  <li className="flex items-start">
-                    <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>Review of your evidence by one of our experienced coaches</span>
-                  </li>
-                  <li className="flex items-start">
-                    <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>Quarterly live staff wellbeing networks for one person</span>
-                  </li>
-                  <li className="flex items-start">
-                    <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>Formal accreditation and a logo you can use on your website</span>
-                  </li>
-                  <li className="flex items-start">
-                    <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span>Unlimited email support</span>
-                  </li>
-                  <li className="flex items-start">
-                    <Check className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                    <span className="font-medium">Termly coaching meetings throughout your 3 year accreditation period</span>
+                    <span>Termly coaching meetings throughout your 3 year accreditation period</span>
                   </li>
                 </ul>
               </CardContent>
