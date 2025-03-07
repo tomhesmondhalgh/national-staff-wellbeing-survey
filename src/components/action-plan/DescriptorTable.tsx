@@ -46,6 +46,7 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
     descriptor => 
       descriptor.descriptor_text.toLowerCase().includes(searchTerm.toLowerCase()) ||
       descriptor.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      descriptor.index_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (descriptor.assigned_to && descriptor.assigned_to.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (descriptor.key_actions && descriptor.key_actions.toLowerCase().includes(searchTerm.toLowerCase()))
   );
@@ -122,6 +123,7 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-gray-100">
+                <th className="p-2 text-left font-medium text-gray-600 border border-gray-200 w-20">Index</th>
                 <th className="p-2 text-left font-medium text-gray-600 border border-gray-200">Descriptor</th>
                 <th className="p-2 text-left font-medium text-gray-600 border border-gray-200 w-32">Status</th>
                 <th className="p-2 text-left font-medium text-gray-600 border border-gray-200 w-32">Deadline</th>
@@ -133,8 +135,10 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
             <tbody>
               {filteredDescriptors.map((descriptor) => (
                 <tr key={descriptor.id} className="hover:bg-gray-50">
+                  <td className="p-2 border border-gray-200 font-medium text-gray-700">
+                    {descriptor.index_number}
+                  </td>
                   <td className="p-2 border border-gray-200">
-                    <div className="font-medium text-gray-900">{descriptor.reference}</div>
                     {descriptor.descriptor_text}
                   </td>
                   <td className="p-2 border border-gray-200">

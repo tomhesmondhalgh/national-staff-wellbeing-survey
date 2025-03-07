@@ -16,6 +16,7 @@ export type Database = {
           deadline: string | null
           descriptor_text: string
           id: string
+          index_number: string | null
           key_actions: string | null
           last_updated: string | null
           reference: string
@@ -30,6 +31,7 @@ export type Database = {
           deadline?: string | null
           descriptor_text: string
           id?: string
+          index_number?: string | null
           key_actions?: string | null
           last_updated?: string | null
           reference: string
@@ -44,6 +46,7 @@ export type Database = {
           deadline?: string | null
           descriptor_text?: string
           id?: string
+          index_number?: string | null
           key_actions?: string | null
           last_updated?: string | null
           reference?: string

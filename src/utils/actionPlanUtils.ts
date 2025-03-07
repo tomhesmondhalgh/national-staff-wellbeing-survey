@@ -1,4 +1,3 @@
-
 import { supabase } from '../lib/supabase/client';
 import { ActionPlanDescriptor, ActionPlanTemplate, ProgressNote, DescriptorStatus, ACTION_PLAN_SECTIONS } from '../types/actionPlan';
 import { toast } from 'sonner';
@@ -25,6 +24,7 @@ export const initializeActionPlan = async (userId: string) => {
         user_id: userId,
         section: section.title,
         reference: descriptor.reference,
+        index_number: descriptor.index_number,
         descriptor_text: descriptor.text,
         status: 'Not Started' as DescriptorStatus,
       }))
@@ -58,7 +58,7 @@ export const getActionPlanDescriptors = async (userId: string, section?: string)
       query = query.eq('section', section);
     }
 
-    const { data, error } = await query;
+    const { data, error } = await query.order('index_number', { ascending: true });
 
     if (error) throw error;
 
@@ -208,7 +208,7 @@ export const generatePDF = async (userId: string) => {
       .select('*')
       .eq('user_id', userId)
       .order('section')
-      .order('reference');
+      .order('index_number');
 
     if (!descriptors) {
       throw new Error('No data to export');

@@ -128,7 +128,7 @@ const Improve = () => {
             </TabsContent>
             
             {ACTION_PLAN_SECTIONS.map((section) => (
-              <TabsContent key={section.key} value={section.key} className="mt-6">
+              <TabsContent key={section.key} value={section.key} className="mt-6 overflow-x-auto">
                 {user && (
                   <DescriptorTable 
                     userId={user.id}
