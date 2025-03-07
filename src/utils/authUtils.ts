@@ -1,3 +1,4 @@
+
 import { User, Provider } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
@@ -176,18 +177,14 @@ export async function completeUserProfile(userId: string, userData: any) {
   }
 }
 
-// Handle password reset request using edge function instead of direct approach
+// Revert to using Supabase's native password reset functionality
 export async function requestPasswordReset(email: string) {
   try {
     console.log("Starting password reset request for:", email);
     
-    // Use our custom edge function instead of the direct method
-    const { data, error } = await supabase.functions.invoke('customize-reset-email', {
-      body: { 
-        email,
-        // Use absolute URL with no trailing slashes or hashes
-        redirect_url: 'https://national-staff-wellbeing-survey.lovable.app/reset-password'
-      }
+    // Use Supabase's native resetPasswordForEmail method
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://national-staff-wellbeing-survey.lovable.app/reset-password',
     });
     
     if (error) {

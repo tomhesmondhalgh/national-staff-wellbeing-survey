@@ -26,102 +26,46 @@ const ResetPassword = () => {
     console.log("Path:", location.pathname);
   }, [location]);
 
-  // Improved token extraction logic
+  // Simplified token verification logic
   useEffect(() => {
     const checkSession = async () => {
       try {
-        // Check all possible token locations
-        let token = null;
-        let type = null;
+        // Check if we have an active session
+        const { data: sessionData } = await supabase.auth.getSession();
         
-        // 1. Check hash fragment (hash format: #access_token=xyz&type=recovery)
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        if (hashParams.get('access_token')) {
-          token = hashParams.get('access_token');
-          type = hashParams.get('type');
-          console.log("Found token in hash fragment");
-        }
-        
-        // 2. Check query params (query format: ?token=xyz&type=recovery)
-        if (!token) {
-          const queryParams = new URLSearchParams(window.location.search);
-          if (queryParams.get('token')) {
-            token = queryParams.get('token');
-            type = queryParams.get('type');
-            console.log("Found token in query params");
-          }
-        }
-        
-        // Special case: sometimes the token is embedded in the redirect URL
-        // like /reset-password#some-data
-        if (!token && window.location.hash && !hashParams.get('access_token')) {
-          console.log("Found hash without params, trying to extract token manually");
-          // This is a last resort attempt
-          const hashContent = window.location.hash.substring(1);
-          if (hashContent.length > 20) { // Arbitrary length check for a token
-            try {
-              // Try to use it as a token directly
-              const { data: sessionData, error: sessionError } = await supabase.auth.getSessionFromUrl();
-              if (sessionData.session) {
-                console.log("Successfully extracted session from URL");
-                setPageState('ready');
-                return;
-              } else {
-                console.log("Failed to extract session from URL:", sessionError);
-              }
-            } catch (e) {
-              console.error("Error trying to extract session from URL:", e);
-            }
-          }
-        }
-        
-        // If we found a token through any method, attempt to use it
-        if (token) {
-          console.log("Setting session with token");
-          // Attempt to set the session with the token
-          const { data, error } = await supabase.auth.refreshSession({
-            refresh_token: token,
-          });
-          
-          if (error) {
-            console.error("Error refreshing session:", error);
-            
-            // Fallback: try with setSession instead
-            try {
-              const { error: setSessionError } = await supabase.auth.setSession({
-                access_token: token,
-                refresh_token: '',
-              });
-              
-              if (setSessionError) {
-                console.error("Error setting session:", setSessionError);
-                setPageState('invalid');
-                return;
-              } else {
-                console.log("Session set successfully with fallback method");
-                setPageState('ready');
-                return;
-              }
-            } catch (e) {
-              console.error("Exception in setSession fallback:", e);
-              setPageState('invalid');
-              return;
-            }
-          } else {
-            console.log("Session refreshed successfully");
-            setPageState('ready');
-            return;
-          }
-        }
-        
-        // Last attempt: check if we already have a valid session
-        const { data } = await supabase.auth.getSession();
-        if (data.session) {
-          console.log("Found existing valid session");
+        if (sessionData.session) {
+          console.log("Found active session");
           setPageState('ready');
           return;
         }
         
+        console.log("No active session found, checking for auth parameters in URL");
+        
+        // Check if there's a hash fragment with access_token in the URL
+        const hash = window.location.hash.substring(1);
+        if (hash && hash.includes('access_token')) {
+          console.log("Found access_token in URL hash");
+          
+          // Let Supabase handle the session creation from the URL
+          // Note: We're not using getSessionFromUrl() as it doesn't exist
+          // Supabase will automatically extract the session if detectSessionInUrl is enabled
+          
+          // Wait a moment for Supabase to process the URL parameters
+          setTimeout(async () => {
+            const { data: refreshedSession } = await supabase.auth.getSession();
+            if (refreshedSession.session) {
+              console.log("Successfully established session from URL parameters");
+              setPageState('ready');
+            } else {
+              console.log("Failed to establish session from URL parameters");
+              setPageState('invalid');
+            }
+          }, 500);
+          
+          return;
+        }
+        
+        // If we reach this point, no valid session or token was found
         console.log("No valid token or session found");
         setPageState('invalid');
       } catch (error) {
