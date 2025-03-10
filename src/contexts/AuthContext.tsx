@@ -5,6 +5,9 @@ import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { signInWithEmail, signUpWithEmail, signOutUser, signInWithSocialProvider, completeUserProfile } from '../utils/authUtils';
 
+// Define a custom Provider type that includes the values we need
+type AuthProvider = 'google' | 'microsoft' | 'azure';
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -12,7 +15,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<any>;
   signUp: (email: string, password: string, userData?: any) => Promise<any>;
   signOut: () => Promise<any>;
-  socialSignIn: (provider: 'google' | 'microsoft' | 'azure') => Promise<any>;
+  socialSignIn: (provider: AuthProvider) => Promise<any>;
   completeProfile: (userId: string, userData: any) => Promise<any>;
 }
 
@@ -86,8 +89,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return result;
   };
 
-  const socialSignIn = async (provider: 'google' | 'microsoft' | 'azure') => {
-    return signInWithSocialProvider(provider);
+  const socialSignIn = async (provider: AuthProvider) => {
+    return signInWithSocialProvider(provider as any); // Cast to any for compatibility with supabase Provider type
   };
 
   const completeProfile = async (userId: string, userData: any) => {

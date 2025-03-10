@@ -22,7 +22,7 @@ type SchoolSearchResult = {
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { user, completeUserProfile } = useAuth();
+  const { user, completeProfile } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -240,7 +240,7 @@ const Profile = () => {
         lastName: user.user_metadata?.last_name || '',
       };
       
-      const { error, success } = await completeUserProfile(user.id, userData);
+      const { error, success } = await completeProfile(user.id, userData);
       
       if (success) {
         toast.success('Profile updated successfully!');

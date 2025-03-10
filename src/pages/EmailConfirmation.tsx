@@ -4,7 +4,7 @@ import { useLocation, Link, Navigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
 import { Button } from '../components/ui/button';
-import { Envelope, RefreshCw } from 'lucide-react';
+import { Mail, RefreshCw } from 'lucide-react';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -41,7 +41,7 @@ const EmailConfirmation = () => {
         <div className="bg-white rounded-lg shadow-sm p-8 mb-8 text-center">
           <div className="flex justify-center mb-6">
             <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center">
-              <Envelope className="w-8 h-8 text-blue-500" />
+              <Mail className="w-8 h-8 text-blue-500" />
             </div>
           </div>
           
