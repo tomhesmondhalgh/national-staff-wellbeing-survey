@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
@@ -12,6 +13,8 @@ import DescriptorTable from '../components/action-plan/DescriptorTable';
 import SaveTemplateDialog from '../components/action-plan/SaveTemplateDialog';
 import SectionSummary from '../components/action-plan/SectionSummary';
 import BottomNavigation from '../components/action-plan/BottomNavigation';
+import ScreenOrientationOverlay from '../components/ui/ScreenOrientationOverlay';
+import { useOrientation } from '../hooks/useOrientation';
 
 const Improve = () => {
   const { user } = useAuth();
@@ -21,6 +24,8 @@ const Improve = () => {
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const [summaryData, setSummaryData] = useState<any[]>([]);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [overlayDismissed, setOverlayDismissed] = useState(false);
+  const { orientation, isMobile } = useOrientation();
 
   useEffect(() => {
     if (user && !hasInitialized) {
@@ -70,8 +75,15 @@ const Improve = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const shouldShowOverlay = isMobile && orientation === 'portrait' && !overlayDismissed;
+
   return (
     <MainLayout>
+      {shouldShowOverlay && (
+        <ScreenOrientationOverlay 
+          onDismiss={() => setOverlayDismissed(true)} 
+        />
+      )}
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
           <PageTitle 
