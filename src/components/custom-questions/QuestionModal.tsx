@@ -6,6 +6,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { CustomQuestion } from '../../types/customQuestions';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { AlertCircle } from 'lucide-react';
 
 interface QuestionModalProps {
   open: boolean;
@@ -77,7 +78,7 @@ export default function QuestionModal({
       onOpenChange(false);
     } catch (err) {
       console.error('Error in handleSubmit:', err);
-      setError('Failed to save question');
+      setError('Failed to save question. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -176,7 +177,10 @@ export default function QuestionModal({
           )}
 
           {error && (
-            <p className="text-red-500 text-sm">{error}</p>
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md flex items-start">
+              <AlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+              <p className="text-sm">{error}</p>
+            </div>
           )}
 
           <div className="flex justify-end space-x-2">

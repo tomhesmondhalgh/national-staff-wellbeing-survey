@@ -10,11 +10,13 @@ type FrontendQuestionType = 'text' | 'multiple-choice';
 
 // Type-safe conversion functions
 const toDbFormat = (type: FrontendQuestionType): DatabaseQuestionType => {
+  console.log(`Converting frontend type "${type}" to database format`);
   if (type === 'multiple-choice') return 'multiple_choice';
   return 'text';
 };
 
 const toFrontendFormat = (type: DatabaseQuestionType): FrontendQuestionType => {
+  console.log(`Converting database type "${type}" to frontend format`);
   if (type === 'multiple_choice') return 'multiple-choice';
   return 'text';
 };
@@ -26,6 +28,8 @@ export function useQuestionStore() {
   const fetchQuestions = async (showArchived: boolean = false) => {
     try {
       setIsLoading(true);
+      console.log(`Fetching questions (showArchived=${showArchived})`);
+      
       const { data, error } = await supabase
         .from('custom_questions')
         .select('*')
@@ -38,11 +42,16 @@ export function useQuestionStore() {
         return [];
       }
 
+      console.log('Raw questions from database:', data);
+      
       // Convert database format to frontend format
-      const processedData = (data || []).map(q => ({
-        ...q,
-        type: toFrontendFormat(q.type as DatabaseQuestionType)
-      })) as CustomQuestion[];
+      const processedData = (data || []).map(q => {
+        console.log(`Processing question: ID=${q.id}, Type=${q.type}`);
+        return {
+          ...q,
+          type: toFrontendFormat(q.type as DatabaseQuestionType)
+        };
+      }) as CustomQuestion[];
       
       console.log('Fetched questions after processing:', processedData);
       setQuestions(processedData);
@@ -65,9 +74,12 @@ export function useQuestionStore() {
       }
       
       // Convert frontend format to database format
+      const dbType = toDbFormat(question.type as FrontendQuestionType);
+      console.log(`Creating question: Original type=${question.type}, Converted type=${dbType}`);
+      
       const dbQuestion = {
         ...question,
-        type: toDbFormat(question.type as FrontendQuestionType),
+        type: dbType,
         creator_id: user.id,
         archived: false
       };
@@ -85,6 +97,8 @@ export function useQuestionStore() {
         throw error;
       }
 
+      console.log('Raw data returned after insertion:', data);
+      
       // Convert back to frontend format
       const newQuestion: CustomQuestion = {
         ...data,
@@ -110,6 +124,7 @@ export function useQuestionStore() {
       // If type is being updated, convert it to database format
       if (updates.type) {
         dbUpdates.type = toDbFormat(updates.type as FrontendQuestionType);
+        console.log(`Updating question: Original type=${updates.type}, Converted type=${dbUpdates.type}`);
       }
 
       console.log('Updating question with data:', dbUpdates);
