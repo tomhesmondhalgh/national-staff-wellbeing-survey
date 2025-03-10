@@ -39,9 +39,9 @@ const QuestionList: React.FC<QuestionListProps> = ({
           key={question.id} 
           className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-md"
         >
-          <div className="flex-1">
+          <div className="flex flex-col md:flex-row md:items-center flex-1 gap-1 md:gap-3">
             <p className={`${isCompact ? 'text-sm' : 'text-base'} font-medium`}>{question.text}</p>
-            <div className="flex items-center mt-1">
+            <div className="flex items-center">
               <Badge variant="outline" className="text-xs">
                 {question.type === 'text' ? 'Free Text' : 'Multiple Choice'}
               </Badge>
