@@ -1,4 +1,3 @@
-
 import { User, Provider } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
@@ -203,7 +202,7 @@ export async function completeUserProfile(userId: string, userData: any) {
 
 // New function to send user data to Hubspot
 async function sendUserToHubspot(userData: any) {
-  const hubspotListId = '1'; // Replace with your actual Hubspot list ID
+  const hubspotListId = '7323'; // Hubspot list ID
   
   const response = await supabase.functions.invoke('hubspot-integration', {
     body: {
