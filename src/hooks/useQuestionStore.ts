@@ -81,16 +81,14 @@ export function useQuestionStore() {
       }
 
       // Convert database type back to frontend type for the response
-      const frontendType = toFrontendFormat(data.type as DatabaseQuestionType);
-      
-      const processedData = {
+      const frontendQuestion = {
         ...data,
-        type: frontendType
+        type: toFrontendFormat(data.type as DatabaseQuestionType)
       } as CustomQuestion;
       
-      setQuestions(prev => [processedData, ...prev]);
+      setQuestions(prev => [frontendQuestion, ...prev]);
       toast.success('Question created successfully');
-      return processedData;
+      return frontendQuestion;
     } catch (error) {
       console.error('Error creating question:', error);
       toast.error('Failed to create question');
