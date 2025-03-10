@@ -62,6 +62,7 @@ export function useQuestionStore() {
         throw new Error('User not authenticated');
       }
       
+      // Create a properly typed database question object
       const dbQuestion = {
         ...question,
         type: toDbFormat(question.type as FrontendQuestionType),
@@ -80,7 +81,7 @@ export function useQuestionStore() {
         throw error;
       }
 
-      // Create a properly typed frontend question object with explicit type conversion
+      // Create a properly typed frontend question object
       const newQuestion: CustomQuestion = {
         ...data,
         type: toFrontendFormat(data.type as DatabaseQuestionType)
