@@ -38,6 +38,7 @@ export function useQuestionStore() {
         return [];
       }
 
+      // Convert database format to frontend format
       const processedData = (data || []).map(q => ({
         ...q,
         type: toFrontendFormat(q.type as DatabaseQuestionType)
@@ -62,13 +63,15 @@ export function useQuestionStore() {
         throw new Error('User not authenticated');
       }
       
-      // Create a properly typed database question object
+      // Convert frontend format to database format
       const dbQuestion = {
         ...question,
         type: toDbFormat(question.type as FrontendQuestionType),
         creator_id: user.id,
         archived: false
       };
+      
+      console.log('Creating question with data:', dbQuestion);
       
       const { data, error } = await supabase
         .from('custom_questions')
@@ -81,7 +84,7 @@ export function useQuestionStore() {
         throw error;
       }
 
-      // Fix: Cast the type properly before returning
+      // Convert back to frontend format
       const newQuestion: CustomQuestion = {
         ...data,
         type: toFrontendFormat(data.type as DatabaseQuestionType)
@@ -104,9 +107,10 @@ export function useQuestionStore() {
       
       // If type is being updated, convert it to database format
       if (updates.type) {
-        // Fix: Explicitly convert to DatabaseQuestionType
         dbUpdates.type = toDbFormat(updates.type as FrontendQuestionType);
       }
+
+      console.log('Updating question with data:', dbUpdates);
 
       const { error } = await supabase
         .from('custom_questions')
@@ -118,11 +122,7 @@ export function useQuestionStore() {
       setQuestions(prev => prev.map(q => {
         if (q.id === id) {
           // Create a new question object with updates
-          const updatedQuestion = { ...q, ...updates };
-          
-          // We don't need to convert dbUpdates.type back because we're using
-          // the original updates (with frontend format) here
-          return updatedQuestion;
+          return { ...q, ...updates };
         }
         return q;
       }));
