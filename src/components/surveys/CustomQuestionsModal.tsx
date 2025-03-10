@@ -26,7 +26,7 @@ const CustomQuestionsModal: React.FC<CustomQuestionsModalProps> = ({
 }) => {
   const { questions = [], isLoading, refreshQuestions } = useCustomQuestions();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTab, setSelectedTab] = useState<'all' | 'text' | 'multiple-choice'>('all');
+  const [selectedTab, setSelectedTab] = useState<'all' | 'text' | 'multiple_choice'>('all');
   const [refreshing, setRefreshing] = useState(false);
   const navigate = useNavigate();
   
@@ -128,8 +128,8 @@ const CustomQuestionsModal: React.FC<CustomQuestionsModalProps> = ({
             Text
           </button>
           <button
-            className={`px-4 py-2 ${selectedTab === 'multiple-choice' ? 'border-b-2 border-primary font-medium' : 'text-gray-600'}`}
-            onClick={() => setSelectedTab('multiple-choice')}
+            className={`px-4 py-2 ${selectedTab === 'multiple_choice' ? 'border-b-2 border-primary font-medium' : 'text-gray-600'}`}
+            onClick={() => setSelectedTab('multiple_choice')}
           >
             Multiple Choice
           </button>
@@ -214,7 +214,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ question, isSelected, onTog
             <Badge variant="outline" className="text-xs">
               {question.type === 'text' ? 'Free Text' : 'Multiple Choice'}
             </Badge>
-            {question.type === 'multiple-choice' && question.options && (
+            {question.type === 'multiple_choice' && question.options && (
               <span className="text-xs text-gray-500">
                 {question.options.length} options
               </span>
