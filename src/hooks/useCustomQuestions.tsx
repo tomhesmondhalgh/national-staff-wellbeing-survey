@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase/client';
 import { CustomQuestion } from '../types/customQuestions';
@@ -6,8 +5,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/ui/use-toast';
 import { useSubscription } from './useSubscription';
 import { useTestingMode } from '../contexts/TestingModeContext';
+import { toast } from 'sonner';
 
-// Add a local storage key for test questions
 const TEST_QUESTIONS_KEY = 'test_custom_questions';
 
 export function useCustomQuestions() {
@@ -15,12 +14,12 @@ export function useCustomQuestions() {
   const [isLoading, setIsLoading] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
   const [lastFetchTime, setLastFetchTime] = useState<number>(0);
+  const [hasError, setHasError] = useState(false);
   const { user } = useAuth();
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
   const { hasAccess } = useSubscription();
   const { isTestingMode } = useTestingMode();
   
-  // Initialize localStorage for testing mode
   useEffect(() => {
     if (isTestingMode) {
       try {
@@ -36,27 +35,25 @@ export function useCustomQuestions() {
   }, [isTestingMode]);
   
   const fetchQuestions = useCallback(async () => {
-    const now = Date.now();
-    if (now - lastFetchTime < 1000) {
-      console.log('Skipping fetch - too soon since last fetch');
-      return;
-    }
-    
-    setLastFetchTime(now);
-    
-    if (!user) {
-      console.log('No user found, skipping custom questions fetch');
-      setIsLoading(false);
-      setQuestions([]);
-      return;
-    }
-
-    if (isLoading === false) {
-      setIsLoading(true);
-    }
-    
     try {
-      // Check feature access
+      const now = Date.now();
+      if (now - lastFetchTime < 1000) {
+        console.log('Skipping fetch - too soon since last fetch');
+        return;
+      }
+      
+      setLastFetchTime(now);
+      
+      if (!user) {
+        console.log('No user found, skipping custom questions fetch');
+        setIsLoading(false);
+        setQuestions([]);
+        return;
+      }
+
+      setIsLoading(true);
+      setHasError(false);
+      
       let hasFeatureAccess = false;
       try {
         hasFeatureAccess = await hasAccess('foundation');
@@ -79,7 +76,6 @@ export function useCustomQuestions() {
 
       if (isTestingMode) {
         console.log('Using test mode for custom questions');
-        // Initialize with empty array if nothing in localStorage
         let storedQuestions: CustomQuestion[] = [];
         try {
           const storedData = localStorage.getItem(TEST_QUESTIONS_KEY);
@@ -87,7 +83,6 @@ export function useCustomQuestions() {
             storedQuestions = JSON.parse(storedData);
             console.log(`Retrieved ${storedQuestions.length} questions from localStorage`);
           } else {
-            // Initialize empty array in localStorage if not exists
             localStorage.setItem(TEST_QUESTIONS_KEY, JSON.stringify([]));
           }
         } catch (error) {
@@ -95,7 +90,6 @@ export function useCustomQuestions() {
           // Continue with empty array
         }
         
-        // Filter based on showArchived flag, just like we would with real data
         const filteredQuestions = showArchived 
           ? storedQuestions 
           : (storedQuestions || []).filter(q => !q.archived);
@@ -106,7 +100,6 @@ export function useCustomQuestions() {
         return;
       }
 
-      // Adding try-catch within the main try block for better error isolation
       try {
         let query = supabase
           .from('custom_questions')
@@ -128,36 +121,30 @@ export function useCustomQuestions() {
         setQuestions(data || []);
       } catch (dbError) {
         console.error('Database query error:', dbError);
-        toast({
-          title: 'Database Error',
-          description: 'Error connecting to the database. Please try again later.',
-          variant: 'destructive'
-        });
+        toast.error('Failed to load questions');
+        setHasError(true);
         setQuestions([]);
       }
     } catch (error) {
       console.error('Error fetching custom questions:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load your custom questions. Please try again.',
-        variant: 'destructive'
-      });
+      toast.error('Failed to load custom questions');
+      setHasError(true);
       setQuestions([]);
     } finally {
       setIsLoading(false);
     }
-  }, [user, showArchived, toast, hasAccess, isTestingMode, lastFetchTime, isLoading]);
+  }, [user, showArchived, uiToast, hasAccess, isTestingMode, lastFetchTime]);
 
   useEffect(() => {
     console.log('useCustomQuestions effect running, showArchived:', showArchived);
     fetchQuestions().catch(error => {
       console.error('Error in fetchQuestions effect:', error);
       setIsLoading(false);
+      setHasError(true);
       setQuestions([]);
     });
   }, [user, showArchived, isTestingMode, fetchQuestions]);
 
-  // Helper function to save test questions to localStorage
   const saveTestQuestions = (updatedQuestions: CustomQuestion[]) => {
     if (isTestingMode) {
       try {
@@ -165,11 +152,7 @@ export function useCustomQuestions() {
         console.log(`Saved ${updatedQuestions.length} questions to localStorage`);
       } catch (error) {
         console.error('Error saving questions to localStorage:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to save questions to local storage',
-          variant: 'destructive'
-        });
+        toast.error('Failed to save questions to local storage');
       }
     }
   };
@@ -187,11 +170,7 @@ export function useCustomQuestions() {
       }
       
       if (!hasFeatureAccess && !isTestingMode) {
-        toast({
-          title: 'Feature not available',
-          description: 'Custom questions are only available in the Foundation plan and above.',
-          variant: 'destructive'
-        });
+        toast.error('Custom questions are only available in the Foundation plan and above');
         return null;
       }
 
@@ -204,16 +183,12 @@ export function useCustomQuestions() {
           created_at: new Date().toISOString()
         };
         
-        // Use current questions state safely
         const currentQuestions = questions || [];
         const updatedQuestions = [newQuestion, ...currentQuestions];
         setQuestions(updatedQuestions);
         saveTestQuestions(updatedQuestions);
         
-        toast({
-          title: 'Success',
-          description: 'Custom question created successfully (Testing Mode)',
-        });
+        toast.success('Custom question created successfully (Testing Mode)');
         
         return newQuestion;
       }
@@ -234,32 +209,20 @@ export function useCustomQuestions() {
           throw error;
         }
         
-        // Use current questions state safely
         const currentQuestions = questions || [];
         setQuestions([data, ...currentQuestions]);
         
-        toast({
-          title: 'Success',
-          description: 'Custom question created successfully',
-        });
+        toast.success('Custom question created successfully');
         
         return data;
       } catch (dbError) {
         console.error('Database error creating question:', dbError);
-        toast({
-          title: 'Database Error',
-          description: 'Error connecting to the database. Please try again later.',
-          variant: 'destructive'
-        });
+        toast.error('Error connecting to the database. Please try again later.');
         return null;
       }
     } catch (error) {
       console.error('Error creating custom question:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to create custom question. Please try again.',
-        variant: 'destructive'
-      });
+      toast.error('Failed to create custom question. Please try again.');
       return null;
     }
   };
@@ -269,7 +232,6 @@ export function useCustomQuestions() {
     
     try {
       if (isTestingMode) {
-        // Handle null questions state safely
         const currentQuestions = questions || [];
         const updatedQuestions = currentQuestions.map(q => 
           q.id === id ? { ...q, ...updates } : q
@@ -277,10 +239,7 @@ export function useCustomQuestions() {
         setQuestions(updatedQuestions);
         saveTestQuestions(updatedQuestions);
         
-        toast({
-          title: 'Success',
-          description: 'Custom question updated successfully (Testing Mode)',
-        });
+        toast.success('Custom question updated successfully (Testing Mode)');
         
         return true;
       }
@@ -296,34 +255,22 @@ export function useCustomQuestions() {
           throw error;
         }
         
-        // Handle null questions state safely
         const currentQuestions = questions || [];
         setQuestions(
           currentQuestions.map(q => q.id === id ? { ...q, ...updates } : q)
         );
         
-        toast({
-          title: 'Success',
-          description: 'Custom question updated successfully',
-        });
+        toast.success('Custom question updated successfully');
         
         return true;
       } catch (dbError) {
         console.error('Database error updating question:', dbError);
-        toast({
-          title: 'Database Error',
-          description: 'Error connecting to the database. Please try again later.',
-          variant: 'destructive'
-        });
+        toast.error('Error connecting to the database. Please try again later.');
         return false;
       }
     } catch (error) {
       console.error('Error updating custom question:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update custom question. Please try again.',
-        variant: 'destructive'
-      });
+      toast.error('Failed to update custom question. Please try again.');
       return false;
     }
   };
@@ -340,6 +287,7 @@ export function useCustomQuestions() {
   return {
     questions,
     isLoading,
+    hasError,
     createQuestion,
     updateQuestion,
     toggleArchiveQuestion,

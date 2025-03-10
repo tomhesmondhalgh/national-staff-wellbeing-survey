@@ -14,6 +14,7 @@ import {
 } from "../ui/collapsible";
 import { Badge } from '../ui/badge';
 import { useSubscription } from '../../hooks/useSubscription';
+import { toast } from 'sonner';
 
 interface CustomQuestionsSelectProps {
   selectedQuestionIds: string[];
@@ -26,6 +27,7 @@ const CustomQuestionsSelect: React.FC<CustomQuestionsSelectProps> = ({
 }) => {
   const { questions = [], isLoading, refreshQuestions } = useCustomQuestions();
   const [isOpen, setIsOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const navigate = useNavigate();
   const { isPremium, isProgress, isFoundation } = useSubscription();
   
@@ -42,6 +44,28 @@ const CustomQuestionsSelect: React.FC<CustomQuestionsSelectProps> = ({
     
     onChange(newSelected);
   };
+
+  // Handle manual refresh with loading state
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true);
+      await refreshQuestions();
+    } catch (error) {
+      console.error("Error refreshing questions:", error);
+      toast.error("Failed to refresh questions");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+  
+  // Effect to safely refresh questions when component mounts or when opened
+  useEffect(() => {
+    if (isOpen && hasAccess) {
+      refreshQuestions().catch(err => {
+        console.error("Error auto-refreshing questions:", err);
+      });
+    }
+  }, [isOpen, hasAccess, refreshQuestions]);
   
   if (!hasAccess) {
     return (
@@ -99,13 +123,14 @@ const CustomQuestionsSelect: React.FC<CustomQuestionsSelectProps> = ({
               <Button 
                 variant="ghost" 
                 size="sm"
-                onClick={() => refreshQuestions()}
+                onClick={handleRefresh}
+                disabled={refreshing || isLoading}
               >
-                Refresh
+                {refreshing ? "Refreshing..." : "Refresh"}
               </Button>
             </div>
             
-            {isLoading ? (
+            {isLoading || refreshing ? (
               <div className="py-8 text-center">
                 <p>Loading questions...</p>
               </div>
@@ -147,7 +172,7 @@ const CustomQuestionsSelect: React.FC<CustomQuestionsSelectProps> = ({
                           </Badge>
                           {question.type === 'multiple-choice' && (
                             <span className="text-xs text-gray-500 ml-2">
-                              {question.options?.length} options
+                              {question.options?.length || 0} options
                             </span>
                           )}
                         </div>
