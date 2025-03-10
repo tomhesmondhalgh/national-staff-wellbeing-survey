@@ -22,6 +22,7 @@ const NewSurvey = () => {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [savedSurveyId, setSavedSurveyId] = useState<string | null>(null);
 
   // Check for authentication 
   useEffect(() => {
@@ -77,6 +78,9 @@ const NewSurvey = () => {
       }
       
       console.log('Saved survey:', savedSurvey);
+      
+      // Store the survey ID for preview/send functionality
+      setSavedSurveyId(savedSurvey.id);
 
       // Add custom questions to the survey if any selected
       if (customQuestionIds && customQuestionIds.length > 0) {
@@ -95,58 +99,13 @@ const NewSurvey = () => {
         }
       }
 
-      // Process and send emails if recipients are provided
-      if (data.recipients && data.recipients.trim()) {
-        // Generate survey link
-        const baseUrl = window.location.origin;
-        const surveyUrl = `${baseUrl}/survey?id=${savedSurvey.id}`;
-        
-        // Process email addresses: trim spaces, split by commas
-        const emails = data.recipients
-          .split(',')
-          .map(email => email.trim())
-          .filter(email => email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
-        
-        if (emails.length > 0) {
-          try {
-            // Call the Edge Function to send emails
-            const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-survey-email', {
-              body: {
-                surveyId: savedSurvey.id,
-                surveyName: data.name,
-                emails: emails,
-                surveyUrl: surveyUrl,
-                isReminder: false
-              }
-            });
-            
-            if (emailError) {
-              console.error('Error sending emails:', emailError);
-              toast.error("Survey created but emails could not be sent", {
-                description: "Your survey was created successfully, but there was an issue sending invitation emails."
-              });
-            } else {
-              console.log('Email sending result:', emailResult);
-              toast.success("Survey created and invitations sent", {
-                description: `Invitations sent to ${emails.length} recipients.`
-              });
-            }
-          } catch (invokeFunctionError) {
-            console.error('Error invoking send-survey-email function:', invokeFunctionError);
-            toast.error("Survey created but emails could not be sent", {
-              description: "Your survey was created successfully, but there was an issue sending invitation emails."
-            });
-          }
-        }
-      } else {
-        // Show success toast notification without email info
-        toast.success("Survey created successfully!", {
-          description: "Your survey will be sent to staff on the specified date."
-        });
-      }
+      toast.success("Survey created successfully!", {
+        description: "Your survey has been saved. You can now preview or send it."
+      });
       
-      // Navigate to the surveys page after success
-      setTimeout(() => navigate('/surveys'), 1500);
+      // Redirect to the edit page for the new survey
+      navigate(`/surveys/${savedSurvey.id}/edit`);
+      
     } catch (error) {
       console.error('Error creating survey:', error);
       toast.error("Failed to create survey", {
@@ -186,9 +145,10 @@ const NewSurvey = () => {
         <SurveyForm 
           onSubmit={handleSubmit} 
           submitButtonText="Create Survey"
-          isEdit={false} // This controls button centering - setting to false to center both buttons
+          isEdit={false}
           isSubmitting={isSubmitting}
           initialCustomQuestionIds={[]}
+          surveyId={savedSurveyId}
         />
       </div>
     </MainLayout>

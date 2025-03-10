@@ -22,6 +22,7 @@ const EditSurvey = () => {
   const [customQuestionIds, setCustomQuestionIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
   useEffect(() => {
     const fetchSurvey = async () => {
@@ -138,6 +139,80 @@ const EditSurvey = () => {
     }
   };
 
+  const handleSendSurvey = async () => {
+    if (!id || !surveyData) return;
+    
+    setIsSending(true);
+    
+    try {
+      // Get the survey data first to confirm recipients
+      const { data: survey, error: surveyError } = await supabase
+        .from('survey_templates')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (surveyError) throw surveyError;
+      
+      if (!survey) {
+        toast.error("Survey not found");
+        return;
+      }
+      
+      // Check if there are recipients
+      if (!survey.emails || survey.emails.trim() === '') {
+        toast.error("No recipients specified", {
+          description: "Please add email recipients before sending the survey."
+        });
+        return;
+      }
+      
+      // Generate survey link
+      const baseUrl = window.location.origin;
+      const surveyUrl = `${baseUrl}/survey?id=${id}`;
+      
+      // Process email addresses: trim spaces, split by commas
+      const emails = survey.emails
+        .split(',')
+        .map(email => email.trim())
+        .filter(email => email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
+      
+      if (emails.length === 0) {
+        toast.error("No valid email addresses found", {
+          description: "Please check the email addresses you've entered."
+        });
+        return;
+      }
+      
+      // Call the Edge Function to send emails
+      const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-survey-email', {
+        body: {
+          surveyId: id,
+          surveyName: survey.name,
+          emails: emails,
+          surveyUrl: surveyUrl,
+          isReminder: false
+        }
+      });
+      
+      if (emailError) {
+        throw emailError;
+      }
+      
+      toast.success("Survey invitations sent", {
+        description: `Invitations sent to ${emails.length} recipients.`
+      });
+      
+    } catch (error) {
+      console.error('Error sending survey invitations:', error);
+      toast.error("Failed to send survey invitations", {
+        description: "There was a problem sending the invitations. Please try again."
+      });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <MainLayout>
@@ -198,6 +273,7 @@ const EditSurvey = () => {
           surveyId={id}
           isSubmitting={isSubmitting}
           initialCustomQuestionIds={customQuestionIds}
+          onSendSurvey={handleSendSurvey}
         />
       </div>
     </MainLayout>

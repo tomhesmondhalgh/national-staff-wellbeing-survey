@@ -1,9 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { format } from 'date-fns';
 import { Button } from '../ui/button';
 import SurveyFormInputs from './SurveyFormInputs';
 import { Form } from '../ui/form';
@@ -16,6 +15,7 @@ import {
   TooltipTrigger,
 } from "../ui/tooltip";
 import CustomQuestionsSelect from './CustomQuestionsSelect';
+import { useNavigate } from 'react-router-dom';
 
 // Form schema
 const surveyFormSchema = z.object({
@@ -37,6 +37,7 @@ interface SurveyFormProps {
   surveyId?: string;
   isSubmitting?: boolean;
   initialCustomQuestionIds?: string[];
+  onSendSurvey?: () => void;
 }
 
 const SurveyForm: React.FC<SurveyFormProps> = ({ 
@@ -46,11 +47,13 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
   isEdit = false,
   surveyId,
   isSubmitting = false,
-  initialCustomQuestionIds = []
+  initialCustomQuestionIds = [],
+  onSendSurvey
 }) => {
   const [showSurveyLink, setShowSurveyLink] = useState<boolean>(false);
   const [surveyLink, setSurveyLink] = useState<string>('');
   const [selectedCustomQuestionIds, setSelectedCustomQuestionIds] = useState<string[]>(initialCustomQuestionIds);
+  const navigate = useNavigate();
   
   const form = useForm<SurveyFormData>({
     resolver: zodResolver(surveyFormSchema),
@@ -63,7 +66,7 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
   });
   
   // If we're showing the survey link, generate the link when needed
-  useEffect(() => {
+  React.useEffect(() => {
     if (showSurveyLink && surveyId) {
       const baseUrl = window.location.origin;
       setSurveyLink(`${baseUrl}/survey?id=${surveyId}`);
@@ -79,21 +82,20 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
   };
 
   const handlePreviewClick = () => {
-    // Get current form values
-    const formData = form.getValues();
-    
-    // Store data in sessionStorage (will be cleared when tab is closed)
-    sessionStorage.setItem('previewSurveyData', JSON.stringify({
-      ...formData,
-      customQuestionIds: selectedCustomQuestionIds || []
-    }));
-    
-    // Open preview in new tab
-    window.open('/survey-preview', '_blank');
+    if (surveyId) {
+      // Open preview in new tab using the real survey URL with a preview parameter
+      window.open(`/survey?id=${surveyId}&preview=true`, '_blank');
+    }
+  };
+  
+  const handleSendSurvey = () => {
+    if (onSendSurvey) {
+      onSendSurvey();
+    }
   };
 
-  // Check if survey name is valid for preview
-  const canPreview = form.watch('name')?.length >= 3;
+  // Check if survey has been saved (has an ID)
+  const canPreview = !!surveyId;
 
   return (
     <div className="space-y-8">
@@ -107,7 +109,7 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
             onChange={setSelectedCustomQuestionIds}
           />
           
-          <div className={`mt-8 ${isEdit ? 'flex justify-between' : 'flex justify-center gap-4'}`}>
+          <div className="mt-8 flex flex-wrap gap-4 justify-center sm:justify-between">
             <Button 
               type="submit" 
               className="px-8" 
@@ -116,28 +118,55 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
               {isSubmitting ? 'Saving...' : submitButtonText}
             </Button>
             
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      className="px-8" 
-                      onClick={handlePreviewClick}
-                      disabled={!canPreview}
-                    >
-                      Preview Survey
-                    </Button>
-                  </div>
-                </TooltipTrigger>
-                {!canPreview && (
-                  <TooltipContent>
-                    <p>Please complete the Survey Name first</p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
+            <div className="flex gap-4">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        className="px-6" 
+                        onClick={handlePreviewClick}
+                        disabled={!canPreview}
+                      >
+                        Preview
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                  {!canPreview && (
+                    <TooltipContent>
+                      <p>Save the survey first to enable preview</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
+              
+              {isEdit && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div>
+                        <Button 
+                          type="button" 
+                          variant="secondary" 
+                          className="px-6" 
+                          onClick={handleSendSurvey}
+                          disabled={!canPreview}
+                        >
+                          Send
+                        </Button>
+                      </div>
+                    </TooltipTrigger>
+                    {!canPreview && (
+                      <TooltipContent>
+                        <p>Save the survey first to enable sending</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
           </div>
         </form>
       </Form>
