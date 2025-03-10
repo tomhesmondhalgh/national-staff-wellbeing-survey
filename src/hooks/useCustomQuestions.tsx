@@ -32,6 +32,7 @@ export function useCustomQuestions() {
     if (!user) {
       console.log('No user found, skipping custom questions fetch');
       setIsLoading(false);
+      setQuestions([]);
       return;
     }
 
@@ -56,13 +57,16 @@ export function useCustomQuestions() {
 
       if (isTestingMode) {
         console.log('Using test mode for custom questions');
-        // Retrieve questions from localStorage instead of fixed mock data
+        // Initialize with empty array if nothing in localStorage
         let storedQuestions: CustomQuestion[] = [];
         try {
           const storedData = localStorage.getItem(TEST_QUESTIONS_KEY);
           if (storedData) {
             storedQuestions = JSON.parse(storedData);
             console.log(`Retrieved ${storedQuestions.length} questions from localStorage`);
+          } else {
+            // Initialize empty array in localStorage if not exists
+            localStorage.setItem(TEST_QUESTIONS_KEY, JSON.stringify([]));
           }
         } catch (error) {
           console.error('Error parsing stored questions:', error);

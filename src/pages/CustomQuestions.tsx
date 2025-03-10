@@ -28,8 +28,9 @@ const CustomQuestions: React.FC = () => {
         description: 'Please log in to access this page',
         variant: 'destructive'
       });
+      navigate('/login');
     }
-  }, [user, toast]);
+  }, [user, toast, navigate]);
   
   const {
     questions,
@@ -43,12 +44,13 @@ const CustomQuestions: React.FC = () => {
   } = useCustomQuestions();
   
   console.log('Current showArchived state:', showArchived);
+  console.log('Questions loaded:', questions?.length || 0);
   
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<CustomQuestion | undefined>(undefined);
   
   useEffect(() => {
-    console.log('Questions loaded:', questions.length);
+    console.log('Questions loaded:', questions?.length || 0);
     console.log('Is loading:', isLoading);
     console.log('Show archived:', showArchived);
   }, [questions, isLoading, showArchived]);
@@ -78,6 +80,23 @@ const CustomQuestions: React.FC = () => {
     refreshQuestions();
   };
 
+  // If the user is not authenticated, we show a loading state instead of redirecting
+  // The redirection will happen in the useEffect hook
+  if (!user) {
+    return (
+      <MainLayout>
+        <div className="page-container">
+          <div className="flex items-center justify-between mb-6">
+            <PageTitle 
+              title="Loading..." 
+              subtitle="Please wait while we check your authentication status"
+            />
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout>
       <div className="page-container">
@@ -105,7 +124,7 @@ const CustomQuestions: React.FC = () => {
         </div>
 
         <CustomQuestionsList
-          questions={questions}
+          questions={questions || []}
           isLoading={isLoading}
           onEdit={handleEditQuestion}
           onArchive={toggleArchiveQuestion}
