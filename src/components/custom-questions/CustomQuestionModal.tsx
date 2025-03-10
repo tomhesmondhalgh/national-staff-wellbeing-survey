@@ -40,7 +40,7 @@ const CustomQuestionModal: React.FC<CustomQuestionModalProps> = ({
     if (initialData) {
       setQuestionText(initialData.text || '');
       setQuestionType(initialData.type || 'text');
-      setOptions(initialData.options || ['']);
+      setOptions(initialData.options?.length ? initialData.options : ['']);
     } else {
       // Reset form when opening for new question
       setQuestionText('');

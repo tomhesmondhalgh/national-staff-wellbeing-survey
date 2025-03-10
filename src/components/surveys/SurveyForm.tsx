@@ -71,7 +71,7 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
   }, [showSurveyLink, surveyId]);
   
   const handleFormSubmit = (data: SurveyFormData) => {
-    onSubmit(data, selectedCustomQuestionIds);
+    onSubmit(data, selectedCustomQuestionIds || []);
     
     if (isEdit && surveyId) {
       setShowSurveyLink(true);
@@ -85,7 +85,7 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
     // Store data in sessionStorage (will be cleared when tab is closed)
     sessionStorage.setItem('previewSurveyData', JSON.stringify({
       ...formData,
-      customQuestionIds: selectedCustomQuestionIds
+      customQuestionIds: selectedCustomQuestionIds || []
     }));
     
     // Open preview in new tab
@@ -103,7 +103,7 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
           
           {/* Custom Questions Select */}
           <CustomQuestionsSelect
-            selectedQuestionIds={selectedCustomQuestionIds}
+            selectedQuestionIds={selectedCustomQuestionIds || []}
             onChange={setSelectedCustomQuestionIds}
           />
           

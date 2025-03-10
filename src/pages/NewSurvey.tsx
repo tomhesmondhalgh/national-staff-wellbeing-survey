@@ -15,11 +15,13 @@ import {
 import { toast } from "sonner";
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import SurveyLoading from '../components/survey-form/SurveyLoading';
 
 const NewSurvey = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (data: SurveyFormData, customQuestionIds: string[]) => {
     try {
@@ -58,7 +60,7 @@ const NewSurvey = () => {
       console.log('Saved survey:', savedSurvey);
 
       // Add custom questions to the survey if any selected
-      if (customQuestionIds.length > 0) {
+      if (customQuestionIds && customQuestionIds.length > 0) {
         const surveyQuestionLinks = customQuestionIds.map(questionId => ({
           survey_id: savedSurvey.id,
           question_id: questionId
@@ -129,6 +131,10 @@ const NewSurvey = () => {
     }
   };
 
+  if (isLoading) {
+    return <SurveyLoading />;
+  }
+
   return (
     <MainLayout>
       <div className="page-container">
@@ -156,6 +162,7 @@ const NewSurvey = () => {
           submitButtonText="Create Survey"
           isEdit={false} // This controls button centering - setting to false to center both buttons
           isSubmitting={isSubmitting}
+          initialCustomQuestionIds={[]}
         />
       </div>
     </MainLayout>
