@@ -1,4 +1,3 @@
-
 import { supabase } from '../lib/supabase/client';
 import { ActionPlanDescriptor, ActionPlanTemplate, ProgressNote, DescriptorStatus, ACTION_PLAN_SECTIONS } from '../types/actionPlan';
 import { toast } from 'sonner';
@@ -230,7 +229,10 @@ export const generatePDF = async (userId: string) => {
         doc.addPage();
         yPos = 20;
       }
-      doc.text(section, 14, yPos);
+      
+      // Ensure section is a string
+      const sectionText = String(section);
+      doc.text(sectionText, 14, yPos);
       yPos += 10;
       
       const sectionDescriptors = descriptors.filter(d => d.section === section);
@@ -242,15 +244,18 @@ export const generatePDF = async (userId: string) => {
           yPos = 20;
         }
         
-        // Fix TypeScript error by ensuring descriptor.descriptor_text is a string
-        const descriptorText = descriptor.descriptor_text || '';
-        doc.text(`${descriptor.reference} ${descriptorText}`, 14, yPos, {
+        // Ensure descriptor properties are strings
+        const reference = String(descriptor.reference || '');
+        const descriptorText = String(descriptor.descriptor_text || '');
+        
+        doc.text(`${reference} ${descriptorText}`, 14, yPos, {
           maxWidth: 180
         });
         yPos += 10;
         
         doc.setFontSize(10);
-        doc.text(`Status: ${descriptor.status}`, 20, yPos);
+        const status = String(descriptor.status || 'Unknown');
+        doc.text(`Status: ${status}`, 20, yPos);
         yPos += 6;
         
         if (descriptor.deadline) {
@@ -259,15 +264,17 @@ export const generatePDF = async (userId: string) => {
         }
         
         if (descriptor.assigned_to) {
-          doc.text(`Assigned to: ${descriptor.assigned_to}`, 20, yPos);
+          const assignedTo = String(descriptor.assigned_to);
+          doc.text(`Assigned to: ${assignedTo}`, 20, yPos);
           yPos += 6;
         }
         
         if (descriptor.key_actions) {
-          doc.text(`Key Actions: ${descriptor.key_actions}`, 20, yPos, {
+          const keyActions = String(descriptor.key_actions);
+          doc.text(`Key Actions: ${keyActions}`, 20, yPos, {
             maxWidth: 170
           });
-          yPos += descriptor.key_actions.length > 50 ? 12 : 6;
+          yPos += keyActions.length > 50 ? 12 : 6;
         }
         
         // Fetch progress notes for this descriptor
@@ -288,7 +295,8 @@ export const generatePDF = async (userId: string) => {
             }
             
             const noteDate = new Date(note.note_date).toLocaleDateString();
-            const noteText = note.note_text || '';
+            const noteText = String(note.note_text || '');
+            
             doc.text(`• ${noteDate}: ${noteText}`, 24, yPos, {
               maxWidth: 165
             });
