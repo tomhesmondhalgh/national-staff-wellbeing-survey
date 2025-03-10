@@ -8,6 +8,7 @@ import { Textarea } from '../ui/textarea';
 import { X, Plus, Trash2 } from 'lucide-react';
 import { CustomQuestion } from '../../types/customQuestions';
 import { useToast } from '../ui/use-toast';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface CustomQuestionModalProps {
   open: boolean;
@@ -33,6 +34,7 @@ const CustomQuestionModal: React.FC<CustomQuestionModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
+  const { user } = useAuth(); // Get the current user to access their ID
 
   useEffect(() => {
     if (initialData) {
@@ -80,10 +82,12 @@ const CustomQuestionModal: React.FC<CustomQuestionModalProps> = ({
     
     setIsSubmitting(true);
     try {
+      // Include creator_id in the question data
       const questionData = {
         text: questionText,
         type: questionType,
-        options: questionType === 'multiple-choice' ? options.filter(o => o.trim()) : undefined
+        options: questionType === 'multiple-choice' ? options.filter(o => o.trim()) : undefined,
+        creator_id: initialData?.creator_id || (user?.id ?? '') // Use existing creator_id for edits or current user ID for new questions
       };
       
       await onSave(questionData);
