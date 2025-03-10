@@ -32,8 +32,15 @@ serve(async (req) => {
 
     console.log('Checking if contact exists in Hubspot:', userData.email);
 
-    // We'll use both search and get by ID methods to ensure we find any existing contact
+    // First try to find by email
     let existingContact = await findContactByEmail(userData.email);
+    console.log('Initial search result:', existingContact ? `Found with ID ${existingContact.id}` : 'Not found');
+
+    // If not found and we have a specific known ID from previous errors, try to get by ID
+    if (!existingContact && userData.knownHubspotId) {
+      console.log(`Contact not found by email search, trying with known ID: ${userData.knownHubspotId}`);
+      existingContact = await getContactById(userData.knownHubspotId);
+    }
 
     let hubspotContactId;
 
@@ -61,7 +68,7 @@ serve(async (req) => {
           const errorData = await contactResponse.json();
           console.log('Contact already exists (409 conflict):', errorData);
           
-          // Extract the existing ID from the error message if available
+          // Extract the existing ID from the error message
           const idMatch = errorData.message?.match(/Existing ID: (\d+)/);
           if (idMatch && idMatch[1]) {
             hubspotContactId = idMatch[1];
@@ -161,7 +168,8 @@ serve(async (req) => {
 async function findContactByEmail(email: string) {
   console.log(`Searching for Hubspot contact with email: ${email}`);
   try {
-    const response = await fetch(
+    // First attempt: Use the CRM search API (searches primary emails)
+    const searchResponse = await fetch(
       `https://api.hubapi.com/crm/v3/objects/contacts/search`,
       {
         method: 'POST',
@@ -187,54 +195,114 @@ async function findContactByEmail(email: string) {
       }
     );
 
-    if (!response.ok) {
-      const errorText = await response.text();
+    if (!searchResponse.ok) {
+      const errorText = await searchResponse.text();
       console.error('Error response from Hubspot search API:', errorText);
-      console.error('HTTP Status:', response.status);
+      console.error('HTTP Status:', searchResponse.status);
       return null;
     }
 
-    const searchResult = await response.json();
+    const searchResult = await searchResponse.json();
     console.log('Search results count:', searchResult.total);
     
     if (searchResult.results && searchResult.results.length > 0) {
       console.log('Found existing contact:', searchResult.results[0].id);
       return searchResult.results[0];
-    } else {
-      // Try an alternative approach - search with different conditions
-      console.log('No results from primary search, trying alternative search');
-      // Nothing found with the primary search method
-      try {
-        // Try getting the contact directly by email using the "get by email" endpoint
-        const altResponse = await fetch(
-          `https://api.hubapi.com/contacts/v1/contact/email/${encodeURIComponent(email)}/profile`,
-          {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${HUBSPOT_API_KEY}`,
-            }
-          }
-        );
-
-        if (altResponse.ok) {
-          const contactData = await altResponse.json();
-          if (contactData && contactData.vid) {
-            console.log('Found contact using alternative lookup:', contactData.vid);
-            return { id: contactData.vid.toString() };
-          }
-        } else {
-          console.log('Alternative contact lookup also returned no results (expected)');
-        }
-      } catch (altError) {
-        console.error('Error in alternative contact lookup:', altError);
-      }
-      
-      console.log('No existing contact found with email:', email);
-      return null;
     }
+    
+    // Second attempt: Use the contacts API directly (can find non-primary emails)
+    console.log('Primary email search found no results, trying contacts API directly');
+    try {
+      // Try getting the contact directly by email using the "get by email" endpoint
+      const altResponse = await fetch(
+        `https://api.hubapi.com/contacts/v1/contact/email/${encodeURIComponent(email)}/profile`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${HUBSPOT_API_KEY}`,
+          }
+        }
+      );
+
+      if (altResponse.ok) {
+        const contactData = await altResponse.json();
+        if (contactData && contactData.vid) {
+          console.log('Found contact using contacts API lookup:', contactData.vid);
+          return { id: contactData.vid.toString() };
+        }
+      } else {
+        console.log(`Alternative contact lookup returned ${altResponse.status}`);
+        if (altResponse.status !== 404) {
+          // Only log non-404 errors as they may indicate API issues
+          console.error('API error:', await altResponse.text());
+        }
+      }
+    } catch (altError) {
+      console.error('Error in alternative contact lookup:', altError);
+    }
+    
+    // Third attempt: Search by all email addresses (if API supports it)
+    console.log('Attempting to search by all email addresses');
+    try {
+      const allEmailsResponse = await fetch(
+        `https://api.hubapi.com/contacts/v1/search/email?q=${encodeURIComponent(email)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${HUBSPOT_API_KEY}`,
+          }
+        }
+      );
+      
+      if (allEmailsResponse.ok) {
+        const emailSearchResults = await allEmailsResponse.json();
+        console.log('All emails search results:', JSON.stringify(emailSearchResults));
+        
+        if (emailSearchResults && emailSearchResults.contacts && emailSearchResults.contacts.length > 0) {
+          const contactId = emailSearchResults.contacts[0].vid;
+          console.log('Found contact via email search API:', contactId);
+          return { id: contactId.toString() };
+        }
+      } else {
+        console.log(`Email search API returned ${allEmailsResponse.status}`);
+        console.log('Response:', await allEmailsResponse.text());
+      }
+    } catch (emailSearchError) {
+      console.error('Error in email search API:', emailSearchError);
+    }
+    
+    console.log('No existing contact found with email:', email);
+    return null;
   } catch (error) {
     console.error('Exception in findContactByEmail:', error);
     return null; // Return null but don't throw to allow contact creation to proceed
+  }
+}
+
+async function getContactById(contactId: string) {
+  console.log(`Trying to get contact by ID: ${contactId}`);
+  try {
+    const response = await fetch(
+      `https://api.hubapi.com/crm/v3/objects/contacts/${contactId}`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${HUBSPOT_API_KEY}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      console.error(`Failed to get contact by ID ${contactId}, status: ${response.status}`);
+      return null;
+    }
+
+    const contact = await response.json();
+    console.log(`Successfully retrieved contact by ID: ${contactId}`);
+    return contact;
+  } catch (error) {
+    console.error(`Error getting contact by ID ${contactId}:`, error);
+    return null;
   }
 }
 

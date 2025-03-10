@@ -24,6 +24,9 @@ const NewSurvey = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [savedSurveyId, setSavedSurveyId] = useState<string | null>(null);
+  
+  // Known Hubspot ID for this user (in case of previous 409 errors)
+  const knownHubspotId = "31923701"; // Adding the known ID from your error message
 
   useEffect(() => {
     if (!user) {
@@ -115,6 +118,7 @@ const NewSurvey = () => {
         console.log('Attempting to send user data to Hubspot list 5418...');
         try {
           // Send user to Hubspot with list ID 5418, using email from auth user
+          // Pass the known Hubspot ID to avoid 409 errors
           const response = await sendUserToHubspot({
             email: user.email, // Use email from the authenticated user object
             firstName: profileData.first_name,
@@ -122,7 +126,7 @@ const NewSurvey = () => {
             jobTitle: profileData.job_title,
             schoolName: profileData.school_name,
             schoolAddress: profileData.school_address
-          }, '5418');
+          }, '5418', knownHubspotId);
           
           console.log('Hubspot API response:', response);
           console.log('User successfully added to Hubspot list 5418 after creating survey');

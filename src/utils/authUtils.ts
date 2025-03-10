@@ -201,7 +201,7 @@ export async function completeUserProfile(userId: string, userData: any) {
 }
 
 // Function to send user data to Hubspot
-export async function sendUserToHubspot(userData: any, listId: string = '5417') {
+export async function sendUserToHubspot(userData: any, listId: string = '5417', knownHubspotId?: string) {
   console.log(`Sending user data to Hubspot for list ID: ${listId}`, userData);
   
   try {
@@ -214,6 +214,7 @@ export async function sendUserToHubspot(userData: any, listId: string = '5417') 
           jobTitle: userData.jobTitle || '',
           schoolName: userData.schoolName || '',
           schoolAddress: userData.schoolAddress || '',
+          knownHubspotId: knownHubspotId
         },
         listId: listId // Use the passed listId parameter 
       }
