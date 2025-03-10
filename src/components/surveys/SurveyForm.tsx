@@ -15,6 +15,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../ui/tooltip";
+import CustomQuestionsSelect from './CustomQuestionsSelect';
 
 // Form schema
 const surveyFormSchema = z.object({
@@ -30,11 +31,12 @@ export type SurveyFormData = z.infer<typeof surveyFormSchema>;
 
 interface SurveyFormProps {
   initialData?: Partial<SurveyFormData>;
-  onSubmit: (data: SurveyFormData) => void;
+  onSubmit: (data: SurveyFormData, customQuestionIds: string[]) => void;
   submitButtonText?: string;
   isEdit?: boolean;
   surveyId?: string;
   isSubmitting?: boolean;
+  initialCustomQuestionIds?: string[];
 }
 
 const SurveyForm: React.FC<SurveyFormProps> = ({ 
@@ -43,10 +45,12 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
   submitButtonText = 'Save Changes',
   isEdit = false,
   surveyId,
-  isSubmitting = false
+  isSubmitting = false,
+  initialCustomQuestionIds = []
 }) => {
   const [showSurveyLink, setShowSurveyLink] = useState<boolean>(false);
   const [surveyLink, setSurveyLink] = useState<string>('');
+  const [selectedCustomQuestionIds, setSelectedCustomQuestionIds] = useState<string[]>(initialCustomQuestionIds);
   
   const form = useForm<SurveyFormData>({
     resolver: zodResolver(surveyFormSchema),
@@ -67,7 +71,7 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
   }, [showSurveyLink, surveyId]);
   
   const handleFormSubmit = (data: SurveyFormData) => {
-    onSubmit(data);
+    onSubmit(data, selectedCustomQuestionIds);
     
     if (isEdit && surveyId) {
       setShowSurveyLink(true);
@@ -79,7 +83,10 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
     const formData = form.getValues();
     
     // Store data in sessionStorage (will be cleared when tab is closed)
-    sessionStorage.setItem('previewSurveyData', JSON.stringify(formData));
+    sessionStorage.setItem('previewSurveyData', JSON.stringify({
+      ...formData,
+      customQuestionIds: selectedCustomQuestionIds
+    }));
     
     // Open preview in new tab
     window.open('/survey-preview', '_blank');
@@ -93,6 +100,12 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-8">
           <SurveyFormInputs form={form} />
+          
+          {/* Custom Questions Select */}
+          <CustomQuestionsSelect
+            selectedQuestionIds={selectedCustomQuestionIds}
+            onChange={setSelectedCustomQuestionIds}
+          />
           
           <div className={`mt-8 ${isEdit ? 'flex justify-between' : 'flex justify-center gap-4'}`}>
             <Button 

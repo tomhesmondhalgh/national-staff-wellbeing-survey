@@ -21,10 +21,11 @@ const NewSurvey = () => {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (data: SurveyFormData) => {
+  const handleSubmit = async (data: SurveyFormData, customQuestionIds: string[]) => {
     try {
       setIsSubmitting(true);
       console.log('Survey data to be saved:', data);
+      console.log('Custom question IDs:', customQuestionIds);
       
       if (!user) {
         toast.error("Authentication required", {
@@ -55,6 +56,23 @@ const NewSurvey = () => {
       }
       
       console.log('Saved survey:', savedSurvey);
+
+      // Add custom questions to the survey if any selected
+      if (customQuestionIds.length > 0) {
+        const surveyQuestionLinks = customQuestionIds.map(questionId => ({
+          survey_id: savedSurvey.id,
+          question_id: questionId
+        }));
+        
+        const { error: linkError } = await supabase
+          .from('survey_custom_questions')
+          .insert(surveyQuestionLinks);
+          
+        if (linkError) {
+          console.error('Error linking custom questions:', linkError);
+          // Continue even if linking fails
+        }
+      }
 
       // Process and send emails if recipients are provided
       if (data.recipients && data.recipients.trim()) {

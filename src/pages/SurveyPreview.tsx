@@ -10,9 +10,19 @@ import TextQuestion from '../components/survey-form/TextQuestion';
 import SubmitButton from '../components/survey-form/SubmitButton';
 import { roleOptions, agreementOptions, frequencyOptions } from '../components/survey-form/constants';
 import { SurveyTemplate } from '../utils/surveyUtils';
+import { supabase } from '../lib/supabase';
+import { CustomQuestion } from '../types/customQuestions';
+import CustomTextQuestion from '../components/survey-form/CustomTextQuestion';
+import CustomMultipleChoiceQuestion from '../components/survey-form/CustomMultipleChoiceQuestion';
+
+interface PreviewData extends SurveyFormData {
+  customQuestionIds?: string[];
+}
 
 const SurveyPreview = () => {
-  const [surveyData, setSurveyData] = useState<SurveyFormData | null>(null);
+  const [surveyData, setSurveyData] = useState<PreviewData | null>(null);
+  const [customQuestions, setCustomQuestions] = useState<CustomQuestion[]>([]);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const [formState, setFormState] = useState({
     role: '',
     leadershipPrioritize: '',
@@ -27,6 +37,8 @@ const SurveyPreview = () => {
     leavingContemplation: '',
     doingWell: '',
     improvements: '',
+    // This will be filled dynamically for custom questions
+    customAnswers: {} as Record<string, string>,
   });
 
   useEffect(() => {
@@ -36,16 +48,55 @@ const SurveyPreview = () => {
       try {
         const parsedData = JSON.parse(storedData);
         setSurveyData(parsedData);
+
+        // If we have custom question IDs, fetch those questions
+        if (parsedData.customQuestionIds && parsedData.customQuestionIds.length > 0) {
+          fetchCustomQuestions(parsedData.customQuestionIds);
+        }
       } catch (e) {
         console.error('Error parsing survey preview data:', e);
       }
     }
   }, []);
 
+  const fetchCustomQuestions = async (questionIds: string[]) => {
+    if (!questionIds.length) return;
+    
+    setIsLoadingQuestions(true);
+    try {
+      const { data, error } = await supabase
+        .from('custom_questions')
+        .select('*')
+        .in('id', questionIds);
+      
+      if (error) {
+        throw error;
+      }
+      
+      setCustomQuestions(data || []);
+    } catch (e) {
+      console.error('Error fetching custom questions:', e);
+    } finally {
+      setIsLoadingQuestions(false);
+    }
+  };
+
   // Mock form handlers that don't actually submit anything
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormState(prev => ({ ...prev, [name]: value }));
+    
+    // Check if this is a custom question answer
+    if (name.startsWith('custom_')) {
+      setFormState(prev => ({ 
+        ...prev, 
+        customAnswers: { 
+          ...prev.customAnswers, 
+          [name]: value 
+        } 
+      }));
+    } else {
+      setFormState(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleRatingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -203,6 +254,39 @@ const SurveyPreview = () => {
                 onChange={handleChange}
                 subtitle="This is an anonymous survey, please do not include any personal identifiable data." 
               />
+              
+              {/* Custom Questions */}
+              {isLoadingQuestions ? (
+                <div className="py-4 text-center">
+                  <p>Loading custom questions...</p>
+                </div>
+              ) : customQuestions.length > 0 && (
+                <div className="mt-8 mb-4">
+                  <h3 className="text-lg font-semibold mb-6">Additional Questions</h3>
+                  
+                  {customQuestions.map((question) => (
+                    <React.Fragment key={question.id}>
+                      {question.type === 'text' ? (
+                        <CustomTextQuestion
+                          label={question.text}
+                          name={`custom_${question.id}`}
+                          value={formState.customAnswers[`custom_${question.id}`] || ''}
+                          onChange={handleChange}
+                          maxLength={1000}
+                        />
+                      ) : (
+                        <CustomMultipleChoiceQuestion
+                          label={question.text}
+                          name={`custom_${question.id}`}
+                          options={question.options || []}
+                          value={formState.customAnswers[`custom_${question.id}`] || ''}
+                          onChange={handleChange}
+                        />
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
+              )}
               
               <SubmitButton isSubmitting={false} />
             </form>
