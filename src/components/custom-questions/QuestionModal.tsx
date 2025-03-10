@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -53,12 +53,20 @@ export default function QuestionModal({
       return;
     }
 
+    // Filter out empty options for multiple choice questions
+    const validOptions = options.filter(o => o.trim());
+    
+    if (questionType === 'multiple-choice' && validOptions.length < 2) {
+      setError('At least 2 non-empty options are required');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await onSave({
         text: questionText,
         type: questionType,
-        options: questionType === 'multiple-choice' ? options.filter(o => o.trim()) : undefined
+        options: questionType === 'multiple-choice' ? validOptions : undefined
       });
       onOpenChange(false);
     } finally {
@@ -91,6 +99,9 @@ export default function QuestionModal({
           <DialogTitle>
             {initialData ? 'Edit Question' : 'Create Question'}
           </DialogTitle>
+          <DialogDescription>
+            Create a custom question for your surveys
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">

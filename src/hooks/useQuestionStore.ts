@@ -4,6 +4,18 @@ import { CustomQuestion } from '../types/customQuestions';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 
+// Define the database format for question types
+type DatabaseQuestionType = 'text' | 'multiple_choice';
+
+// Helper functions to convert between formats
+const toDbFormat = (type: 'text' | 'multiple-choice'): DatabaseQuestionType => {
+  return type === 'multiple-choice' ? 'multiple_choice' : 'text';
+};
+
+const toFrontendFormat = (type: DatabaseQuestionType): 'text' | 'multiple-choice' => {
+  return type === 'multiple_choice' ? 'multiple-choice' : 'text';
+};
+
 export function useQuestionStore() {
   const [questions, setQuestions] = useState<CustomQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,7 +38,7 @@ export function useQuestionStore() {
       // Convert database format to frontend format
       const processedData = (data || []).map(q => ({
         ...q,
-        type: q.type === 'multiple_choice' ? 'multiple-choice' : q.type
+        type: toFrontendFormat(q.type as DatabaseQuestionType)
       })) as CustomQuestion[];
 
       setQuestions(processedData);
@@ -51,10 +63,12 @@ export function useQuestionStore() {
       // Convert frontend format to database format
       const dbQuestion = {
         ...question,
-        type: question.type === 'multiple-choice' ? 'multiple_choice' : question.type,
+        type: toDbFormat(question.type),
         creator_id: user.id,
         archived: false
       };
+      
+      console.log('Sending to database:', dbQuestion);
       
       const { data, error } = await supabase
         .from('custom_questions')
@@ -62,12 +76,15 @@ export function useQuestionStore() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
       
       // Convert back to frontend format
       const processedData = {
         ...data,
-        type: data.type === 'multiple_choice' ? 'multiple-choice' : data.type
+        type: toFrontendFormat(data.type as DatabaseQuestionType)
       } as CustomQuestion;
       
       setQuestions(prev => [processedData, ...prev]);
@@ -82,11 +99,14 @@ export function useQuestionStore() {
 
   const updateQuestion = async (id: string, updates: Partial<CustomQuestion>) => {
     try {
-      // Convert to database format
+      // Convert to database format for the type field if it exists
       const dbUpdates = {
-        ...updates,
-        type: updates.type === 'multiple-choice' ? 'multiple_choice' : updates.type
+        ...updates
       };
+      
+      if (updates.type) {
+        dbUpdates.type = toDbFormat(updates.type);
+      }
 
       const { error } = await supabase
         .from('custom_questions')
