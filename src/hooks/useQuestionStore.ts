@@ -81,13 +81,10 @@ export function useQuestionStore() {
         throw error;
       }
 
-      // Here's the fix - ensure we convert the type correctly
-      const questionType = data.type as DatabaseQuestionType;
-      const frontendType = toFrontendFormat(questionType);
-      
+      // Fix: Convert to frontend format before returning
       const newQuestion: CustomQuestion = {
         ...data,
-        type: frontendType
+        type: toFrontendFormat(data.type as DatabaseQuestionType)
       };
       
       setQuestions(prev => [newQuestion, ...prev]);

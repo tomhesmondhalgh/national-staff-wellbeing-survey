@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useQuestionStore } from '../../hooks/useQuestionStore';
 import { Button } from '../ui/button';
@@ -76,20 +77,20 @@ export default function QuestionsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {questions.map((question) => (
             <Card key={question.id} className={question.archived ? 'opacity-60' : ''}>
-              <CardHeader className="text-center space-y-2 pb-2">
-                <Badge variant="outline" className="w-fit mx-auto">
+              <CardHeader className="text-center pb-2">
+                <Badge variant="outline" className="w-fit mx-auto bg-brandPurple-400 text-white border-none">
                   {question.type === 'text' ? 'Free Text' : 'Multiple Choice'}
                 </Badge>
                 {question.archived && (
-                  <Badge variant="outline" className="w-fit mx-auto">
+                  <Badge variant="outline" className="w-fit mx-auto mt-2">
                     Archived
                   </Badge>
                 )}
               </CardHeader>
-              <CardContent className="text-center">
-                <p className="text-sm">{question.text}</p>
+              <CardContent className="text-center py-6 flex items-center justify-center min-h-[80px]">
+                <h3 className="font-semibold text-base">{question.text}</h3>
               </CardContent>
-              <CardFooter className="flex justify-center space-x-2 pt-4">
+              <CardFooter className="flex justify-center space-x-2 pt-2">
                 <Button
                   variant="outline"
                   size="sm"
