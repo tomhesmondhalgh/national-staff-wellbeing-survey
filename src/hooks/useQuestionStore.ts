@@ -99,9 +99,12 @@ export function useQuestionStore() {
 
   const updateQuestion = async (id: string, updates: Partial<CustomQuestion>) => {
     try {
-      const dbUpdates = { ...updates };
+      // Create a copy of updates that we'll modify for database format
+      const dbUpdates: Record<string, any> = { ...updates };
       
+      // If type is being updated, convert it to database format
       if (updates.type) {
+        // Fix: Explicitly convert to DatabaseQuestionType
         dbUpdates.type = toDbFormat(updates.type as FrontendQuestionType);
       }
 
@@ -114,13 +117,11 @@ export function useQuestionStore() {
       
       setQuestions(prev => prev.map(q => {
         if (q.id === id) {
+          // Create a new question object with updates
           const updatedQuestion = { ...q, ...updates };
           
-          // Ensure type is correctly formatted when returning to frontend
-          if (dbUpdates.type) {
-            updatedQuestion.type = toFrontendFormat(dbUpdates.type as DatabaseQuestionType);
-          }
-          
+          // We don't need to convert dbUpdates.type back because we're using
+          // the original updates (with frontend format) here
           return updatedQuestion;
         }
         return q;
