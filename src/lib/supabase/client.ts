@@ -43,7 +43,8 @@ export { supabase };
 
 // Add a helper method to check if Supabase is configured properly
 export const isSupabaseConfigured = () => {
-  return supabaseUrl !== "placeholder-url" && supabaseAnonKey !== "placeholder-key";
+  return !!supabaseUrl && !!supabaseAnonKey && 
+    supabaseUrl !== "placeholder-url" && supabaseAnonKey !== "placeholder-key";
 };
 
 // Helper to check if the current session is authenticated

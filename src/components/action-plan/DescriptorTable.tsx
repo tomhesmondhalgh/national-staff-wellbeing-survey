@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { ActionPlanDescriptor, DescriptorStatus } from '@/types/actionPlan';
@@ -33,7 +32,9 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
     setIsLoading(false);
 
     if (result.success && result.data) {
-      const sortedDescriptors = result.data.sort((a, b) => {
+      const descriptorData = result.data as ActionPlanDescriptor[];
+      
+      const sortedDescriptors = descriptorData.sort((a, b) => {
         if (!a.index_number) return 1;
         if (!b.index_number) return -1;
         return a.index_number.localeCompare(b.index_number, undefined, { numeric: true });

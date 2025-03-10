@@ -1,3 +1,4 @@
+
 import { supabase } from '../lib/supabase/client';
 import { ActionPlanDescriptor, ActionPlanTemplate, ProgressNote, DescriptorStatus, ACTION_PLAN_SECTIONS } from '../types/actionPlan';
 import { toast } from 'sonner';
@@ -241,7 +242,9 @@ export const generatePDF = async (userId: string) => {
           yPos = 20;
         }
         
-        doc.text(`${descriptor.reference} ${descriptor.descriptor_text}`, 14, yPos, {
+        // Fix TypeScript error by ensuring descriptor.descriptor_text is a string
+        const descriptorText = descriptor.descriptor_text || '';
+        doc.text(`${descriptor.reference} ${descriptorText}`, 14, yPos, {
           maxWidth: 180
         });
         yPos += 10;
@@ -285,10 +288,11 @@ export const generatePDF = async (userId: string) => {
             }
             
             const noteDate = new Date(note.note_date).toLocaleDateString();
-            doc.text(`• ${noteDate}: ${note.note_text}`, 24, yPos, {
+            const noteText = note.note_text || '';
+            doc.text(`• ${noteDate}: ${noteText}`, 24, yPos, {
               maxWidth: 165
             });
-            yPos += note.note_text.length > 100 ? 14 : 8;
+            yPos += noteText.length > 100 ? 14 : 8;
           }
         }
         
