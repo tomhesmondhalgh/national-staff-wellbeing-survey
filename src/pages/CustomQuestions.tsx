@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -42,13 +41,16 @@ const CustomQuestions: React.FC = () => {
     refreshQuestions
   } = useCustomQuestions();
   
+  console.log('Current showArchived state:', showArchived);
+  
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<CustomQuestion | undefined>(undefined);
   
   useEffect(() => {
     console.log('Questions loaded:', questions.length);
     console.log('Is loading:', isLoading);
-  }, [questions, isLoading]);
+    console.log('Show archived:', showArchived);
+  }, [questions, isLoading, showArchived]);
   
   const handleAddQuestion = () => {
     setSelectedQuestion(undefined);

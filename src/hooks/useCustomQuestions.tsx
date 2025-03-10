@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase/client';
 import { CustomQuestion } from '../types/customQuestions';
@@ -18,7 +17,6 @@ export function useCustomQuestions() {
   const { isTestingMode } = useTestingMode();
 
   const fetchQuestions = useCallback(async () => {
-    // Prevent duplicate fetches within a short time window
     const now = Date.now();
     if (now - lastFetchTime < 1000) {
       console.log('Skipping fetch - too soon since last fetch');
@@ -38,7 +36,6 @@ export function useCustomQuestions() {
     }
     
     try {
-      // Check if user has access to custom questions feature
       const hasFeatureAccess = await hasAccess('foundation');
       console.log('User has access to foundation plan:', hasFeatureAccess);
       
@@ -54,7 +51,6 @@ export function useCustomQuestions() {
       console.log('Is testing mode:', isTestingMode);
 
       if (isTestingMode) {
-        // In testing mode, return mock data
         console.log('Using mock data in testing mode');
         const mockQuestions: CustomQuestion[] = [
           {
@@ -78,7 +74,6 @@ export function useCustomQuestions() {
         return;
       }
 
-      // Build the query for real data
       let query = supabase
         .from('custom_questions')
         .select('*')
@@ -104,7 +99,6 @@ export function useCustomQuestions() {
         description: 'Failed to load your custom questions. Please try again.',
         variant: 'destructive'
       });
-      // Set empty array to prevent UI from waiting indefinitely
       setQuestions([]);
     } finally {
       setIsLoading(false);
@@ -112,16 +106,14 @@ export function useCustomQuestions() {
   }, [user, showArchived, toast, hasAccess, isTestingMode, lastFetchTime, isLoading]);
 
   useEffect(() => {
-    console.log('useCustomQuestions effect running');
+    console.log('useCustomQuestions effect running, showArchived:', showArchived);
     fetchQuestions();
-    // Don't include fetchQuestions in dependencies to prevent infinite loop
   }, [user, showArchived, isTestingMode]);
 
   const createQuestion = async (question: Omit<CustomQuestion, 'id' | 'created_at' | 'archived'>) => {
     if (!user) return null;
     
     try {
-      // Check if user has access to custom questions feature
       const hasFeatureAccess = await hasAccess('foundation');
       if (!hasFeatureAccess && !isTestingMode) {
         toast({
@@ -133,7 +125,6 @@ export function useCustomQuestions() {
       }
 
       if (isTestingMode) {
-        // Mock creation in testing mode
         const newQuestion: CustomQuestion = {
           id: Date.now().toString(),
           ...question,
@@ -166,7 +157,6 @@ export function useCustomQuestions() {
         throw error;
       }
       
-      // Update the local state with the new question
       setQuestions(prev => [data, ...prev]);
       
       toast({
@@ -191,7 +181,6 @@ export function useCustomQuestions() {
     
     try {
       if (isTestingMode) {
-        // Mock update in testing mode
         setQuestions(prev => 
           prev.map(q => q.id === id ? { ...q, ...updates } : q)
         );
@@ -214,7 +203,6 @@ export function useCustomQuestions() {
         throw error;
       }
       
-      // Update the local state
       setQuestions(prev => 
         prev.map(q => q.id === id ? { ...q, ...updates } : q)
       );
@@ -240,9 +228,10 @@ export function useCustomQuestions() {
     return updateQuestion(id, { archived: !currentArchived });
   };
 
-  const toggleShowArchived = () => {
+  const toggleShowArchived = useCallback(() => {
+    console.log('Toggling show archived from', showArchived, 'to', !showArchived);
     setShowArchived(prev => !prev);
-  };
+  }, [showArchived]);
 
   return {
     questions,

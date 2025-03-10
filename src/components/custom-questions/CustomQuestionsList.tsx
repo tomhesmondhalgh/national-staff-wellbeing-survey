@@ -125,8 +125,8 @@ const CustomQuestionsList: React.FC<CustomQuestionsListProps> = ({
         </div>
         <div className="flex space-x-2">
           <Button 
-            variant="outline" 
-            size="sm" 
+            variant="outline"
+            size="default" // Changed from "sm" to "default" to match the Add Question button
             onClick={onToggleArchived}
             className="flex items-center"
           >
