@@ -204,22 +204,4 @@ export default function QuestionModal({
       </DialogContent>
     </Dialog>
   );
-
-  function addOption() {
-    if (options.length < 5) {
-      setOptions([...options, '']);
-    }
-  }
-
-  function updateOption(index: number, value: string) {
-    const newOptions = [...options];
-    newOptions[index] = value;
-    setOptions(newOptions);
-  }
-
-  function removeOption(index: number) {
-    if (options.length > 1) {
-      setOptions(options.filter((_, i) => i !== index));
-    }
-  }
 }
