@@ -43,7 +43,8 @@ export function useQuestionStore() {
         ...q,
         type: toFrontendFormat(q.type as DatabaseQuestionType)
       })) as CustomQuestion[];
-
+      
+      console.log('Fetched questions after processing:', processedData);
       setQuestions(processedData);
       return processedData;
     } catch (error) {
@@ -90,6 +91,7 @@ export function useQuestionStore() {
         type: toFrontendFormat(data.type as DatabaseQuestionType)
       };
       
+      console.log('New question created and processed:', newQuestion);
       setQuestions(prev => [newQuestion, ...prev]);
       toast.success('Question created successfully');
       return newQuestion;

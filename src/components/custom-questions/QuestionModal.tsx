@@ -63,12 +63,21 @@ export default function QuestionModal({
 
     setIsSubmitting(true);
     try {
+      console.log('Submitting question:', {
+        text: questionText,
+        type: questionType,
+        options: questionType === 'multiple-choice' ? validOptions : undefined
+      });
+      
       await onSave({
         text: questionText,
         type: questionType,
         options: questionType === 'multiple-choice' ? validOptions : undefined
       });
       onOpenChange(false);
+    } catch (err) {
+      console.error('Error in handleSubmit:', err);
+      setError('Failed to save question');
     } finally {
       setIsSubmitting(false);
     }
