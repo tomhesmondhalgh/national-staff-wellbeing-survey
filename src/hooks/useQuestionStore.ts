@@ -4,23 +4,6 @@ import { CustomQuestion } from '../types/customQuestions';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 
-// Define literal types explicitly
-type DatabaseQuestionType = 'text' | 'multiple_choice';
-type FrontendQuestionType = 'text' | 'multiple-choice';
-
-// Type-safe conversion functions
-const toDbFormat = (type: FrontendQuestionType): DatabaseQuestionType => {
-  console.log(`Converting frontend type "${type}" to database format`);
-  if (type === 'multiple-choice') return 'multiple_choice';
-  return 'text';
-};
-
-const toFrontendFormat = (type: DatabaseQuestionType): FrontendQuestionType => {
-  console.log(`Converting database type "${type}" to frontend format`);
-  if (type === 'multiple_choice') return 'multiple-choice';
-  return 'text';
-};
-
 export function useQuestionStore() {
   const [questions, setQuestions] = useState<CustomQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,14 +27,8 @@ export function useQuestionStore() {
 
       console.log('Raw questions from database:', data);
       
-      // Convert database format to frontend format
-      const processedData = (data || []).map(q => {
-        console.log(`Processing question: ID=${q.id}, Type=${q.type}`);
-        return {
-          ...q,
-          type: toFrontendFormat(q.type as DatabaseQuestionType)
-        };
-      }) as CustomQuestion[];
+      // Use data directly without conversion
+      const processedData = data || [] as CustomQuestion[];
       
       console.log('Fetched questions after processing:', processedData);
       setQuestions(processedData);
@@ -73,13 +50,10 @@ export function useQuestionStore() {
         throw new Error('User not authenticated');
       }
       
-      // Convert frontend format to database format
-      const dbType = toDbFormat(question.type as FrontendQuestionType);
-      console.log(`Creating question: Original type=${question.type}, Converted type=${dbType}`);
+      console.log(`Creating question with type: ${question.type}`);
       
       const dbQuestion = {
-        ...question,
-        type: dbType,
+        ...question, // Type is used directly without conversion
         creator_id: user.id,
         archived: false
       };
@@ -97,18 +71,10 @@ export function useQuestionStore() {
         throw error;
       }
 
-      console.log('Raw data returned after insertion:', data);
-      
-      // Convert back to frontend format
-      const newQuestion: CustomQuestion = {
-        ...data,
-        type: toFrontendFormat(data.type as DatabaseQuestionType)
-      };
-      
-      console.log('New question created and processed:', newQuestion);
-      setQuestions(prev => [newQuestion, ...prev]);
+      console.log('New question created:', data);
+      setQuestions(prev => [data, ...prev]);
       toast.success('Question created successfully');
-      return newQuestion;
+      return data;
     } catch (error) {
       console.error('Error creating question:', error);
       toast.error('Failed to create question');
@@ -118,20 +84,11 @@ export function useQuestionStore() {
 
   const updateQuestion = async (id: string, updates: Partial<CustomQuestion>) => {
     try {
-      // Create a copy of updates that we'll modify for database format
-      const dbUpdates: Record<string, any> = { ...updates };
-      
-      // If type is being updated, convert it to database format
-      if (updates.type) {
-        dbUpdates.type = toDbFormat(updates.type as FrontendQuestionType);
-        console.log(`Updating question: Original type=${updates.type}, Converted type=${dbUpdates.type}`);
-      }
-
-      console.log('Updating question with data:', dbUpdates);
+      console.log('Updating question with data:', updates);
 
       const { error } = await supabase
         .from('custom_questions')
-        .update(dbUpdates)
+        .update(updates)
         .eq('id', id);
 
       if (error) throw error;

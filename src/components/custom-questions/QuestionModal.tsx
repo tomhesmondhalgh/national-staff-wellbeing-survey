@@ -22,7 +22,7 @@ export default function QuestionModal({
   initialData
 }: QuestionModalProps) {
   const [questionText, setQuestionText] = useState('');
-  const [questionType, setQuestionType] = useState<'text' | 'multiple-choice'>('text');
+  const [questionType, setQuestionType] = useState<'text' | 'multiple_choice'>('text');
   const [options, setOptions] = useState<string[]>(['']);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -49,7 +49,7 @@ export default function QuestionModal({
       return;
     }
 
-    if (questionType === 'multiple-choice' && options.length < 2) {
+    if (questionType === 'multiple_choice' && options.length < 2) {
       setError('At least 2 options are required');
       return;
     }
@@ -57,7 +57,7 @@ export default function QuestionModal({
     // Filter out empty options for multiple choice questions
     const validOptions = options.filter(o => o.trim());
     
-    if (questionType === 'multiple-choice' && validOptions.length < 2) {
+    if (questionType === 'multiple_choice' && validOptions.length < 2) {
       setError('At least 2 non-empty options are required');
       return;
     }
@@ -67,13 +67,13 @@ export default function QuestionModal({
       console.log('Submitting question:', {
         text: questionText,
         type: questionType,
-        options: questionType === 'multiple-choice' ? validOptions : undefined
+        options: questionType === 'multiple_choice' ? validOptions : undefined
       });
       
       await onSave({
         text: questionText,
         type: questionType,
-        options: questionType === 'multiple-choice' ? validOptions : undefined
+        options: questionType === 'multiple_choice' ? validOptions : undefined
       });
       onOpenChange(false);
     } catch (err) {
@@ -118,7 +118,7 @@ export default function QuestionModal({
             <Label>Question Type</Label>
             <RadioGroup
               value={questionType}
-              onValueChange={(value) => setQuestionType(value as 'text' | 'multiple-choice')}
+              onValueChange={(value) => setQuestionType(value as 'text' | 'multiple_choice')}
               className="flex space-x-4"
             >
               <div className="flex items-center space-x-2">
@@ -126,8 +126,8 @@ export default function QuestionModal({
                 <Label htmlFor="text">Free Text</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="multiple-choice" id="multiple-choice" />
-                <Label htmlFor="multiple-choice">Multiple Choice</Label>
+                <RadioGroupItem value="multiple_choice" id="multiple_choice" />
+                <Label htmlFor="multiple_choice">Multiple Choice</Label>
               </div>
             </RadioGroup>
           </div>
@@ -142,7 +142,7 @@ export default function QuestionModal({
             />
           </div>
 
-          {questionType === 'multiple-choice' && (
+          {questionType === 'multiple_choice' && (
             <div className="space-y-2">
               <Label>Options</Label>
               {options.map((option, index) => (
