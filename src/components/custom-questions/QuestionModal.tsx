@@ -7,6 +7,7 @@ import { Label } from '../ui/label';
 import { CustomQuestion } from '../../types/customQuestions';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { AlertCircle } from 'lucide-react';
+import { QuestionType, toValidQuestionType, createDbQuestionPayload } from '../../utils/questionTypeUtils';
 
 interface QuestionModalProps {
   open: boolean;
@@ -23,7 +24,7 @@ export default function QuestionModal({
 }: QuestionModalProps) {
   // Use strict type definition to ensure consistency with DB schema
   const [questionText, setQuestionText] = useState('');
-  const [questionType, setQuestionType] = useState<'text' | 'multiple_choice'>('text');
+  const [questionType, setQuestionType] = useState<QuestionType>('text');
   const [options, setOptions] = useState<string[]>(['']);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -31,7 +32,7 @@ export default function QuestionModal({
   useEffect(() => {
     if (open && initialData) {
       setQuestionText(initialData.text);
-      setQuestionType(initialData.type);
+      setQuestionType(toValidQuestionType(initialData.type));
       setOptions(initialData.options || ['']);
     } else if (!open) {
       setQuestionText('');
@@ -71,12 +72,14 @@ export default function QuestionModal({
         options: questionType === 'multiple_choice' ? validOptions : undefined
       });
       
-      // Submit with strictly typed data to match database schema
-      await onSave({
+      // Create a properly formatted question payload using our utility
+      const questionPayload = createDbQuestionPayload({
         text: questionText,
         type: questionType,
         options: questionType === 'multiple_choice' ? validOptions : undefined
       });
+      
+      await onSave(questionPayload);
       onOpenChange(false);
     } catch (err) {
       console.error('Error in handleSubmit:', err);
@@ -120,7 +123,7 @@ export default function QuestionModal({
             <Label>Question Type</Label>
             <RadioGroup
               value={questionType}
-              onValueChange={(value) => setQuestionType(value as 'text' | 'multiple_choice')}
+              onValueChange={(value) => setQuestionType(toValidQuestionType(value))}
               className="flex space-x-4"
             >
               <div className="flex items-center space-x-2">

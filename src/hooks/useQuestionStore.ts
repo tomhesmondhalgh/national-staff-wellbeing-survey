@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { CustomQuestion } from '../types/customQuestions';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
+import { isValidQuestionType, createDbQuestionPayload } from '../utils/questionTypeUtils';
 
 export function useQuestionStore() {
   const [questions, setQuestions] = useState<CustomQuestion[]>([]);
@@ -27,8 +28,15 @@ export function useQuestionStore() {
 
       console.log('Raw questions from database:', data);
       
-      // Use data directly without conversion
-      const processedData = data || [] as CustomQuestion[];
+      // Validate and normalize question types
+      const processedData = (data || []).map((question: CustomQuestion) => {
+        // Ensure question has valid type
+        if (!isValidQuestionType(question.type)) {
+          console.warn(`Question ${question.id} has invalid type: ${question.type}. Converting to 'text'`);
+          question.type = 'text';
+        }
+        return question;
+      });
       
       console.log('Fetched questions after processing:', processedData);
       setQuestions(processedData);
@@ -50,18 +58,9 @@ export function useQuestionStore() {
         throw new Error('User not authenticated');
       }
       
-      // Validate the question type with explicit type checking
-      const questionType = question.type;
-      if (questionType !== 'text' && questionType !== 'multiple_choice') {
-        console.error(`Invalid question type: "${questionType}". Must be exactly 'text' or 'multiple_choice'`);
-        throw new Error('Invalid question type');
-      }
-      
-      // Prepare the question for database insertion with strict type definition
+      // Create a properly formatted question payload
       const dbQuestion = {
-        text: question.text,
-        type: questionType as 'text' | 'multiple_choice',
-        options: questionType === 'multiple_choice' ? question.options : undefined,
+        ...createDbQuestionPayload(question),
         creator_id: user.id,
         archived: false
       };
@@ -93,20 +92,27 @@ export function useQuestionStore() {
 
   const updateQuestion = async (id: string, updates: Partial<CustomQuestion>) => {
     try {
-      console.log('Updating question with data:', updates);
-
-      // Add validation for the type field if it's being updated
-      if (updates.type && updates.type !== 'text' && updates.type !== 'multiple_choice') {
-        console.error(`Invalid question type in update: "${updates.type}"`);
-        throw new Error('Invalid question type');
+      console.log('Raw update data:', updates);
+      
+      // Create a properly formatted update payload
+      const updateData: Partial<CustomQuestion> = {};
+      
+      // Always sanitize the type if present
+      if (updates.type !== undefined) {
+        if (!isValidQuestionType(updates.type)) {
+          console.warn(`Update contains invalid type: ${updates.type}. Converting to 'text'`);
+          updateData.type = 'text';
+        } else {
+          updateData.type = updates.type;
+        }
       }
       
-      // Prepare a clean update object
-      const updateData: Partial<CustomQuestion> = {};
+      // Copy other fields
       if (updates.text !== undefined) updateData.text = updates.text;
-      if (updates.type !== undefined) updateData.type = updates.type;
       if (updates.options !== undefined) updateData.options = updates.options;
       if (updates.archived !== undefined) updateData.archived = updates.archived;
+      
+      console.log('Sanitized update data:', updateData);
 
       const { error } = await supabase
         .from('custom_questions')
@@ -118,7 +124,7 @@ export function useQuestionStore() {
       setQuestions(prev => prev.map(q => {
         if (q.id === id) {
           // Create a new question object with updates
-          return { ...q, ...updates };
+          return { ...q, ...updateData };
         }
         return q;
       }));
