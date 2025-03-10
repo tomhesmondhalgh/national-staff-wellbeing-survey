@@ -79,6 +79,14 @@ const CustomQuestionModal: React.FC<CustomQuestionModalProps> = ({
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
+    if (!user) {
+      toast({
+        title: 'Error',
+        description: 'You must be logged in to create or edit questions.',
+        variant: 'destructive'
+      });
+      return;
+    }
     
     setIsSubmitting(true);
     try {
@@ -87,7 +95,7 @@ const CustomQuestionModal: React.FC<CustomQuestionModalProps> = ({
         text: questionText,
         type: questionType,
         options: questionType === 'multiple-choice' ? options.filter(o => o.trim()) : undefined,
-        creator_id: initialData?.creator_id || (user?.id ?? '') // Use existing creator_id for edits or current user ID for new questions
+        creator_id: initialData?.creator_id || user.id
       };
       
       await onSave(questionData);

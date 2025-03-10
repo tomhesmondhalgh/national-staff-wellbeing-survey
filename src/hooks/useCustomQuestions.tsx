@@ -7,8 +7,11 @@ import { useToast } from '../components/ui/use-toast';
 import { useSubscription } from './useSubscription';
 import { useTestingMode } from '../contexts/TestingModeContext';
 
+// Add a local storage key for test questions
+const TEST_QUESTIONS_KEY = 'test_custom_questions';
+
 export function useCustomQuestions() {
-  const [questions, setQuestions] = useState<CustomQuestion[]>([]);
+  const [questions, setQuestions] = useState<CustomQuestion[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
   const [lastFetchTime, setLastFetchTime] = useState<number>(0);
@@ -17,9 +20,21 @@ export function useCustomQuestions() {
   const { hasAccess } = useSubscription();
   const { isTestingMode } = useTestingMode();
   
-  // Add a local storage key for test questions
-  const TEST_QUESTIONS_KEY = 'test_custom_questions';
-
+  // Initialize localStorage for testing mode
+  useEffect(() => {
+    if (isTestingMode) {
+      try {
+        const storedData = localStorage.getItem(TEST_QUESTIONS_KEY);
+        if (!storedData) {
+          localStorage.setItem(TEST_QUESTIONS_KEY, JSON.stringify([]));
+          console.log('Initialized empty questions array in localStorage for testing mode');
+        }
+      } catch (error) {
+        console.error('Error initializing localStorage for testing mode:', error);
+      }
+    }
+  }, [isTestingMode]);
+  
   const fetchQuestions = useCallback(async () => {
     const now = Date.now();
     if (now - lastFetchTime < 1000) {
@@ -83,24 +98,35 @@ export function useCustomQuestions() {
         return;
       }
 
-      let query = supabase
-        .from('custom_questions')
-        .select('*')
-        .eq('creator_id', user.id);
-      
-      if (!showArchived) {
-        query = query.eq('archived', false);
+      // Adding try-catch within the main try block for better error isolation
+      try {
+        let query = supabase
+          .from('custom_questions')
+          .select('*')
+          .eq('creator_id', user.id);
+        
+        if (!showArchived) {
+          query = query.eq('archived', false);
+        }
+        
+        const { data, error } = await query.order('created_at', { ascending: false });
+        
+        if (error) {
+          console.error('Supabase error fetching custom questions:', error);
+          throw error;
+        }
+        
+        console.log('Custom questions fetched:', data?.length || 0);
+        setQuestions(data || []);
+      } catch (dbError) {
+        console.error('Database query error:', dbError);
+        toast({
+          title: 'Database Error',
+          description: 'Error connecting to the database. Please try again later.',
+          variant: 'destructive'
+        });
+        setQuestions([]);
       }
-      
-      const { data, error } = await query.order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('Supabase error fetching custom questions:', error);
-        throw error;
-      }
-      
-      console.log('Custom questions fetched:', data?.length || 0);
-      setQuestions(data || []);
     } catch (error) {
       console.error('Error fetching custom questions:', error);
       toast({
@@ -127,6 +153,11 @@ export function useCustomQuestions() {
         console.log(`Saved ${updatedQuestions.length} questions to localStorage`);
       } catch (error) {
         console.error('Error saving questions to localStorage:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to save questions to local storage',
+          variant: 'destructive'
+        });
       }
     }
   };
@@ -154,7 +185,9 @@ export function useCustomQuestions() {
           created_at: new Date().toISOString()
         };
         
-        const updatedQuestions = [newQuestion, ...questions];
+        // Use current questions state safely
+        const currentQuestions = questions || [];
+        const updatedQuestions = [newQuestion, ...currentQuestions];
         setQuestions(updatedQuestions);
         saveTestQuestions(updatedQuestions);
         
@@ -166,29 +199,41 @@ export function useCustomQuestions() {
         return newQuestion;
       }
 
-      const { data, error } = await supabase
-        .from('custom_questions')
-        .insert({
-          ...question,
-          creator_id: user.id,
-          archived: false
-        })
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('Error creating custom question:', error);
-        throw error;
+      try {
+        const { data, error } = await supabase
+          .from('custom_questions')
+          .insert({
+            ...question,
+            creator_id: user.id,
+            archived: false
+          })
+          .select()
+          .single();
+        
+        if (error) {
+          console.error('Error creating custom question:', error);
+          throw error;
+        }
+        
+        // Use current questions state safely
+        const currentQuestions = questions || [];
+        setQuestions([data, ...currentQuestions]);
+        
+        toast({
+          title: 'Success',
+          description: 'Custom question created successfully',
+        });
+        
+        return data;
+      } catch (dbError) {
+        console.error('Database error creating question:', dbError);
+        toast({
+          title: 'Database Error',
+          description: 'Error connecting to the database. Please try again later.',
+          variant: 'destructive'
+        });
+        return null;
       }
-      
-      setQuestions(prev => [data, ...prev]);
-      
-      toast({
-        title: 'Success',
-        description: 'Custom question created successfully',
-      });
-      
-      return data;
     } catch (error) {
       console.error('Error creating custom question:', error);
       toast({
@@ -205,7 +250,9 @@ export function useCustomQuestions() {
     
     try {
       if (isTestingMode) {
-        const updatedQuestions = questions.map(q => 
+        // Handle null questions state safely
+        const currentQuestions = questions || [];
+        const updatedQuestions = currentQuestions.map(q => 
           q.id === id ? { ...q, ...updates } : q
         );
         setQuestions(updatedQuestions);
@@ -219,26 +266,38 @@ export function useCustomQuestions() {
         return true;
       }
 
-      const { error } = await supabase
-        .from('custom_questions')
-        .update(updates)
-        .eq('id', id)
-        .eq('creator_id', user.id);
-      
-      if (error) {
-        throw error;
+      try {
+        const { error } = await supabase
+          .from('custom_questions')
+          .update(updates)
+          .eq('id', id)
+          .eq('creator_id', user.id);
+        
+        if (error) {
+          throw error;
+        }
+        
+        // Handle null questions state safely
+        const currentQuestions = questions || [];
+        setQuestions(
+          currentQuestions.map(q => q.id === id ? { ...q, ...updates } : q)
+        );
+        
+        toast({
+          title: 'Success',
+          description: 'Custom question updated successfully',
+        });
+        
+        return true;
+      } catch (dbError) {
+        console.error('Database error updating question:', dbError);
+        toast({
+          title: 'Database Error',
+          description: 'Error connecting to the database. Please try again later.',
+          variant: 'destructive'
+        });
+        return false;
       }
-      
-      setQuestions(prev => 
-        prev.map(q => q.id === id ? { ...q, ...updates } : q)
-      );
-      
-      toast({
-        title: 'Success',
-        description: 'Custom question updated successfully',
-      });
-      
-      return true;
     } catch (error) {
       console.error('Error updating custom question:', error);
       toast({
