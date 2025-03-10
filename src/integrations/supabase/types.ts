@@ -162,6 +162,7 @@ export type Database = {
       }
       custom_questions: {
         Row: {
+          archived: boolean | null
           created_at: string | null
           creator_id: string
           id: string
@@ -170,6 +171,7 @@ export type Database = {
           type: string
         }
         Insert: {
+          archived?: boolean | null
           created_at?: string | null
           creator_id: string
           id?: string
@@ -178,6 +180,7 @@ export type Database = {
           type: string
         }
         Update: {
+          archived?: boolean | null
           created_at?: string | null
           creator_id?: string
           id?: string

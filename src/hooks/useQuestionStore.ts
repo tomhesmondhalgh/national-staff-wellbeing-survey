@@ -17,11 +17,19 @@ export function useQuestionStore() {
         .eq('archived', showArchived)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching questions:', error);
+        toast.error('Failed to load questions');
+        return [];
+      }
+
+      // Set empty array if no data returned
       setQuestions(data || []);
+      return data || [];
     } catch (error) {
-      console.error('Error fetching questions:', error);
+      console.error('Error in fetchQuestions:', error);
       toast.error('Failed to load questions');
+      return [];
     } finally {
       setIsLoading(false);
     }
