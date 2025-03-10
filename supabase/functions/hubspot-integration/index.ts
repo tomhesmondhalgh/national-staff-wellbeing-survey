@@ -32,8 +32,8 @@ serve(async (req) => {
 
     console.log('Checking if contact exists in Hubspot:', userData.email);
 
-    // Check if contact already exists to avoid duplicates
-    const existingContact = await findContactByEmail(userData.email);
+    // We'll use both search and get by ID methods to ensure we find any existing contact
+    let existingContact = await findContactByEmail(userData.email);
 
     let hubspotContactId;
 
@@ -51,19 +51,64 @@ serve(async (req) => {
       console.log('Successfully updated existing contact');
       hubspotContactId = existingContact.id;
     } else {
-      // Create new contact
-      console.log('Contact does not exist, creating new contact in Hubspot');
-      const contactResponse = await createContact(userData);
-      
-      if (!contactResponse.ok) {
-        const errorData = await contactResponse.json();
-        console.error('Error creating contact in Hubspot:', errorData);
-        throw new Error(`Failed to create contact: ${JSON.stringify(errorData)}`);
+      try {
+        // Attempt to create new contact with error handling for duplicates
+        console.log('No existing contact found, attempting to create new contact in Hubspot');
+        const contactResponse = await createContact(userData);
+        
+        // Check for conflict (409) which means the contact actually exists
+        if (contactResponse.status === 409) {
+          const errorData = await contactResponse.json();
+          console.log('Contact already exists (409 conflict):', errorData);
+          
+          // Extract the existing ID from the error message if available
+          const idMatch = errorData.message?.match(/Existing ID: (\d+)/);
+          if (idMatch && idMatch[1]) {
+            hubspotContactId = idMatch[1];
+            console.log('Extracted existing contact ID from error:', hubspotContactId);
+            
+            // Now update this existing contact
+            const updateResponse = await updateContact(hubspotContactId, userData);
+            if (!updateResponse.ok) {
+              console.error('Error updating existing contact after 409:', await updateResponse.json());
+            } else {
+              console.log('Successfully updated contact after 409 detection');
+            }
+          } else {
+            console.error('Could not extract existing ID from 409 error', errorData);
+            throw new Error(`Contact exists but could not determine ID: ${JSON.stringify(errorData)}`);
+          }
+        } else if (!contactResponse.ok) {
+          // Handle other errors
+          const errorData = await contactResponse.json();
+          console.error('Error creating contact in Hubspot:', errorData);
+          throw new Error(`Failed to create contact: ${JSON.stringify(errorData)}`);
+        } else {
+          // Contact created successfully
+          const contactData = await contactResponse.json();
+          hubspotContactId = contactData.id;
+          console.log('Contact created in Hubspot with ID:', hubspotContactId);
+        }
+      } catch (createError) {
+        console.error('Exception during contact creation/update:', createError);
+        
+        // If we got here but don't have a contact ID, try one more time to find by email
+        if (!hubspotContactId) {
+          console.log('Final attempt to find contact by email after error');
+          existingContact = await findContactByEmail(userData.email);
+          if (existingContact) {
+            hubspotContactId = existingContact.id;
+            console.log('Found contact on final attempt:', hubspotContactId);
+          } else {
+            throw createError;
+          }
+        }
       }
-      
-      const contactData = await contactResponse.json();
-      hubspotContactId = contactData.id;
-      console.log('Contact created in Hubspot with ID:', hubspotContactId);
+    }
+    
+    // If we still don't have a hubspot contact ID, we can't continue
+    if (!hubspotContactId) {
+      throw new Error('Failed to create or find Hubspot contact');
     }
     
     // Add contact to list if listId is provided
@@ -136,7 +181,8 @@ async function findContactByEmail(email: string) {
               ]
             }
           ],
-          properties: ['email', 'firstname', 'lastname']
+          properties: ['email', 'firstname', 'lastname'],
+          limit: 1
         }),
       }
     );
@@ -155,6 +201,34 @@ async function findContactByEmail(email: string) {
       console.log('Found existing contact:', searchResult.results[0].id);
       return searchResult.results[0];
     } else {
+      // Try an alternative approach - search with different conditions
+      console.log('No results from primary search, trying alternative search');
+      // Nothing found with the primary search method
+      try {
+        // Try getting the contact directly by email using the "get by email" endpoint
+        const altResponse = await fetch(
+          `https://api.hubapi.com/contacts/v1/contact/email/${encodeURIComponent(email)}/profile`,
+          {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${HUBSPOT_API_KEY}`,
+            }
+          }
+        );
+
+        if (altResponse.ok) {
+          const contactData = await altResponse.json();
+          if (contactData && contactData.vid) {
+            console.log('Found contact using alternative lookup:', contactData.vid);
+            return { id: contactData.vid.toString() };
+          }
+        } else {
+          console.log('Alternative contact lookup also returned no results (expected)');
+        }
+      } catch (altError) {
+        console.error('Error in alternative contact lookup:', altError);
+      }
+      
       console.log('No existing contact found with email:', email);
       return null;
     }
