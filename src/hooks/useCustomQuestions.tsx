@@ -5,59 +5,26 @@ import { CustomQuestion } from '../types/customQuestions';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/ui/use-toast';
 import { useSubscription } from './useSubscription';
-import { useTestingMode } from '../contexts/TestingModeContext';
 
 export function useCustomQuestions() {
   const [questions, setQuestions] = useState<CustomQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
   const { hasAccess } = useSubscription();
-  const { isTestingMode } = useTestingMode();
 
   const fetchQuestions = useCallback(async () => {
     if (!user) return;
     
     setIsLoading(true);
-    setError(null);
-    
     try {
       // Check if user has access to custom questions feature
       const hasFeatureAccess = await hasAccess('foundation');
-      
-      // In testing mode, we'll skip the access check
-      if (!isTestingMode && !hasFeatureAccess) {
-        setQuestions([]);
+      if (!hasFeatureAccess) {
         return;
       }
 
-      // Mock data for testing mode
-      if (isTestingMode) {
-        const mockQuestions: CustomQuestion[] = [
-          {
-            id: '1',
-            text: 'How satisfied are you with the school facilities?',
-            type: 'multiple-choice',
-            options: ['Very satisfied', 'Satisfied', 'Neutral', 'Dissatisfied', 'Very dissatisfied'],
-            archived: false,
-            created_at: new Date().toISOString()
-          },
-          {
-            id: '2',
-            text: 'What improvements would you suggest for the school?',
-            type: 'text',
-            archived: false,
-            created_at: new Date().toISOString()
-          }
-        ];
-        setQuestions(mockQuestions);
-        setIsLoading(false);
-        return;
-      }
-
-      // Real data fetch for non-testing mode
       const query = supabase
         .from('custom_questions')
         .select('*')
@@ -74,27 +41,18 @@ export function useCustomQuestions() {
       }
       
       setQuestions(data || []);
-    } catch (err) {
-      console.error('Error fetching custom questions:', err);
-      setError(err instanceof Error ? err : new Error('Failed to fetch questions'));
-      
-      // Only show toast once, not for every retry
-      if (!error) {
-        toast({
-          title: 'Error',
-          description: 'Failed to load your custom questions. Please try again.',
-          variant: 'destructive'
-        });
-      }
-      
-      // Set empty array to prevent endless loading state
-      setQuestions([]);
+    } catch (error) {
+      console.error('Error fetching custom questions:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load your custom questions. Please try again.',
+        variant: 'destructive'
+      });
     } finally {
       setIsLoading(false);
     }
-  }, [user, showArchived, toast, hasAccess, isTestingMode, error]);
+  }, [user, showArchived, toast, hasAccess]);
 
-  // Only run the effect when these dependencies change, not on every render
   useEffect(() => {
     fetchQuestions();
   }, [fetchQuestions]);
@@ -103,39 +61,17 @@ export function useCustomQuestions() {
     if (!user) return null;
     
     try {
-      // Skip access check in testing mode
-      if (!isTestingMode) {
-        const hasFeatureAccess = await hasAccess('foundation');
-        if (!hasFeatureAccess) {
-          toast({
-            title: 'Feature not available',
-            description: 'Custom questions are only available in the Foundation plan and above.',
-            variant: 'destructive'
-          });
-          return null;
-        }
-      }
-
-      // In testing mode, create a mock question
-      if (isTestingMode) {
-        const mockQuestion: CustomQuestion = {
-          id: Math.random().toString(36).substr(2, 9),
-          ...question,
-          archived: false,
-          created_at: new Date().toISOString()
-        };
-        
-        setQuestions(prev => [mockQuestion, ...prev]);
-        
+      // Check if user has access to custom questions feature
+      const hasFeatureAccess = await hasAccess('foundation');
+      if (!hasFeatureAccess) {
         toast({
-          title: 'Success',
-          description: 'Custom question created successfully (Testing Mode)',
+          title: 'Feature not available',
+          description: 'Custom questions are only available in the Foundation plan and above.',
+          variant: 'destructive'
         });
-        
-        return mockQuestion;
+        return null;
       }
 
-      // Actual database operation for non-testing mode
       const { data, error } = await supabase
         .from('custom_questions')
         .insert({
@@ -153,6 +89,11 @@ export function useCustomQuestions() {
       // Update the local state with the new question
       setQuestions(prev => [data, ...prev]);
       
+      toast({
+        title: 'Success',
+        description: 'Custom question created successfully',
+      });
+      
       return data;
     } catch (error) {
       console.error('Error creating custom question:', error);
@@ -169,21 +110,6 @@ export function useCustomQuestions() {
     if (!user) return false;
     
     try {
-      // In testing mode, update mock question
-      if (isTestingMode) {
-        setQuestions(prev => 
-          prev.map(q => q.id === id ? { ...q, ...updates } : q)
-        );
-        
-        toast({
-          title: 'Success',
-          description: 'Custom question updated successfully (Testing Mode)',
-        });
-        
-        return true;
-      }
-
-      // Actual database operation for non-testing mode
       const { error } = await supabase
         .from('custom_questions')
         .update(updates)
@@ -198,6 +124,11 @@ export function useCustomQuestions() {
       setQuestions(prev => 
         prev.map(q => q.id === id ? { ...q, ...updates } : q)
       );
+      
+      toast({
+        title: 'Success',
+        description: 'Custom question updated successfully',
+      });
       
       return true;
     } catch (error) {
@@ -222,7 +153,6 @@ export function useCustomQuestions() {
   return {
     questions,
     isLoading,
-    error,
     createQuestion,
     updateQuestion,
     toggleArchiveQuestion,

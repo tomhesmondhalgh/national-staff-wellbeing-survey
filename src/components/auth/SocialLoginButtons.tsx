@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { Provider } from '@supabase/supabase-js';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -9,17 +10,17 @@ interface SocialLoginButtonsProps {
 }
 
 const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({ isLoading = false }) => {
-  const { socialSignIn } = useAuth();
+  const { signInWithSocialProvider } = useAuth();
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
 
-  const handleSocialLogin = async (provider: 'google' | 'microsoft' | 'azure') => {
+  const handleSocialLogin = async (provider: Provider) => {
     try {
       setSocialLoading(provider);
       
       // Add more descriptive logging for debugging
       console.log(`Attempting to sign in with ${provider}`);
       
-      const result = await socialSignIn(provider);
+      const result = await signInWithSocialProvider(provider);
       
       if (!result.success && result.error) {
         console.error(`Error during ${provider} authentication:`, result.error);
@@ -43,7 +44,7 @@ const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({ isLoading = fal
       <div className="flex flex-col space-y-4 mb-6">
         <button
           type="button"
-          className="btn flex items-center justify-center gap-2 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 h-20"
+          className="btn flex items-center justify-center gap-2 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 h-20" // Doubled height from 10 to 20
           onClick={() => handleSocialLogin('google')}
           disabled={isLoading || !!socialLoading}
         >
@@ -74,11 +75,11 @@ const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({ isLoading = fal
         
         <button
           type="button"
-          className="btn flex items-center justify-center gap-2 bg-[#0078d4] hover:bg-[#106ebe] text-white h-20"
-          onClick={() => handleSocialLogin('microsoft')}
+          className="btn flex items-center justify-center gap-2 bg-[#0078d4] hover:bg-[#106ebe] text-white h-20" // Doubled height from 10 to 20
+          onClick={() => handleSocialLogin('azure')}
           disabled={isLoading || !!socialLoading}
         >
-          {socialLoading === 'microsoft' ? (
+          {socialLoading === 'azure' ? (
             <Loader2 size={18} className="animate-spin" />
           ) : (
             <svg className="w-5 h-5" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
