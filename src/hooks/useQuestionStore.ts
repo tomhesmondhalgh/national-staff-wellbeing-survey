@@ -35,7 +35,7 @@ export function useQuestionStore() {
     }
   };
 
-  const createQuestion = async (question: Omit<CustomQuestion, 'id' | 'created_at' | 'archived'>) => {
+  const createQuestion = async (question: Omit<CustomQuestion, 'id' | 'created_at' | 'archived' | 'creator_id'>) => {
     try {
       // Get the current user's ID
       const { data: { user } } = await supabase.auth.getUser();
