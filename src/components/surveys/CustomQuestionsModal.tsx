@@ -26,15 +26,13 @@ const CustomQuestionsModal: React.FC<CustomQuestionsModalProps> = ({
 }) => {
   const { questions = [], isLoading, refreshQuestions } = useCustomQuestions();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTab, setSelectedTab] = useState<'all' | 'text' | 'multiple_choice'>('all');
   const [refreshing, setRefreshing] = useState(false);
   const navigate = useNavigate();
   
-  // Filter questions based on search term and selected tab
+  // Filter questions based on search term only (removed type filter)
   const filteredQuestions = questions
     .filter(q => !q.archived)
-    .filter(q => q.text.toLowerCase().includes(searchTerm.toLowerCase()))
-    .filter(q => selectedTab === 'all' || q.type === selectedTab);
+    .filter(q => q.text.toLowerCase().includes(searchTerm.toLowerCase()));
   
   // Handle question selection
   const toggleQuestion = (questionId: string) => {
@@ -114,27 +112,6 @@ const CustomQuestionsModal: React.FC<CustomQuestionsModalProps> = ({
           </Button>
         </div>
         
-        <div className="flex border-b mb-4">
-          <button
-            className={`px-4 py-2 ${selectedTab === 'all' ? 'border-b-2 border-primary font-medium' : 'text-gray-600'}`}
-            onClick={() => setSelectedTab('all')}
-          >
-            All
-          </button>
-          <button
-            className={`px-4 py-2 ${selectedTab === 'text' ? 'border-b-2 border-primary font-medium' : 'text-gray-600'}`}
-            onClick={() => setSelectedTab('text')}
-          >
-            Text
-          </button>
-          <button
-            className={`px-4 py-2 ${selectedTab === 'multiple_choice' ? 'border-b-2 border-primary font-medium' : 'text-gray-600'}`}
-            onClick={() => setSelectedTab('multiple_choice')}
-          >
-            Multiple Choice
-          </button>
-        </div>
-        
         {(isLoading || refreshing) ? (
           <div className="py-12 text-center">
             <p className="text-gray-500">Loading questions...</p>
@@ -212,13 +189,8 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ question, isSelected, onTog
           <p className="font-medium text-sm">{question.text}</p>
           <div className="flex items-center mt-1 gap-2">
             <Badge variant="outline" className="text-xs">
-              {question.type === 'text' ? 'Free Text' : 'Multiple Choice'}
+              Free Text
             </Badge>
-            {question.type === 'multiple_choice' && question.options && (
-              <span className="text-xs text-gray-500">
-                {question.options.length} options
-              </span>
-            )}
           </div>
         </div>
         
