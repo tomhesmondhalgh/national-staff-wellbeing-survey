@@ -1,10 +1,10 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { CustomQuestion } from '../types/customQuestions';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/ui/use-toast';
 import { useSubscription } from './useSubscription';
+import { useTestingMode } from '../contexts/TestingModeContext';
 
 export function useCustomQuestions() {
   const [questions, setQuestions] = useState<CustomQuestion[]>([]);
@@ -13,6 +13,7 @@ export function useCustomQuestions() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { hasAccess } = useSubscription();
+  const { isTestingMode } = useTestingMode();
 
   const fetchQuestions = useCallback(async () => {
     if (!user) return;
@@ -25,12 +26,14 @@ export function useCustomQuestions() {
         return;
       }
 
+      // In testing mode, don't filter by archived status
       const query = supabase
         .from('custom_questions')
         .select('*')
         .eq('creator_id', user.id);
       
-      if (!showArchived) {
+      // Only apply archived filter if not in testing mode
+      if (!isTestingMode && !showArchived) {
         query.eq('archived', false);
       }
       
@@ -40,7 +43,12 @@ export function useCustomQuestions() {
         throw error;
       }
       
-      setQuestions(data || []);
+      // In testing mode, treat all questions as non-archived
+      const processedData = isTestingMode 
+        ? data?.map(q => ({ ...q, archived: false })) 
+        : data;
+      
+      setQuestions(processedData || []);
     } catch (error) {
       console.error('Error fetching custom questions:', error);
       toast({
@@ -51,7 +59,7 @@ export function useCustomQuestions() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, showArchived, toast, hasAccess]);
+  }, [user, showArchived, toast, hasAccess, isTestingMode]);
 
   useEffect(() => {
     fetchQuestions();
