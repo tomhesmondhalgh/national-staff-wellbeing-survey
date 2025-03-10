@@ -6,6 +6,7 @@ export interface CustomQuestion {
   options?: string[];
   created_at?: string;
   archived: boolean;
+  creator_id?: string;
 }
 
 export interface CustomQuestionResponse {

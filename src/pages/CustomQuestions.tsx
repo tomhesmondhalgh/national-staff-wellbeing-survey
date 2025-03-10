@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
@@ -10,9 +10,27 @@ import CustomQuestionsList from '../components/custom-questions/CustomQuestionsL
 import CustomQuestionModal from '../components/custom-questions/CustomQuestionModal';
 import { useCustomQuestions } from '../hooks/useCustomQuestions';
 import { CustomQuestion } from '../types/customQuestions';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../components/ui/use-toast';
 
 const CustomQuestions: React.FC = () => {
+  console.log('Rendering CustomQuestions page');
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    console.log('CustomQuestions page mounted, auth state:', user ? 'logged in' : 'not logged in');
+    if (!user) {
+      console.log('No user found, redirecting to login');
+      toast({
+        title: 'Authentication required',
+        description: 'Please log in to access this page',
+        variant: 'destructive'
+      });
+    }
+  }, [user, toast]);
+  
   const {
     questions,
     isLoading,
@@ -26,6 +44,11 @@ const CustomQuestions: React.FC = () => {
   
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<CustomQuestion | undefined>(undefined);
+  
+  useEffect(() => {
+    console.log('Questions loaded:', questions.length);
+    console.log('Is loading:', isLoading);
+  }, [questions, isLoading]);
   
   const handleAddQuestion = () => {
     setSelectedQuestion(undefined);
@@ -45,6 +68,11 @@ const CustomQuestions: React.FC = () => {
       // Create new question
       return createQuestion(questionData);
     }
+  };
+
+  const handleRefresh = () => {
+    console.log('Manual refresh triggered');
+    refreshQuestions();
   };
 
   return (
@@ -80,7 +108,7 @@ const CustomQuestions: React.FC = () => {
           onArchive={toggleArchiveQuestion}
           showArchived={showArchived}
           onToggleArchived={toggleShowArchived}
-          onRefresh={refreshQuestions}
+          onRefresh={handleRefresh}
           onAdd={handleAddQuestion}
         />
         

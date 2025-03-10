@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { CustomQuestion } from '../types/customQuestions';
@@ -8,7 +9,7 @@ import { useTestingMode } from '../contexts/TestingModeContext';
 
 export function useCustomQuestions() {
   const [questions, setQuestions] = useState<CustomQuestion[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -16,32 +17,48 @@ export function useCustomQuestions() {
   const { isTestingMode } = useTestingMode();
 
   const fetchQuestions = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user found, skipping custom questions fetch');
+      setIsLoading(false);
+      return;
+    }
     
     setIsLoading(true);
     try {
       // Check if user has access to custom questions feature
       const hasFeatureAccess = await hasAccess('foundation');
-      if (!hasFeatureAccess) {
+      console.log('User has access to foundation plan:', hasFeatureAccess);
+      
+      if (!hasFeatureAccess && !isTestingMode) {
+        console.log('User does not have access to custom questions feature');
+        setQuestions([]);
+        setIsLoading(false);
         return;
       }
 
-      // In testing mode, don't filter by archived status
-      const query = supabase
+      console.log('Fetching custom questions for user:', user.id);
+      console.log('Show archived:', showArchived);
+      console.log('Is testing mode:', isTestingMode);
+
+      // Build the query
+      let query = supabase
         .from('custom_questions')
         .select('*')
         .eq('creator_id', user.id);
       
       // Only apply archived filter if not in testing mode
       if (!isTestingMode && !showArchived) {
-        query.eq('archived', false);
+        query = query.eq('archived', false);
       }
       
       const { data, error } = await query.order('created_at', { ascending: false });
       
       if (error) {
+        console.error('Supabase error fetching custom questions:', error);
         throw error;
       }
+      
+      console.log('Custom questions fetched:', data?.length || 0);
       
       // In testing mode, treat all questions as non-archived
       const processedData = isTestingMode 
@@ -56,12 +73,15 @@ export function useCustomQuestions() {
         description: 'Failed to load your custom questions. Please try again.',
         variant: 'destructive'
       });
+      // Set empty array to prevent UI from waiting indefinitely
+      setQuestions([]);
     } finally {
       setIsLoading(false);
     }
   }, [user, showArchived, toast, hasAccess, isTestingMode]);
 
   useEffect(() => {
+    console.log('useCustomQuestions effect running');
     fetchQuestions();
   }, [fetchQuestions]);
 
@@ -71,7 +91,7 @@ export function useCustomQuestions() {
     try {
       // Check if user has access to custom questions feature
       const hasFeatureAccess = await hasAccess('foundation');
-      if (!hasFeatureAccess) {
+      if (!hasFeatureAccess && !isTestingMode) {
         toast({
           title: 'Feature not available',
           description: 'Custom questions are only available in the Foundation plan and above.',
@@ -91,6 +111,7 @@ export function useCustomQuestions() {
         .single();
       
       if (error) {
+        console.error('Error creating custom question:', error);
         throw error;
       }
       
