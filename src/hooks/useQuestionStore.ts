@@ -23,9 +23,14 @@ export function useQuestionStore() {
         return [];
       }
 
-      // Set empty array if no data returned
-      setQuestions(data || []);
-      return data || [];
+      // Convert database format to frontend format
+      const processedData = (data || []).map(q => ({
+        ...q,
+        type: q.type === 'multiple_choice' ? 'multiple-choice' : q.type
+      })) as CustomQuestion[];
+
+      setQuestions(processedData);
+      return processedData;
     } catch (error) {
       console.error('Error in fetchQuestions:', error);
       toast.error('Failed to load questions');
@@ -37,34 +42,33 @@ export function useQuestionStore() {
 
   const createQuestion = async (question: Omit<CustomQuestion, 'id' | 'created_at' | 'archived' | 'creator_id'>) => {
     try {
-      // Get the current user's ID
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
         throw new Error('User not authenticated');
       }
       
-      // First, ensure we're passing the proper type value as expected by the database
-      const typeValue = question.type === 'multiple-choice' ? 'multiple_choice' : 'text';
+      // Convert frontend format to database format
+      const dbQuestion = {
+        ...question,
+        type: question.type === 'multiple-choice' ? 'multiple_choice' : question.type,
+        creator_id: user.id,
+        archived: false
+      };
       
       const { data, error } = await supabase
         .from('custom_questions')
-        .insert({ 
-          ...question,
-          type: typeValue, // Use the sanitized type value
-          creator_id: user.id, // Use the current user's ID
-          archived: false 
-        })
+        .insert(dbQuestion)
         .select()
         .single();
 
       if (error) throw error;
       
-      // When adding to state, convert back to our frontend format if needed
+      // Convert back to frontend format
       const processedData = {
         ...data,
         type: data.type === 'multiple_choice' ? 'multiple-choice' : data.type
-      };
+      } as CustomQuestion;
       
       setQuestions(prev => [processedData, ...prev]);
       toast.success('Question created successfully');
@@ -78,28 +82,26 @@ export function useQuestionStore() {
 
   const updateQuestion = async (id: string, updates: Partial<CustomQuestion>) => {
     try {
-      // If the type is being updated, ensure it's in the right format for the database
-      const sanitizedUpdates = { ...updates };
-      if (updates.type) {
-        sanitizedUpdates.type = updates.type === 'multiple-choice' ? 'multiple_choice' : updates.type;
-      }
+      // Convert to database format
+      const dbUpdates = {
+        ...updates,
+        type: updates.type === 'multiple-choice' ? 'multiple_choice' : updates.type
+      };
 
       const { error } = await supabase
         .from('custom_questions')
-        .update(sanitizedUpdates)
+        .update(dbUpdates)
         .eq('id', id);
 
       if (error) throw error;
       
-      // Update in the local state with our frontend format
+      // Update state with frontend format
       setQuestions(prev => prev.map(q => {
         if (q.id === id) {
-          const updated = { ...q, ...updates };
-          // Make sure the type is in the frontend format
-          if (updates.type) {
-            updated.type = updates.type;
-          }
-          return updated;
+          return {
+            ...q,
+            ...updates, // Use original updates with frontend format
+          };
         }
         return q;
       }));
