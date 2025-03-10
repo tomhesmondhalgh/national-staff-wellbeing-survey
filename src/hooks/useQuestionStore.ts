@@ -50,10 +50,17 @@ export function useQuestionStore() {
         throw new Error('User not authenticated');
       }
       
+      // Log the exact type value being used
       console.log(`Creating question with type: ${question.type}`);
       
+      // Check if the type is one of the allowed values
+      if (question.type !== 'text' && question.type !== 'multiple_choice') {
+        console.error(`Invalid question type: ${question.type}. Must be 'text' or 'multiple_choice'`);
+        throw new Error('Invalid question type');
+      }
+      
       const dbQuestion = {
-        ...question, // Type is used directly without conversion
+        ...question,
         creator_id: user.id,
         archived: false
       };
