@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -40,48 +39,43 @@ const CustomQuestions: React.FC = () => {
   }, [user, navigate]);
 
   const handleAddQuestion = () => {
-    console.log('Opening add question modal');
-    setSelectedQuestion(undefined);
-    setModalOpen(true);
+    try {
+      setSelectedQuestion(undefined);
+      setModalOpen(true);
+    } catch (error) {
+      console.error('Error opening modal:', error);
+      toast.error('Failed to open question form');
+    }
   };
   
   const handleEditQuestion = (question: CustomQuestion) => {
-    console.log('Opening edit modal for question:', question.id);
-    setSelectedQuestion(question);
-    setModalOpen(true);
+    try {
+      setSelectedQuestion(question);
+      setModalOpen(true);
+    } catch (error) {
+      console.error('Error opening edit modal:', error);
+      toast.error('Failed to open edit form');
+    }
   };
   
   const handleSaveQuestion = async (questionData: Omit<CustomQuestion, 'id' | 'created_at' | 'archived'>) => {
     try {
-      console.log('Saving question with data:', questionData);
-      
       if (selectedQuestion) {
-        const updated = await updateQuestion(selectedQuestion.id, questionData);
-        if (updated) {
-          toast.success('Question updated successfully');
-          setModalOpen(false);
-          await refreshQuestions();
-        }
-        return updated;
+        return await updateQuestion(selectedQuestion.id, questionData);
       } else {
         const result = await createQuestion(questionData);
         if (result) {
-          toast.success('Question created successfully');
           setModalOpen(false);
           await refreshQuestions();
+          return true;
         }
-        return !!result;
+        return false;
       }
     } catch (error) {
       console.error('Error saving question:', error);
       toast.error('Failed to save question');
       return false;
     }
-  };
-
-  const handleCloseModal = () => {
-    console.log('Closing modal');
-    setModalOpen(false);
   };
 
   const handleRefresh = () => {
@@ -140,13 +134,15 @@ const CustomQuestions: React.FC = () => {
           onAdd={handleAddQuestion}
         />
         
-        <CustomQuestionModal
-          open={modalOpen}
-          onOpenChange={handleCloseModal}
-          onSave={handleSaveQuestion}
-          initialData={selectedQuestion}
-          isEdit={!!selectedQuestion}
-        />
+        {modalOpen && (
+          <CustomQuestionModal
+            open={modalOpen}
+            onOpenChange={setModalOpen}
+            onSave={handleSaveQuestion}
+            initialData={selectedQuestion}
+            isEdit={!!selectedQuestion}
+          />
+        )}
       </div>
     </MainLayout>
   );
