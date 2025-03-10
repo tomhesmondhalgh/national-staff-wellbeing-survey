@@ -44,10 +44,14 @@ export function useQuestionStore() {
         throw new Error('User not authenticated');
       }
       
+      // First, ensure we're passing the proper type value as expected by the database
+      const typeValue = question.type === 'multiple-choice' ? 'multiple_choice' : 'text';
+      
       const { data, error } = await supabase
         .from('custom_questions')
         .insert({ 
-          ...question, 
+          ...question,
+          type: typeValue, // Use the sanitized type value
           creator_id: user.id, // Use the current user's ID
           archived: false 
         })
@@ -55,9 +59,16 @@ export function useQuestionStore() {
         .single();
 
       if (error) throw error;
-      setQuestions(prev => [data, ...prev]);
+      
+      // When adding to state, convert back to our frontend format if needed
+      const processedData = {
+        ...data,
+        type: data.type === 'multiple_choice' ? 'multiple-choice' : data.type
+      };
+      
+      setQuestions(prev => [processedData, ...prev]);
       toast.success('Question created successfully');
-      return data;
+      return processedData;
     } catch (error) {
       console.error('Error creating question:', error);
       toast.error('Failed to create question');
@@ -67,13 +78,32 @@ export function useQuestionStore() {
 
   const updateQuestion = async (id: string, updates: Partial<CustomQuestion>) => {
     try {
+      // If the type is being updated, ensure it's in the right format for the database
+      const sanitizedUpdates = { ...updates };
+      if (updates.type) {
+        sanitizedUpdates.type = updates.type === 'multiple-choice' ? 'multiple_choice' : updates.type;
+      }
+
       const { error } = await supabase
         .from('custom_questions')
-        .update(updates)
+        .update(sanitizedUpdates)
         .eq('id', id);
 
       if (error) throw error;
-      setQuestions(prev => prev.map(q => q.id === id ? { ...q, ...updates } : q));
+      
+      // Update in the local state with our frontend format
+      setQuestions(prev => prev.map(q => {
+        if (q.id === id) {
+          const updated = { ...q, ...updates };
+          // Make sure the type is in the frontend format
+          if (updates.type) {
+            updated.type = updates.type;
+          }
+          return updated;
+        }
+        return q;
+      }));
+      
       toast.success('Question updated successfully');
       return true;
     } catch (error) {
