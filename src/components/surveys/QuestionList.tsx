@@ -39,14 +39,14 @@ const QuestionList: React.FC<QuestionListProps> = ({
           key={question.id} 
           className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-md"
         >
-          <div className="flex flex-col md:flex-row md:items-center flex-1 gap-1 md:gap-3">
-            <p className={`${isCompact ? 'text-sm' : 'text-base'} font-medium`}>{question.text}</p>
-            <div className="flex items-center">
-              <Badge variant="outline" className="text-xs">
+          <div className="flex items-center gap-3 flex-1 overflow-hidden">
+            <p className={`${isCompact ? 'text-sm' : 'text-base'} font-medium truncate`}>{question.text}</p>
+            <div className="flex items-center flex-shrink-0">
+              <Badge variant="outline" className="text-xs whitespace-nowrap">
                 {question.type === 'text' ? 'Free Text' : 'Multiple Choice'}
               </Badge>
               {question.type === 'multiple-choice' && question.options && (
-                <span className="text-xs text-gray-500 ml-2">
+                <span className="text-xs text-gray-500 ml-2 whitespace-nowrap">
                   {question.options.length} options
                 </span>
               )}
