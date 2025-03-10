@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -16,9 +17,11 @@ const CustomQuestions: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   
+  // State for modal and selected question
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<CustomQuestion | undefined>(undefined);
   
+  // Custom questions hook
   const {
     questions,
     isLoading,
@@ -30,43 +33,41 @@ const CustomQuestions: React.FC = () => {
     refreshQuestions
   } = useCustomQuestions();
   
+  // Check authentication
   useEffect(() => {
     if (!user) {
       toast.error('Please log in to access this page');
       navigate('/login');
-      return;
     }
   }, [user, navigate]);
 
+  // Open add question modal
   const handleAddQuestion = () => {
-    try {
-      setSelectedQuestion(undefined);
-      setModalOpen(true);
-    } catch (error) {
-      console.error('Error opening modal:', error);
-      toast.error('Failed to open question form');
-    }
+    setSelectedQuestion(undefined);
+    setModalOpen(true);
   };
   
+  // Open edit question modal
   const handleEditQuestion = (question: CustomQuestion) => {
-    try {
-      setSelectedQuestion(question);
-      setModalOpen(true);
-    } catch (error) {
-      console.error('Error opening edit modal:', error);
-      toast.error('Failed to open edit form');
-    }
+    setSelectedQuestion(question);
+    setModalOpen(true);
   };
   
+  // Save question (create or update)
   const handleSaveQuestion = async (questionData: Omit<CustomQuestion, 'id' | 'created_at' | 'archived'>) => {
     try {
       if (selectedQuestion) {
-        return await updateQuestion(selectedQuestion.id, questionData);
+        // Update existing question
+        const success = await updateQuestion(selectedQuestion.id, questionData);
+        if (success) {
+          setModalOpen(false);
+        }
+        return success;
       } else {
+        // Create new question
         const result = await createQuestion(questionData);
         if (result) {
           setModalOpen(false);
-          await refreshQuestions();
           return true;
         }
         return false;
@@ -78,10 +79,7 @@ const CustomQuestions: React.FC = () => {
     }
   };
 
-  const handleRefresh = () => {
-    refreshQuestions();
-  };
-
+  // Loading state
   if (!user) {
     return (
       <MainLayout>
@@ -100,6 +98,7 @@ const CustomQuestions: React.FC = () => {
   return (
     <MainLayout>
       <div className="page-container">
+        {/* Breadcrumb navigation */}
         <Breadcrumb className="mb-4">
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -112,6 +111,7 @@ const CustomQuestions: React.FC = () => {
           </BreadcrumbList>
         </Breadcrumb>
 
+        {/* Page header */}
         <div className="flex items-center justify-between mb-6">
           <PageTitle 
             title="Custom Questions" 
@@ -123,6 +123,7 @@ const CustomQuestions: React.FC = () => {
           </Button>
         </div>
 
+        {/* Questions list */}
         <CustomQuestionsList
           questions={questions || []}
           isLoading={isLoading}
@@ -130,19 +131,18 @@ const CustomQuestions: React.FC = () => {
           onArchive={toggleArchiveQuestion}
           showArchived={showArchived}
           onToggleArchived={toggleShowArchived}
-          onRefresh={handleRefresh}
+          onRefresh={refreshQuestions}
           onAdd={handleAddQuestion}
         />
         
-        {modalOpen && (
-          <CustomQuestionModal
-            open={modalOpen}
-            onOpenChange={setModalOpen}
-            onSave={handleSaveQuestion}
-            initialData={selectedQuestion}
-            isEdit={!!selectedQuestion}
-          />
-        )}
+        {/* Modal for adding/editing questions */}
+        <CustomQuestionModal
+          open={modalOpen}
+          onOpenChange={setModalOpen}
+          onSave={handleSaveQuestion}
+          initialData={selectedQuestion}
+          isEdit={!!selectedQuestion}
+        />
       </div>
     </MainLayout>
   );

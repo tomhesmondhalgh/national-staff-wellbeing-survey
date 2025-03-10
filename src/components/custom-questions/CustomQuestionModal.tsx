@@ -5,10 +5,10 @@ import { Button } from '../ui/button';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
-import { X, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { CustomQuestion } from '../../types/customQuestions';
-import { useToast } from '../ui/use-toast';
 import { useAuth } from '../../contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface CustomQuestionModalProps {
   open: boolean;
@@ -18,6 +18,7 @@ interface CustomQuestionModalProps {
   isEdit?: boolean;
 }
 
+// Constants
 const MAX_OPTIONS = 5;
 const MAX_TEXT_LENGTH = 100;
 
@@ -28,28 +29,32 @@ const CustomQuestionModal: React.FC<CustomQuestionModalProps> = ({
   initialData,
   isEdit = false
 }) => {
+  // State
   const [questionText, setQuestionText] = useState('');
   const [questionType, setQuestionType] = useState<'text' | 'multiple-choice'>('text');
   const [options, setOptions] = useState<string[]>(['']);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const { toast } = useToast();
-  const { user } = useAuth(); // Get the current user to access their ID
+  const { user } = useAuth();
 
+  // Initialize form data when modal opens or initialData changes
   useEffect(() => {
-    if (initialData) {
-      setQuestionText(initialData.text || '');
-      setQuestionType(initialData.type || 'text');
-      setOptions(initialData.options?.length ? initialData.options : ['']);
-    } else {
-      // Reset form when opening for new question
-      setQuestionText('');
-      setQuestionType('text');
-      setOptions(['']);
+    if (open) {
+      if (initialData) {
+        setQuestionText(initialData.text || '');
+        setQuestionType(initialData.type || 'text');
+        setOptions(initialData.options?.length ? initialData.options : ['']);
+      } else {
+        // Reset form for new question
+        setQuestionText('');
+        setQuestionType('text');
+        setOptions(['']);
+      }
+      setErrors({});
     }
-    setErrors({});
   }, [initialData, open]);
 
+  // Form validation
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
@@ -77,20 +82,18 @@ const CustomQuestionModal: React.FC<CustomQuestionModalProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
+  // Form submission
   const handleSubmit = async () => {
     if (!validateForm()) return;
+    
     if (!user) {
-      toast({
-        title: 'Error',
-        description: 'You must be logged in to create or edit questions.',
-        variant: 'destructive'
-      });
+      toast.error('You must be logged in to create or edit questions');
       return;
     }
     
     setIsSubmitting(true);
+    
     try {
-      // Include creator_id in the question data
       const questionData = {
         text: questionText,
         type: questionType,
@@ -98,20 +101,20 @@ const CustomQuestionModal: React.FC<CustomQuestionModalProps> = ({
         creator_id: initialData?.creator_id || user.id
       };
       
-      await onSave(questionData);
-      onOpenChange(false);
+      const result = await onSave(questionData);
+      
+      if (result) {
+        onOpenChange(false);
+      }
     } catch (error) {
       console.error('Error saving question:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to save question. Please try again.',
-        variant: 'destructive'
-      });
+      toast.error('Failed to save question. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Option management
   const addOption = () => {
     if (options.length < MAX_OPTIONS) {
       setOptions([...options, '']);
@@ -144,6 +147,7 @@ const CustomQuestionModal: React.FC<CustomQuestionModalProps> = ({
         </DialogHeader>
         
         <div className="space-y-6 py-4">
+          {/* Question Type Selection */}
           <div className="space-y-2">
             <Label htmlFor="question-type">Question Type</Label>
             <div className="flex space-x-4">
@@ -174,6 +178,7 @@ const CustomQuestionModal: React.FC<CustomQuestionModalProps> = ({
             </div>
           </div>
           
+          {/* Question Text */}
           <div className="space-y-2">
             <Label htmlFor="question-text">
               Question Text {questionText.length}/{MAX_TEXT_LENGTH}
@@ -191,6 +196,7 @@ const CustomQuestionModal: React.FC<CustomQuestionModalProps> = ({
             )}
           </div>
           
+          {/* Multiple Choice Options */}
           {questionType === 'multiple-choice' && (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
@@ -230,7 +236,7 @@ const CustomQuestionModal: React.FC<CustomQuestionModalProps> = ({
                       <Trash2 size={18} className="text-red-500" />
                     </Button>
                     {errors[`option_${index}`] && (
-                      <p className="text-red-500 text-sm">{errors[`option_${index}`]}</p>
+                      <p className="text-red-500 text-sm absolute mt-10">{errors[`option_${index}`]}</p>
                     )}
                   </div>
                 ))}
