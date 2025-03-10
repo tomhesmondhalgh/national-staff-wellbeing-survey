@@ -60,12 +60,21 @@ const CustomQuestionsSelect: React.FC<CustomQuestionsSelectProps> = ({
   
   // Effect to safely refresh questions when component mounts or when opened
   useEffect(() => {
-    if (isOpen && hasAccess) {
+    if (hasAccess) {
       refreshQuestions().catch(err => {
         console.error("Error auto-refreshing questions:", err);
       });
     }
-  }, [isOpen, hasAccess, refreshQuestions]);
+  }, [hasAccess]);
+  
+  // Second effect for when the collapsible is opened
+  useEffect(() => {
+    if (isOpen && hasAccess) {
+      refreshQuestions().catch(err => {
+        console.error("Error refreshing on open:", err);
+      });
+    }
+  }, [isOpen, hasAccess]);
   
   if (!hasAccess) {
     return (
@@ -134,7 +143,7 @@ const CustomQuestionsSelect: React.FC<CustomQuestionsSelectProps> = ({
               <div className="py-8 text-center">
                 <p>Loading questions...</p>
               </div>
-            ) : (availableQuestions || []).length === 0 ? (
+            ) : availableQuestions.length === 0 ? (
               <div className="py-8 text-center">
                 <p className="text-gray-500 mb-4">You haven't created any custom questions yet.</p>
                 <Button 

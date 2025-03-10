@@ -5,10 +5,12 @@ import { useQuestionStore } from './useQuestionStore';
 export function useCustomQuestions() {
   const { questions, isLoading, fetchQuestions, createQuestion, updateQuestion } = useQuestionStore();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
 
   useEffect(() => {
     const loadQuestions = async () => {
       await fetchQuestions(false);
+      setInitialLoadDone(true);
     };
     loadQuestions();
   }, [refreshTrigger]);
@@ -29,7 +31,7 @@ export function useCustomQuestions() {
 
   return {
     questions,
-    isLoading,
+    isLoading: isLoading && !initialLoadDone,
     refreshQuestions,
     createQuestion,
     updateQuestion
