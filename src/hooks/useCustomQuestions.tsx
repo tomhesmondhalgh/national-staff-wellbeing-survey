@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase/client';
 import { CustomQuestion } from '../types/customQuestions';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/ui/use-toast';
@@ -11,19 +11,32 @@ export function useCustomQuestions() {
   const [questions, setQuestions] = useState<CustomQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
+  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
   const { user } = useAuth();
   const { toast } = useToast();
   const { hasAccess } = useSubscription();
   const { isTestingMode } = useTestingMode();
 
   const fetchQuestions = useCallback(async () => {
+    // Prevent duplicate fetches within a short time window
+    const now = Date.now();
+    if (now - lastFetchTime < 1000) {
+      console.log('Skipping fetch - too soon since last fetch');
+      return;
+    }
+    
+    setLastFetchTime(now);
+    
     if (!user) {
       console.log('No user found, skipping custom questions fetch');
       setIsLoading(false);
       return;
     }
+
+    if (isLoading === false) {
+      setIsLoading(true);
+    }
     
-    setIsLoading(true);
     try {
       // Check if user has access to custom questions feature
       const hasFeatureAccess = await hasAccess('foundation');
@@ -40,14 +53,38 @@ export function useCustomQuestions() {
       console.log('Show archived:', showArchived);
       console.log('Is testing mode:', isTestingMode);
 
-      // Build the query
+      if (isTestingMode) {
+        // In testing mode, return mock data
+        console.log('Using mock data in testing mode');
+        const mockQuestions: CustomQuestion[] = [
+          {
+            id: '1',
+            text: 'How would you rate our school facilities?',
+            type: 'multiple-choice',
+            options: ['Excellent', 'Good', 'Average', 'Poor'],
+            archived: false,
+            creator_id: user.id
+          },
+          {
+            id: '2',
+            text: 'What improvements would you suggest for our curriculum?',
+            type: 'text',
+            archived: false,
+            creator_id: user.id
+          }
+        ];
+        setQuestions(mockQuestions);
+        setIsLoading(false);
+        return;
+      }
+
+      // Build the query for real data
       let query = supabase
         .from('custom_questions')
         .select('*')
         .eq('creator_id', user.id);
       
-      // Only apply archived filter if not in testing mode
-      if (!isTestingMode && !showArchived) {
+      if (!showArchived) {
         query = query.eq('archived', false);
       }
       
@@ -59,13 +96,7 @@ export function useCustomQuestions() {
       }
       
       console.log('Custom questions fetched:', data?.length || 0);
-      
-      // In testing mode, treat all questions as non-archived
-      const processedData = isTestingMode 
-        ? data?.map(q => ({ ...q, archived: false })) 
-        : data;
-      
-      setQuestions(processedData || []);
+      setQuestions(data || []);
     } catch (error) {
       console.error('Error fetching custom questions:', error);
       toast({
@@ -78,12 +109,13 @@ export function useCustomQuestions() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, showArchived, toast, hasAccess, isTestingMode]);
+  }, [user, showArchived, toast, hasAccess, isTestingMode, lastFetchTime, isLoading]);
 
   useEffect(() => {
     console.log('useCustomQuestions effect running');
     fetchQuestions();
-  }, [fetchQuestions]);
+    // Don't include fetchQuestions in dependencies to prevent infinite loop
+  }, [user, showArchived, isTestingMode]);
 
   const createQuestion = async (question: Omit<CustomQuestion, 'id' | 'created_at' | 'archived'>) => {
     if (!user) return null;
@@ -98,6 +130,25 @@ export function useCustomQuestions() {
           variant: 'destructive'
         });
         return null;
+      }
+
+      if (isTestingMode) {
+        // Mock creation in testing mode
+        const newQuestion: CustomQuestion = {
+          id: Date.now().toString(),
+          ...question,
+          creator_id: user.id,
+          archived: false
+        };
+        
+        setQuestions(prev => [newQuestion, ...prev]);
+        
+        toast({
+          title: 'Success',
+          description: 'Custom question created successfully (Testing Mode)',
+        });
+        
+        return newQuestion;
       }
 
       const { data, error } = await supabase
@@ -139,6 +190,20 @@ export function useCustomQuestions() {
     if (!user) return false;
     
     try {
+      if (isTestingMode) {
+        // Mock update in testing mode
+        setQuestions(prev => 
+          prev.map(q => q.id === id ? { ...q, ...updates } : q)
+        );
+        
+        toast({
+          title: 'Success',
+          description: 'Custom question updated successfully (Testing Mode)',
+        });
+        
+        return true;
+      }
+
       const { error } = await supabase
         .from('custom_questions')
         .update(updates)
