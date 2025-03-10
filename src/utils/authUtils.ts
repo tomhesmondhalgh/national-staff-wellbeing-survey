@@ -1,7 +1,10 @@
 
-import { User, Provider } from '@supabase/supabase-js';
+import { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
+
+// Custom type for our supported providers
+type AuthProvider = 'google' | 'microsoft' | 'azure';
 
 // Handle sign in with email and password
 export async function signInWithEmail(email: string, password: string) {
@@ -77,12 +80,12 @@ export async function signOutUser() {
 }
 
 // Handle sign in with social provider
-export async function signInWithSocialProvider(provider: Provider) {
+export async function signInWithSocialProvider(provider: AuthProvider) {
   try {
     console.log(`Initiating sign in with ${provider}`);
     
     const { data, error } = await supabase.auth.signInWithOAuth({
-      provider,
+      provider: provider as any, // Cast to any to satisfy TypeScript
       options: {
         redirectTo: `${window.location.origin}/dashboard`,
         scopes: provider === 'azure' ? 'email profile openid' : undefined,
