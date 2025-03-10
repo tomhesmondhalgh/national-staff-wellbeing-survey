@@ -70,9 +70,12 @@ export default function QuestionModal({
         options: questionType === 'multiple_choice' ? validOptions : undefined
       });
       
+      // Ensure the type is exactly 'text' or 'multiple_choice'
+      const type: 'text' | 'multiple_choice' = questionType;
+      
       await onSave({
         text: questionText,
-        type: questionType,
+        type: type,
         options: questionType === 'multiple_choice' ? validOptions : undefined
       });
       onOpenChange(false);

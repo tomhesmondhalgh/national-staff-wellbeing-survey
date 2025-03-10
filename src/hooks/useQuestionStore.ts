@@ -50,22 +50,29 @@ export function useQuestionStore() {
         throw new Error('User not authenticated');
       }
       
-      // Log the exact type value being used
-      console.log(`Creating question with type: ${question.type}`);
+      // Debug log to inspect the question type
+      console.log(`Creating question with type:`, question.type, typeof question.type);
       
-      // Check if the type is one of the allowed values
+      // Validate the type value
       if (question.type !== 'text' && question.type !== 'multiple_choice') {
-        console.error(`Invalid question type: ${question.type}. Must be 'text' or 'multiple_choice'`);
+        console.error(`Invalid question type: "${question.type}". Must be exactly 'text' or 'multiple_choice'`);
         throw new Error('Invalid question type');
       }
       
+      // Prepare the question for database insertion
       const dbQuestion = {
-        ...question,
+        text: question.text,
+        type: question.type, // Ensure we're sending the exact string value
+        options: question.options,
         creator_id: user.id,
         archived: false
       };
       
-      console.log('Creating question with data:', dbQuestion);
+      console.log('Creating question with data:', JSON.stringify(dbQuestion, null, 2));
+      
+      // Explicitly log the SQL data being sent
+      console.log('Type being sent to database:', dbQuestion.type);
+      console.log('Options being sent:', dbQuestion.options);
       
       const { data, error } = await supabase
         .from('custom_questions')
@@ -75,6 +82,10 @@ export function useQuestionStore() {
 
       if (error) {
         console.error('Database error:', error);
+        // Log more details about the error
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        console.error('Error details:', error.details);
         throw error;
       }
 
@@ -92,6 +103,12 @@ export function useQuestionStore() {
   const updateQuestion = async (id: string, updates: Partial<CustomQuestion>) => {
     try {
       console.log('Updating question with data:', updates);
+
+      // Add extra validation for the type field if it's being updated
+      if (updates.type && updates.type !== 'text' && updates.type !== 'multiple_choice') {
+        console.error(`Invalid question type in update: "${updates.type}"`);
+        throw new Error('Invalid question type');
+      }
 
       const { error } = await supabase
         .from('custom_questions')
