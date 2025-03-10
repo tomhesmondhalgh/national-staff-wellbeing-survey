@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from './components/ui/toaster';
 import { AuthProvider } from './contexts/AuthContext';
@@ -26,6 +27,7 @@ import Profile from './pages/Profile';
 import ResetPassword from './pages/ResetPassword';
 import Admin from './pages/Admin';
 import NotFound from './pages/NotFound';
+import CustomQuestions from './pages/CustomQuestions';
 
 import './App.css';
 
@@ -99,6 +101,11 @@ function App() {
             <Route path="/admin" element={
               <ProtectedRoute>
                 <Admin />
+              </ProtectedRoute>
+            } />
+            <Route path="/custom-questions" element={
+              <ProtectedRoute>
+                <CustomQuestions />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />
