@@ -14,7 +14,6 @@ import { SurveyTemplate, getSurveyById } from '../utils/surveyUtils';
 import { supabase } from '../lib/supabase';
 import { CustomQuestion } from '../types/customQuestions';
 import CustomTextQuestion from '../components/survey-form/CustomTextQuestion';
-import CustomMultipleChoiceQuestion from '../components/survey-form/CustomMultipleChoiceQuestion';
 import { useOrientation } from '../hooks/useOrientation';
 import ScreenOrientationOverlay from '../components/ui/ScreenOrientationOverlay';
 
@@ -319,12 +318,12 @@ const SurveyForm = () => {
                             maxLength={1000}
                           />
                         ) : (
-                          <CustomMultipleChoiceQuestion
+                          <CustomTextQuestion
                             label={question.text}
                             name={`custom_${question.id}`}
-                            options={question.options || []}
                             value={formState.customAnswers[`custom_${question.id}`] || ''}
                             onChange={handleChange}
+                            maxLength={1000}
                           />
                         )}
                       </React.Fragment>
