@@ -21,6 +21,7 @@ export default function QuestionModal({
   onSave,
   initialData
 }: QuestionModalProps) {
+  // Use strict type definition to ensure consistency with DB schema
   const [questionText, setQuestionText] = useState('');
   const [questionType, setQuestionType] = useState<'text' | 'multiple_choice'>('text');
   const [options, setOptions] = useState<string[]>(['']);
@@ -70,12 +71,10 @@ export default function QuestionModal({
         options: questionType === 'multiple_choice' ? validOptions : undefined
       });
       
-      // Ensure the type is exactly 'text' or 'multiple_choice'
-      const type: 'text' | 'multiple_choice' = questionType;
-      
+      // Submit with strictly typed data to match database schema
       await onSave({
         text: questionText,
-        type: type,
+        type: questionType,
         options: questionType === 'multiple_choice' ? validOptions : undefined
       });
       onOpenChange(false);
@@ -205,4 +204,22 @@ export default function QuestionModal({
       </DialogContent>
     </Dialog>
   );
+
+  function addOption() {
+    if (options.length < 5) {
+      setOptions([...options, '']);
+    }
+  }
+
+  function updateOption(index: number, value: string) {
+    const newOptions = [...options];
+    newOptions[index] = value;
+    setOptions(newOptions);
+  }
+
+  function removeOption(index: number) {
+    if (options.length > 1) {
+      setOptions(options.filter((_, i) => i !== index));
+    }
+  }
 }

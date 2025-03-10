@@ -50,29 +50,23 @@ export function useQuestionStore() {
         throw new Error('User not authenticated');
       }
       
-      // Debug log to inspect the question type
-      console.log(`Creating question with type:`, question.type, typeof question.type);
-      
-      // Validate the type value
-      if (question.type !== 'text' && question.type !== 'multiple_choice') {
-        console.error(`Invalid question type: "${question.type}". Must be exactly 'text' or 'multiple_choice'`);
+      // Validate the question type with explicit type checking
+      const questionType = question.type;
+      if (questionType !== 'text' && questionType !== 'multiple_choice') {
+        console.error(`Invalid question type: "${questionType}". Must be exactly 'text' or 'multiple_choice'`);
         throw new Error('Invalid question type');
       }
       
-      // Prepare the question for database insertion
+      // Prepare the question for database insertion with strict type definition
       const dbQuestion = {
         text: question.text,
-        type: question.type, // Ensure we're sending the exact string value
-        options: question.options,
+        type: questionType as 'text' | 'multiple_choice',
+        options: questionType === 'multiple_choice' ? question.options : undefined,
         creator_id: user.id,
         archived: false
       };
       
-      console.log('Creating question with data:', JSON.stringify(dbQuestion, null, 2));
-      
-      // Explicitly log the SQL data being sent
-      console.log('Type being sent to database:', dbQuestion.type);
-      console.log('Options being sent:', dbQuestion.options);
+      console.log('Creating question with payload:', JSON.stringify(dbQuestion, null, 2));
       
       const { data, error } = await supabase
         .from('custom_questions')
@@ -82,9 +76,6 @@ export function useQuestionStore() {
 
       if (error) {
         console.error('Database error:', error);
-        // Log more details about the error
-        console.error('Error code:', error.code);
-        console.error('Error message:', error.message);
         console.error('Error details:', error.details);
         throw error;
       }
@@ -104,15 +95,22 @@ export function useQuestionStore() {
     try {
       console.log('Updating question with data:', updates);
 
-      // Add extra validation for the type field if it's being updated
+      // Add validation for the type field if it's being updated
       if (updates.type && updates.type !== 'text' && updates.type !== 'multiple_choice') {
         console.error(`Invalid question type in update: "${updates.type}"`);
         throw new Error('Invalid question type');
       }
+      
+      // Prepare a clean update object
+      const updateData: Partial<CustomQuestion> = {};
+      if (updates.text !== undefined) updateData.text = updates.text;
+      if (updates.type !== undefined) updateData.type = updates.type;
+      if (updates.options !== undefined) updateData.options = updates.options;
+      if (updates.archived !== undefined) updateData.archived = updates.archived;
 
       const { error } = await supabase
         .from('custom_questions')
-        .update(updates)
+        .update(updateData)
         .eq('id', id);
 
       if (error) throw error;
