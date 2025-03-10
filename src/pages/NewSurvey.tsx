@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -15,6 +16,7 @@ import { toast } from "sonner";
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import SurveyLoading from '../components/survey-form/SurveyLoading';
+import { sendUserToHubspot } from '../utils/authUtils';
 
 const NewSurvey = () => {
   const navigate = useNavigate();
@@ -89,6 +91,32 @@ const NewSurvey = () => {
           
         if (linkError) {
           console.error('Error linking custom questions:', linkError);
+        }
+      }
+      
+      // Get user profile data to send to Hubspot
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, job_title, school_name, school_address, email')
+        .eq('id', user.id)
+        .single();
+        
+      if (!profileError && profileData) {
+        try {
+          // Send user to Hubspot with list ID 5418
+          await sendUserToHubspot({
+            email: profileData.email,
+            firstName: profileData.first_name,
+            lastName: profileData.last_name,
+            jobTitle: profileData.job_title,
+            schoolName: profileData.school_name,
+            schoolAddress: profileData.school_address
+          }, '5418');
+          
+          console.log('User added to Hubspot list 5418 after creating survey');
+        } catch (hubspotError) {
+          console.error('Failed to add user to Hubspot list:', hubspotError);
+          // Don't fail the survey creation if Hubspot integration fails
         }
       }
 

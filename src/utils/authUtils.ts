@@ -200,10 +200,8 @@ export async function completeUserProfile(userId: string, userData: any) {
   }
 }
 
-// New function to send user data to Hubspot
-async function sendUserToHubspot(userData: any) {
-  const hubspotListId = '5417'; // Hubspot list ID
-  
+// Function to send user data to Hubspot
+export async function sendUserToHubspot(userData: any, listId: string = '5417') {
   const response = await supabase.functions.invoke('hubspot-integration', {
     body: {
       userData: {
@@ -214,7 +212,7 @@ async function sendUserToHubspot(userData: any) {
         schoolName: userData.schoolName || '',
         schoolAddress: userData.schoolAddress || '',
       },
-      listId: hubspotListId // Optional: only if you want to add to a specific list
+      listId: listId // Use the passed listId parameter 
     }
   });
 
