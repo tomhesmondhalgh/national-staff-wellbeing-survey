@@ -9,6 +9,7 @@ import { X, Plus, Trash2 } from 'lucide-react';
 import { CustomQuestion } from '../../types/customQuestions';
 import { useToast } from '../ui/use-toast';
 import { useAuth } from '../../contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface CustomQuestionModalProps {
   open: boolean;
@@ -33,21 +34,28 @@ const CustomQuestionModal: React.FC<CustomQuestionModalProps> = ({
   const [options, setOptions] = useState<string[]>(['']);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const { toast } = useToast();
+  const { toast: shadcnToast } = useToast();
   const { user } = useAuth(); // Get the current user to access their ID
 
+  // Reset form when the modal opens/closes or initialData changes
   useEffect(() => {
-    if (initialData) {
-      setQuestionText(initialData.text || '');
-      setQuestionType(initialData.type || 'text');
-      setOptions(initialData.options?.length ? initialData.options : ['']);
-    } else {
-      // Reset form when opening for new question
-      setQuestionText('');
-      setQuestionType('text');
-      setOptions(['']);
+    console.log('Modal open state changed:', open);
+    console.log('Initial data:', initialData);
+    
+    if (open) {
+      if (initialData) {
+        setQuestionText(initialData.text || '');
+        setQuestionType(initialData.type || 'text');
+        setOptions(initialData.options?.length ? [...initialData.options] : ['']);
+      } else {
+        // Reset form when opening for new question
+        setQuestionText('');
+        setQuestionType('text');
+        setOptions(['']);
+      }
+      setErrors({});
+      setIsSubmitting(false);
     }
-    setErrors({});
   }, [initialData, open]);
 
   const validateForm = () => {
@@ -78,13 +86,14 @@ const CustomQuestionModal: React.FC<CustomQuestionModalProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (!validateForm()) return;
+    console.log('Submitting form');
+    if (!validateForm()) {
+      console.log('Form validation failed');
+      return;
+    }
+    
     if (!user) {
-      toast({
-        title: 'Error',
-        description: 'You must be logged in to create or edit questions.',
-        variant: 'destructive'
-      });
+      toast.error('You must be logged in to create or edit questions');
       return;
     }
     
@@ -98,15 +107,18 @@ const CustomQuestionModal: React.FC<CustomQuestionModalProps> = ({
         creator_id: initialData?.creator_id || user.id
       };
       
-      await onSave(questionData);
-      onOpenChange(false);
+      console.log('Submitting question data:', questionData);
+      const result = await onSave(questionData);
+      console.log('Save result:', result);
+      
+      if (result) {
+        toast.success(`Question ${isEdit ? 'updated' : 'created'} successfully`);
+      } else {
+        toast.error(`Failed to ${isEdit ? 'update' : 'create'} question`);
+      }
     } catch (error) {
       console.error('Error saving question:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to save question. Please try again.',
-        variant: 'destructive'
-      });
+      toast.error('Failed to save question. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
