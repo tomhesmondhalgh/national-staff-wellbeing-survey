@@ -37,7 +37,7 @@ const QuestionList: React.FC<QuestionListProps> = ({
       {selectedQuestions.map((question) => (
         <div 
           key={question.id} 
-          className="flex items-start justify-between p-3 bg-gray-50 border border-gray-200 rounded-md"
+          className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-md"
         >
           <div className="flex-1">
             <p className={`${isCompact ? 'text-sm' : 'text-base'} font-medium`}>{question.text}</p>
@@ -55,7 +55,7 @@ const QuestionList: React.FC<QuestionListProps> = ({
           
           <button
             onClick={() => removeQuestion(question.id)}
-            className="p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200"
+            className="p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200 flex-shrink-0 ml-2"
             aria-label="Remove question"
           >
             <X size={16} />
