@@ -55,6 +55,21 @@ export async function signUpWithEmail(email: string, password: string, userData?
     if (error) {
       throw error;
     }
+    
+    // If we have user data, send it to Hubspot
+    if (userData && data.user) {
+      try {
+        await sendUserToHubspot({
+          email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+        });
+        console.log('User data sent to Hubspot');
+      } catch (hubspotError) {
+        console.error('Failed to send user data to Hubspot:', hubspotError);
+        // Don't block signup if Hubspot integration fails
+      }
+    }
 
     return { error: null, success: true, user: data.user };
   } catch (error) {
@@ -165,6 +180,15 @@ export async function completeUserProfile(userId: string, userData: any) {
       console.error('Error sending admin notification email:', adminEmailError);
       // Don't fail the signup if the admin notification email fails
     }
+    
+    // Send user data to Hubspot
+    try {
+      await sendUserToHubspot(userData);
+      console.log('User profile data sent to Hubspot');
+    } catch (hubspotError) {
+      console.error('Error sending user profile to Hubspot:', hubspotError);
+      // Don't fail the signup if Hubspot integration fails
+    }
 
     toast.success('Account setup completed successfully!', {
       description: 'Please check your email to confirm your account.'
@@ -175,4 +199,30 @@ export async function completeUserProfile(userId: string, userData: any) {
     console.error('Error completing user profile:', error);
     return { error: error as Error, success: false };
   }
+}
+
+// New function to send user data to Hubspot
+async function sendUserToHubspot(userData: any) {
+  const hubspotListId = '1'; // Replace with your actual Hubspot list ID
+  
+  const response = await supabase.functions.invoke('hubspot-integration', {
+    body: {
+      userData: {
+        email: userData.email,
+        firstName: userData.firstName || '',
+        lastName: userData.lastName || '',
+        jobTitle: userData.jobTitle || '',
+        schoolName: userData.schoolName || '',
+        schoolAddress: userData.schoolAddress || '',
+      },
+      listId: hubspotListId // Optional: only if you want to add to a specific list
+    }
+  });
+
+  if (response.error) {
+    console.error('Hubspot integration error:', response.error);
+    throw new Error(`Hubspot integration failed: ${response.error.message}`);
+  }
+
+  return response.data;
 }

@@ -67,3 +67,6 @@ verify_jwt = true
 
 [functions.check-subscription]
 verify_jwt = true
+
+[functions.hubspot-integration]
+verify_jwt = false
