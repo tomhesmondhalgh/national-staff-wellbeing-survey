@@ -34,9 +34,10 @@ interface SurveyFormProps {
   onSubmit: (data: SurveyFormData, customQuestionIds: string[]) => void;
   submitButtonText?: string;
   isEdit?: boolean;
-  surveyId?: string;
+  surveyId?: string | null;
   isSubmitting?: boolean;
   initialCustomQuestionIds?: string[];
+  onPreviewSurvey?: () => void;
   onSendSurvey?: () => void;
 }
 
@@ -48,6 +49,7 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
   surveyId,
   isSubmitting = false,
   initialCustomQuestionIds = [],
+  onPreviewSurvey,
   onSendSurvey
 }) => {
   const [showSurveyLink, setShowSurveyLink] = useState<boolean>(false);
@@ -82,9 +84,8 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
   };
 
   const handlePreviewClick = () => {
-    if (surveyId) {
-      // Open preview in new tab using the real survey URL with a preview parameter
-      window.open(`/survey?id=${surveyId}&preview=true`, '_blank');
+    if (onPreviewSurvey) {
+      onPreviewSurvey();
     }
   };
   

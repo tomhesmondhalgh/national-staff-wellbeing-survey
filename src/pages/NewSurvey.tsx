@@ -116,6 +116,24 @@ const NewSurvey = () => {
     }
   };
 
+  const handlePreviewSurvey = () => {
+    if (savedSurveyId) {
+      // Open preview in new tab
+      window.open(`/survey?id=${savedSurveyId}&preview=true`, '_blank');
+    } else {
+      toast.error("Save the survey first", {
+        description: "You need to save the survey before previewing it."
+      });
+    }
+  };
+
+  const handleSendSurvey = () => {
+    // This would be implemented in EditSurvey.tsx as we redirect to edit page after saving
+    toast.info("Navigate to the survey's edit page to send it", {
+      description: "After saving, you'll be redirected to the edit page where you can send the survey."
+    });
+  };
+
   if (isLoading) {
     return <SurveyLoading />;
   }
@@ -149,6 +167,8 @@ const NewSurvey = () => {
           isSubmitting={isSubmitting}
           initialCustomQuestionIds={[]}
           surveyId={savedSurveyId}
+          onPreviewSurvey={handlePreviewSurvey}
+          onSendSurvey={handleSendSurvey}
         />
       </div>
     </MainLayout>

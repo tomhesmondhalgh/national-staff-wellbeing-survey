@@ -17,7 +17,6 @@ import Surveys from './pages/Surveys';
 import NewSurvey from './pages/NewSurvey';
 import EditSurvey from './pages/EditSurvey';
 import SurveyForm from './pages/SurveyForm';
-import SurveyPreview from './pages/SurveyPreview';
 import SurveyComplete from './pages/SurveyComplete';
 import SurveyClosed from './pages/SurveyClosed';
 import Analysis from './pages/Analysis';
@@ -71,11 +70,6 @@ function App() {
             <Route path="/new-survey" element={
               <ProtectedRoute>
                 <NewSurvey />
-              </ProtectedRoute>
-            } />
-            <Route path="/survey-preview" element={
-              <ProtectedRoute>
-                <SurveyPreview />
               </ProtectedRoute>
             } />
             <Route path="/analysis" element={
