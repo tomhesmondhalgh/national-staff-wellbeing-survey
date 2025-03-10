@@ -1,8 +1,7 @@
-
 import React, { useEffect, useState } from 'react';
 import { useQuestionStore } from '../../hooks/useQuestionStore';
 import { Button } from '../ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../ui/card';
 import { Archive, Edit, Plus } from 'lucide-react';
 import QuestionModal from './QuestionModal';
 import { CustomQuestion } from '../../types/customQuestions';
@@ -77,49 +76,40 @@ export default function QuestionsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {questions.map((question) => (
             <Card key={question.id} className={question.archived ? 'opacity-60' : ''}>
-              <CardHeader className="flex flex-row items-start justify-between space-y-0">
-                <CardTitle className="text-base">
-                  {question.text}
-                </CardTitle>
+              <CardHeader className="text-center space-y-2 pb-2">
+                <Badge variant="outline" className="w-fit mx-auto">
+                  {question.type === 'text' ? 'Free Text' : 'Multiple Choice'}
+                </Badge>
                 {question.archived && (
-                  <Badge variant="outline">Archived</Badge>
+                  <Badge variant="outline" className="w-fit mx-auto">
+                    Archived
+                  </Badge>
                 )}
               </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <Badge>
-                    {question.type === 'text' ? 'Free Text' : 'Multiple Choice'}
-                  </Badge>
-                  {question.type === 'multiple-choice' && question.options && (
-                    <ul className="list-disc list-inside text-sm text-gray-600">
-                      {question.options.map((option, index) => (
-                        <li key={index}>{option}</li>
-                      ))}
-                    </ul>
-                  )}
-                  <div className="flex justify-end space-x-2 pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedQuestion(question);
-                        setModalOpen(true);
-                      }}
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleArchive(question)}
-                    >
-                      <Archive className="h-4 w-4 mr-1" />
-                      {question.archived ? 'Unarchive' : 'Archive'}
-                    </Button>
-                  </div>
-                </div>
+              <CardContent className="text-center">
+                <p className="text-sm">{question.text}</p>
               </CardContent>
+              <CardFooter className="flex justify-center space-x-2 pt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedQuestion(question);
+                    setModalOpen(true);
+                  }}
+                >
+                  <Edit className="h-4 w-4 mr-1" />
+                  Edit
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleArchive(question)}
+                >
+                  <Archive className="h-4 w-4 mr-1" />
+                  {question.archived ? 'Unarchive' : 'Archive'}
+                </Button>
+              </CardFooter>
             </Card>
           ))}
         </div>
