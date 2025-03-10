@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { SurveyFormData } from '../components/surveys/SurveyForm';
@@ -51,11 +50,9 @@ const SurveyForm = () => {
     leavingContemplation: '',
     doingWell: '',
     improvements: '',
-    // This will be filled dynamically for custom questions
     customAnswers: {} as Record<string, string>,
   });
 
-  // Load survey data from Supabase or from preview data
   useEffect(() => {
     const loadSurveyData = async () => {
       setIsLoading(true);
@@ -67,7 +64,6 @@ const SurveyForm = () => {
           return;
         }
         
-        // Load the survey template from Supabase
         const survey = await getSurveyById(surveyId);
         
         if (!survey) {
@@ -78,7 +74,6 @@ const SurveyForm = () => {
         
         setSurveyData(survey);
         
-        // Fetch custom questions for this survey
         const { data: questionLinks, error: linksError } = await supabase
           .from('survey_questions')
           .select('question_id')
@@ -89,15 +84,18 @@ const SurveyForm = () => {
         } else if (questionLinks && questionLinks.length > 0) {
           const questionIds = questionLinks.map(link => link.question_id);
           
-          // Fetch the actual questions
+          console.log('Found question IDs:', questionIds);
+          
           const { data: questions, error: questionsError } = await supabase
             .from('custom_questions')
             .select('*')
-            .in('id', questionIds);
+            .in('id', questionIds)
+            .eq('archived', false);
             
           if (questionsError) {
             console.error('Error fetching custom questions:', questionsError);
           } else {
+            console.log('Fetched custom questions:', questions);
             setCustomQuestions(questions || []);
           }
         }
@@ -112,11 +110,9 @@ const SurveyForm = () => {
     loadSurveyData();
   }, [surveyId]);
 
-  // Mock form handlers that don't actually submit in preview mode
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    // Check if this is a custom question answer
     if (name.startsWith('custom_')) {
       setFormState(prev => ({ 
         ...prev, 
@@ -135,24 +131,17 @@ const SurveyForm = () => {
     setFormState(prev => ({ ...prev, recommendationScore: value }));
   };
   
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (isPreview) {
-      // In preview mode, just show a toast or alert
       alert('This is a preview. In the actual survey, responses would be recorded.');
       return;
     }
     
-    // Here would be the actual submission code for real surveys
     setIsSubmitting(true);
     
     try {
-      // Actual submission logic would go here
-      // ...
-      
-      // Navigate to completion page
       navigate('/survey-complete');
     } catch (err) {
       console.error('Error submitting survey:', err);
@@ -183,6 +172,8 @@ const SurveyForm = () => {
     );
   }
 
+  console.log('Rendering with custom questions:', customQuestions);
+
   return (
     <MainLayout>
       {isMobile && orientation === 'portrait' && (
@@ -191,7 +182,6 @@ const SurveyForm = () => {
       
       <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
-          {/* Preview mode banner (only shown in preview mode) */}
           {isPreview && (
             <div className="bg-brandPurple-50 p-4 rounded-lg mb-6 text-center border border-brandPurple-200">
               <div className="inline-block p-2 bg-brandPurple-100 rounded-full mb-2">
@@ -206,20 +196,17 @@ const SurveyForm = () => {
             </div>
           )}
 
-          {/* Main content area */}
           <div className="page-container max-w-4xl mx-auto px-4 py-8">
             <SurveyIntro surveyTemplate={surveyData} />
             
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <form onSubmit={handleSubmit}>
-                {/* Role Selection Dropdown */}
                 <RoleSelect 
                   value={formState.role}
                   onChange={handleChange}
                   options={roleOptions}
                 />
                 
-                {/* Agreement Scale Questions */}
                 <RadioQuestion 
                   label="Leadership prioritise staff wellbeing in our organisation" 
                   name="leadershipPrioritize" 
@@ -284,7 +271,6 @@ const SurveyForm = () => {
                   onChange={handleChange}
                 />
                 
-                {/* Numeric Rating */}
                 <RatingQuestion 
                   label="On a Scale of 1-10 How Likely Are You to Recommend This Organisation to Others as a Great Place to Work?" 
                   name="recommendationScore" 
@@ -294,7 +280,6 @@ const SurveyForm = () => {
                   onChange={handleRatingChange}
                 />
                 
-                {/* Frequency Question */}
                 <RadioQuestion 
                   label="In the last 6 months I have contemplated leaving my role" 
                   name="leavingContemplation" 
@@ -303,7 +288,6 @@ const SurveyForm = () => {
                   onChange={handleChange}
                 />
                 
-                {/* Text Questions */}
                 <TextQuestion 
                   label="Thinking about staff wellbeing, what does your organisation do well?" 
                   name="doingWell"
@@ -320,7 +304,6 @@ const SurveyForm = () => {
                   subtitle="This is an anonymous survey, please do not include any personal identifiable data." 
                 />
                 
-                {/* Custom Questions */}
                 {customQuestions.length > 0 && (
                   <div className="mt-8 mb-4">
                     <h3 className="text-lg font-semibold mb-6">Additional Questions</h3>
