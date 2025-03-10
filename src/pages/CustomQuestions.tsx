@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -11,26 +10,14 @@ import CustomQuestionModal from '../components/custom-questions/CustomQuestionMo
 import { useCustomQuestions } from '../hooks/useCustomQuestions';
 import { CustomQuestion } from '../types/customQuestions';
 import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '../components/ui/use-toast';
+import { toast } from 'sonner';
 
 const CustomQuestions: React.FC = () => {
-  console.log('Rendering CustomQuestions page');
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { toast } = useToast();
   
-  useEffect(() => {
-    console.log('CustomQuestions page mounted, auth state:', user ? 'logged in' : 'not logged in');
-    if (!user) {
-      console.log('No user found, redirecting to login');
-      toast({
-        title: 'Authentication required',
-        description: 'Please log in to access this page',
-        variant: 'destructive'
-      });
-      navigate('/login');
-    }
-  }, [user, toast, navigate]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedQuestion, setSelectedQuestion] = useState<CustomQuestion | undefined>(undefined);
   
   const {
     questions,
@@ -43,45 +30,58 @@ const CustomQuestions: React.FC = () => {
     refreshQuestions
   } = useCustomQuestions();
   
-  console.log('Current showArchived state:', showArchived);
-  console.log('Questions loaded:', questions?.length || 0);
-  
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedQuestion, setSelectedQuestion] = useState<CustomQuestion | undefined>(undefined);
-  
   useEffect(() => {
-    console.log('Questions loaded:', questions?.length || 0);
-    console.log('Is loading:', isLoading);
-    console.log('Show archived:', showArchived);
-  }, [questions, isLoading, showArchived]);
-  
+    if (!user) {
+      toast.error('Please log in to access this page');
+      navigate('/login');
+      return;
+    }
+  }, [user, navigate]);
+
   const handleAddQuestion = () => {
-    setSelectedQuestion(undefined);
-    setModalOpen(true);
+    try {
+      setSelectedQuestion(undefined);
+      setModalOpen(true);
+    } catch (error) {
+      console.error('Error opening modal:', error);
+      toast.error('Failed to open question form');
+    }
   };
   
   const handleEditQuestion = (question: CustomQuestion) => {
-    setSelectedQuestion(question);
-    setModalOpen(true);
+    try {
+      setSelectedQuestion(question);
+      setModalOpen(true);
+    } catch (error) {
+      console.error('Error opening edit modal:', error);
+      toast.error('Failed to open edit form');
+    }
   };
   
   const handleSaveQuestion = async (questionData: Omit<CustomQuestion, 'id' | 'created_at' | 'archived'>) => {
-    if (selectedQuestion) {
-      // Update existing question
-      return updateQuestion(selectedQuestion.id, questionData);
-    } else {
-      // Create new question
-      return createQuestion(questionData);
+    try {
+      if (selectedQuestion) {
+        return await updateQuestion(selectedQuestion.id, questionData);
+      } else {
+        const result = await createQuestion(questionData);
+        if (result) {
+          setModalOpen(false);
+          await refreshQuestions();
+          return true;
+        }
+        return false;
+      }
+    } catch (error) {
+      console.error('Error saving question:', error);
+      toast.error('Failed to save question');
+      return false;
     }
   };
 
   const handleRefresh = () => {
-    console.log('Manual refresh triggered');
     refreshQuestions();
   };
 
-  // If the user is not authenticated, we show a loading state instead of redirecting
-  // The redirection will happen in the useEffect hook
   if (!user) {
     return (
       <MainLayout>
@@ -134,13 +134,15 @@ const CustomQuestions: React.FC = () => {
           onAdd={handleAddQuestion}
         />
         
-        <CustomQuestionModal
-          open={modalOpen}
-          onOpenChange={setModalOpen}
-          onSave={handleSaveQuestion}
-          initialData={selectedQuestion}
-          isEdit={!!selectedQuestion}
-        />
+        {modalOpen && (
+          <CustomQuestionModal
+            open={modalOpen}
+            onOpenChange={setModalOpen}
+            onSave={handleSaveQuestion}
+            initialData={selectedQuestion}
+            isEdit={!!selectedQuestion}
+          />
+        )}
       </div>
     </MainLayout>
   );

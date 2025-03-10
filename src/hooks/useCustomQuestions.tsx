@@ -7,8 +7,6 @@ import { useSubscription } from './useSubscription';
 import { useTestingMode } from '../contexts/TestingModeContext';
 import { toast } from 'sonner';
 
-const TEST_QUESTIONS_KEY = 'test_custom_questions';
-
 export function useCustomQuestions() {
   const [questions, setQuestions] = useState<CustomQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -16,9 +14,10 @@ export function useCustomQuestions() {
   const [lastFetchTime, setLastFetchTime] = useState<number>(0);
   const [hasError, setHasError] = useState(false);
   const { user } = useAuth();
-  const { toast: uiToast } = useToast();
   const { hasAccess } = useSubscription();
   const { isTestingMode } = useTestingMode();
+  
+  const TEST_QUESTIONS_KEY = 'test_custom_questions';
   
   useEffect(() => {
     if (isTestingMode) {
@@ -26,10 +25,9 @@ export function useCustomQuestions() {
         const storedData = localStorage.getItem(TEST_QUESTIONS_KEY);
         if (!storedData) {
           localStorage.setItem(TEST_QUESTIONS_KEY, JSON.stringify([]));
-          console.log('Initialized empty questions array in localStorage for testing mode');
         }
       } catch (error) {
-        console.error('Error initializing localStorage for testing mode:', error);
+        console.error('Error initializing localStorage:', error);
       }
     }
   }, [isTestingMode]);
@@ -38,69 +36,43 @@ export function useCustomQuestions() {
     try {
       const now = Date.now();
       if (now - lastFetchTime < 1000) {
-        console.log('Skipping fetch - too soon since last fetch');
         return;
       }
       
       setLastFetchTime(now);
-      
-      if (!user) {
-        console.log('No user found, skipping custom questions fetch');
-        setIsLoading(false);
-        setQuestions([]);
-        return;
-      }
-
       setIsLoading(true);
       setHasError(false);
       
-      let hasFeatureAccess = false;
-      try {
-        hasFeatureAccess = await hasAccess('foundation');
-        console.log('User has access to foundation plan:', hasFeatureAccess);
-      } catch (accessError) {
-        console.error('Error checking feature access:', accessError);
-        // Continue with default false value
-      }
-      
-      if (!hasFeatureAccess && !isTestingMode) {
-        console.log('User does not have access to custom questions feature');
+      if (!user) {
         setQuestions([]);
         setIsLoading(false);
         return;
       }
 
-      console.log('Fetching custom questions for user:', user.id);
-      console.log('Show archived:', showArchived);
-      console.log('Is testing mode:', isTestingMode);
-
-      if (isTestingMode) {
-        console.log('Using test mode for custom questions');
-        let storedQuestions: CustomQuestion[] = [];
-        try {
-          const storedData = localStorage.getItem(TEST_QUESTIONS_KEY);
-          if (storedData) {
-            storedQuestions = JSON.parse(storedData);
-            console.log(`Retrieved ${storedQuestions.length} questions from localStorage`);
-          } else {
-            localStorage.setItem(TEST_QUESTIONS_KEY, JSON.stringify([]));
-          }
-        } catch (error) {
-          console.error('Error parsing stored questions:', error);
-          // Continue with empty array
-        }
-        
-        const filteredQuestions = showArchived 
-          ? storedQuestions 
-          : (storedQuestions || []).filter(q => !q.archived);
-        
-        console.log(`Filtered to ${filteredQuestions.length} questions (showArchived: ${showArchived})`);
-        setQuestions(filteredQuestions || []);
+      const hasFeatureAccess = await hasAccess('foundation');
+      
+      if (!hasFeatureAccess && !isTestingMode) {
+        setQuestions([]);
         setIsLoading(false);
         return;
       }
 
-      try {
+      if (isTestingMode) {
+        try {
+          const storedData = localStorage.getItem(TEST_QUESTIONS_KEY);
+          let storedQuestions: CustomQuestion[] = storedData ? JSON.parse(storedData) : [];
+          
+          const filteredQuestions = showArchived 
+            ? storedQuestions 
+            : storedQuestions.filter(q => !q.archived);
+          
+          setQuestions(filteredQuestions);
+        } catch (error) {
+          console.error('Error parsing stored questions:', error);
+          setQuestions([]);
+          setHasError(true);
+        }
+      } else {
         let query = supabase
           .from('custom_questions')
           .select('*')
@@ -112,62 +84,30 @@ export function useCustomQuestions() {
         
         const { data, error } = await query.order('created_at', { ascending: false });
         
-        if (error) {
-          console.error('Supabase error fetching custom questions:', error);
-          throw error;
-        }
+        if (error) throw error;
         
-        console.log('Custom questions fetched:', data?.length || 0);
         setQuestions(data || []);
-      } catch (dbError) {
-        console.error('Database query error:', dbError);
-        toast.error('Failed to load questions');
-        setHasError(true);
-        setQuestions([]);
       }
     } catch (error) {
-      console.error('Error fetching custom questions:', error);
-      toast.error('Failed to load custom questions');
+      console.error('Error fetching questions:', error);
       setHasError(true);
       setQuestions([]);
+      toast.error('Failed to load questions');
     } finally {
       setIsLoading(false);
     }
-  }, [user, showArchived, uiToast, hasAccess, isTestingMode, lastFetchTime]);
+  }, [user, showArchived, hasAccess, isTestingMode, lastFetchTime]);
 
-  useEffect(() => {
-    console.log('useCustomQuestions effect running, showArchived:', showArchived);
-    fetchQuestions().catch(error => {
-      console.error('Error in fetchQuestions effect:', error);
-      setIsLoading(false);
-      setHasError(true);
-      setQuestions([]);
-    });
-  }, [user, showArchived, isTestingMode, fetchQuestions]);
-
-  const saveTestQuestions = (updatedQuestions: CustomQuestion[]) => {
-    if (isTestingMode) {
-      try {
-        localStorage.setItem(TEST_QUESTIONS_KEY, JSON.stringify(updatedQuestions));
-        console.log(`Saved ${updatedQuestions.length} questions to localStorage`);
-      } catch (error) {
-        console.error('Error saving questions to localStorage:', error);
-        toast.error('Failed to save questions to local storage');
-      }
-    }
-  };
+  const toggleShowArchived = useCallback(() => {
+    console.log('Toggling show archived from', showArchived, 'to', !showArchived);
+    setShowArchived(prev => !prev);
+  }, [showArchived]);
 
   const createQuestion = async (question: Omit<CustomQuestion, 'id' | 'created_at' | 'archived'>) => {
     if (!user) return null;
     
     try {
-      let hasFeatureAccess = false;
-      try {
-        hasFeatureAccess = await hasAccess('foundation');
-      } catch (error) {
-        console.error('Error checking feature access:', error);
-        // Continue with default false
-      }
+      const hasFeatureAccess = await hasAccess('foundation');
       
       if (!hasFeatureAccess && !isTestingMode) {
         toast.error('Custom questions are only available in the Foundation plan and above');
@@ -186,43 +126,37 @@ export function useCustomQuestions() {
         const currentQuestions = questions || [];
         const updatedQuestions = [newQuestion, ...currentQuestions];
         setQuestions(updatedQuestions);
-        saveTestQuestions(updatedQuestions);
         
-        toast.success('Custom question created successfully (Testing Mode)');
+        try {
+          localStorage.setItem(TEST_QUESTIONS_KEY, JSON.stringify(updatedQuestions));
+        } catch (storageError) {
+          console.error('Error saving to localStorage:', storageError);
+        }
         
+        toast.success('Custom question created successfully');
         return newQuestion;
       }
 
-      try {
-        const { data, error } = await supabase
-          .from('custom_questions')
-          .insert({
-            ...question,
-            creator_id: user.id,
-            archived: false
-          })
-          .select()
-          .single();
-        
-        if (error) {
-          console.error('Error creating custom question:', error);
-          throw error;
-        }
-        
-        const currentQuestions = questions || [];
-        setQuestions([data, ...currentQuestions]);
-        
-        toast.success('Custom question created successfully');
-        
-        return data;
-      } catch (dbError) {
-        console.error('Database error creating question:', dbError);
-        toast.error('Error connecting to the database. Please try again later.');
-        return null;
-      }
+      const { data, error } = await supabase
+        .from('custom_questions')
+        .insert({
+          ...question,
+          creator_id: user.id,
+          archived: false
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      const currentQuestions = questions || [];
+      setQuestions([data, ...currentQuestions]);
+      
+      toast.success('Custom question created successfully');
+      return data;
     } catch (error) {
-      console.error('Error creating custom question:', error);
-      toast.error('Failed to create custom question. Please try again.');
+      console.error('Error creating question:', error);
+      toast.error('Failed to create custom question');
       return null;
     }
   };
@@ -237,7 +171,12 @@ export function useCustomQuestions() {
           q.id === id ? { ...q, ...updates } : q
         );
         setQuestions(updatedQuestions);
-        saveTestQuestions(updatedQuestions);
+        
+        try {
+          localStorage.setItem(TEST_QUESTIONS_KEY, JSON.stringify(updatedQuestions));
+        } catch (storageError) {
+          console.error('Error saving to localStorage:', storageError);
+        }
         
         toast.success('Custom question updated successfully (Testing Mode)');
         
@@ -279,10 +218,14 @@ export function useCustomQuestions() {
     return updateQuestion(id, { archived: !currentArchived });
   };
 
-  const toggleShowArchived = useCallback(() => {
-    console.log('Toggling show archived from', showArchived, 'to', !showArchived);
-    setShowArchived(prev => !prev);
-  }, [showArchived]);
+  useEffect(() => {
+    fetchQuestions().catch(error => {
+      console.error('Error in fetchQuestions effect:', error);
+      setIsLoading(false);
+      setHasError(true);
+      setQuestions([]);
+    });
+  }, [user, showArchived, isTestingMode, fetchQuestions]);
 
   return {
     questions,
