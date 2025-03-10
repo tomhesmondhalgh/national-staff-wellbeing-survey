@@ -3,10 +3,11 @@ import React, { useEffect, useState } from 'react';
 import { useQuestionStore } from '../../hooks/useQuestionStore';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Archive, Edit, Plus } from 'lucide-react';
+import { Archive, Edit, Plus, ListChecks, AlignLeft } from 'lucide-react';
 import QuestionModal from './QuestionModal';
 import { CustomQuestion } from '../../types/customQuestions';
 import { Badge } from '../ui/badge';
+import { cn } from '../../lib/utils';
 
 export default function QuestionsPage() {
   const { questions, isLoading, fetchQuestions, createQuestion, updateQuestion } = useQuestionStore();
@@ -46,22 +47,32 @@ export default function QuestionsPage() {
     );
   }
 
+  const getTypeIcon = (type: string) => {
+    if (type === 'text') return <AlignLeft className="h-4 w-4" />;
+    if (type === 'multiple-choice') return <ListChecks className="h-4 w-4" />;
+    return null;
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <h1 className="text-2xl font-bold">Custom Questions</h1>
-        <div className="space-x-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
+            size="sm"
             onClick={() => setShowArchived(!showArchived)}
+            className="whitespace-nowrap"
           >
             {showArchived ? 'Hide Archived' : 'Show Archived'}
           </Button>
           <Button
+            size="sm"
             onClick={() => {
               setSelectedQuestion(undefined);
               setModalOpen(true);
             }}
+            className="whitespace-nowrap"
           >
             <Plus className="mr-2 h-4 w-4" />
             Add Question
@@ -70,34 +81,49 @@ export default function QuestionsPage() {
       </div>
 
       {questions.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-gray-500">No questions found. Click 'Add Question' to create one.</p>
+        <div className="flex flex-col items-center justify-center py-12 px-4 border border-dashed rounded-lg bg-muted/30">
+          <p className="text-muted-foreground mb-4 text-center">No questions found.</p>
+          <Button 
+            onClick={() => {
+              setSelectedQuestion(undefined);
+              setModalOpen(true);
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Create First Question
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {questions.map((question) => (
-            <Card key={question.id} className={question.archived ? 'opacity-60' : ''}>
-              <CardHeader className="flex flex-row items-start justify-between space-y-0">
-                <CardTitle className="text-base">
-                  {question.text}
-                </CardTitle>
-                {question.archived && (
-                  <Badge variant="outline">Archived</Badge>
-                )}
+            <Card 
+              key={question.id} 
+              className={cn(
+                "transition-all hover:shadow-md",
+                question.archived ? "opacity-60 bg-muted/30" : ""
+              )}
+            >
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-start">
+                  <Badge 
+                    variant="outline" 
+                    className="flex items-center gap-1 font-normal"
+                  >
+                    {getTypeIcon(question.type)}
+                    {question.type === 'text' ? 'Text' : 'Multiple Choice'}
+                  </Badge>
+                  {question.archived && (
+                    <Badge variant="secondary" className="ml-auto">Archived</Badge>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  <Badge>
-                    {question.type === 'text' ? 'Free Text' : 'Multiple Choice'}
-                  </Badge>
-                  {question.type === 'multiple-choice' && question.options && (
-                    <ul className="list-disc list-inside text-sm text-gray-600">
-                      {question.options.map((option, index) => (
-                        <li key={index}>{option}</li>
-                      ))}
-                    </ul>
-                  )}
-                  <div className="flex justify-end space-x-2 pt-2">
+                <div className="space-y-4">
+                  <CardTitle className="text-base line-clamp-2">
+                    {question.text}
+                  </CardTitle>
+                  
+                  <div className="flex gap-2 justify-end">
                     <Button
                       variant="outline"
                       size="sm"
@@ -106,7 +132,7 @@ export default function QuestionsPage() {
                         setModalOpen(true);
                       }}
                     >
-                      <Edit className="h-4 w-4 mr-1" />
+                      <Edit className="h-3.5 w-3.5 mr-1" />
                       Edit
                     </Button>
                     <Button
@@ -114,8 +140,8 @@ export default function QuestionsPage() {
                       size="sm"
                       onClick={() => handleArchive(question)}
                     >
-                      <Archive className="h-4 w-4 mr-1" />
-                      {question.archived ? 'Unarchive' : 'Archive'}
+                      <Archive className="h-3.5 w-3.5 mr-1" />
+                      {question.archived ? 'Restore' : 'Archive'}
                     </Button>
                   </div>
                 </div>
