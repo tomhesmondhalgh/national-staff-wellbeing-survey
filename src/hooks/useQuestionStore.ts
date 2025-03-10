@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { CustomQuestion } from '../types/customQuestions';
 import { supabase } from '../lib/supabase';
@@ -79,14 +80,15 @@ export function useQuestionStore() {
         throw error;
       }
 
-      const frontendQuestion = {
+      // Create a properly typed frontend question object with explicit type conversion
+      const newQuestion: CustomQuestion = {
         ...data,
         type: toFrontendFormat(data.type as DatabaseQuestionType)
-      } as CustomQuestion;
+      };
       
-      setQuestions(prev => [frontendQuestion, ...prev]);
+      setQuestions(prev => [newQuestion, ...prev]);
       toast.success('Question created successfully');
-      return frontendQuestion;
+      return newQuestion;
     } catch (error) {
       console.error('Error creating question:', error);
       toast.error('Failed to create question');
