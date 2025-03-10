@@ -81,7 +81,7 @@ export function useQuestionStore() {
         throw error;
       }
 
-      // Fix: Convert to frontend format before returning
+      // Fix: Cast the type properly before returning
       const newQuestion: CustomQuestion = {
         ...data,
         type: toFrontendFormat(data.type as DatabaseQuestionType)
