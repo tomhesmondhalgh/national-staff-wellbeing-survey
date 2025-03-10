@@ -1,20 +1,21 @@
-
 import { useState } from 'react';
 import { CustomQuestion } from '../types/customQuestions';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 
-// Define the database format for question types
+// Define literal types explicitly
 type DatabaseQuestionType = 'text' | 'multiple_choice';
 type FrontendQuestionType = 'text' | 'multiple-choice';
 
-// Helper functions to convert between formats
+// Type-safe conversion functions
 const toDbFormat = (type: FrontendQuestionType): DatabaseQuestionType => {
-  return type === 'multiple-choice' ? 'multiple_choice' : 'text';
+  if (type === 'multiple-choice') return 'multiple_choice';
+  return 'text';
 };
 
 const toFrontendFormat = (type: DatabaseQuestionType): FrontendQuestionType => {
-  return type === 'multiple_choice' ? 'multiple-choice' : 'text';
+  if (type === 'multiple_choice') return 'multiple-choice';
+  return 'text';
 };
 
 export function useQuestionStore() {
@@ -67,8 +68,6 @@ export function useQuestionStore() {
         archived: false
       };
       
-      console.log('Sending to database:', dbQuestion);
-      
       const { data, error } = await supabase
         .from('custom_questions')
         .insert(dbQuestion)
@@ -80,7 +79,6 @@ export function useQuestionStore() {
         throw error;
       }
 
-      // Convert database type back to frontend type for the response
       const frontendQuestion = {
         ...data,
         type: toFrontendFormat(data.type as DatabaseQuestionType)
