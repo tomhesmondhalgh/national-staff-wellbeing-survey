@@ -13,12 +13,15 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const location = useLocation();
 
   useEffect(() => {
+    // Only redirect if we're not loading and there's no user
     if (!isLoading && !user) {
       // Store the path the user was trying to access
       const returnTo = encodeURIComponent(location.pathname + location.search);
       navigate(`/login?returnTo=${returnTo}`);
     }
-  }, [user, isLoading, navigate, location]);
+    // Including location.pathname and location.search in the dependency array
+    // would cause unnecessary reruns and potential redirect loops
+  }, [user, isLoading, navigate, location.pathname, location.search]);
 
   // Don't render anything until we've checked authentication
   if (isLoading) {
