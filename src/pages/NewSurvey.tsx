@@ -115,7 +115,7 @@ const NewSurvey = () => {
         console.log('Attempting to send user data to Hubspot list 5418...');
         try {
           // Send user to Hubspot with list ID 5418
-          await sendUserToHubspot({
+          const response = await sendUserToHubspot({
             email: profileData.email,
             firstName: profileData.first_name,
             lastName: profileData.last_name,
@@ -124,6 +124,7 @@ const NewSurvey = () => {
             schoolAddress: profileData.school_address
           }, '5418');
           
+          console.log('Hubspot API response:', response);
           console.log('User successfully added to Hubspot list 5418 after creating survey');
         } catch (hubspotError) {
           console.error('Failed to add user to Hubspot list:', hubspotError);
