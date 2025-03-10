@@ -202,7 +202,7 @@ export async function completeUserProfile(userId: string, userData: any) {
 
 // New function to send user data to Hubspot
 async function sendUserToHubspot(userData: any) {
-  const hubspotListId = '7323'; // Hubspot list ID
+  const hubspotListId = '5417'; // Hubspot list ID
   
   const response = await supabase.functions.invoke('hubspot-integration', {
     body: {
