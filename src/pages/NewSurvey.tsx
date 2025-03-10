@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
@@ -23,6 +23,24 @@ const NewSurvey = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Check for authentication 
+  useEffect(() => {
+    if (!user) {
+      setIsLoading(true);
+      const checkUser = setTimeout(() => {
+        if (!user) {
+          toast.error("Authentication required", {
+            description: "You must be logged in to create a survey."
+          });
+          navigate('/login');
+        }
+        setIsLoading(false);
+      }, 1000); // Give auth some time to load
+
+      return () => clearTimeout(checkUser);
+    }
+  }, [user, navigate]);
+
   const handleSubmit = async (data: SurveyFormData, customQuestionIds: string[]) => {
     try {
       setIsSubmitting(true);
@@ -33,6 +51,7 @@ const NewSurvey = () => {
         toast.error("Authentication required", {
           description: "You must be logged in to create a survey."
         });
+        navigate('/login');
         return;
       }
 
@@ -89,26 +108,33 @@ const NewSurvey = () => {
           .filter(email => email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
         
         if (emails.length > 0) {
-          // Call the Edge Function to send emails
-          const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-survey-email', {
-            body: {
-              surveyId: savedSurvey.id,
-              surveyName: data.name,
-              emails: emails,
-              surveyUrl: surveyUrl,
-              isReminder: false
+          try {
+            // Call the Edge Function to send emails
+            const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-survey-email', {
+              body: {
+                surveyId: savedSurvey.id,
+                surveyName: data.name,
+                emails: emails,
+                surveyUrl: surveyUrl,
+                isReminder: false
+              }
+            });
+            
+            if (emailError) {
+              console.error('Error sending emails:', emailError);
+              toast.error("Survey created but emails could not be sent", {
+                description: "Your survey was created successfully, but there was an issue sending invitation emails."
+              });
+            } else {
+              console.log('Email sending result:', emailResult);
+              toast.success("Survey created and invitations sent", {
+                description: `Invitations sent to ${emails.length} recipients.`
+              });
             }
-          });
-          
-          if (emailError) {
-            console.error('Error sending emails:', emailError);
+          } catch (invokeFunctionError) {
+            console.error('Error invoking send-survey-email function:', invokeFunctionError);
             toast.error("Survey created but emails could not be sent", {
               description: "Your survey was created successfully, but there was an issue sending invitation emails."
-            });
-          } else {
-            console.log('Email sending result:', emailResult);
-            toast.success("Survey created and invitations sent", {
-              description: `Invitations sent to ${emails.length} recipients.`
             });
           }
         }

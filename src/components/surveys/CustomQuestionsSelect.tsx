@@ -24,7 +24,7 @@ const CustomQuestionsSelect: React.FC<CustomQuestionsSelectProps> = ({
   selectedQuestionIds,
   onChange
 }) => {
-  const { questions, isLoading, refreshQuestions } = useCustomQuestions();
+  const { questions = [], isLoading, refreshQuestions } = useCustomQuestions();
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const { isPremium, isProgress, isFoundation } = useSubscription();
@@ -32,7 +32,7 @@ const CustomQuestionsSelect: React.FC<CustomQuestionsSelectProps> = ({
   const hasAccess = isPremium || isProgress || isFoundation;
   
   // Filter out archived questions
-  const availableQuestions = questions.filter(q => !q.archived);
+  const availableQuestions = (questions || []).filter(q => !q.archived);
   
   // Function to toggle a question selection
   const toggleQuestion = (questionId: string) => {
@@ -99,7 +99,7 @@ const CustomQuestionsSelect: React.FC<CustomQuestionsSelectProps> = ({
               <Button 
                 variant="ghost" 
                 size="sm"
-                onClick={refreshQuestions}
+                onClick={() => refreshQuestions()}
               >
                 Refresh
               </Button>
@@ -109,7 +109,7 @@ const CustomQuestionsSelect: React.FC<CustomQuestionsSelectProps> = ({
               <div className="py-8 text-center">
                 <p>Loading questions...</p>
               </div>
-            ) : availableQuestions.length === 0 ? (
+            ) : (availableQuestions || []).length === 0 ? (
               <div className="py-8 text-center">
                 <p className="text-gray-500 mb-4">You haven't created any custom questions yet.</p>
                 <Button 

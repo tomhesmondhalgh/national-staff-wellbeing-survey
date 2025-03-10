@@ -11,7 +11,7 @@ import { useTestingMode } from '../contexts/TestingModeContext';
 const TEST_QUESTIONS_KEY = 'test_custom_questions';
 
 export function useCustomQuestions() {
-  const [questions, setQuestions] = useState<CustomQuestion[] | null>(null);
+  const [questions, setQuestions] = useState<CustomQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
   const [lastFetchTime, setLastFetchTime] = useState<number>(0);
@@ -56,8 +56,15 @@ export function useCustomQuestions() {
     }
     
     try {
-      const hasFeatureAccess = await hasAccess('foundation');
-      console.log('User has access to foundation plan:', hasFeatureAccess);
+      // Check feature access
+      let hasFeatureAccess = false;
+      try {
+        hasFeatureAccess = await hasAccess('foundation');
+        console.log('User has access to foundation plan:', hasFeatureAccess);
+      } catch (accessError) {
+        console.error('Error checking feature access:', accessError);
+        // Continue with default false value
+      }
       
       if (!hasFeatureAccess && !isTestingMode) {
         console.log('User does not have access to custom questions feature');
@@ -85,15 +92,16 @@ export function useCustomQuestions() {
           }
         } catch (error) {
           console.error('Error parsing stored questions:', error);
+          // Continue with empty array
         }
         
         // Filter based on showArchived flag, just like we would with real data
         const filteredQuestions = showArchived 
           ? storedQuestions 
-          : storedQuestions.filter(q => !q.archived);
+          : (storedQuestions || []).filter(q => !q.archived);
         
         console.log(`Filtered to ${filteredQuestions.length} questions (showArchived: ${showArchived})`);
-        setQuestions(filteredQuestions);
+        setQuestions(filteredQuestions || []);
         setIsLoading(false);
         return;
       }
@@ -142,7 +150,11 @@ export function useCustomQuestions() {
 
   useEffect(() => {
     console.log('useCustomQuestions effect running, showArchived:', showArchived);
-    fetchQuestions();
+    fetchQuestions().catch(error => {
+      console.error('Error in fetchQuestions effect:', error);
+      setIsLoading(false);
+      setQuestions([]);
+    });
   }, [user, showArchived, isTestingMode, fetchQuestions]);
 
   // Helper function to save test questions to localStorage
@@ -166,7 +178,14 @@ export function useCustomQuestions() {
     if (!user) return null;
     
     try {
-      const hasFeatureAccess = await hasAccess('foundation');
+      let hasFeatureAccess = false;
+      try {
+        hasFeatureAccess = await hasAccess('foundation');
+      } catch (error) {
+        console.error('Error checking feature access:', error);
+        // Continue with default false
+      }
+      
       if (!hasFeatureAccess && !isTestingMode) {
         toast({
           title: 'Feature not available',
