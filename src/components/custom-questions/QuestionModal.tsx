@@ -5,9 +5,8 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { CustomQuestion } from '../../types/customQuestions';
-import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { AlertCircle } from 'lucide-react';
-import { QuestionType, toValidQuestionType, createDbQuestionPayload } from '../../utils/questionTypeUtils';
+import { toValidQuestionType, createDbQuestionPayload } from '../../utils/questionTypeUtils';
 
 interface QuestionModalProps {
   open: boolean;
@@ -22,22 +21,15 @@ export default function QuestionModal({
   onSave,
   initialData
 }: QuestionModalProps) {
-  // Use strict type definition to ensure consistency with DB schema
   const [questionText, setQuestionText] = useState('');
-  const [questionType, setQuestionType] = useState<QuestionType>('text');
-  const [options, setOptions] = useState<string[]>(['']);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (open && initialData) {
       setQuestionText(initialData.text);
-      setQuestionType(toValidQuestionType(initialData.type));
-      setOptions(initialData.options || ['']);
     } else if (!open) {
       setQuestionText('');
-      setQuestionType('text');
-      setOptions(['']);
       setError('');
     }
   }, [open, initialData]);
@@ -51,32 +43,11 @@ export default function QuestionModal({
       return;
     }
 
-    if (questionType === 'multiple_choice' && options.length < 2) {
-      setError('At least 2 options are required');
-      return;
-    }
-
-    // Filter out empty options for multiple choice questions
-    const validOptions = options.filter(o => o.trim());
-    
-    if (questionType === 'multiple_choice' && validOptions.length < 2) {
-      setError('At least 2 non-empty options are required');
-      return;
-    }
-
     setIsSubmitting(true);
     try {
-      console.log('Submitting question:', {
-        text: questionText,
-        type: questionType,
-        options: questionType === 'multiple_choice' ? validOptions : undefined
-      });
-      
-      // Create a properly formatted question payload using our utility
       const questionPayload = createDbQuestionPayload({
         text: questionText,
-        type: questionType,
-        options: questionType === 'multiple_choice' ? validOptions : undefined
+        type: 'text'
       });
       
       await onSave(questionPayload);
@@ -86,24 +57,6 @@ export default function QuestionModal({
       setError('Failed to save question. Please try again.');
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const addOption = () => {
-    if (options.length < 5) {
-      setOptions([...options, '']);
-    }
-  };
-
-  const updateOption = (index: number, value: string) => {
-    const newOptions = [...options];
-    newOptions[index] = value;
-    setOptions(newOptions);
-  };
-
-  const removeOption = (index: number) => {
-    if (options.length > 1) {
-      setOptions(options.filter((_, i) => i !== index));
     }
   };
 
@@ -120,24 +73,6 @@ export default function QuestionModal({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label>Question Type</Label>
-            <RadioGroup
-              value={questionType}
-              onValueChange={(value) => setQuestionType(toValidQuestionType(value))}
-              className="flex space-x-4"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="text" id="text" />
-                <Label htmlFor="text">Free Text</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="multiple_choice" id="multiple_choice" />
-                <Label htmlFor="multiple_choice">Multiple Choice</Label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="question-text">Question Text</Label>
             <Input
               id="question-text"
@@ -146,40 +81,6 @@ export default function QuestionModal({
               maxLength={100}
             />
           </div>
-
-          {questionType === 'multiple_choice' && (
-            <div className="space-y-2">
-              <Label>Options</Label>
-              {options.map((option, index) => (
-                <div key={index} className="flex space-x-2">
-                  <Input
-                    value={option}
-                    onChange={(e) => updateOption(index, e.target.value)}
-                    placeholder={`Option ${index + 1}`}
-                  />
-                  {options.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => removeOption(index)}
-                    >
-                      Remove
-                    </Button>
-                  )}
-                </div>
-              ))}
-              {options.length < 5 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={addOption}
-                  className="mt-2"
-                >
-                  Add Option
-                </Button>
-              )}
-            </div>
-          )}
 
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md flex items-start">

@@ -26,11 +26,7 @@ export function useQuestionStore() {
         return [];
       }
 
-      console.log('Raw questions from database:', data);
-      
-      // Validate and normalize question types
       const processedData = (data || []).map((question: CustomQuestion) => {
-        // Ensure question has valid type
         if (!isValidQuestionType(question.type)) {
           console.warn(`Question ${question.id} has invalid type: ${question.type}. Converting to 'text'`);
           question.type = 'text';
@@ -58,7 +54,6 @@ export function useQuestionStore() {
         throw new Error('User not authenticated');
       }
       
-      // Create a properly formatted question payload
       const dbQuestion = {
         ...createDbQuestionPayload(question),
         creator_id: user.id,
@@ -94,23 +89,11 @@ export function useQuestionStore() {
     try {
       console.log('Raw update data:', updates);
       
-      // Create a properly formatted update payload
-      const updateData: Partial<CustomQuestion> = {};
-      
-      // Always sanitize the type if present
-      if (updates.type !== undefined) {
-        if (!isValidQuestionType(updates.type)) {
-          console.warn(`Update contains invalid type: ${updates.type}. Converting to 'text'`);
-          updateData.type = 'text';
-        } else {
-          updateData.type = updates.type;
-        }
-      }
-      
-      // Copy other fields
-      if (updates.text !== undefined) updateData.text = updates.text;
-      if (updates.options !== undefined) updateData.options = updates.options;
-      if (updates.archived !== undefined) updateData.archived = updates.archived;
+      const updateData: Partial<CustomQuestion> = {
+        text: updates.text,
+        type: 'text',
+        archived: updates.archived
+      };
       
       console.log('Sanitized update data:', updateData);
 
@@ -123,7 +106,6 @@ export function useQuestionStore() {
       
       setQuestions(prev => prev.map(q => {
         if (q.id === id) {
-          // Create a new question object with updates
           return { ...q, ...updateData };
         }
         return q;
