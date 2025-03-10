@@ -1,7 +1,7 @@
-
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from './components/ui/toaster';
 import { AuthProvider } from './contexts/AuthContext';
+import { TestingModeProvider } from './contexts/TestingModeContext';
 import { Toaster as SonnerToaster } from 'sonner';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
@@ -33,77 +33,79 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/email-confirmation" element={<EmailConfirmation />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/survey" element={<SurveyForm />} />
-          <Route path="/survey-complete" element={<SurveyComplete />} />
-          <Route path="/survey-closed" element={<SurveyClosed />} />
-          
-          {/* Protected routes */}
-          <Route path="/onboarding" element={
-            <ProtectedRoute>
-              <Onboarding />
-            </ProtectedRoute>
-          } />
-          <Route path="/dashboard" element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/surveys" element={
-            <ProtectedRoute>
-              <Surveys />
-            </ProtectedRoute>
-          } />
-          <Route path="/surveys/:id/edit" element={
-            <ProtectedRoute>
-              <EditSurvey />
-            </ProtectedRoute>
-          } />
-          <Route path="/new-survey" element={
-            <ProtectedRoute>
-              <NewSurvey />
-            </ProtectedRoute>
-          } />
-          <Route path="/survey-preview" element={
-            <ProtectedRoute>
-              <SurveyPreview />
-            </ProtectedRoute>
-          } />
-          <Route path="/analysis" element={
-            <ProtectedRoute>
-              <Analysis />
-            </ProtectedRoute>
-          } />
-          <Route path="/upgrade" element={
-            <ProtectedRoute>
-              <Upgrade />
-            </ProtectedRoute>
-          } />
-          <Route path="/improve" element={
-            <ProtectedRoute>
-              <Improve />
-            </ProtectedRoute>
-          } />
-          <Route path="/profile" element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin" element={
-            <ProtectedRoute>
-              <Admin />
-            </ProtectedRoute>
-          } />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        <Toaster />
-        <SonnerToaster closeButton position="bottom-right" />
+        <TestingModeProvider>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/email-confirmation" element={<EmailConfirmation />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/survey" element={<SurveyForm />} />
+            <Route path="/survey-complete" element={<SurveyComplete />} />
+            <Route path="/survey-closed" element={<SurveyClosed />} />
+            
+            {/* Protected routes */}
+            <Route path="/onboarding" element={
+              <ProtectedRoute>
+                <Onboarding />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/surveys" element={
+              <ProtectedRoute>
+                <Surveys />
+              </ProtectedRoute>
+            } />
+            <Route path="/surveys/:id/edit" element={
+              <ProtectedRoute>
+                <EditSurvey />
+              </ProtectedRoute>
+            } />
+            <Route path="/new-survey" element={
+              <ProtectedRoute>
+                <NewSurvey />
+              </ProtectedRoute>
+            } />
+            <Route path="/survey-preview" element={
+              <ProtectedRoute>
+                <SurveyPreview />
+              </ProtectedRoute>
+            } />
+            <Route path="/analysis" element={
+              <ProtectedRoute>
+                <Analysis />
+              </ProtectedRoute>
+            } />
+            <Route path="/upgrade" element={
+              <ProtectedRoute>
+                <Upgrade />
+              </ProtectedRoute>
+            } />
+            <Route path="/improve" element={
+              <ProtectedRoute>
+                <Improve />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <Admin />
+              </ProtectedRoute>
+            } />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <Toaster />
+          <SonnerToaster closeButton position="bottom-right" />
+        </TestingModeProvider>
       </AuthProvider>
     </Router>
   );
