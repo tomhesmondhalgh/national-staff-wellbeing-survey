@@ -1,6 +1,10 @@
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { PlanType } from '../lib/supabase/subscription';
+
+// Local storage keys
+const TESTING_MODE_ENABLED_KEY = 'testing_mode_enabled';
+const TESTING_MODE_PLAN_KEY = 'testing_mode_plan';
 
 interface TestingModeContextType {
   isTestingMode: boolean;
@@ -12,8 +16,29 @@ interface TestingModeContextType {
 const TestingModeContext = createContext<TestingModeContextType | undefined>(undefined);
 
 export function TestingModeProvider({ children }: { children: React.ReactNode }) {
-  const [isTestingMode, setIsTestingMode] = useState(false);
-  const [testingPlan, setTestingPlan] = useState<PlanType | null>(null);
+  // Initialize state from localStorage if available
+  const [isTestingMode, setIsTestingMode] = useState<boolean>(() => {
+    const savedMode = localStorage.getItem(TESTING_MODE_ENABLED_KEY);
+    return savedMode ? JSON.parse(savedMode) : false;
+  });
+  
+  const [testingPlan, setTestingPlan] = useState<PlanType | null>(() => {
+    const savedPlan = localStorage.getItem(TESTING_MODE_PLAN_KEY);
+    return savedPlan ? (savedPlan as PlanType) : null;
+  });
+
+  // Update localStorage when state changes
+  useEffect(() => {
+    localStorage.setItem(TESTING_MODE_ENABLED_KEY, JSON.stringify(isTestingMode));
+  }, [isTestingMode]);
+
+  useEffect(() => {
+    if (testingPlan) {
+      localStorage.setItem(TESTING_MODE_PLAN_KEY, testingPlan);
+    } else {
+      localStorage.removeItem(TESTING_MODE_PLAN_KEY);
+    }
+  }, [testingPlan]);
 
   const enableTestingMode = (plan: PlanType) => {
     setIsTestingMode(true);

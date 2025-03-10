@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
@@ -7,9 +7,45 @@ import { Button } from '../components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../components/ui/breadcrumb';
 import CustomQuestionsList from '../components/custom-questions/CustomQuestionsList';
+import CustomQuestionModal from '../components/custom-questions/CustomQuestionModal';
+import { useCustomQuestions } from '../hooks/useCustomQuestions';
+import { CustomQuestion } from '../types/customQuestions';
 
 const CustomQuestions: React.FC = () => {
   const navigate = useNavigate();
+  const {
+    questions,
+    isLoading,
+    createQuestion,
+    updateQuestion,
+    toggleArchiveQuestion,
+    showArchived,
+    toggleShowArchived,
+    refreshQuestions
+  } = useCustomQuestions();
+  
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedQuestion, setSelectedQuestion] = useState<CustomQuestion | undefined>(undefined);
+  
+  const handleAddQuestion = () => {
+    setSelectedQuestion(undefined);
+    setModalOpen(true);
+  };
+  
+  const handleEditQuestion = (question: CustomQuestion) => {
+    setSelectedQuestion(question);
+    setModalOpen(true);
+  };
+  
+  const handleSaveQuestion = async (questionData: Omit<CustomQuestion, 'id' | 'created_at' | 'archived'>) => {
+    if (selectedQuestion) {
+      // Update existing question
+      return updateQuestion(selectedQuestion.id, questionData);
+    } else {
+      // Create new question
+      return createQuestion(questionData);
+    }
+  };
 
   return (
     <MainLayout>
@@ -37,7 +73,24 @@ const CustomQuestions: React.FC = () => {
           </Button>
         </div>
 
-        <CustomQuestionsList />
+        <CustomQuestionsList
+          questions={questions}
+          isLoading={isLoading}
+          onEdit={handleEditQuestion}
+          onArchive={toggleArchiveQuestion}
+          showArchived={showArchived}
+          onToggleArchived={toggleShowArchived}
+          onRefresh={refreshQuestions}
+          onAdd={handleAddQuestion}
+        />
+        
+        <CustomQuestionModal
+          open={modalOpen}
+          onOpenChange={setModalOpen}
+          onSave={handleSaveQuestion}
+          initialData={selectedQuestion}
+          isEdit={!!selectedQuestion}
+        />
       </div>
     </MainLayout>
   );
