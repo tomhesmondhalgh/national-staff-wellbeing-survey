@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { CustomQuestion } from '../types/customQuestions';
 import { supabase } from '../lib/supabase';
@@ -6,13 +5,14 @@ import { toast } from 'sonner';
 
 // Define the database format for question types
 type DatabaseQuestionType = 'text' | 'multiple_choice';
+type FrontendQuestionType = 'text' | 'multiple-choice';
 
 // Helper functions to convert between formats
-const toDbFormat = (type: 'text' | 'multiple-choice'): DatabaseQuestionType => {
+const toDbFormat = (type: FrontendQuestionType): DatabaseQuestionType => {
   return type === 'multiple-choice' ? 'multiple_choice' : 'text';
 };
 
-const toFrontendFormat = (type: DatabaseQuestionType): 'text' | 'multiple-choice' => {
+const toFrontendFormat = (type: DatabaseQuestionType): FrontendQuestionType => {
   return type === 'multiple_choice' ? 'multiple-choice' : 'text';
 };
 
@@ -35,7 +35,6 @@ export function useQuestionStore() {
         return [];
       }
 
-      // Convert database format to frontend format
       const processedData = (data || []).map(q => ({
         ...q,
         type: toFrontendFormat(q.type as DatabaseQuestionType)
@@ -60,10 +59,9 @@ export function useQuestionStore() {
         throw new Error('User not authenticated');
       }
       
-      // Convert frontend format to database format
       const dbQuestion = {
         ...question,
-        type: toDbFormat(question.type),
+        type: toDbFormat(question.type as FrontendQuestionType),
         creator_id: user.id,
         archived: false
       };
@@ -80,8 +78,7 @@ export function useQuestionStore() {
         console.error('Database error:', error);
         throw error;
       }
-      
-      // Convert back to frontend format
+
       const processedData = {
         ...data,
         type: toFrontendFormat(data.type as DatabaseQuestionType)
@@ -99,13 +96,10 @@ export function useQuestionStore() {
 
   const updateQuestion = async (id: string, updates: Partial<CustomQuestion>) => {
     try {
-      // Convert to database format for the type field if it exists
-      const dbUpdates = {
-        ...updates
-      };
+      const dbUpdates = { ...updates };
       
       if (updates.type) {
-        dbUpdates.type = toDbFormat(updates.type);
+        dbUpdates.type = toDbFormat(updates.type as FrontendQuestionType);
       }
 
       const { error } = await supabase
@@ -115,12 +109,11 @@ export function useQuestionStore() {
 
       if (error) throw error;
       
-      // Update state with frontend format
       setQuestions(prev => prev.map(q => {
         if (q.id === id) {
           return {
             ...q,
-            ...updates, // Use original updates with frontend format
+            ...updates,
           };
         }
         return q;
