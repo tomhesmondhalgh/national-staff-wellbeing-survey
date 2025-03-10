@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
@@ -10,9 +10,11 @@ import CustomQuestionsList from '../components/custom-questions/CustomQuestionsL
 import CustomQuestionModal from '../components/custom-questions/CustomQuestionModal';
 import { useCustomQuestions } from '../hooks/useCustomQuestions';
 import { CustomQuestion } from '../types/customQuestions';
+import { useToast } from '../components/ui/use-toast';
 
 const CustomQuestions: React.FC = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const {
     questions,
     isLoading,
@@ -27,6 +29,11 @@ const CustomQuestions: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<CustomQuestion | undefined>(undefined);
   
+  // Force a refresh when the component mounts
+  useEffect(() => {
+    refreshQuestions();
+  }, [refreshQuestions]);
+  
   const handleAddQuestion = () => {
     setSelectedQuestion(undefined);
     setModalOpen(true);
@@ -38,12 +45,36 @@ const CustomQuestions: React.FC = () => {
   };
   
   const handleSaveQuestion = async (questionData: Omit<CustomQuestion, 'id' | 'created_at' | 'archived'>) => {
-    if (selectedQuestion) {
-      // Update existing question
-      return updateQuestion(selectedQuestion.id, questionData);
-    } else {
-      // Create new question
-      return createQuestion(questionData);
+    try {
+      if (selectedQuestion) {
+        // Update existing question
+        const result = await updateQuestion(selectedQuestion.id, questionData);
+        if (result) {
+          toast({
+            title: "Question updated",
+            description: "Your custom question has been updated successfully."
+          });
+        }
+        return result;
+      } else {
+        // Create new question
+        const result = await createQuestion(questionData);
+        if (result) {
+          toast({
+            title: "Question created",
+            description: "Your custom question has been created successfully."
+          });
+        }
+        return !!result;
+      }
+    } catch (error) {
+      console.error('Error saving question:', error);
+      toast({
+        title: "Error",
+        description: "There was a problem saving your question. Please try again.",
+        variant: "destructive"
+      });
+      return false;
     }
   };
 
