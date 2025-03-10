@@ -90,7 +90,7 @@ const NewSurvey = () => {
         }));
         
         const { error: linkError } = await supabase
-          .from('survey_custom_questions')
+          .from('survey_questions')
           .insert(surveyQuestionLinks);
           
         if (linkError) {
@@ -118,7 +118,7 @@ const NewSurvey = () => {
 
   const handlePreviewSurvey = () => {
     if (savedSurveyId) {
-      // Open preview in new tab
+      // Open preview in new tab with proper parameters
       window.open(`/survey?id=${savedSurveyId}&preview=true`, '_blank');
     } else {
       toast.error("Save the survey first", {

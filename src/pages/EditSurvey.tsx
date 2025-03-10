@@ -53,7 +53,7 @@ const EditSurvey = () => {
         
         // Fetch any custom questions linked to this survey
         const { data: linkData, error: linkError } = await supabase
-          .from('survey_custom_questions')
+          .from('survey_questions')
           .select('question_id')
           .eq('survey_id', id);
           
@@ -100,7 +100,7 @@ const EditSurvey = () => {
       
       // Handle custom questions - first remove existing links
       const { error: deleteError } = await supabase
-        .from('survey_custom_questions')
+        .from('survey_questions')
         .delete()
         .eq('survey_id', id);
         
@@ -116,7 +116,7 @@ const EditSurvey = () => {
         }));
         
         const { error: insertError } = await supabase
-          .from('survey_custom_questions')
+          .from('survey_questions')
           .insert(surveyQuestionLinks);
           
         if (insertError) {
@@ -136,6 +136,17 @@ const EditSurvey = () => {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handlePreviewSurvey = () => {
+    if (id) {
+      // Open preview in new tab with proper parameters
+      window.open(`/survey?id=${id}&preview=true`, '_blank');
+    } else {
+      toast.error("Survey not found", {
+        description: "Could not generate a preview link."
+      });
     }
   };
 
@@ -273,6 +284,7 @@ const EditSurvey = () => {
           surveyId={id}
           isSubmitting={isSubmitting}
           initialCustomQuestionIds={customQuestionIds}
+          onPreviewSurvey={handlePreviewSurvey}
           onSendSurvey={handleSendSurvey}
         />
       </div>
