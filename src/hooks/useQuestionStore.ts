@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { CustomQuestion } from '../types/customQuestions';
 import { supabase } from '../lib/supabase';
@@ -80,10 +81,13 @@ export function useQuestionStore() {
         throw error;
       }
 
-      // Convert the database type to frontend type
+      // Here's the fix - ensure we convert the type correctly
+      const questionType = data.type as DatabaseQuestionType;
+      const frontendType = toFrontendFormat(questionType);
+      
       const newQuestion: CustomQuestion = {
         ...data,
-        type: toFrontendFormat(data.type as DatabaseQuestionType)
+        type: frontendType
       };
       
       setQuestions(prev => [newQuestion, ...prev]);
