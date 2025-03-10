@@ -18,6 +18,7 @@ export function useAuthState() {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('Initial session check:', session ? 'Logged in' : 'Not logged in');
+      console.log('Session user has email:', session?.user?.email ? 'Yes' : 'No');
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
@@ -31,6 +32,7 @@ export function useAuthState() {
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         (_event, session) => {
           console.log('Auth state changed, event:', _event);
+          console.log('New session user has email:', session?.user?.email ? 'Yes' : 'No');
           setSession(session);
           setUser(session?.user ?? null);
           setIsLoading(false);

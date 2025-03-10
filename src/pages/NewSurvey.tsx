@@ -100,7 +100,7 @@ const NewSurvey = () => {
       console.log('Fetching user profile data for Hubspot integration...');
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('first_name, last_name, job_title, school_name, school_address, email')
+        .select('first_name, last_name, job_title, school_name, school_address')
         .eq('id', user.id)
         .single();
       
@@ -111,12 +111,12 @@ const NewSurvey = () => {
         console.log('Profile data retrieved:', profileData);
       }
         
-      if (!profileError && profileData) {
+      if (!profileError && profileData && user.email) {
         console.log('Attempting to send user data to Hubspot list 5418...');
         try {
-          // Send user to Hubspot with list ID 5418
+          // Send user to Hubspot with list ID 5418, using email from auth user
           const response = await sendUserToHubspot({
-            email: profileData.email,
+            email: user.email, // Use email from the authenticated user object
             firstName: profileData.first_name,
             lastName: profileData.last_name,
             jobTitle: profileData.job_title,
@@ -131,7 +131,7 @@ const NewSurvey = () => {
           // Don't fail the survey creation if Hubspot integration fails
         }
       } else {
-        console.log('No profile data available to send to Hubspot');
+        console.log('No complete profile data or email available to send to Hubspot');
       }
 
       toast.success("Survey created successfully!", {
