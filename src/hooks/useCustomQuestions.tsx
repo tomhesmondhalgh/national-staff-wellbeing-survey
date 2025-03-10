@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase/client';
 import { CustomQuestion } from '../types/customQuestions';
@@ -15,6 +16,9 @@ export function useCustomQuestions() {
   const { toast } = useToast();
   const { hasAccess } = useSubscription();
   const { isTestingMode } = useTestingMode();
+  
+  // Add a local storage key for test questions
+  const TEST_QUESTIONS_KEY = 'test_custom_questions';
 
   const fetchQuestions = useCallback(async () => {
     const now = Date.now();
@@ -51,25 +55,26 @@ export function useCustomQuestions() {
       console.log('Is testing mode:', isTestingMode);
 
       if (isTestingMode) {
-        console.log('Using mock data in testing mode');
-        const mockQuestions: CustomQuestion[] = [
-          {
-            id: '1',
-            text: 'How would you rate our school facilities?',
-            type: 'multiple-choice',
-            options: ['Excellent', 'Good', 'Average', 'Poor'],
-            archived: false,
-            creator_id: user.id
-          },
-          {
-            id: '2',
-            text: 'What improvements would you suggest for our curriculum?',
-            type: 'text',
-            archived: false,
-            creator_id: user.id
+        console.log('Using test mode for custom questions');
+        // Retrieve questions from localStorage instead of fixed mock data
+        let storedQuestions: CustomQuestion[] = [];
+        try {
+          const storedData = localStorage.getItem(TEST_QUESTIONS_KEY);
+          if (storedData) {
+            storedQuestions = JSON.parse(storedData);
+            console.log(`Retrieved ${storedQuestions.length} questions from localStorage`);
           }
-        ];
-        setQuestions(mockQuestions);
+        } catch (error) {
+          console.error('Error parsing stored questions:', error);
+        }
+        
+        // Filter based on showArchived flag, just like we would with real data
+        const filteredQuestions = showArchived 
+          ? storedQuestions 
+          : storedQuestions.filter(q => !q.archived);
+        
+        console.log(`Filtered to ${filteredQuestions.length} questions (showArchived: ${showArchived})`);
+        setQuestions(filteredQuestions);
         setIsLoading(false);
         return;
       }
@@ -108,7 +113,19 @@ export function useCustomQuestions() {
   useEffect(() => {
     console.log('useCustomQuestions effect running, showArchived:', showArchived);
     fetchQuestions();
-  }, [user, showArchived, isTestingMode]);
+  }, [user, showArchived, isTestingMode, fetchQuestions]);
+
+  // Helper function to save test questions to localStorage
+  const saveTestQuestions = (updatedQuestions: CustomQuestion[]) => {
+    if (isTestingMode) {
+      try {
+        localStorage.setItem(TEST_QUESTIONS_KEY, JSON.stringify(updatedQuestions));
+        console.log(`Saved ${updatedQuestions.length} questions to localStorage`);
+      } catch (error) {
+        console.error('Error saving questions to localStorage:', error);
+      }
+    }
+  };
 
   const createQuestion = async (question: Omit<CustomQuestion, 'id' | 'created_at' | 'archived'>) => {
     if (!user) return null;
@@ -129,10 +146,13 @@ export function useCustomQuestions() {
           id: Date.now().toString(),
           ...question,
           creator_id: user.id,
-          archived: false
+          archived: false,
+          created_at: new Date().toISOString()
         };
         
-        setQuestions(prev => [newQuestion, ...prev]);
+        const updatedQuestions = [newQuestion, ...questions];
+        setQuestions(updatedQuestions);
+        saveTestQuestions(updatedQuestions);
         
         toast({
           title: 'Success',
@@ -181,9 +201,11 @@ export function useCustomQuestions() {
     
     try {
       if (isTestingMode) {
-        setQuestions(prev => 
-          prev.map(q => q.id === id ? { ...q, ...updates } : q)
+        const updatedQuestions = questions.map(q => 
+          q.id === id ? { ...q, ...updates } : q
         );
+        setQuestions(updatedQuestions);
+        saveTestQuestions(updatedQuestions);
         
         toast({
           title: 'Success',
