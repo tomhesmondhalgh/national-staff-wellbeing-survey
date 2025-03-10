@@ -19,9 +19,9 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       const returnTo = encodeURIComponent(location.pathname + location.search);
       navigate(`/login?returnTo=${returnTo}`);
     }
-    // Including location.pathname and location.search in the dependency array
-    // would cause unnecessary reruns and potential redirect loops
-  }, [user, isLoading, navigate, location.pathname, location.search]);
+    // Not including location.pathname and location.search in the dependency array
+    // to prevent redirect loops
+  }, [user, isLoading, navigate]);
 
   // Don't render anything until we've checked authentication
   if (isLoading) {

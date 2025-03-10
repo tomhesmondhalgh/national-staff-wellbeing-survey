@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
+import React, { createContext, useContext, ReactNode, useState, useEffect, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
@@ -26,28 +26,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const isComponentMounted = useRef(true);
 
   // This effect runs once on component mount
   useEffect(() => {
-    // Define a flags to prevent setting state after unmount
-    let isActive = true;
-    let initialCheckDone = false;
-
+    // Set mount flag
+    isComponentMounted.current = true;
+    
     async function getInitialSession() {
       try {
         const { data } = await supabase.auth.getSession();
         
-        // Only update state if component is still mounted and initial check not done
-        if (isActive && !initialCheckDone) {
+        // Only update state if component is still mounted
+        if (isComponentMounted.current) {
           setSession(data.session);
           setUser(data.session?.user ?? null);
-          initialCheckDone = true;
           setIsLoading(false);
         }
       } catch (error) {
         console.error('Error getting initial session:', error);
-        if (isActive && !initialCheckDone) {
-          initialCheckDone = true;
+        if (isComponentMounted.current) {
           setIsLoading(false);
         }
       }
@@ -57,8 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Set up auth state change listener
     const { data: authListener } = supabase.auth.onAuthStateChange((event, currentSession) => {
-      // Use a regular if, not an else if, to avoid dependencies on the getInitialSession results
-      if (isActive) {
+      if (isComponentMounted.current) {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setIsLoading(false);
@@ -67,8 +64,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Clean up subscription and set active flag to false
     return () => {
-      isActive = false;
-      authListener.subscription.unsubscribe();
+      isComponentMounted.current = false;
+      if (authListener && authListener.subscription) {
+        authListener.subscription.unsubscribe();
+      }
     };
   }, []);
 
@@ -90,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const socialSignIn = async (provider: AuthProvider) => {
-    return signInWithSocialProvider(provider as any); // Cast to any for compatibility with supabase Provider type
+    return signInWithSocialProvider(provider);
   };
 
   const completeProfile = async (userId: string, userData: any) => {
