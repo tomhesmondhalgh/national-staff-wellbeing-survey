@@ -15,9 +15,18 @@ serve(async (req) => {
   }
 
   try {
-    const { userData, listId } = await req.json();
+    console.log('Hubspot integration function called');
+    
+    const requestBody = await req.json();
+    const { userData, listId } = requestBody;
+    
+    console.log('Request payload:', JSON.stringify({ 
+      userData: { ...userData, email: userData.email ? userData.email : 'email missing' }, 
+      listId 
+    }));
     
     if (!userData || !userData.email) {
+      console.error('Email is required but missing in request');
       throw new Error('Email is required');
     }
 
@@ -42,6 +51,7 @@ serve(async (req) => {
       hubspotContactId = existingContact.id;
     } else {
       // Create new contact
+      console.log('Creating new contact in Hubspot');
       const contactResponse = await createContact(userData);
       
       if (!contactResponse.ok) {

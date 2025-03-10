@@ -59,6 +59,7 @@ const NewSurvey = () => {
       const surveyDate = new Date(data.date);
       const closeDate = data.closeDate ? new Date(data.closeDate) : null;
       
+      // Save the survey
       const { data: savedSurvey, error } = await supabase
         .from('survey_templates')
         .insert({
@@ -79,6 +80,7 @@ const NewSurvey = () => {
       
       setSavedSurveyId(savedSurvey.id);
 
+      // Link custom questions if any
       if (customQuestionIds && customQuestionIds.length > 0) {
         const surveyQuestionLinks = customQuestionIds.map(questionId => ({
           survey_id: savedSurvey.id,
@@ -95,13 +97,22 @@ const NewSurvey = () => {
       }
       
       // Get user profile data to send to Hubspot
+      console.log('Fetching user profile data for Hubspot integration...');
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('first_name, last_name, job_title, school_name, school_address, email')
         .eq('id', user.id)
         .single();
+      
+      // Log profile retrieval result
+      if (profileError) {
+        console.error('Error fetching profile data:', profileError);
+      } else {
+        console.log('Profile data retrieved:', profileData);
+      }
         
       if (!profileError && profileData) {
+        console.log('Attempting to send user data to Hubspot list 5418...');
         try {
           // Send user to Hubspot with list ID 5418
           await sendUserToHubspot({
@@ -113,17 +124,21 @@ const NewSurvey = () => {
             schoolAddress: profileData.school_address
           }, '5418');
           
-          console.log('User added to Hubspot list 5418 after creating survey');
+          console.log('User successfully added to Hubspot list 5418 after creating survey');
         } catch (hubspotError) {
           console.error('Failed to add user to Hubspot list:', hubspotError);
           // Don't fail the survey creation if Hubspot integration fails
         }
+      } else {
+        console.log('No profile data available to send to Hubspot');
       }
 
       toast.success("Survey created successfully!", {
         description: "Your survey has been saved. You can now preview or send it."
       });
       
+      // Navigate after everything is done
+      console.log('Navigating to edit page for survey:', savedSurvey.id);
       navigate(`/surveys/${savedSurvey.id}/edit`);
       
     } catch (error) {
