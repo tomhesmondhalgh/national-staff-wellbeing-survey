@@ -23,18 +23,37 @@ serve(async (req) => {
 
     console.log('Creating/updating contact in Hubspot:', userData);
 
-    // Create or update contact in Hubspot
-    const contactResponse = await createOrUpdateContact(userData);
-    
-    if (!contactResponse.ok) {
-      const errorData = await contactResponse.json();
-      console.error('Error creating contact in Hubspot:', errorData);
-      throw new Error(`Failed to create contact: ${JSON.stringify(errorData)}`);
+    // Check if contact already exists to avoid duplicates
+    const existingContact = await findContactByEmail(userData.email);
+
+    let hubspotContactId;
+
+    if (existingContact) {
+      // Update existing contact
+      console.log('Contact already exists in Hubspot, updating:', existingContact.id);
+      const updateResponse = await updateContact(existingContact.id, userData);
+      
+      if (!updateResponse.ok) {
+        const errorData = await updateResponse.json();
+        console.error('Error updating contact in Hubspot:', errorData);
+        throw new Error(`Failed to update contact: ${JSON.stringify(errorData)}`);
+      }
+      
+      hubspotContactId = existingContact.id;
+    } else {
+      // Create new contact
+      const contactResponse = await createContact(userData);
+      
+      if (!contactResponse.ok) {
+        const errorData = await contactResponse.json();
+        console.error('Error creating contact in Hubspot:', errorData);
+        throw new Error(`Failed to create contact: ${JSON.stringify(errorData)}`);
+      }
+      
+      const contactData = await contactResponse.json();
+      hubspotContactId = contactData.id;
+      console.log('Contact created in Hubspot with ID:', hubspotContactId);
     }
-    
-    const contactData = await contactResponse.json();
-    const hubspotContactId = contactData.id;
-    console.log('Contact created/updated in Hubspot with ID:', hubspotContactId);
     
     // Add contact to list if listId is provided
     let listResult = null;
@@ -55,7 +74,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        contact: contactData,
+        contact: { id: hubspotContactId },
         list: listResult
       }),
       { 
@@ -83,7 +102,44 @@ serve(async (req) => {
   }
 });
 
-async function createOrUpdateContact(userData: any) {
+async function findContactByEmail(email: string) {
+  const response = await fetch(
+    `https://api.hubapi.com/crm/v3/objects/contacts/search`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${HUBSPOT_API_KEY}`,
+      },
+      body: JSON.stringify({
+        filterGroups: [
+          {
+            filters: [
+              {
+                propertyName: 'email',
+                operator: 'EQ',
+                value: email
+              }
+            ]
+          }
+        ],
+        properties: ['email', 'firstname', 'lastname']
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    console.log('Error searching for contact:', await response.text());
+    return null;
+  }
+
+  const searchResult = await response.json();
+  return searchResult.results && searchResult.results.length > 0 
+    ? searchResult.results[0] 
+    : null;
+}
+
+async function createContact(userData: any) {
   // Map user data to Hubspot properties format
   const properties = {
     email: userData.email,
@@ -96,6 +152,28 @@ async function createOrUpdateContact(userData: any) {
 
   return fetch('https://api.hubapi.com/crm/v3/objects/contacts', {
     method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${HUBSPOT_API_KEY}`,
+    },
+    body: JSON.stringify({
+      properties
+    }),
+  });
+}
+
+async function updateContact(contactId: string, userData: any) {
+  // Map user data to Hubspot properties format
+  const properties = {
+    firstname: userData.firstName || '',
+    lastname: userData.lastName || '',
+    jobtitle: userData.jobTitle || '',
+    company: userData.schoolName || '',
+    address: userData.schoolAddress || '',
+  };
+
+  return fetch(`https://api.hubapi.com/crm/v3/objects/contacts/${contactId}`, {
+    method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${HUBSPOT_API_KEY}`,
