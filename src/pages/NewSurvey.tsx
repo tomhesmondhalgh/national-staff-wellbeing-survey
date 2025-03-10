@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -24,7 +23,6 @@ const NewSurvey = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [savedSurveyId, setSavedSurveyId] = useState<string | null>(null);
 
-  // Check for authentication 
   useEffect(() => {
     if (!user) {
       setIsLoading(true);
@@ -56,11 +54,9 @@ const NewSurvey = () => {
         return;
       }
 
-      // Format the survey data for Supabase
       const surveyDate = new Date(data.date);
       const closeDate = data.closeDate ? new Date(data.closeDate) : null;
       
-      // Save the survey to Supabase
       const { data: savedSurvey, error } = await supabase
         .from('survey_templates')
         .insert({
@@ -79,10 +75,8 @@ const NewSurvey = () => {
       
       console.log('Saved survey:', savedSurvey);
       
-      // Store the survey ID for preview/send functionality
       setSavedSurveyId(savedSurvey.id);
 
-      // Add custom questions to the survey if any selected
       if (customQuestionIds && customQuestionIds.length > 0) {
         const surveyQuestionLinks = customQuestionIds.map(questionId => ({
           survey_id: savedSurvey.id,
@@ -95,7 +89,6 @@ const NewSurvey = () => {
           
         if (linkError) {
           console.error('Error linking custom questions:', linkError);
-          // Continue even if linking fails
         }
       }
 
@@ -103,7 +96,6 @@ const NewSurvey = () => {
         description: "Your survey has been saved. You can now preview or send it."
       });
       
-      // Redirect to the edit page for the new survey
       navigate(`/surveys/${savedSurvey.id}/edit`);
       
     } catch (error) {
@@ -118,7 +110,6 @@ const NewSurvey = () => {
 
   const handlePreviewSurvey = () => {
     if (savedSurveyId) {
-      // Open preview in new tab with proper parameters
       window.open(`/survey?id=${savedSurveyId}&preview=true`, '_blank');
     } else {
       toast.error("Save the survey first", {
@@ -128,7 +119,6 @@ const NewSurvey = () => {
   };
 
   const handleSendSurvey = () => {
-    // This would be implemented in EditSurvey.tsx as we redirect to edit page after saving
     toast.info("Navigate to the survey's edit page to send it", {
       description: "After saving, you'll be redirected to the edit page where you can send the survey."
     });

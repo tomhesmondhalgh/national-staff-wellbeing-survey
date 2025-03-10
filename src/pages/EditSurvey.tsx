@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -29,7 +28,6 @@ const EditSurvey = () => {
       try {
         if (!id) return;
         
-        // Fetch survey data
         const { data, error } = await supabase
           .from('survey_templates')
           .select('*')
@@ -43,7 +41,6 @@ const EditSurvey = () => {
           return;
         }
         
-        // Transform data for form
         setSurveyData({
           name: data.name,
           date: new Date(data.date),
@@ -51,7 +48,6 @@ const EditSurvey = () => {
           recipients: data.emails || ''
         });
         
-        // Fetch any custom questions linked to this survey
         const { data: linkData, error: linkError } = await supabase
           .from('survey_questions')
           .select('question_id')
@@ -80,11 +76,9 @@ const EditSurvey = () => {
     setIsSubmitting(true);
     
     try {
-      // Format date properly for Supabase
       const updateDate = new Date(data.date);
       const updateCloseDate = data.closeDate ? new Date(data.closeDate) : null;
       
-      // Update survey template in Supabase
       const { error } = await supabase
         .from('survey_templates')
         .update({
@@ -98,7 +92,6 @@ const EditSurvey = () => {
       
       if (error) throw error;
       
-      // Handle custom questions - first remove existing links
       const { error: deleteError } = await supabase
         .from('survey_questions')
         .delete()
@@ -108,7 +101,6 @@ const EditSurvey = () => {
         console.error('Error removing existing custom question links:', deleteError);
       }
       
-      // Add new links for selected custom questions
       if (selectedCustomQuestionIds.length > 0) {
         const surveyQuestionLinks = selectedCustomQuestionIds.map(questionId => ({
           survey_id: id,
@@ -124,7 +116,6 @@ const EditSurvey = () => {
         }
       }
       
-      // Success message
       toast.success("Survey updated successfully", {
         description: "Your changes have been saved."
       });
@@ -141,7 +132,6 @@ const EditSurvey = () => {
 
   const handlePreviewSurvey = () => {
     if (id) {
-      // Open preview in new tab with proper parameters
       window.open(`/survey?id=${id}&preview=true`, '_blank');
     } else {
       toast.error("Survey not found", {
@@ -156,7 +146,6 @@ const EditSurvey = () => {
     setIsSending(true);
     
     try {
-      // Get the survey data first to confirm recipients
       const { data: survey, error: surveyError } = await supabase
         .from('survey_templates')
         .select('*')
@@ -170,7 +159,6 @@ const EditSurvey = () => {
         return;
       }
       
-      // Check if there are recipients
       if (!survey.emails || survey.emails.trim() === '') {
         toast.error("No recipients specified", {
           description: "Please add email recipients before sending the survey."
@@ -178,11 +166,9 @@ const EditSurvey = () => {
         return;
       }
       
-      // Generate survey link
       const baseUrl = window.location.origin;
       const surveyUrl = `${baseUrl}/survey?id=${id}`;
       
-      // Process email addresses: trim spaces, split by commas
       const emails = survey.emails
         .split(',')
         .map(email => email.trim())
@@ -195,7 +181,6 @@ const EditSurvey = () => {
         return;
       }
       
-      // Call the Edge Function to send emails
       const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-survey-email', {
         body: {
           surveyId: id,

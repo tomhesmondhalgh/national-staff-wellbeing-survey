@@ -1,4 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { SurveyFormData } from '../components/surveys/SurveyForm';
 import MainLayout from '../components/layout/MainLayout';
 import SurveyIntro from '../components/survey-form/SurveyIntro';
@@ -9,7 +11,7 @@ import RatingQuestion from '../components/survey-form/RatingQuestion';
 import TextQuestion from '../components/survey-form/TextQuestion';
 import SubmitButton from '../components/survey-form/SubmitButton';
 import { roleOptions, agreementOptions, frequencyOptions } from '../components/survey-form/constants';
-import { SurveyTemplate } from '../utils/surveyUtils';
+import { SurveyTemplate, getSurveyById } from '../utils/surveyUtils';
 import { supabase } from '../lib/supabase';
 import { CustomQuestion } from '../types/customQuestions';
 import CustomTextQuestion from '../components/survey-form/CustomTextQuestion';
@@ -21,11 +23,19 @@ interface PreviewData extends SurveyFormData {
   customQuestionIds?: string[];
 }
 
-const SurveyPreview = () => {
-  const [surveyData, setSurveyData] = useState<PreviewData | null>(null);
+const SurveyForm = () => {
+  const [surveyData, setSurveyData] = useState<SurveyTemplate | null>(null);
   const [customQuestions, setCustomQuestions] = useState<CustomQuestion[]>([]);
-  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { orientation, isMobile } = useOrientation();
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  const queryParams = new URLSearchParams(location.search);
+  const surveyId = queryParams.get('id');
+  const isPreview = queryParams.get('preview') === 'true';
   
   const [formState, setFormState] = useState({
     role: '',
@@ -45,50 +55,64 @@ const SurveyPreview = () => {
     customAnswers: {} as Record<string, string>,
   });
 
+  // Load survey data from Supabase or from preview data
   useEffect(() => {
-    // Retrieve the preview data from sessionStorage
-    const storedData = sessionStorage.getItem('previewSurveyData');
-    if (storedData) {
+    const loadSurveyData = async () => {
+      setIsLoading(true);
+      
       try {
-        const parsedData = JSON.parse(storedData);
-        console.log('Retrieved preview data:', parsedData);
-        setSurveyData(parsedData);
-
-        // If we have custom question IDs, fetch those questions
-        if (parsedData.customQuestionIds && parsedData.customQuestionIds.length > 0) {
-          fetchCustomQuestions(parsedData.customQuestionIds);
+        if (!surveyId) {
+          setError('Survey ID is missing');
+          setIsLoading(false);
+          return;
         }
-      } catch (e) {
-        console.error('Error parsing survey preview data:', e);
+        
+        // Load the survey template from Supabase
+        const survey = await getSurveyById(surveyId);
+        
+        if (!survey) {
+          setError('Survey not found');
+          setIsLoading(false);
+          return;
+        }
+        
+        setSurveyData(survey);
+        
+        // Fetch custom questions for this survey
+        const { data: questionLinks, error: linksError } = await supabase
+          .from('survey_questions')
+          .select('question_id')
+          .eq('survey_id', surveyId);
+          
+        if (linksError) {
+          console.error('Error fetching question links:', linksError);
+        } else if (questionLinks && questionLinks.length > 0) {
+          const questionIds = questionLinks.map(link => link.question_id);
+          
+          // Fetch the actual questions
+          const { data: questions, error: questionsError } = await supabase
+            .from('custom_questions')
+            .select('*')
+            .in('id', questionIds);
+            
+          if (questionsError) {
+            console.error('Error fetching custom questions:', questionsError);
+          } else {
+            setCustomQuestions(questions || []);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading survey:', err);
+        setError('Error loading survey');
+      } finally {
+        setIsLoading(false);
       }
-    } else {
-      console.error('No survey preview data found in sessionStorage');
-    }
-  }, []);
-
-  const fetchCustomQuestions = async (questionIds: string[]) => {
-    if (!questionIds.length) return;
+    };
     
-    setIsLoadingQuestions(true);
-    try {
-      const { data, error } = await supabase
-        .from('custom_questions')
-        .select('*')
-        .in('id', questionIds);
-      
-      if (error) {
-        throw error;
-      }
-      
-      setCustomQuestions(data || []);
-    } catch (e) {
-      console.error('Error fetching custom questions:', e);
-    } finally {
-      setIsLoadingQuestions(false);
-    }
-  };
+    loadSurveyData();
+  }, [surveyId]);
 
-  // Mock form handlers that don't actually submit anything
+  // Mock form handlers that don't actually submit in preview mode
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
@@ -110,29 +134,54 @@ const SurveyPreview = () => {
     const { value } = e.target;
     setFormState(prev => ({ ...prev, recommendationScore: value }));
   };
+  
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (isPreview) {
+      // In preview mode, just show a toast or alert
+      alert('This is a preview. In the actual survey, responses would be recorded.');
+      return;
+    }
+    
+    // Here would be the actual submission code for real surveys
+    setIsSubmitting(true);
+    
+    try {
+      // Actual submission logic would go here
+      // ...
+      
+      // Navigate to completion page
+      navigate('/survey-complete');
+    } catch (err) {
+      console.error('Error submitting survey:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-  if (!surveyData) {
+  if (isLoading) {
     return (
       <MainLayout>
         <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto bg-white shadow-sm rounded-lg p-6 sm:p-10">
-            <SurveyNotFound />
-            <p className="text-center text-gray-600 mt-4">Preview data not found. Please go back and try again.</p>
+            <div className="flex justify-center">
+              <p>Loading survey...</p>
+            </div>
           </div>
         </div>
       </MainLayout>
     );
   }
 
-  // Create a complete SurveyTemplate object with all required properties
-  const surveyTemplate: SurveyTemplate = {
-    id: 'preview',
-    name: surveyData.name,
-    date: surveyData.date ? new Date(surveyData.date).toISOString() : new Date().toISOString(),
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    status: 'Scheduled'
-  };
+  if (error || !surveyData) {
+    return (
+      <MainLayout>
+        <SurveyNotFound />
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -142,25 +191,27 @@ const SurveyPreview = () => {
       
       <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
-          {/* Preview mode banner */}
-          <div className="bg-brandPurple-50 p-4 rounded-lg mb-6 text-center border border-brandPurple-200">
-            <div className="inline-block p-2 bg-brandPurple-100 rounded-full mb-2">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#6C47FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M12 16V12" stroke="#6C47FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M12 8H12.01" stroke="#6C47FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+          {/* Preview mode banner (only shown in preview mode) */}
+          {isPreview && (
+            <div className="bg-brandPurple-50 p-4 rounded-lg mb-6 text-center border border-brandPurple-200">
+              <div className="inline-block p-2 bg-brandPurple-100 rounded-full mb-2">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#6C47FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 16V12" stroke="#6C47FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 8H12.01" stroke="#6C47FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">PREVIEW MODE</h2>
+              <p className="text-gray-600">This is a preview of how your survey will appear to respondents</p>
             </div>
-            <h2 className="text-xl font-bold text-gray-900">PREVIEW MODE</h2>
-            <p className="text-gray-600">This is a preview of how your survey will appear to respondents</p>
-          </div>
+          )}
 
           {/* Main content area */}
           <div className="page-container max-w-4xl mx-auto px-4 py-8">
-            <SurveyIntro surveyTemplate={surveyTemplate} />
+            <SurveyIntro surveyTemplate={surveyData} />
             
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <form onSubmit={(e) => e.preventDefault()}>
+              <form onSubmit={handleSubmit}>
                 {/* Role Selection Dropdown */}
                 <RoleSelect 
                   value={formState.role}
@@ -270,11 +321,7 @@ const SurveyPreview = () => {
                 />
                 
                 {/* Custom Questions */}
-                {isLoadingQuestions ? (
-                  <div className="py-4 text-center">
-                    <p>Loading custom questions...</p>
-                  </div>
-                ) : customQuestions.length > 0 && (
+                {customQuestions.length > 0 && (
                   <div className="mt-8 mb-4">
                     <h3 className="text-lg font-semibold mb-6">Additional Questions</h3>
                     
@@ -302,7 +349,7 @@ const SurveyPreview = () => {
                   </div>
                 )}
                 
-                <SubmitButton isSubmitting={false} />
+                <SubmitButton isSubmitting={isSubmitting} />
               </form>
             </div>
           </div>
@@ -312,4 +359,4 @@ const SurveyPreview = () => {
   );
 };
 
-export default SurveyPreview;
+export default SurveyForm;
