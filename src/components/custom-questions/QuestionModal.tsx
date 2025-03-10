@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
@@ -10,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 interface QuestionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (questionData: Omit<CustomQuestion, 'id' | 'created_at' | 'archived'>) => Promise<void>;
+  onSave: (questionData: Omit<CustomQuestion, 'id' | 'created_at' | 'archived' | 'creator_id'>) => Promise<void>;
   initialData?: CustomQuestion;
 }
 
@@ -58,8 +57,7 @@ export default function QuestionModal({
       await onSave({
         text: questionText,
         type: questionType,
-        options: questionType === 'multiple-choice' ? options.filter(o => o.trim()) : undefined,
-        creator_id: initialData?.creator_id || ''
+        options: questionType === 'multiple-choice' ? options.filter(o => o.trim()) : undefined
       });
       onOpenChange(false);
     } finally {

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useQuestionStore } from '../../hooks/useQuestionStore';
 import { Button } from '../ui/button';
@@ -20,12 +21,12 @@ export default function QuestionsPage() {
     loadQuestions();
   }, [showArchived]);
 
-  const handleCreate = async (questionData: Omit<CustomQuestion, 'id' | 'created_at' | 'archived'>) => {
+  const handleCreate = async (questionData: Omit<CustomQuestion, 'id' | 'created_at' | 'archived' | 'creator_id'>) => {
     await createQuestion(questionData);
     setModalOpen(false);
   };
 
-  const handleEdit = async (questionData: Omit<CustomQuestion, 'id' | 'created_at' | 'archived'>) => {
+  const handleEdit = async (questionData: Omit<CustomQuestion, 'id' | 'created_at' | 'archived' | 'creator_id'>) => {
     if (selectedQuestion) {
       await updateQuestion(selectedQuestion.id, questionData);
       setSelectedQuestion(undefined);

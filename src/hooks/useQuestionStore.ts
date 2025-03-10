@@ -37,9 +37,20 @@ export function useQuestionStore() {
 
   const createQuestion = async (question: Omit<CustomQuestion, 'id' | 'created_at' | 'archived'>) => {
     try {
+      // Get the current user's ID
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      
       const { data, error } = await supabase
         .from('custom_questions')
-        .insert({ ...question, archived: false })
+        .insert({ 
+          ...question, 
+          creator_id: user.id, // Use the current user's ID
+          archived: false 
+        })
         .select()
         .single();
 

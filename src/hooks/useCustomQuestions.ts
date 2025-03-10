@@ -14,12 +14,17 @@ export function useCustomQuestions() {
   }, [refreshTrigger]);
 
   const refreshQuestions = async () => {
-    const questions = await fetchQuestions(false);
-    if (questions.length >= 0) { // Check if fetch was successful
-      setRefreshTrigger(prev => prev + 1);
-      return true;
+    try {
+      const questions = await fetchQuestions(false);
+      if (questions.length >= 0) { // Check if fetch was successful
+        setRefreshTrigger(prev => prev + 1);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error refreshing questions:', error);
+      return false;
     }
-    return false;
   };
 
   return {
