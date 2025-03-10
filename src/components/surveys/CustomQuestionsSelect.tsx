@@ -64,19 +64,19 @@ const CustomQuestionsSelect: React.FC<CustomQuestionsSelectProps> = ({
     <div className="mb-8">
       <Collapsible open={isOpen} onOpenChange={setIsOpen} className="border border-gray-200 rounded-md">
         <div className="p-4">
-          <div className="flex items-center justify-between cursor-pointer" onClick={() => setIsOpen(!isOpen)}>
-            <div className="flex items-center space-x-2">
-              <h3 className="text-lg font-medium">Custom Questions</h3>
-              {selectedQuestionIds.length > 0 && (
-                <Badge variant="secondary">{selectedQuestionIds.length} selected</Badge>
-              )}
-            </div>
-            <CollapsibleTrigger asChild>
+          <CollapsibleTrigger asChild>
+            <div className="flex items-center justify-between cursor-pointer">
+              <div className="flex items-center space-x-2">
+                <h3 className="text-lg font-medium">Custom Questions</h3>
+                {selectedQuestionIds.length > 0 && (
+                  <Badge variant="secondary">{selectedQuestionIds.length} selected</Badge>
+                )}
+              </div>
               <Button variant="ghost" size="icon">
                 {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
               </Button>
-            </CollapsibleTrigger>
-          </div>
+            </div>
+          </CollapsibleTrigger>
         </div>
         
         <CollapsibleContent>

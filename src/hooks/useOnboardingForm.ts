@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -27,7 +28,7 @@ export type OnboardingFormData = {
 
 export const useOnboardingForm = () => {
   const navigate = useNavigate();
-  const { user, completeProfile } = useAuth();
+  const { user, completeUserProfile } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SchoolSearchResult[]>([]);
@@ -211,7 +212,7 @@ export const useOnboardingForm = () => {
         lastName: user.user_metadata?.last_name || '',
       };
 
-      const { error, success } = await completeProfile(user.id, userData);
+      const { error, success } = await completeUserProfile(user.id, userData);
 
       if (success) {
         toast.success('Profile completed successfully!');

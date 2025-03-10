@@ -12,28 +12,20 @@ export function useSubscription() {
   const { isTestingMode, testingPlan } = useTestingMode();
   const { isAdmin } = useAdminRole();
 
-  console.log('useSubscription - Initialized with user:', user ? 'exists' : 'null', '- Testing mode:', isTestingMode);
-
   useEffect(() => {
-    console.log('useSubscription useEffect - User:', user ? 'exists' : 'null');
-    
     async function fetchSubscription() {
       if (!user) {
-        console.log('useSubscription - No user, setting subscription to null');
         setSubscription(null);
         setIsLoading(false);
         return;
       }
 
       try {
-        console.log('useSubscription - Fetching subscription for user:', user.id);
         const userSubscription = await getUserSubscription(user.id);
-        console.log('useSubscription - Received subscription:', userSubscription);
         setSubscription(userSubscription);
       } catch (error) {
         console.error('Error fetching subscription data:', error);
       } finally {
-        console.log('useSubscription - Setting isLoading to false');
         setIsLoading(false);
       }
     }
@@ -46,8 +38,6 @@ export function useSubscription() {
     plan: testingPlan,
     isActive: true
   } : subscription;
-
-  console.log('useSubscription - Effective subscription:', effectiveSubscription);
 
   const hasAccess = async (requiredPlan: PlanType): Promise<boolean> => {
     if (!user) return false;
