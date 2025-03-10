@@ -114,10 +114,14 @@ export function useQuestionStore() {
       
       setQuestions(prev => prev.map(q => {
         if (q.id === id) {
-          return {
-            ...q,
-            ...updates,
-          };
+          const updatedQuestion = { ...q, ...updates };
+          
+          // Ensure type is correctly formatted when returning to frontend
+          if (dbUpdates.type) {
+            updatedQuestion.type = toFrontendFormat(dbUpdates.type as DatabaseQuestionType);
+          }
+          
+          return updatedQuestion;
         }
         return q;
       }));

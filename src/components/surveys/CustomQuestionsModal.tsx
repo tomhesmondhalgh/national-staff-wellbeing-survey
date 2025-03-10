@@ -1,0 +1,231 @@
+
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Search, X, Check, ArrowRight, Plus, RefreshCw } from 'lucide-react';
+import { useCustomQuestions } from '../../hooks/useCustomQuestions';
+import { CustomQuestion } from '../../types/customQuestions';
+import { ScrollArea } from '../ui/scroll-area';
+import { Badge } from '../ui/badge';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+
+interface CustomQuestionsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  selectedIds: string[];
+  onChange: (selectedIds: string[]) => void;
+}
+
+const CustomQuestionsModal: React.FC<CustomQuestionsModalProps> = ({
+  isOpen,
+  onClose,
+  selectedIds,
+  onChange
+}) => {
+  const { questions = [], isLoading, refreshQuestions } = useCustomQuestions();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTab, setSelectedTab] = useState<'all' | 'text' | 'multiple-choice'>('all');
+  const [refreshing, setRefreshing] = useState(false);
+  const navigate = useNavigate();
+  
+  // Filter questions based on search term and selected tab
+  const filteredQuestions = questions
+    .filter(q => !q.archived)
+    .filter(q => q.text.toLowerCase().includes(searchTerm.toLowerCase()))
+    .filter(q => selectedTab === 'all' || q.type === selectedTab);
+  
+  // Handle question selection
+  const toggleQuestion = (questionId: string) => {
+    const newSelected = selectedIds.includes(questionId)
+      ? selectedIds.filter(id => id !== questionId)
+      : [...selectedIds, questionId];
+    
+    onChange(newSelected);
+  };
+  
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+  
+  // Clear search
+  const clearSearch = () => {
+    setSearchTerm('');
+  };
+  
+  // Handle refresh
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true);
+      await refreshQuestions();
+      toast.success("Questions refreshed");
+    } catch (error) {
+      console.error("Error refreshing questions:", error);
+      toast.error("Failed to refresh questions");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+  
+  // Effect to refresh questions when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      refreshQuestions().catch(err => {
+        console.error("Error refreshing questions on open:", err);
+      });
+    }
+  }, [isOpen]);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle>Select Custom Questions</DialogTitle>
+        </DialogHeader>
+        
+        <div className="flex items-center justify-between mb-4 gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+            <Input
+              placeholder="Search questions..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+              className="pl-8 pr-8"
+            />
+            {searchTerm && (
+              <button 
+                onClick={clearSearch}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+          
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={handleRefresh}
+            disabled={refreshing || isLoading}
+          >
+            <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
+          </Button>
+        </div>
+        
+        <div className="flex border-b mb-4">
+          <button
+            className={`px-4 py-2 ${selectedTab === 'all' ? 'border-b-2 border-primary font-medium' : 'text-gray-600'}`}
+            onClick={() => setSelectedTab('all')}
+          >
+            All
+          </button>
+          <button
+            className={`px-4 py-2 ${selectedTab === 'text' ? 'border-b-2 border-primary font-medium' : 'text-gray-600'}`}
+            onClick={() => setSelectedTab('text')}
+          >
+            Text
+          </button>
+          <button
+            className={`px-4 py-2 ${selectedTab === 'multiple-choice' ? 'border-b-2 border-primary font-medium' : 'text-gray-600'}`}
+            onClick={() => setSelectedTab('multiple-choice')}
+          >
+            Multiple Choice
+          </button>
+        </div>
+        
+        {(isLoading || refreshing) ? (
+          <div className="py-12 text-center">
+            <p className="text-gray-500">Loading questions...</p>
+          </div>
+        ) : filteredQuestions.length === 0 ? (
+          <div className="py-12 text-center">
+            <p className="text-gray-500 mb-4">No matching questions found</p>
+            <Button 
+              onClick={() => navigate('/custom-questions')}
+              variant="outline"
+              className="flex items-center gap-2 mx-auto"
+            >
+              <Plus size={16} />
+              Create a New Question
+            </Button>
+          </div>
+        ) : (
+          <ScrollArea className="flex-1 pr-4">
+            <div className="space-y-2">
+              {filteredQuestions.map((question) => (
+                <QuestionCard
+                  key={question.id}
+                  question={question}
+                  isSelected={selectedIds.includes(question.id)}
+                  onToggle={() => toggleQuestion(question.id)}
+                />
+              ))}
+            </div>
+          </ScrollArea>
+        )}
+        
+        <DialogFooter className="flex items-center justify-between mt-4 pt-4 border-t">
+          <div className="text-sm">
+            {selectedIds.length} questions selected
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button onClick={onClose} className="flex items-center gap-2">
+              <Check size={16} />
+              Confirm Selection
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+interface QuestionCardProps {
+  question: CustomQuestion;
+  isSelected: boolean;
+  onToggle: () => void;
+}
+
+const QuestionCard: React.FC<QuestionCardProps> = ({ question, isSelected, onToggle }) => {
+  return (
+    <div 
+      className={`p-3 border rounded-md cursor-pointer transition-colors ${
+        isSelected 
+          ? 'border-primary bg-primary/5' 
+          : 'border-gray-200 hover:border-gray-300 bg-white'
+      }`}
+      onClick={onToggle}
+    >
+      <div className="flex items-start gap-3">
+        <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${
+          isSelected ? 'bg-primary text-white' : 'border border-gray-300'
+        }`}>
+          {isSelected && <Check size={12} />}
+        </div>
+        
+        <div className="flex-1">
+          <p className="font-medium text-sm">{question.text}</p>
+          <div className="flex items-center mt-1 gap-2">
+            <Badge variant="outline" className="text-xs">
+              {question.type === 'text' ? 'Free Text' : 'Multiple Choice'}
+            </Badge>
+            {question.type === 'multiple-choice' && question.options && (
+              <span className="text-xs text-gray-500">
+                {question.options.length} options
+              </span>
+            )}
+          </div>
+        </div>
+        
+        <ArrowRight size={16} className={`text-gray-400 ${isSelected ? 'opacity-100' : 'opacity-0'}`} />
+      </div>
+    </div>
+  );
+};
+
+export default CustomQuestionsModal;
