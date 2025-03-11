@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import { Resend } from "npm:resend@2.0.0";
@@ -79,23 +80,35 @@ const handler = async (req: Request): Promise<Response> => {
     };
     
     const emailData = {
-      from: "Acme <onboarding@resend.dev>",
+      from: "Wellbeing Surveys <noreply@humankindaward.com>",
       to: [invitation.email],
-      subject: `You've been invited to join ${orgName}`,
+      subject: "You have been invited to access our wellbeing surveys",
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h1 style="color: #6941C6; text-align: center;">Team Invitation</h1>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+          <h1 style="color: #6941C6; text-align: center; margin-bottom: 20px;">You've Been Invited!</h1>
+          
           <p>Hello,</p>
-          <p>${inviterName} has invited you to join <strong>${orgName}</strong> as a <strong>${formatRole(invitation.role)}</strong>.</p>
-          <p>Click the button below to accept this invitation:</p>
+          
+          <p>${inviterName} has invited you to join <strong>${orgName}</strong> as a <strong>${formatRole(invitation.role)}</strong> to access their wellbeing surveys platform.</p>
+          
+          <p>With this access, you'll be able to:</p>
+          <ul style="margin-bottom: 20px;">
+            <li>View and analyze wellbeing data</li>
+            <li>Track progress over time</li>
+            <li>Create action plans to improve wellbeing outcomes</li>
+          </ul>
+          
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${acceptUrl}" style="background-color: #6941C6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
-              Accept Invitation
+            <a href="${acceptUrl}" style="background-color: #6941C6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">
+              Accept Invitation & Create Account
             </a>
           </div>
-          <p>This invitation will expire in 7 days.</p>
-          <p>If you have any questions, please contact the person who invited you.</p>
-          <p>Thank you,<br>Education Wellbeing Team</p>
+          
+          <p style="margin-top: 20px; font-size: 14px; color: #666;">This invitation will expire in 7 days. If you have any questions, please contact the person who invited you.</p>
+          
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 12px;">
+            <p>Wellbeing Surveys | Improving organizational wellbeing</p>
+          </div>
         </div>
       `,
     };
