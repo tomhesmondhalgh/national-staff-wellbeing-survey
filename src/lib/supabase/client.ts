@@ -1,3 +1,4 @@
+
 import { createClient } from "@supabase/supabase-js";
 
 // Check if environment variables exist, otherwise use placeholders for development
@@ -113,7 +114,7 @@ export interface Invitation {
   accepted_at: string | null;
 }
 
-// Define types for Supabase responses
+// Define types for Supabase responses - updated to match the actual structure
 interface ProfileData {
   id: string;
   name?: string;
@@ -210,24 +211,27 @@ export const getUserOrganizations = async (): Promise<Organization[]> => {
 
     if (groupError) {
       console.error('Error fetching group-based organization memberships:', groupError);
-    } else if (groupOrgs) {
-      // Add group-based orgs
-      (groupOrgs as GroupOrganizationsResponse[]).forEach(item => {
+    } else if (groupOrgs && Array.isArray(groupOrgs)) {
+      // Process the response more safely
+      groupOrgs.forEach(item => {
         if (item.group_organizations && Array.isArray(item.group_organizations)) {
           item.group_organizations.forEach(go => {
-            if (go.profiles && 
-                typeof go.profiles === 'object' &&
-                go.profiles.id && 
-                (go.profiles.name || go.profiles.school_name) && 
-                go.profiles.created_at && 
-                !organizations.some(o => o.id === go.organization_id)) {
-              // Use school_name if available, fallback to name
-              const orgName = go.profiles.school_name || go.profiles.name || 'Unknown Organization';
-              organizations.push({
-                id: go.profiles.id,
-                name: orgName,
-                created_at: go.profiles.created_at
-              });
+            // Safe check for profiles
+            if (go.profiles && typeof go.profiles === 'object') {
+              const profile = go.profiles as ProfileData;
+              // Check if we have the minimum required data
+              if (profile.id && profile.created_at) {
+                // Only add organizations that aren't already in our list
+                if (!organizations.some(o => o.id === go.organization_id)) {
+                  // Use school_name if available, fallback to name, or use unknown
+                  const orgName = profile.school_name || profile.name || 'Unknown Organization';
+                  organizations.push({
+                    id: profile.id,
+                    name: orgName,
+                    created_at: profile.created_at
+                  });
+                }
+              }
             }
           });
         }
