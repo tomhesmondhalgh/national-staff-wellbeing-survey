@@ -27,6 +27,7 @@ const Team = () => {
   useEffect(() => {
     // For debugging purposes
     console.log('Team page - Current user role:', userRole);
+    console.log('Current organization:', currentOrganization?.name);
     
     // Simplified role check
     const checkAdmin = () => {
@@ -34,14 +35,16 @@ const Team = () => {
           userRole === 'group_admin' || 
           userRole === 'organization_admin' ||
           (isTestingMode && ['administrator', 'group_admin', 'organization_admin'].includes(testingRole || ''))) {
+        console.log('User has admin access to team page');
         setIsAdmin(true);
       } else {
+        console.log('User does NOT have admin access to team page, role:', userRole);
         setIsAdmin(false);
       }
     };
     
     checkAdmin();
-  }, [userRole, isTestingMode, testingRole]);
+  }, [userRole, isTestingMode, testingRole, currentOrganization]);
 
   // If user doesn't have admin permissions, show a message
   if (!isAdmin) {
@@ -59,6 +62,7 @@ const Team = () => {
             <AlertDescription>
               <p>You need administrator permissions to access this page.</p>
               <p className="mt-2 text-sm">Current role: {userRole || 'none'}</p>
+              <p className="mt-2 text-sm">Current organization: {currentOrganization?.name || 'none'}</p>
               {isTestingMode && (
                 <p className="mt-2 text-sm">Current testing role: {testingRole || 'none'}</p>
               )}

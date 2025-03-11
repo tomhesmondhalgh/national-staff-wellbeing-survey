@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Users } from 'lucide-react';
+import { usePermissions } from '../../hooks/usePermissions';
 
 interface NavLinksProps {
   canManageTeam: boolean;
@@ -10,6 +11,11 @@ interface NavLinksProps {
 
 const NavLinks: React.FC<NavLinksProps> = ({ canManageTeam, setIsMenuOpen }) => {
   const location = useLocation();
+  const { userRole } = usePermissions();
+  
+  useEffect(() => {
+    console.log('NavLinks component - canManageTeam:', canManageTeam, 'userRole:', userRole);
+  }, [canManageTeam, userRole]);
   
   const handleClick = () => {
     if (setIsMenuOpen) {

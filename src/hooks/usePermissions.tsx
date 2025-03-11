@@ -28,13 +28,6 @@ export function usePermissions() {
         return;
       }
 
-      // If no organization is selected, we can't determine a role
-      if (!currentOrganization) {
-        setUserRole(null);
-        setIsLoading(false);
-        return;
-      }
-
       try {
         // Check if user is system administrator
         const { data: adminRole } = await supabase
@@ -45,50 +38,75 @@ export function usePermissions() {
           .maybeSingle();
           
         if (adminRole) {
+          console.log('User is administrator:', user.email);
           setUserRole('administrator');
           setIsLoading(false);
           return;
         }
         
+        // If no organization is selected, we can't determine organization-specific roles
+        if (!currentOrganization) {
+          console.log('No organization selected, cannot determine organization role');
+          setIsLoading(false);
+          return;
+        }
+        
         // Check if user is organization admin for current organization
-        const { data: orgMember } = await supabase
+        const { data: orgMember, error: orgError } = await supabase
           .from('organization_members')
           .select('role')
           .eq('user_id', user.id)
           .eq('organization_id', currentOrganization.id)
           .maybeSingle();
           
-        if (orgMember) {
+        if (orgError) {
+          console.error('Error fetching organization role:', orgError);
+        }
+        
+        if (orgMember && orgMember.role) {
+          console.log('User has organization role:', orgMember.role, 'for organization:', currentOrganization.name);
           setUserRole(orgMember.role as UserRoleType);
           setIsLoading(false);
           return;
         }
         
         // Check group-based access
-        const { data: groupRoles } = await supabase
-          .from('group_members')
-          .select(`
-            role,
-            group_id,
-            group_organizations!inner(organization_id)
-          `)
-          .eq('user_id', user.id);
+        try {
+          const { data: groupRoles, error: groupError } = await supabase
+            .from('group_members')
+            .select(`
+              role,
+              group_id,
+              groups:group_id(
+                group_organizations!inner(organization_id)
+              )
+            `)
+            .eq('user_id', user.id);
+            
+          if (groupError) {
+            console.error('Error fetching group roles:', groupError);
+          }
           
-        if (groupRoles) {
-          for (const groupRole of groupRoles) {
-            if (groupRole.group_organizations && Array.isArray(groupRole.group_organizations)) {
-              for (const groupOrg of groupRole.group_organizations) {
-                if (groupOrg.organization_id === currentOrganization.id) {
-                  setUserRole(groupRole.role as UserRoleType);
-                  setIsLoading(false);
-                  return;
+          if (groupRoles && groupRoles.length > 0) {
+            for (const groupRole of groupRoles) {
+              if (groupRole.groups && groupRole.groups.group_organizations) {
+                for (const groupOrg of groupRole.groups.group_organizations) {
+                  if (groupOrg.organization_id === currentOrganization.id) {
+                    console.log('User has group role:', groupRole.role, 'for organization:', currentOrganization.name);
+                    setUserRole(groupRole.role as UserRoleType);
+                    setIsLoading(false);
+                    return;
+                  }
                 }
               }
             }
           }
+        } catch (error) {
+          console.error('Error in group membership check:', error);
         }
         
         // No role found
+        console.log('No role found for user:', user.email);
         setUserRole(null);
       } catch (error) {
         console.error('Error fetching user role:', error);
