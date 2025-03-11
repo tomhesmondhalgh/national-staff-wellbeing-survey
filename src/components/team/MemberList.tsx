@@ -1,4 +1,5 @@
 
+// Replace the import for supabase
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '../ui/button';
@@ -6,7 +7,7 @@ import { UserPlus, Search, MoreVertical, AlertCircle } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useOrganization } from '../../contexts/OrganizationContext';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';  // Updated import
 import { OrganizationMember, UserRoleType } from '../../lib/supabase/client';
 import InviteMemberDialog from './InviteMemberDialog';
 import { toast } from 'sonner';

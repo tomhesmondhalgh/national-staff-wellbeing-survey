@@ -6,6 +6,7 @@ import { OrganizationProvider } from './contexts/OrganizationContext';
 import { TestingModeProvider } from './contexts/TestingModeContext';
 import { Toaster as SonnerToaster } from 'sonner';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Pages
 import Index from './pages/Index';
@@ -33,93 +34,105 @@ import InvitationAccept from './pages/InvitationAccept';
 
 import './App.css';
 
+// Create a new QueryClient instance
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <OrganizationProvider>
-          <TestingModeProvider>
-            <Routes>
-              {/* Public routes */}
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<SignUp />} />
-              <Route path="/email-confirmation" element={<EmailConfirmation />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/survey" element={<SurveyForm />} />
-              <Route path="/survey-complete" element={<SurveyComplete />} />
-              <Route path="/survey-closed" element={<SurveyClosed />} />
-              <Route path="/invitation/accept" element={<InvitationAccept />} />
-              
-              {/* Protected routes */}
-              <Route path="/onboarding" element={
-                <ProtectedRoute>
-                  <Onboarding />
-                </ProtectedRoute>
-              } />
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/surveys" element={
-                <ProtectedRoute>
-                  <Surveys />
-                </ProtectedRoute>
-              } />
-              <Route path="/surveys/:id/edit" element={
-                <ProtectedRoute>
-                  <EditSurvey />
-                </ProtectedRoute>
-              } />
-              <Route path="/new-survey" element={
-                <ProtectedRoute>
-                  <NewSurvey />
-                </ProtectedRoute>
-              } />
-              <Route path="/analysis" element={
-                <ProtectedRoute>
-                  <Analysis />
-                </ProtectedRoute>
-              } />
-              <Route path="/upgrade" element={
-                <ProtectedRoute>
-                  <Upgrade />
-                </ProtectedRoute>
-              } />
-              <Route path="/improve" element={
-                <ProtectedRoute>
-                  <Improve />
-                </ProtectedRoute>
-              } />
-              <Route path="/profile" element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin" element={
-                <ProtectedRoute>
-                  <Admin />
-                </ProtectedRoute>
-              } />
-              <Route path="/custom-questions" element={
-                <ProtectedRoute>
-                  <CustomQuestions />
-                </ProtectedRoute>
-              } />
-              <Route path="/team" element={
-                <ProtectedRoute>
-                  <Team />
-                </ProtectedRoute>
-              } />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <Toaster />
-            <SonnerToaster closeButton position="bottom-right" />
-          </TestingModeProvider>
-        </OrganizationProvider>
-      </AuthProvider>
-    </Router>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <AuthProvider>
+          <OrganizationProvider>
+            <TestingModeProvider>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<SignUp />} />
+                <Route path="/email-confirmation" element={<EmailConfirmation />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/survey" element={<SurveyForm />} />
+                <Route path="/survey-complete" element={<SurveyComplete />} />
+                <Route path="/survey-closed" element={<SurveyClosed />} />
+                <Route path="/invitation/accept" element={<InvitationAccept />} />
+                
+                {/* Protected routes */}
+                <Route path="/onboarding" element={
+                  <ProtectedRoute>
+                    <Onboarding />
+                  </ProtectedRoute>
+                } />
+                <Route path="/dashboard" element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/surveys" element={
+                  <ProtectedRoute>
+                    <Surveys />
+                  </ProtectedRoute>
+                } />
+                <Route path="/surveys/:id/edit" element={
+                  <ProtectedRoute>
+                    <EditSurvey />
+                  </ProtectedRoute>
+                } />
+                <Route path="/new-survey" element={
+                  <ProtectedRoute>
+                    <NewSurvey />
+                  </ProtectedRoute>
+                } />
+                <Route path="/analysis" element={
+                  <ProtectedRoute>
+                    <Analysis />
+                  </ProtectedRoute>
+                } />
+                <Route path="/upgrade" element={
+                  <ProtectedRoute>
+                    <Upgrade />
+                  </ProtectedRoute>
+                } />
+                <Route path="/improve" element={
+                  <ProtectedRoute>
+                    <Improve />
+                  </ProtectedRoute>
+                } />
+                <Route path="/profile" element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin" element={
+                  <ProtectedRoute>
+                    <Admin />
+                  </ProtectedRoute>
+                } />
+                <Route path="/custom-questions" element={
+                  <ProtectedRoute>
+                    <CustomQuestions />
+                  </ProtectedRoute>
+                } />
+                <Route path="/team" element={
+                  <ProtectedRoute>
+                    <Team />
+                  </ProtectedRoute>
+                } />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <Toaster />
+              <SonnerToaster closeButton position="bottom-right" />
+            </TestingModeProvider>
+          </OrganizationProvider>
+        </AuthProvider>
+      </Router>
+    </QueryClientProvider>
   );
 }
 

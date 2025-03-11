@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '../ui/button';
-import { UserPlus, Search, MoreVertical, X, MailIcon, AlertCircle } from 'lucide-react';
+import { UserPlus, Search, MoreVertical, MailIcon, AlertCircle } from 'lucide-react';
 import { Input } from '../ui/input';
 import { useOrganization } from '../../contexts/OrganizationContext';
 import { supabase } from '../../lib/supabase';
@@ -46,12 +45,10 @@ const InvitationsList = () => {
     enabled: !!currentOrganization
   });
 
-  // Filter invitations based on search term
   const filteredInvitations = invitationsData?.invitations.filter(invitation => {
     return searchTerm === '' || invitation.email.toLowerCase().includes(searchTerm.toLowerCase());
   }) || [];
   
-  // Pagination
   const totalPages = Math.ceil(filteredInvitations.length / ITEMS_PER_PAGE);
   const paginatedInvitations = filteredInvitations.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -86,11 +83,10 @@ const InvitationsList = () => {
 
   const handleResendInvitation = async (invitation: Invitation) => {
     try {
-      // Update the expiration date
       const { error: updateError } = await supabase
         .from('invitations')
         .update({
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         })
         .eq('id', invitation.id);
         
@@ -98,7 +94,6 @@ const InvitationsList = () => {
         throw updateError;
       }
       
-      // Send invitation email
       const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
         body: {
           email: invitation.email,
@@ -188,7 +183,7 @@ const InvitationsList = () => {
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              setCurrentPage(1); // Reset to first page on search
+              setCurrentPage(1);
             }}
             className="pl-10"
           />
