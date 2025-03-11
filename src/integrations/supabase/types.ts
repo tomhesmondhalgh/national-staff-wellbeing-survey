@@ -1046,6 +1046,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_invitation: {
+        Args: {
+          user_email: string
+          org_id: string
+          user_role: string
+          invitation_token: string
+          inviter_id: string
+          expiry_date: string
+        }
+        Returns: {
+          id: string
+          email: string
+          organization_id: string
+          created_at: string
+        }[]
+      }
       create_or_update_profile: {
         Args: {
           profile_id: string
@@ -1056,6 +1072,23 @@ export type Database = {
           profile_school_address: string
         }
         Returns: undefined
+      }
+      get_organization_invitations: {
+        Args: {
+          org_id: string
+        }
+        Returns: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          group_id: string | null
+          id: string
+          invited_by: string
+          organization_id: string | null
+          role: Database["public"]["Enums"]["user_role_type"]
+          token: string
+        }[]
       }
       get_user_organizations: {
         Args: {

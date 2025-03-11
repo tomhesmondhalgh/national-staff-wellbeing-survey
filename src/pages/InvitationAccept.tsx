@@ -39,23 +39,15 @@ const InvitationAccept: React.FC = () => {
         }
 
         // Check if invitation is already accepted
-        if (data.status === 'accepted') {
+        if (data.accepted_at) {
           throw new Error('This invitation has already been accepted');
         }
 
-        // Check if invitation is expired (older than 7 days)
-        const createdAt = new Date(data.created_at);
+        // Check if invitation is expired
+        const expiresAt = new Date(data.expires_at);
         const now = new Date();
-        const diffTime = Math.abs(now.getTime() - createdAt.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        if (diffDays > 7) {
-          // Update invitation status to expired
-          await supabase
-            .from('invitations')
-            .update({ status: 'expired' })
-            .eq('id', data.id);
-            
+        
+        if (expiresAt < now) {
           throw new Error('This invitation has expired');
         }
 
@@ -112,7 +104,7 @@ const InvitationAccept: React.FC = () => {
       // Update invitation status
       const { error: updateError } = await supabase
         .from('invitations')
-        .update({ status: 'accepted' })
+        .update({ accepted_at: new Date().toISOString() })
         .eq('id', invitation.id);
 
       if (updateError) {
