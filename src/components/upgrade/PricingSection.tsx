@@ -1,11 +1,24 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import PlanCard, { PlanType } from './PlanCard';
 import { useSubscription } from '../../hooks/useSubscription';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../hooks/use-toast';
+import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
+
+interface UserProfile {
+  firstName: string;
+  lastName: string;
+  email: string;
+  schoolName: string;
+  schoolAddress: string;
+}
 
 const PricingSection: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const {
     subscription,
     isLoading,
@@ -15,6 +28,39 @@ const PricingSection: React.FC = () => {
     isPremium
   } = useSubscription();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, school_name, school_address')
+          .eq('id', user.id)
+          .single();
+        
+        if (error) {
+          console.error('Error fetching user profile:', error);
+          return;
+        }
+        
+        if (data) {
+          setUserProfile({
+            firstName: data.first_name || '',
+            lastName: data.last_name || '',
+            email: user.email || '',
+            schoolName: data.school_name || '',
+            schoolAddress: data.school_address || ''
+          });
+        }
+      } catch (error) {
+        console.error('Error in fetchUserProfile:', error);
+      }
+    };
+    
+    fetchUserProfile();
+  }, [user]);
 
   const handleUpgrade = async (priceId: string, planType: 'foundation' | 'progress' | 'premium', purchaseType: 'subscription' | 'one-time') => {
     try {
@@ -31,10 +77,10 @@ const PricingSection: React.FC = () => {
           successUrl: `${window.location.origin}/dashboard?payment=success`,
           cancelUrl: `${window.location.origin}/upgrade?payment=cancelled`,
           billingDetails: {
-            schoolName: subscription?.schoolName || '',
-            address: subscription?.schoolAddress || '',
-            contactName: `${subscription?.firstName || ''} ${subscription?.lastName || ''}`.trim(),
-            contactEmail: subscription?.email || ''
+            schoolName: userProfile?.schoolName || '',
+            address: userProfile?.schoolAddress || '',
+            contactName: `${userProfile?.firstName || ''} ${userProfile?.lastName || ''}`.trim(),
+            contactEmail: userProfile?.email || ''
           }
         })
       });
