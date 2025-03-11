@@ -30,7 +30,7 @@ const NavLinks: React.FC<NavLinksProps> = ({ canManageTeam, setIsMenuOpen }) => 
       </Link>
       <Link 
         to="/surveys" 
-        className={`nav-link ${location.pathname === '/surveys' || location.pathname === '/new-survey' ? 'text-brandPurple-600' : ''}`}
+        className={`nav-link ${location.pathname.startsWith('/survey') ? 'text-brandPurple-600' : ''}`}
         onClick={handleClick}
       >
         Survey
@@ -50,11 +50,11 @@ const NavLinks: React.FC<NavLinksProps> = ({ canManageTeam, setIsMenuOpen }) => 
         Improve
       </Link>
       
-      {/* Explicitly show team link regardless of canManageTeam for debugging */}
       <Link 
         to="/team" 
         className={`nav-link flex items-center ${location.pathname === '/team' ? 'text-brandPurple-600' : ''}`}
         onClick={handleClick}
+        data-testid="team-link"
       >
         <Users size={16} className="mr-1" />
         Team
