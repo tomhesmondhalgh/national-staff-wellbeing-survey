@@ -21,24 +21,32 @@ const Team = () => {
   const { userRole, error: permissionsError, isLoading: permissionsLoading } = usePermissions();
   const { currentOrganization } = useOrganization();
   const { user } = useAuth();
-  const { isTestingMode, testingRole, setTestingRole } = useTestingMode();
+  const { isTestingMode, testingRole, testingPlan, setTestingRole } = useTestingMode();
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
-  const { isLoading: isSubscriptionLoading, isProgress, isPremium, hasAccess } = useSubscription();
+  const { isLoading: isSubscriptionLoading, isPremium, isProgress } = useSubscription();
   const [hasProgressPlan, setHasProgressPlan] = useState<boolean | null>(null);
   
-  // Check if user has Progress plan
+  // Check if user has Progress plan based on subscription or testing mode
   useEffect(() => {
-    async function checkAccess() {
-      if (hasAccess) {
-        const canAccess = await hasAccess('progress');
-        setHasProgressPlan(canAccess);
+    const checkProgressPlan = () => {
+      if (isTestingMode) {
+        console.log('Testing mode plan check: current plan =', testingPlan);
+        // In testing mode, check the testingPlan
+        const hasProgress = testingPlan === 'progress' || testingPlan === 'premium';
+        console.log('Has progress plan in testing mode:', hasProgress);
+        setHasProgressPlan(hasProgress);
+      } else {
+        // Normal subscription check
+        console.log('Normal subscription check:', isProgress, isPremium);
+        setHasProgressPlan(isProgress || isPremium);
       }
-    }
+    };
+    
     if (!isSubscriptionLoading) {
-      checkAccess();
+      checkProgressPlan();
     }
-  }, [hasAccess, isSubscriptionLoading]);
+  }, [isSubscriptionLoading, isProgress, isPremium, isTestingMode, testingPlan]);
   
   // Determine if the user can see the Organisations tab
   // Only group_admin and administrator roles can see the Organisations tab
@@ -62,6 +70,7 @@ const Team = () => {
     // For debugging purposes
     console.log('Team page - Current user role:', userRole);
     console.log('Current organisation:', currentOrganization?.name);
+    console.log('Testing mode active:', isTestingMode, 'Testing plan:', testingPlan);
     
     // Simplified role check
     const checkAdmin = () => {
@@ -78,7 +87,7 @@ const Team = () => {
     };
     
     checkAdmin();
-  }, [userRole, isTestingMode, testingRole, currentOrganization]);
+  }, [userRole, isTestingMode, testingRole, testingPlan, currentOrganization]);
 
   // If permissions are still loading, show a loading indicator
   if (permissionsLoading || isSubscriptionLoading || hasProgressPlan === null) {
@@ -99,7 +108,8 @@ const Team = () => {
   }
 
   // Check if user has Progress plan
-  if (!hasProgressPlan && !isTestingMode) {
+  if (!hasProgressPlan) {
+    console.log('User does not have Progress plan, showing upgrade message');
     return (
       <MainLayout>
         <div className="page-container">
@@ -237,8 +247,8 @@ const Team = () => {
           <Alert variant="default" className="mb-6 bg-blue-50 border-blue-200">
             <AlertCircle className="h-4 w-4 mr-2 text-blue-500" />
             <AlertDescription>
-              <p>Testing Mode is enabled with role: <strong>{testingRole || 'none'}</strong></p>
-              <p className="text-sm mt-1">This is simulating permissions for that role level.</p>
+              <p>Testing Mode is enabled with role: <strong>{testingRole || 'none'}</strong> and plan: <strong>{testingPlan || 'none'}</strong></p>
+              <p className="text-sm mt-1">This is simulating permissions for that role level and subscription plan.</p>
             </AlertDescription>
           </Alert>
         )}
