@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTestingMode } from '../contexts/TestingModeContext';
@@ -27,6 +26,7 @@ export function usePermissions() {
         return;
       }
 
+      // If no organization is selected, we can't determine a role
       if (!currentOrganization) {
         setUserRole(null);
         setIsLoading(false);
@@ -77,14 +77,26 @@ export function usePermissions() {
   // Common permission checks
   const canCreate = async (): Promise<boolean> => hasPermission('editor');
   const canEdit = async (): Promise<boolean> => hasPermission('editor');
-  const canManageTeam = async (): Promise<boolean> => hasPermission('organization_admin');
+  const canManageTeam = async (): Promise<boolean> => {
+    // If in testing mode as admin, always return true for team management
+    if (isTestingMode && 
+        (testingRole === 'administrator' || 
+         testingRole === 'group_admin' || 
+         testingRole === 'organization_admin')) {
+      return true;
+    }
+    
+    return hasPermission('organization_admin');
+  };
   
   // Check if user is a group admin
   const canManageGroups = async (): Promise<boolean> => {
     if (!user) return false;
     
     // If in testing mode with group_admin role, return true
-    if (isTestingMode && testingRole === 'group_admin') {
+    if (isTestingMode && 
+        (testingRole === 'administrator' || 
+         testingRole === 'group_admin')) {
       return true;
     }
     
@@ -108,7 +120,33 @@ export function usePermissions() {
     }
   };
   
-  const isAdmin = async (): Promise<boolean> => hasPermission('administrator');
+  const isAdmin = async (): Promise<boolean> => {
+    // If testing mode is on and user has administrator role in testing
+    if (isTestingMode && testingRole === 'administrator') {
+      return true;
+    }
+    
+    // Otherwise check for real admin privileges
+    try {
+      if (!user) return false;
+      
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'administrator')
+        .maybeSingle();
+        
+      if (error) {
+        throw error;
+      }
+      
+      return !!data;
+    } catch (error) {
+      console.error('Error checking admin permission:', error);
+      return false;
+    }
+  };
 
   return {
     userRole,

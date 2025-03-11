@@ -3,22 +3,33 @@ import React, { useState, useEffect } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
 import { usePermissions } from '../hooks/usePermissions';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import MemberList from '../components/team/MemberList';
 import InvitationsList from '../components/team/InvitationsList';
 import { useOrganization } from '../contexts/OrganizationContext';
 import OrganizationsList from '../components/team/OrganizationsList';
+import { Alert, AlertDescription } from '../components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 const Team = () => {
   const { canManageTeam, isLoading, canManageGroups } = usePermissions();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [permissionChecked, setPermissionChecked] = useState(false);
   const { currentOrganization } = useOrganization();
+  const navigate = useNavigate();
   
   useEffect(() => {
     const checkPermission = async () => {
-      const result = await canManageTeam();
-      setHasPermission(result);
+      try {
+        const result = await canManageTeam();
+        setHasPermission(result);
+      } catch (error) {
+        console.error('Error checking team management permission:', error);
+        setHasPermission(false);
+      } finally {
+        setPermissionChecked(true);
+      }
     };
 
     if (!isLoading) {
@@ -27,7 +38,7 @@ const Team = () => {
   }, [isLoading, canManageTeam]);
 
   // Show loading state while checking permissions
-  if (isLoading || hasPermission === null) {
+  if (isLoading || !permissionChecked) {
     return (
       <MainLayout>
         <div className="page-container">
@@ -40,8 +51,30 @@ const Team = () => {
   }
 
   // Redirect if user doesn't have permission
-  if (!hasPermission) {
+  if (permissionChecked && !hasPermission) {
     return <Navigate to="/dashboard" replace />;
+  }
+
+  // Check if an organization is selected
+  if (!currentOrganization) {
+    return (
+      <MainLayout>
+        <div className="page-container">
+          <PageTitle 
+            title="Team Management" 
+            subtitle="Manage members and permissions for your organization"
+            className="mb-8"
+          />
+          
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4 mr-2" />
+            <AlertDescription>
+              Please select an organization to manage team members.
+            </AlertDescription>
+          </Alert>
+        </div>
+      </MainLayout>
+    );
   }
 
   return (

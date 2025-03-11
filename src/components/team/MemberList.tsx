@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '../ui/button';
-import { UserPlus, Search, MoreVertical } from 'lucide-react';
+import { UserPlus, Search, MoreVertical, AlertCircle } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useOrganization } from '../../contexts/OrganizationContext';
@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import Pagination from '../surveys/Pagination';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import EditRoleDialog from './EditRoleDialog';
+import { Alert, AlertDescription } from '../ui/alert';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -25,10 +26,12 @@ const MemberList = () => {
   const [selectedMember, setSelectedMember] = useState<OrganizationMember | null>(null);
   const [isEditRoleDialogOpen, setIsEditRoleDialogOpen] = useState(false);
 
-  const { data: membersData, isLoading, refetch } = useQuery({
+  const { data: membersData, isLoading, error, refetch } = useQuery({
     queryKey: ['organizationMembers', currentOrganization?.id],
     queryFn: async () => {
-      if (!currentOrganization) return { members: [], profiles: [], total: 0 };
+      if (!currentOrganization) {
+        return { members: [], profiles: [], total: 0 };
+      }
       
       const { data: members, error } = await supabase
         .from('organization_members')
@@ -42,6 +45,11 @@ const MemberList = () => {
       
       // Get user profiles
       const userIds = members.map(member => member.user_id);
+      
+      if (userIds.length === 0) {
+        return { members, profiles: [], total: members.length };
+      }
+      
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
@@ -114,6 +122,7 @@ const MemberList = () => {
     setSelectedMember(null);
   };
 
+  // Display functions
   const getRoleBadgeClass = (role: UserRoleType) => {
     switch (role) {
       case 'organization_admin':
@@ -139,7 +148,25 @@ const MemberList = () => {
   };
 
   if (!currentOrganization) {
-    return <div>Please select an organization to manage team members.</div>;
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4 mr-2" />
+        <AlertDescription>
+          Please select an organization to manage team members.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4 mr-2" />
+        <AlertDescription>
+          Error loading team members. Please try again later.
+        </AlertDescription>
+      </Alert>
+    );
   }
 
   return (

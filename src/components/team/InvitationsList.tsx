@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '../ui/button';
-import { UserPlus, Search, MoreVertical, X, MailIcon } from 'lucide-react';
+import { UserPlus, Search, MoreVertical, X, MailIcon, AlertCircle } from 'lucide-react';
 import { Input } from '../ui/input';
 import { useOrganization } from '../../contexts/OrganizationContext';
 import { supabase } from '../../lib/supabase';
@@ -11,6 +11,7 @@ import InviteMemberDialog from './InviteMemberDialog';
 import { toast } from 'sonner';
 import Pagination from '../surveys/Pagination';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { Alert, AlertDescription } from '../ui/alert';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -20,7 +21,7 @@ const InvitationsList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
 
-  const { data: invitationsData, isLoading, refetch } = useQuery({
+  const { data: invitationsData, isLoading, error, refetch } = useQuery({
     queryKey: ['organizationInvitations', currentOrganization?.id],
     queryFn: async () => {
       if (!currentOrganization) return { invitations: [], total: 0 };
@@ -38,8 +39,8 @@ const InvitationsList = () => {
       }
       
       return {
-        invitations: data,
-        total: data.length
+        invitations: data || [],
+        total: (data || []).length
       };
     },
     enabled: !!currentOrganization
@@ -145,7 +146,25 @@ const InvitationsList = () => {
   };
 
   if (!currentOrganization) {
-    return <div>Please select an organization to manage invitations.</div>;
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4 mr-2" />
+        <AlertDescription>
+          Please select an organization to manage invitations.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4 mr-2" />
+        <AlertDescription>
+          Error loading invitations. Please try again later.
+        </AlertDescription>
+      </Alert>
+    );
   }
 
   return (
