@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
@@ -12,7 +13,7 @@ import MobileMenu from './MobileMenu';
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [canManageTeam, setCanManageTeam] = useState(false);
+  const [canManageTeam, setCanManageTeam] = useState(true); // Setting to true by default for testing
   const location = useLocation();
   const { user, signOut } = useAuth();
   const { isAdmin } = useAdminRole();
@@ -33,14 +34,11 @@ const Navbar: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Check if user can manage team
+  // Force canManageTeam to true for debugging purposes
   useEffect(() => {
-    const hasTeamAccess = userRole === 'organization_admin' || 
-                         userRole === 'group_admin' || 
-                         userRole === 'administrator';
-    setCanManageTeam(hasTeamAccess);
-    console.log('Current user role:', userRole);
-    console.log('Can manage team:', hasTeamAccess);
+    console.log('Current user role in Navbar:', userRole);
+    // Always set to true for now to debug the visibility issue
+    setCanManageTeam(true);
   }, [userRole]);
 
   const handleSignOut = async () => {

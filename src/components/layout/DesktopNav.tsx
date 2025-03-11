@@ -19,6 +19,8 @@ const DesktopNav: React.FC<DesktopNavProps> = ({
   isAdmin,
   handleSignOut,
 }) => {
+  console.log('DesktopNav render - canManageTeam:', canManageTeam);
+
   return (
     <nav className="hidden md:flex space-x-8">
       {isAuthenticated ? (

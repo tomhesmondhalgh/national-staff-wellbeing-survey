@@ -17,6 +17,8 @@ const NavLinks: React.FC<NavLinksProps> = ({ canManageTeam, setIsMenuOpen }) => 
     }
   };
 
+  console.log('NavLinks render - canManageTeam:', canManageTeam);
+
   return (
     <>
       <Link 
@@ -47,19 +49,18 @@ const NavLinks: React.FC<NavLinksProps> = ({ canManageTeam, setIsMenuOpen }) => 
       >
         Improve
       </Link>
-      {canManageTeam && (
-        <Link 
-          to="/team" 
-          className={`nav-link flex items-center ${location.pathname === '/team' ? 'text-brandPurple-600' : ''}`}
-          onClick={handleClick}
-        >
-          <Users size={16} className="mr-1" />
-          Team
-        </Link>
-      )}
+      
+      {/* Explicitly show team link regardless of canManageTeam for debugging */}
+      <Link 
+        to="/team" 
+        className={`nav-link flex items-center ${location.pathname === '/team' ? 'text-brandPurple-600' : ''}`}
+        onClick={handleClick}
+      >
+        <Users size={16} className="mr-1" />
+        Team
+      </Link>
     </>
   );
 };
 
 export default NavLinks;
-

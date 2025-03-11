@@ -26,6 +26,8 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
 }) => {
   if (!isOpen) return null;
 
+  console.log('MobileMenu render - canManageTeam:', canManageTeam);
+
   return (
     <div className="md:hidden bg-white shadow-lg animate-slide-down">
       {/* Organization Switcher for mobile */}
@@ -59,18 +61,17 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
               </span>
             </Link>
             
-            {canManageTeam && (
-              <Link 
-                to="/team" 
-                className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <span className="flex items-center">
-                  <Users size={16} className="mr-1" />
-                  Team
-                </span>
-              </Link>
-            )}
+            {/* Always show Team link in settings for debugging */}
+            <Link 
+              to="/team" 
+              className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <span className="flex items-center">
+                <Users size={16} className="mr-1" />
+                Team
+              </span>
+            </Link>
             
             {isAdmin && (
               <Link 
