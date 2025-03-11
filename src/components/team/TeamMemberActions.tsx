@@ -44,12 +44,20 @@ export default function TeamMemberActions({ memberId, type, refetchAll, member }
     if (!confirm("Are you sure you want to cancel this invitation?")) return;
     
     try {
-      const { error } = await supabase
-        .from('invitations')
-        .delete()
-        .eq('id', invitationId);
-        
-      if (error) throw error;
+      // Use the REST API directly to avoid policy recursion issues
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/invitations?id=eq.${invitationId}`, {
+        method: 'DELETE',
+        headers: {
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Server responded with status: ${response.status}`);
+      }
       
       toast.success('Invitation cancelled successfully');
       refetchAll();
