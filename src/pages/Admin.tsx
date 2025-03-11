@@ -27,10 +27,15 @@ const Admin = () => {
     isTestingMode, 
     testingPlan, 
     testingRole, 
+    enableFullTestingMode,
     setTestingPlan,
     setTestingRole,
     disableTestingMode 
   } = useTestingMode();
+
+  // Default values for testing mode
+  const defaultTestingPlan: PlanType = 'free';
+  const defaultTestingRole: UserRoleType = 'viewer';
 
   const handleSendTestEmails = async () => {
     try {
@@ -63,10 +68,13 @@ const Admin = () => {
   const handleTestingModeChange = (enabled: boolean) => {
     if (!enabled) {
       disableTestingMode();
-    } else if (!isTestingMode) {
-      // Enable testing mode with default values if not already enabled
-      setTestingPlan('free');
-      setTestingRole('viewer');
+    } else {
+      // When enabling testing mode, use enableFullTestingMode with default values
+      // This ensures both plan and role are set when enabling testing mode
+      enableFullTestingMode(
+        testingPlan || defaultTestingPlan, 
+        testingRole || defaultTestingRole
+      );
     }
   };
 
@@ -121,7 +129,7 @@ const Admin = () => {
                   <div>
                     <h3 className="font-medium mb-2">Subscription Plan:</h3>
                     <Select
-                      value={testingPlan || 'free'}
+                      value={testingPlan || defaultTestingPlan}
                       onValueChange={(value) => setTestingPlan(value as PlanType)}
                     >
                       <SelectTrigger className="w-full md:w-64">
@@ -140,7 +148,7 @@ const Admin = () => {
                   <div>
                     <h3 className="font-medium mb-2">User Role:</h3>
                     <Select
-                      value={testingRole || 'viewer'}
+                      value={testingRole || defaultTestingRole}
                       onValueChange={(value) => setTestingRole(value as UserRoleType)}
                     >
                       <SelectTrigger className="w-full md:w-64">
