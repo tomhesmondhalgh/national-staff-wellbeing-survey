@@ -17,7 +17,7 @@ const Navbar: React.FC = () => {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const { isAdmin } = useAdminRole();
-  const permissions = usePermissions();
+  const { userRole } = usePermissions();
   
   // Check if user is authenticated
   const isAuthenticated = !!user;
@@ -36,15 +36,13 @@ const Navbar: React.FC = () => {
 
   // Check if user can manage team
   useEffect(() => {
-    const checkTeamPermission = async () => {
-      if (permissions && !permissions.isLoading) {
-        const canManage = await permissions.canManageTeam();
-        setCanManageTeam(canManage);
-      }
-    };
-    
-    checkTeamPermission();
-  }, [permissions]);
+    // Organization admins should always be able to manage team
+    if (userRole === 'organization_admin' || userRole === 'group_admin' || userRole === 'administrator') {
+      setCanManageTeam(true);
+    } else {
+      setCanManageTeam(false);
+    }
+  }, [userRole]);
 
   const handleSignOut = async () => {
     await signOut();
