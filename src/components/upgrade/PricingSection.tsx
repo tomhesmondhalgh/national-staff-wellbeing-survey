@@ -29,7 +29,13 @@ const PricingSection: React.FC = () => {
           planType,
           purchaseType,
           successUrl: `${window.location.origin}/dashboard?payment=success`,
-          cancelUrl: `${window.location.origin}/upgrade?payment=cancelled`
+          cancelUrl: `${window.location.origin}/upgrade?payment=cancelled`,
+          billingDetails: {
+            schoolName: subscription?.schoolName || '',
+            address: subscription?.schoolAddress || '',
+            contactName: `${subscription?.firstName || ''} ${subscription?.lastName || ''}`.trim(),
+            contactEmail: subscription?.email || ''
+          }
         })
       });
       const data = await response.json();

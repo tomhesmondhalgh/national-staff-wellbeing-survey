@@ -18,16 +18,20 @@ interface RequestBody {
   cancelUrl: string;
   planType?: "foundation" | "progress" | "premium";
   purchaseType?: "subscription" | "one-time";
+  billingDetails?: {
+    schoolName: string;
+    address: string;
+    contactName: string;
+    contactEmail: string;
+  };
 }
 
 serve(async (req: Request) => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Get the authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -36,10 +40,7 @@ serve(async (req: Request) => {
       );
     }
 
-    // Create a Supabase client with the admin key
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
-    // Get user from the JWT
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
 
@@ -50,9 +51,8 @@ serve(async (req: Request) => {
       );
     }
 
-    // Parse the request body
     const requestData: RequestBody = await req.json();
-    const { priceId, successUrl, cancelUrl, planType = "foundation", purchaseType = "subscription" } = requestData;
+    const { priceId, successUrl, cancelUrl, planType = "foundation", purchaseType = "subscription", billingDetails } = requestData;
 
     if (!priceId || !successUrl || !cancelUrl) {
       return new Response(
@@ -61,14 +61,16 @@ serve(async (req: Request) => {
       );
     }
 
-    // Create Stripe metadata for the session
     const metadata = {
       userId: user.id,
       planType,
-      purchaseType
+      purchaseType,
+      billingSchoolName: billingDetails?.schoolName || '',
+      billingAddress: billingDetails?.address || '',
+      billingContactName: billingDetails?.contactName || '',
+      billingContactEmail: billingDetails?.contactEmail || ''
     };
 
-    // Create a checkout session
     const session = await stripe.checkout.sessions.create({
       mode: purchaseType === 'subscription' ? 'subscription' : 'payment',
       line_items: [
@@ -81,9 +83,11 @@ serve(async (req: Request) => {
       cancel_url: cancelUrl,
       metadata,
       client_reference_id: user.id,
+      customer_creation: 'always',
+      billing_address_collection: 'required',
+      payment_method_types: ['card'],
     });
 
-    // Create a pending subscription record
     await supabase.from('subscriptions').insert({
       user_id: user.id,
       plan_type: planType,

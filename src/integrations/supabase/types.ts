@@ -350,34 +350,55 @@ export type Database = {
       payment_history: {
         Row: {
           amount: number
+          billing_address: string | null
+          billing_contact_email: string | null
+          billing_contact_name: string | null
+          billing_postcode: string | null
+          billing_school_name: string | null
           created_at: string
           currency: string
           id: string
+          invoice_id: string | null
           invoice_number: string | null
           payment_date: string
           payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_status: Database["public"]["Enums"]["payment_status"] | null
           stripe_payment_id: string | null
           subscription_id: string
         }
         Insert: {
           amount: number
+          billing_address?: string | null
+          billing_contact_email?: string | null
+          billing_contact_name?: string | null
+          billing_postcode?: string | null
+          billing_school_name?: string | null
           created_at?: string
           currency?: string
           id?: string
+          invoice_id?: string | null
           invoice_number?: string | null
           payment_date?: string
           payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_status?: Database["public"]["Enums"]["payment_status"] | null
           stripe_payment_id?: string | null
           subscription_id: string
         }
         Update: {
           amount?: number
+          billing_address?: string | null
+          billing_contact_email?: string | null
+          billing_contact_name?: string | null
+          billing_postcode?: string | null
+          billing_school_name?: string | null
           created_at?: string
           currency?: string
           id?: string
+          invoice_id?: string | null
           invoice_number?: string | null
           payment_date?: string
           payment_method?: Database["public"]["Enums"]["payment_method"]
+          payment_status?: Database["public"]["Enums"]["payment_status"] | null
           stripe_payment_id?: string | null
           subscription_id?: string
         }
@@ -1153,6 +1174,12 @@ export type Database = {
         | "Completed"
         | "Not Applicable"
       payment_method: "stripe" | "invoice" | "manual"
+      payment_status:
+        | "pending"
+        | "invoice_raised"
+        | "payment_made"
+        | "cancelled"
+        | "refunded"
       plan_type: "free" | "foundation" | "progress" | "premium"
       subscription_status: "active" | "canceled" | "expired" | "pending"
       user_role_type:
