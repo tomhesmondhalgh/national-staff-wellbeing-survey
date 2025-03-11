@@ -1,25 +1,20 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Users, Settings, LogOut, User, ShieldCheck } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { Menu, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdminRole } from '../../hooks/useAdminRole';
 import { usePermissions } from '../../hooks/usePermissions';
 import OrganizationSwitcher from '../organization/OrganizationSwitcher';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../ui/dropdown-menu';
-import { Button } from '../ui/button';
+import NavbarBrand from './NavbarBrand';
+import DesktopNav from './DesktopNav';
+import MobileMenu from './MobileMenu';
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [canManageTeam, setCanManageTeam] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { isAdmin } = useAdminRole();
   const permissions = usePermissions();
@@ -64,11 +59,7 @@ const Navbar: React.FC = () => {
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          <div className="flex-shrink-0">
-            <Link to="/" className="font-serif text-2xl font-bold text-brandPurple-700 tracking-tight">
-              Wellbeing<span className="text-brandPurple-500">Survey</span>
-            </Link>
-          </div>
+          <NavbarBrand />
           
           {/* Organization Switcher (only show when logged in) */}
           {isAuthenticated && (
@@ -78,93 +69,13 @@ const Navbar: React.FC = () => {
           )}
           
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-8">
-            {isAuthenticated ? (
-              <>
-                <Link 
-                  to="/dashboard" 
-                  className={`nav-link ${location.pathname === '/dashboard' ? 'text-brandPurple-600' : ''}`}
-                >
-                  Dashboard
-                </Link>
-                <Link 
-                  to="/surveys" 
-                  className={`nav-link ${location.pathname === '/surveys' || location.pathname === '/new-survey' ? 'text-brandPurple-600' : ''}`}
-                >
-                  Survey
-                </Link>
-                <Link 
-                  to="/analysis" 
-                  className={`nav-link ${location.pathname === '/analysis' ? 'text-brandPurple-600' : ''}`}
-                >
-                  Analyse
-                </Link>
-                <Link 
-                  to="/improve" 
-                  className={`nav-link ${location.pathname === '/improve' ? 'text-brandPurple-600' : ''}`}
-                >
-                  Improve
-                </Link>
-                {canManageTeam && (
-                  <Link 
-                    to="/team" 
-                    className={`nav-link ${location.pathname === '/team' ? 'text-brandPurple-600' : ''}`}
-                  >
-                    <span className="flex items-center">
-                      <Users size={16} className="mr-1" />
-                      Team
-                    </span>
-                  </Link>
-                )}
-                
-                {/* Settings Dropdown Menu */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="nav-link p-0 h-auto font-normal">
-                      <span className="flex items-center">
-                        <Settings size={16} className="mr-1" />
-                        Settings
-                      </span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem asChild>
-                      <Link to="/profile" className="flex items-center w-full">
-                        <User size={16} className="mr-2" />
-                        Profile
-                      </Link>
-                    </DropdownMenuItem>
-                    
-                    {isAdmin && (
-                      <DropdownMenuItem asChild>
-                        <Link to="/admin" className="flex items-center w-full">
-                          <ShieldCheck size={16} className="mr-2" />
-                          Admin
-                        </Link>
-                      </DropdownMenuItem>
-                    )}
-                    
-                    <DropdownMenuItem onClick={handleSignOut} className="flex items-center">
-                      <LogOut size={16} className="mr-2" />
-                      Sign Out
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            ) : (
-              // Only show login/signup options if not on survey response or complete pages
-              !hideAuthButtons && (
-                <>
-                  <Link to="/login" className="btn-ghost">
-                    Log in
-                  </Link>
-                  <Link to="/signup" className="btn-primary">
-                    Sign up
-                  </Link>
-                </>
-              )
-            )}
-          </nav>
+          <DesktopNav 
+            isAuthenticated={isAuthenticated}
+            hideAuthButtons={hideAuthButtons}
+            canManageTeam={canManageTeam}
+            isAdmin={isAdmin}
+            handleSignOut={handleSignOut}
+          />
           
           {/* Mobile Navigation Button */}
           <div className="md:hidden">
@@ -180,121 +91,15 @@ const Navbar: React.FC = () => {
       </div>
       
       {/* Mobile Navigation Menu */}
-      {isMenuOpen && (
-        <div className="md:hidden bg-white shadow-lg animate-slide-down">
-          {/* Organization Switcher for mobile */}
-          {isAuthenticated && (
-            <div className="px-4 pt-3">
-              <OrganizationSwitcher />
-            </div>
-          )}
-          
-          <div className="px-2 pt-2 pb-3 space-y-1">
-            {isAuthenticated ? (
-              <>
-                <Link 
-                  to="/dashboard" 
-                  className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Dashboard
-                </Link>
-                <Link 
-                  to="/surveys" 
-                  className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Survey
-                </Link>
-                <Link 
-                  to="/analysis" 
-                  className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Analyse
-                </Link>
-                <Link 
-                  to="/improve" 
-                  className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Improve
-                </Link>
-                {canManageTeam && (
-                  <Link 
-                    to="/team" 
-                    className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <span className="flex items-center">
-                      <Users size={16} className="mr-1" />
-                      Team
-                    </span>
-                  </Link>
-                )}
-                
-                {/* Settings Section Header */}
-                <div className="px-4 pt-2 pb-1 text-sm font-semibold text-gray-500">
-                  Settings
-                </div>
-                
-                {/* Settings Items */}
-                <Link 
-                  to="/profile" 
-                  className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <span className="flex items-center">
-                    <User size={16} className="mr-1" />
-                    Profile
-                  </span>
-                </Link>
-                
-                {isAdmin && (
-                  <Link 
-                    to="/admin" 
-                    className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <span className="flex items-center">
-                      <ShieldCheck size={16} className="mr-1" />
-                      Admin
-                    </span>
-                  </Link>
-                )}
-                
-                <button 
-                  className="flex items-center w-full text-left px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
-                  onClick={handleSignOut}
-                >
-                  <LogOut size={16} className="mr-1" />
-                  Sign Out
-                </button>
-              </>
-            ) : (
-              // Only show login/signup options if not on survey response or complete pages
-              !hideAuthButtons && (
-                <>
-                  <Link 
-                    to="/login" 
-                    className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Log in
-                  </Link>
-                  <Link 
-                    to="/signup" 
-                    className="block px-4 py-2 rounded-md font-medium text-brandPurple-600 hover:bg-brandPurple-50"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Sign up
-                  </Link>
-                </>
-              )
-            )}
-          </div>
-        </div>
-      )}
+      <MobileMenu 
+        isOpen={isMenuOpen}
+        isAuthenticated={isAuthenticated}
+        hideAuthButtons={hideAuthButtons}
+        isAdmin={isAdmin}
+        canManageTeam={canManageTeam}
+        handleSignOut={handleSignOut}
+        setIsMenuOpen={setIsMenuOpen}
+      />
     </header>
   );
 }
