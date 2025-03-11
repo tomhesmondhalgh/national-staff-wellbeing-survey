@@ -15,17 +15,24 @@ serve(async (req) => {
 
   // Handle OPTIONS request
   if (req.method === 'OPTIONS') {
+    console.log('Received OPTIONS request, returning CORS headers')
     return new Response('ok', { headers: corsHeaders })
   }
+
+  console.log('=== START: cancel-invitation function execution ===')
+  console.log('Request method:', req.method)
+  console.log('Request headers:', JSON.stringify(Object.fromEntries(req.headers.entries())))
 
   try {
     console.log('Received request to cancel invitation')
     
-    // Get request data
-    const requestData = await req.json().catch(e => {
+    let requestData: any = {}
+    try {
+      requestData = await req.json()
+      console.log('Successfully parsed request JSON:', JSON.stringify(requestData))
+    } catch (e) {
       console.error('Failed to parse request JSON:', e)
-      return {}
-    })
+    }
     
     const { invitationId } = requestData as RequestParams
     console.log('Invitation ID to cancel:', invitationId)
@@ -44,6 +51,9 @@ serve(async (req) => {
     // Create Supabase client with service role key
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    
+    console.log('Supabase URL available:', !!supabaseUrl)
+    console.log('Supabase Service Role Key available:', !!supabaseServiceKey)
     
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error('Missing Supabase URL or service role key')
@@ -73,6 +83,8 @@ serve(async (req) => {
     }
 
     console.log('Successfully deleted invitation:', data)
+    console.log('=== END: cancel-invitation function execution ===')
+    
     return new Response(
       JSON.stringify({ success: true, data }),
       { 
@@ -82,6 +94,7 @@ serve(async (req) => {
     )
   } catch (error) {
     console.error('Error cancelling invitation:', error)
+    console.log('=== END: cancel-invitation function execution with error ===')
     
     return new Response(
       JSON.stringify({ error: error.message || 'Failed to cancel invitation', success: false }),

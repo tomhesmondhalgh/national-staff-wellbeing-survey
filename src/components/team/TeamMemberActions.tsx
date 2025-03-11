@@ -53,11 +53,18 @@ export default function TeamMemberActions({ memberId, type, refetchAll, member }
       const accessToken = sessionData.session?.access_token;
       
       if (!accessToken) {
+        console.error('No valid session found - cannot proceed with cancellation');
         throw new Error('No valid session found');
       }
       
+      console.log('Session found, access token available');
+      
+      // Construct the full URL for the edge function
+      const edgeFunctionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cancel-invitation`;
+      console.log('Calling edge function at:', edgeFunctionUrl);
+      
       // Call the edge function with proper authentication
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cancel-invitation`, {
+      const response = await fetch(edgeFunctionUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -65,6 +72,8 @@ export default function TeamMemberActions({ memberId, type, refetchAll, member }
         },
         body: JSON.stringify({ invitationId })
       });
+      
+      console.log('Edge function response status:', response.status);
       
       // Parse response and check for success
       if (!response.ok) {
@@ -74,7 +83,7 @@ export default function TeamMemberActions({ memberId, type, refetchAll, member }
       }
       
       const data = await response.json();
-      console.log('Edge function response:', data);
+      console.log('Edge function response data:', data);
       
       if (!data.success) {
         throw new Error(data.error || 'Unknown error occurred');
