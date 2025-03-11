@@ -1,78 +1,139 @@
 
-import React, { useState, useEffect } from 'react';
-import { Routes, Route, BrowserRouter } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Toaster } from './components/ui/toaster';
+import { AuthProvider } from './contexts/AuthContext';
+import { OrganizationProvider } from './contexts/OrganizationContext';
+import { TestingModeProvider } from './contexts/TestingModeContext';
+import { Toaster as SonnerToaster } from 'sonner';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from 'sonner';
+
+// Pages
 import Index from './pages/Index';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
-import ResetPassword from './pages/ResetPassword';
 import EmailConfirmation from './pages/EmailConfirmation';
-import Team from './pages/Team';
+import Onboarding from './pages/Onboarding';
+import Dashboard from './pages/Dashboard';
+import Surveys from './pages/Surveys';
+import NewSurvey from './pages/NewSurvey';
+import EditSurvey from './pages/EditSurvey';
+import SurveyForm from './pages/SurveyForm';
+import SurveyComplete from './pages/SurveyComplete';
+import SurveyClosed from './pages/SurveyClosed';
+import Analysis from './pages/Analysis';
+import Upgrade from './pages/Upgrade';
+import Improve from './pages/Improve';
+import Profile from './pages/Profile';
+import ResetPassword from './pages/ResetPassword';
+import Admin from './pages/Admin';
 import NotFound from './pages/NotFound';
-import { TestingModeProvider } from './contexts/TestingModeContext';
-import { AuthProvider } from './contexts/AuthContext';
-import { OrganizationProvider } from './contexts/OrganizationContext';
-import { StripeProvider } from './contexts/StripeContext';
-import ProtectedRoute from './components/auth/ProtectedRoute';
+import CustomQuestions from './pages/CustomQuestions';
+import Team from './pages/Team';
 import InvitationAccept from './pages/InvitationAccept';
 
-const queryClient = new QueryClient();
+import './App.css';
 
-const App = () => {
-  const [isTestingMode, setIsTestingMode] = useState(false);
+// Create a new QueryClient instance
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const testing = params.get('testing');
-    setIsTestingMode(testing === 'true');
-  }, []);
-
+function App() {
   return (
-    <BrowserRouter>
-      <QueryClientProvider client={queryClient}>
-        <TestingModeProvider>
-          <AuthProvider>
-            <OrganizationProvider>
-              <StripeProvider>
-                <Routes>
-                  {/* Public routes */}
-                  <Route path="/" element={<Index />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/signup" element={<SignUp />} />
-                  <Route path="/reset-password" element={<ResetPassword />} />
-                  <Route path="/email-confirmation" element={<EmailConfirmation />} />
-                  <Route path="/invitation/accept" element={<InvitationAccept />} />
-
-                  {/* Protected routes */}
-                  <Route element={<ProtectedRoute children={<></>} />}>
-                    <Route path="/profile" element={<div>Profile Page</div>} />
-                    <Route path="/dashboard" element={<div>Dashboard Page</div>} />
-                    <Route path="/surveys" element={<div>Surveys Page</div>} />
-                    <Route path="/surveys/create" element={<div>Create Survey Page</div>} />
-                    <Route path="/surveys/:id/edit" element={<div>Edit Survey Page</div>} />
-                    <Route path="/surveys/:id/responses" element={<div>Survey Responses Page</div>} />
-                    <Route path="/team" element={<Team />} />
-                    <Route path="/settings" element={<div>Settings Page</div>} />
-                    <Route path="/subscription" element={<div>Subscription Page</div>} />
-                  </Route>
-
-                  {/* Survey form routes - these are public but have their own access control */}
-                  <Route path="/s/:id" element={<div>Public Survey Form</div>} />
-                  <Route path="/s/:id/:responseId" element={<div>Public Survey Form with Response ID</div>} />
-
-                  {/* Fallback route */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-
-                <Toaster />
-              </StripeProvider>
-            </OrganizationProvider>
-          </AuthProvider>
-        </TestingModeProvider>
-      </QueryClientProvider>
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <AuthProvider>
+          <OrganizationProvider>
+            <TestingModeProvider>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<SignUp />} />
+                <Route path="/email-confirmation" element={<EmailConfirmation />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/survey" element={<SurveyForm />} />
+                <Route path="/survey-complete" element={<SurveyComplete />} />
+                <Route path="/survey-closed" element={<SurveyClosed />} />
+                <Route path="/invitation/accept" element={<InvitationAccept />} />
+                
+                {/* Protected routes */}
+                <Route path="/onboarding" element={
+                  <ProtectedRoute>
+                    <Onboarding />
+                  </ProtectedRoute>
+                } />
+                <Route path="/dashboard" element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/surveys" element={
+                  <ProtectedRoute>
+                    <Surveys />
+                  </ProtectedRoute>
+                } />
+                <Route path="/surveys/:id/edit" element={
+                  <ProtectedRoute>
+                    <EditSurvey />
+                  </ProtectedRoute>
+                } />
+                <Route path="/new-survey" element={
+                  <ProtectedRoute>
+                    <NewSurvey />
+                  </ProtectedRoute>
+                } />
+                <Route path="/analysis" element={
+                  <ProtectedRoute>
+                    <Analysis />
+                  </ProtectedRoute>
+                } />
+                <Route path="/upgrade" element={
+                  <ProtectedRoute>
+                    <Upgrade />
+                  </ProtectedRoute>
+                } />
+                <Route path="/improve" element={
+                  <ProtectedRoute>
+                    <Improve />
+                  </ProtectedRoute>
+                } />
+                <Route path="/profile" element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin" element={
+                  <ProtectedRoute>
+                    <Admin />
+                  </ProtectedRoute>
+                } />
+                <Route path="/custom-questions" element={
+                  <ProtectedRoute>
+                    <CustomQuestions />
+                  </ProtectedRoute>
+                } />
+                <Route path="/team" element={
+                  <ProtectedRoute>
+                    <Team />
+                  </ProtectedRoute>
+                } />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <Toaster />
+              <SonnerToaster closeButton position="bottom-right" />
+            </TestingModeProvider>
+          </OrganizationProvider>
+        </AuthProvider>
+      </Router>
+    </QueryClientProvider>
   );
-};
+}
 
 export default App;

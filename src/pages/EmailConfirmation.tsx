@@ -1,56 +1,63 @@
 
 import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
+import PageTitle from '../components/ui/PageTitle';
 import { Button } from '../components/ui/button';
+import { Loader2, Mail, ArrowLeft } from 'lucide-react';
 
 const EmailConfirmation = () => {
-  const location = useLocation();
   const navigate = useNavigate();
-  const email = location.state?.email || '';
-  
-  const handleContinue = () => {
-    // Check if there's a redirect stored from an invitation
-    const redirectPath = sessionStorage.getItem('authRedirect');
-    if (redirectPath) {
-      sessionStorage.removeItem('authRedirect');
-      navigate(redirectPath);
-    } else {
-      navigate('/onboarding');
-    }
-  };
-  
+  const location = useLocation();
+  const email = location.state?.email || 'your email';
+
   return (
     <MainLayout>
-      <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md text-center">
-          <h1 className="text-2xl font-bold text-brandPurple-600 mb-4">Check Your Email</h1>
+      <div className="page-container max-w-md mx-auto text-center">
+        <div className="mb-8">
+          <div className="flex justify-center mb-6">
+            <div className="bg-blue-100 p-6 rounded-full">
+              <Mail className="h-16 w-16 text-blue-600" />
+            </div>
+          </div>
           
-          <p className="text-gray-700 mb-6">
-            We've sent a confirmation link to:
-            <br />
-            <span className="font-semibold">{email || 'your email address'}</span>
-          </p>
+          <PageTitle 
+            title="Confirm your email" 
+            subtitle="One more step to get started"
+          />
           
-          <p className="text-gray-600 mb-6 text-sm">
-            Please check your inbox and click the confirmation link to complete your registration.
-            If you don't see it, please check your spam folder.
-          </p>
-          
-          <Button 
-            onClick={handleContinue}
-            className="w-full bg-brandPurple-500 hover:bg-brandPurple-600 mb-4"
-          >
-            I've Confirmed My Email
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            onClick={() => navigate('/login')}
-            className="w-full"
-          >
-            Back to Login
-          </Button>
+          <div className="card p-6 mt-6">
+            <p className="mb-6">
+              We've sent an email to <strong className="font-medium">{email}</strong> with a confirmation link.
+              Please check your inbox and click the link to activate your account.
+            </p>
+            
+            <div className="bg-amber-50 border border-amber-100 rounded-lg p-4 mb-6 text-left">
+              <h3 className="font-medium text-amber-800 mb-1">Important:</h3>
+              <p className="text-amber-700 text-sm">
+                You must confirm your email before you can log in. If you don't see the email, please check your spam folder.
+              </p>
+            </div>
+            
+            <div className="flex flex-col gap-3">
+              <Button 
+                onClick={() => navigate('/login')} 
+                variant="default"
+                className="w-full"
+              >
+                Continue to login
+              </Button>
+              
+              <Button 
+                onClick={() => navigate('/signup')} 
+                variant="outline"
+                className="w-full"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to sign up
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </MainLayout>

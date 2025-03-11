@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import AuthForm from '../components/auth/AuthForm';
 import PageTitle from '../components/ui/PageTitle';
@@ -9,8 +9,6 @@ import { toast } from 'sonner';
 
 const SignUp = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const redirectPath = searchParams.get('redirect');
   const { signUp } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -32,11 +30,6 @@ const SignUp = () => {
           firstName: data.firstName,
           lastName: data.lastName,
         }));
-        
-        // If there's a redirect path (coming from invitation), store it
-        if (redirectPath) {
-          sessionStorage.setItem('authRedirect', redirectPath);
-        }
         
         // Navigate to email confirmation page instead of onboarding
         navigate('/email-confirmation', { 
@@ -65,11 +58,6 @@ const SignUp = () => {
           title="Create your account" 
           subtitle="Sign up to start creating wellbeing surveys for your staff"
         />
-        {redirectPath && (
-          <div className="mb-4 text-sm text-green-600 rounded-lg p-2 bg-green-50 border border-green-100">
-            <p>You'll be redirected to complete your invitation after creating an account.</p>
-          </div>
-        )}
         <div className="mb-4 text-sm text-gray-600 rounded-lg p-2 bg-blue-50 border border-blue-100">
           <p>Please make sure you have internet connectivity to create an account.</p>
         </div>

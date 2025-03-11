@@ -1,7 +1,7 @@
 
 import { ReactNode, useEffect } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -30,7 +30,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }
 
   // If user is authenticated, render the protected content
-  return user ? <Outlet /> : null;
+  return user ? <>{children}</> : null;
 };
 
 export default ProtectedRoute;
