@@ -84,7 +84,7 @@ const MembersAndInvitationsList = () => {
       <TeamMembersError 
         error={error instanceof Error ? error : new Error('Unknown error')}
         userRole={userRole}
-        organizationName={currentOrganization?.name}
+        organisationName={currentOrganization?.name}
         refetchAll={refetchAll}
       />
     );
