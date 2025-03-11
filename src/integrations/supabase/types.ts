@@ -1046,11 +1046,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      create_invitation: {
+      create_invitation_with_role: {
         Args: {
           user_email: string
           org_id: string
-          user_role: string
+          role_str: string
           invitation_token: string
           inviter_id: string
           expiry_date: string

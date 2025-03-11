@@ -71,18 +71,16 @@ export default function InviteMemberDialog({
         expiresAt: expiresAt.toISOString()
       });
       
-      // Try inserting with explicit role casting
+      // Use the new database function that handles type conversion
       const { data, error } = await supabase
-        .from('invitations')
-        .insert({
-          email: email,
-          organization_id: organizationId,
-          role: role,
-          token: token,
-          invited_by: user.id,
-          expires_at: expiresAt.toISOString()
-        })
-        .select();
+        .rpc('create_invitation_with_role', {
+          user_email: email,
+          org_id: organizationId,
+          role_str: role, // Pass as string
+          invitation_token: token,
+          inviter_id: user.id,
+          expiry_date: expiresAt.toISOString()
+        });
 
       if (error) {
         console.error('Full error object:', error);
