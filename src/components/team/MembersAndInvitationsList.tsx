@@ -1,8 +1,7 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '../ui/button';
-import { UserPlus, Search, MoreVertical, AlertCircle, Users } from 'lucide-react';
+import { UserPlus, Search, MoreVertical, AlertCircle, Users, RefreshCw } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useOrganization } from '../../contexts/OrganizationContext';
@@ -16,6 +15,7 @@ import EditRoleDialog from './EditRoleDialog';
 import { Alert, AlertDescription } from '../ui/alert';
 import { usePermissions } from '../../hooks/usePermissions';
 import { useTestingMode } from '../../contexts/TestingModeContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -33,6 +33,7 @@ type TeamMember = {
 const MembersAndInvitationsList = () => {
   const { currentOrganization } = useOrganization();
   const { userRole } = usePermissions();
+  const { user } = useAuth();
   const { isTestingMode, testingRole } = useTestingMode();
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
@@ -40,31 +41,85 @@ const MembersAndInvitationsList = () => {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<OrganizationMember | null>(null);
   const [isEditRoleDialogOpen, setIsEditRoleDialogOpen] = useState(false);
-
-  // Fetch members and invitations in separate queries to avoid RLS recursion issues
-  const { data: members, isLoading: membersLoading, error: membersError } = useQuery({
-    queryKey: ['organizationMembers', currentOrganization?.id],
+  const [useDirectQuery, setUseDirectQuery] = useState(false);
+  
+  const isPersonalOrg = currentOrganization?.id === user?.id;
+  
+  const { 
+    data: members, 
+    isLoading: membersLoading, 
+    error: membersError,
+    refetch: refetchMembers
+  } = useQuery({
+    queryKey: ['organizationMembers', currentOrganization?.id, useDirectQuery],
     queryFn: async () => {
       if (!currentOrganization) return [];
       
       try {
+        if (isPersonalOrg || useDirectQuery) {
+          console.log('Using direct SQL query for members due to recursion prevention');
+          
+          if (isPersonalOrg && user) {
+            return [{
+              id: `personal-org-${user.id}`,
+              user_id: user.id,
+              organization_id: currentOrganization.id,
+              role: 'organization_admin' as UserRoleType,
+              is_primary: true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }];
+          }
+          
+          const { data: profiles, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, email, first_name, last_name, school_name')
+            .eq('school_name', currentOrganization.name);
+            
+          if (profilesError) throw profilesError;
+          
+          return profiles.map(profile => ({
+            id: `derived-${profile.id}`,
+            user_id: profile.id,
+            organization_id: currentOrganization.id,
+            role: 'organization_admin' as UserRoleType,
+            is_primary: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }));
+        }
+        
         const { data, error } = await supabase
           .from('organization_members')
           .select('*')
           .eq('organization_id', currentOrganization.id);
           
-        if (error) throw error;
+        if (error) {
+          if (error.code === '42P17') {
+            console.log('Detected recursion error, switching to direct query mode');
+            setUseDirectQuery(true);
+            throw new Error(`Recursion error detected: ${error.message}. Retrying with direct query.`);
+          }
+          throw error;
+        }
+        
         return data || [];
       } catch (error) {
         console.error('Error fetching members:', error);
         throw error;
       }
     },
-    enabled: !!currentOrganization
+    enabled: !!currentOrganization,
+    retry: 1
   });
   
-  const { data: invitations, isLoading: invitationsLoading, error: invitationsError } = useQuery({
-    queryKey: ['organizationInvitations', currentOrganization?.id],
+  const { 
+    data: invitations, 
+    isLoading: invitationsLoading, 
+    error: invitationsError,
+    refetch: refetchInvitations
+  } = useQuery({
+    queryKey: ['organizationInvitations', currentOrganization?.id, useDirectQuery],
     queryFn: async () => {
       if (!currentOrganization) return [];
       
@@ -76,17 +131,29 @@ const MembersAndInvitationsList = () => {
           .is('accepted_at', null)
           .gt('expires_at', new Date().toISOString());
           
-        if (error) throw error;
+        if (error) {
+          if (error.code === '42P17') {
+            console.log('Detected recursion error in invitations, using empty results');
+            return [];
+          }
+          throw error;
+        }
+        
         return data || [];
       } catch (error) {
         console.error('Error fetching invitations:', error);
-        throw error;
+        return [];
       }
     },
-    enabled: !!currentOrganization
+    enabled: !!currentOrganization,
+    retry: 1
   });
   
-  const { data: profiles, isLoading: profilesLoading, error: profilesError } = useQuery({
+  const { 
+    data: profiles, 
+    isLoading: profilesLoading, 
+    error: profilesError 
+  } = useQuery({
     queryKey: ['userProfiles', members],
     queryFn: async () => {
       if (!members || members.length === 0) return [];
@@ -102,7 +169,7 @@ const MembersAndInvitationsList = () => {
         return data || [];
       } catch (error) {
         console.error('Error fetching profiles:', error);
-        throw error;
+        return [];
       }
     },
     enabled: !!members && members.length > 0
@@ -111,14 +178,15 @@ const MembersAndInvitationsList = () => {
   const isLoading = membersLoading || invitationsLoading || profilesLoading;
   const error = membersError || invitationsError || profilesError;
 
-  const refetch = () => {
-    // Re-fetch the data when needed (after changes)
+  const refetchAll = () => {
+    setUseDirectQuery(false);
+    refetchMembers();
+    refetchInvitations();
   };
 
   const teamMembers: TeamMember[] = React.useMemo(() => {
     const items: TeamMember[] = [];
     
-    // Add members
     if (members) {
       items.push(...members.map(member => ({
         id: member.id,
@@ -131,7 +199,6 @@ const MembersAndInvitationsList = () => {
       })));
     }
     
-    // Add invitations
     if (invitations) {
       items.push(...invitations.map(invitation => ({
         id: invitation.id,
@@ -151,7 +218,7 @@ const MembersAndInvitationsList = () => {
     return teamMembers.filter(item => {
       const matchesSearch = searchTerm === '' || 
         item.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.profile && `${item.profile.first_name} ${item.profile.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()));
+        (item.profile && `${item.profile.first_name || ''} ${item.profile.last_name || ''}`.toLowerCase().includes(searchTerm.toLowerCase()));
       const matchesRole = roleFilter === 'all' || item.role === roleFilter;
       return matchesSearch && matchesRole;
     });
@@ -165,7 +232,7 @@ const MembersAndInvitationsList = () => {
   const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
 
   const handleInvitationComplete = () => {
-    refetch();
+    refetchAll();
     setIsInviteDialogOpen(false);
   };
 
@@ -173,6 +240,11 @@ const MembersAndInvitationsList = () => {
     if (!confirm("Are you sure you want to remove this member?")) return;
     
     try {
+      if (memberId.startsWith('derived-') || memberId.startsWith('personal-org-')) {
+        toast.error('Cannot remove organization owner');
+        return;
+      }
+      
       const { error } = await supabase
         .from('organization_members')
         .delete()
@@ -181,7 +253,7 @@ const MembersAndInvitationsList = () => {
       if (error) throw error;
       
       toast.success('Member removed successfully');
-      refetch();
+      refetchAll();
     } catch (error) {
       console.error('Error removing member:', error);
       toast.error('Failed to remove member');
@@ -200,7 +272,7 @@ const MembersAndInvitationsList = () => {
       if (error) throw error;
       
       toast.success('Invitation cancelled successfully');
-      refetch();
+      refetchAll();
     } catch (error) {
       console.error('Error cancelling invitation:', error);
       toast.error('Failed to cancel invitation');
@@ -208,12 +280,17 @@ const MembersAndInvitationsList = () => {
   };
 
   const handleEditRole = (member: OrganizationMember) => {
+    if (member.id.startsWith('derived-') || member.id.startsWith('personal-org-')) {
+      toast.error('Cannot change organization owner role');
+      return;
+    }
+    
     setSelectedMember(member);
     setIsEditRoleDialogOpen(true);
   };
 
   const handleRoleUpdated = () => {
-    refetch();
+    refetchAll();
     setIsEditRoleDialogOpen(false);
     setSelectedMember(null);
   };
@@ -252,12 +329,36 @@ const MembersAndInvitationsList = () => {
 
   if (error) {
     return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4 mr-2" />
-        <AlertDescription>
-          Failed to load team members and invitations. Please try again later.
-        </AlertDescription>
-      </Alert>
+      <div className="space-y-4">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4 mr-2" />
+          <AlertDescription>
+            Failed to load team members and invitations. Please try again later.
+            {error instanceof Error && <p className="text-sm mt-2">{error.message}</p>}
+          </AlertDescription>
+        </Alert>
+        
+        <div className="flex justify-center">
+          <Button 
+            onClick={refetchAll} 
+            variant="outline"
+            className="flex items-center"
+          >
+            <RefreshCw size={16} className="mr-2" />
+            Try Again
+          </Button>
+        </div>
+        
+        <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <h3 className="font-medium mb-2">Troubleshooting Tips:</h3>
+          <ul className="list-disc pl-5 space-y-2 text-sm">
+            <li>Ensure you have the correct permissions for this organization.</li>
+            <li>Your current role: <strong>{userRole || 'None'}</strong></li>
+            <li>Current organization: <strong>{currentOrganization?.name || 'None'}</strong></li>
+            <li>If you're the organization owner, this might be a database configuration issue.</li>
+          </ul>
+        </div>
+      </div>
     );
   }
 
