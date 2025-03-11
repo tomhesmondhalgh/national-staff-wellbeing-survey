@@ -56,16 +56,20 @@ export default function InviteMemberDialog({
       
       console.log(`Creating invitation for ${email} with role ${role} to organization ${organizationId}`);
       
-      // Use the role as string when passing to the RPC function
-      // The function will handle the casting to the enum type in PostgreSQL
-      const { data, error } = await supabase.rpc('create_invitation', {
-        user_email: email,
-        org_id: organizationId,
-        user_role: role,
-        invitation_token: token,
-        inviter_id: user.id,
-        expiry_date: expiresAt.toISOString()
-      });
+      // Make a direct SQL query to create the invitation
+      // This is different from RPC to see if we can bypass the type casting issue
+      const { data, error } = await supabase
+        .from('invitations')
+        .insert({
+          email: email,
+          organization_id: organizationId,
+          role: role,
+          token: token,
+          invited_by: user.id,
+          expires_at: expiresAt.toISOString()
+        })
+        .select()
+        .single();
       
       if (error) {
         console.error('Error creating invitation:', error);
