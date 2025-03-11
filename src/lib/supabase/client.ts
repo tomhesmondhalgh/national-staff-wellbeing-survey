@@ -1,4 +1,3 @@
-
 import { createClient } from "@supabase/supabase-js";
 
 // Check if environment variables exist, otherwise use placeholders for development
@@ -125,7 +124,7 @@ interface ProfileData {
 
 interface GroupOrganization {
   organization_id: string;
-  profiles: ProfileData;
+  profiles: ProfileData | Record<string, any>; // Allow for different profile structures
 }
 
 interface GroupOrganizationsResponse {
@@ -216,9 +215,9 @@ export const getUserOrganizations = async (): Promise<Organization[]> => {
       groupOrgs.forEach(item => {
         if (item.group_organizations && Array.isArray(item.group_organizations)) {
           item.group_organizations.forEach(go => {
-            // Safe check for profiles
-            if (go.profiles && typeof go.profiles === 'object') {
-              const profile = go.profiles as ProfileData;
+            // Safe check for profiles - ensure it's not an array before treating as an object
+            if (go.profiles && typeof go.profiles === 'object' && !Array.isArray(go.profiles)) {
+              const profile = go.profiles as Record<string, any>;
               // Check if we have the minimum required data
               if (profile.id && profile.created_at) {
                 // Only add organizations that aren't already in our list
