@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '../ui/button';
@@ -124,12 +125,12 @@ const MembersAndInvitationsList = () => {
       if (!currentOrganization) return [];
       
       try {
+        console.log('Fetching invitations for organization:', currentOrganization.id);
         const { data, error } = await supabase
           .from('invitations')
           .select('*')
           .eq('organization_id', currentOrganization.id)
-          .is('accepted_at', null)
-          .gt('expires_at', new Date().toISOString());
+          .is('accepted_at', null);
           
         if (error) {
           if (error.code === '42P17') {
@@ -139,6 +140,7 @@ const MembersAndInvitationsList = () => {
           throw error;
         }
         
+        console.log('Invitations fetched:', data?.length || 0);
         return data || [];
       } catch (error) {
         console.error('Error fetching invitations:', error);
@@ -148,6 +150,15 @@ const MembersAndInvitationsList = () => {
     enabled: !!currentOrganization,
     retry: 1
   });
+  
+  // For debugging
+  useEffect(() => {
+    if (invitations && invitations.length > 0) {
+      console.log('Invitations data:', invitations);
+    } else {
+      console.log('No invitations found or invitations is empty');
+    }
+  }, [invitations]);
   
   const { 
     data: profiles, 
@@ -199,7 +210,8 @@ const MembersAndInvitationsList = () => {
       })));
     }
     
-    if (invitations) {
+    if (invitations && invitations.length > 0) {
+      console.log('Adding invitations to team members list:', invitations.length);
       items.push(...invitations.map(invitation => ({
         id: invitation.id,
         type: 'invitation' as const,
@@ -213,6 +225,13 @@ const MembersAndInvitationsList = () => {
 
     return items;
   }, [members, invitations, profiles]);
+
+  // For debugging - check the final teamMembers array
+  useEffect(() => {
+    console.log('Team members array (combined):', teamMembers.length);
+    console.log('Members:', members?.length || 0);
+    console.log('Invitations:', invitations?.length || 0);
+  }, [teamMembers, members, invitations]);
 
   const filteredItems = React.useMemo(() => {
     return teamMembers.filter(item => {
@@ -232,6 +251,7 @@ const MembersAndInvitationsList = () => {
   const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
 
   const handleInvitationComplete = () => {
+    console.log('Invitation complete, refreshing data...');
     refetchAll();
     setIsInviteDialogOpen(false);
   };

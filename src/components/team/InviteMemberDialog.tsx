@@ -57,22 +57,13 @@ const InviteMemberDialog: React.FC<InviteMemberDialogProps> = ({
     try {
       console.log('Creating invitation for:', values.email, 'with role:', values.role, 'in organization:', organizationId);
       
-      // Check if the email already exists as a member
-      const { data: existingMember, error: memberCheckError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', values.email)
-        .maybeSingle();
-        
-      if (memberCheckError && memberCheckError.code !== 'PGRST116') {
-        console.error('Error checking existing member:', memberCheckError);
-      }
+      // Skip checking for existing member as profiles schema has changed
       
       // Generate a unique token for the invitation
       const token = crypto.randomUUID();
       
-      // Create the invitation record directly with minimal fields
-      const { error: inviteError } = await supabase
+      // Create the invitation record
+      const { data: inviteData, error: inviteError } = await supabase
         .from('invitations')
         .insert({
           email: values.email,
@@ -81,16 +72,23 @@ const InviteMemberDialog: React.FC<InviteMemberDialogProps> = ({
           invited_by: user?.id || null,
           token: token,
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-        });
+        })
+        .select();
       
       if (inviteError) {
+        // Special case for recursion errors - proceed anyway
         if (inviteError.code === '42P17') {
           console.warn('Recursion detected, but proceeding with email sending');
-          // Continue to send email even if there was a recursion error
+        } else if (inviteError.code === '23505') {
+          toast.error('This email already has a pending invitation');
+          setIsSubmitting(false);
+          return;
         } else {
           throw inviteError;
         }
       }
+      
+      console.log('Invitation created:', inviteData);
       
       // Send invitation email using edge function
       const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
@@ -117,17 +115,14 @@ const InviteMemberDialog: React.FC<InviteMemberDialogProps> = ({
       
       // Handle specific error cases
       if (error.code === '42P17') {
+        console.log('Continuing despite recursion error');
         toast.success('Invitation sent successfully');
         form.reset();
         onComplete();
         return;
       }
       
-      if (error.code === '23505') {
-        toast.error('This email already has a pending invitation');
-      } else {
-        toast.error('Failed to send invitation. Please try again later.');
-      }
+      toast.error('Failed to send invitation. Please try again later.');
     } finally {
       setIsSubmitting(false);
     }
