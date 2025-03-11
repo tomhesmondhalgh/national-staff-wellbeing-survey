@@ -13,7 +13,7 @@ import MobileMenu from './MobileMenu';
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [canManageTeam, setCanManageTeam] = useState(true); // Setting to true by default for testing
+  const [canManageTeam, setCanManageTeam] = useState(false);
   const location = useLocation();
   const { user, signOut } = useAuth();
   const { isAdmin } = useAdminRole();
@@ -34,11 +34,16 @@ const Navbar: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Force canManageTeam to true for debugging purposes
   useEffect(() => {
-    console.log('Current user role in Navbar:', userRole);
-    // Always set to true for now to debug the visibility issue
-    setCanManageTeam(true);
+    // Set canManageTeam based on the user's role - allow admin, group_admin, and organization_admin
+    if (userRole === 'administrator' || userRole === 'group_admin' || userRole === 'organization_admin') {
+      setCanManageTeam(true);
+    } else {
+      setCanManageTeam(false);
+    }
+    
+    console.log('Current user role in Navbar:', userRole, '- Can manage team:', 
+      (userRole === 'administrator' || userRole === 'group_admin' || userRole === 'organization_admin'));
   }, [userRole]);
 
   const handleSignOut = async () => {

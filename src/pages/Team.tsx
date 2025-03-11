@@ -25,6 +25,9 @@ const Team = () => {
     (isTestingMode && (testingRole === 'group_admin' || testingRole === 'administrator'));
 
   useEffect(() => {
+    // For debugging purposes
+    console.log('Team page - Current user role:', userRole);
+    
     // Simplified role check
     const checkAdmin = () => {
       if (userRole === 'administrator' || 
@@ -55,6 +58,7 @@ const Team = () => {
             <AlertCircle className="h-4 w-4 mr-2" />
             <AlertDescription>
               <p>You need administrator permissions to access this page.</p>
+              <p className="mt-2 text-sm">Current role: {userRole || 'none'}</p>
               {isTestingMode && (
                 <p className="mt-2 text-sm">Current testing role: {testingRole || 'none'}</p>
               )}
