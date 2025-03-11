@@ -24,8 +24,8 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ isAdmin, canManageT
   const [isRealAdmin, setIsRealAdmin] = React.useState(false);
   const location = useLocation();
 
-  // Common nav link class to match NavLinks component
-  const navLinkClass = "font-medium text-sm transition-colors flex items-center";
+  // Updated font size from text-sm to text-base for consistent sizing with NavLinks
+  const navLinkClass = "font-medium text-base transition-colors flex items-center";
   const activeNavLinkClass = "text-brandPurple-600";
   const inactiveNavLinkClass = "text-gray-700 hover:text-brandPurple-500";
   

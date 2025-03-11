@@ -44,15 +44,15 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
               <NavLinks canManageTeam={canManageTeam} setIsMenuOpen={setIsMenuOpen} />
             </div>
             
-            {/* Settings Section Header */}
-            <div className="px-4 pt-2 pb-1 text-sm font-semibold text-gray-500">
+            {/* Settings Section Header - Increased font size */}
+            <div className="px-4 pt-2 pb-1 text-base font-semibold text-gray-500">
               Settings
             </div>
             
-            {/* Settings Items */}
+            {/* Settings Items - Increased font size */}
             <Link 
               to="/profile" 
-              className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
+              className="block px-4 py-2 rounded-md font-medium text-base hover:bg-brandPurple-50"
               onClick={() => setIsMenuOpen(false)}
             >
               <span className="flex items-center">
@@ -61,10 +61,10 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
               </span>
             </Link>
             
-            {/* Always show Team link in settings for debugging */}
+            {/* Always show Team link in settings for debugging - Increased font size */}
             <Link 
               to="/team" 
-              className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
+              className="block px-4 py-2 rounded-md font-medium text-base hover:bg-brandPurple-50"
               onClick={() => setIsMenuOpen(false)}
             >
               <span className="flex items-center">
@@ -76,7 +76,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
             {isAdmin && (
               <Link 
                 to="/admin" 
-                className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
+                className="block px-4 py-2 rounded-md font-medium text-base hover:bg-brandPurple-50"
                 onClick={() => setIsMenuOpen(false)}
               >
                 <span className="flex items-center">
@@ -87,7 +87,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
             )}
             
             <button 
-              className="flex items-center w-full text-left px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
+              className="flex items-center w-full text-left px-4 py-2 rounded-md font-medium text-base hover:bg-brandPurple-50"
               onClick={handleSignOut}
             >
               <LogOut size={16} className="mr-1" />
@@ -95,19 +95,19 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
             </button>
           </>
         ) : (
-          // Only show login/signup options if not on survey response or complete pages
+          // Only show login/signup options if not on survey response or complete pages - Increased font size
           !hideAuthButtons && (
             <>
               <Link 
                 to="/login" 
-                className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
+                className="block px-4 py-2 rounded-md font-medium text-base hover:bg-brandPurple-50"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Log in
               </Link>
               <Link 
                 to="/signup" 
-                className="block px-4 py-2 rounded-md font-medium text-brandPurple-600 hover:bg-brandPurple-50"
+                className="block px-4 py-2 rounded-md font-medium text-base text-brandPurple-600 hover:bg-brandPurple-50"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Sign up

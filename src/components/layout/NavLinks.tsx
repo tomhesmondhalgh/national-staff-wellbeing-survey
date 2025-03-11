@@ -24,8 +24,8 @@ const NavLinks: React.FC<NavLinksProps> = ({ canManageTeam, setIsMenuOpen }) => 
     }
   };
 
-  // Common nav link class to maintain consistency
-  const navLinkClass = "nav-link font-medium text-sm transition-colors";
+  // Updated font size from text-sm to text-base for navigation links
+  const navLinkClass = "nav-link font-medium text-base transition-colors";
   const activeNavLinkClass = "text-brandPurple-600";
   const inactiveNavLinkClass = "text-gray-700 hover:text-brandPurple-500";
 
