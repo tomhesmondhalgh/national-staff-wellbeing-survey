@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTestingMode } from '../contexts/TestingModeContext';
 import { useOrganization } from '../contexts/OrganizationContext';
@@ -21,6 +22,7 @@ export function usePermissions() {
 
       // If in testing mode with a role, use that role
       if (isTestingMode && testingRole) {
+        console.log('Using testing role:', testingRole);
         setUserRole(testingRole);
         setIsLoading(false);
         return;
@@ -35,6 +37,7 @@ export function usePermissions() {
 
       try {
         const role = await getUserRoleForOrganization(currentOrganization.id);
+        console.log(`Fetched user role for organization ${currentOrganization.id}:`, role);
         setUserRole(role);
       } catch (error) {
         console.error('Error fetching user role:', error);
@@ -48,11 +51,12 @@ export function usePermissions() {
   }, [user, currentOrganization, isTestingMode, testingRole]);
 
   // Function to check if user has at least the specified role
-  const hasPermission = async (requiredRole: UserRoleType): Promise<boolean> => {
+  const hasPermission = useCallback(async (requiredRole: UserRoleType): Promise<boolean> => {
     if (!user) return false;
     
     // If in testing mode with a role, use that role for permission checks
     if (isTestingMode && testingRole) {
+      console.log(`Testing mode permission check: ${testingRole} >= ${requiredRole}?`);
       const roleHierarchy: Record<UserRoleType, number> = {
         'administrator': 4,
         'group_admin': 3,
@@ -67,17 +71,21 @@ export function usePermissions() {
     if (!currentOrganization) return false;
     
     try {
-      return await userHasPermission(currentOrganization.id, requiredRole);
+      const hasAccess = await userHasPermission(currentOrganization.id, requiredRole);
+      console.log(`Permission check for ${requiredRole} in org ${currentOrganization.id}: ${hasAccess}`);
+      return hasAccess;
     } catch (error) {
       console.error('Error checking permission:', error);
       return false;
     }
-  };
+  }, [user, currentOrganization, isTestingMode, testingRole]);
 
   // Common permission checks
-  const canCreate = async (): Promise<boolean> => hasPermission('editor');
-  const canEdit = async (): Promise<boolean> => hasPermission('editor');
-  const canManageTeam = async (): Promise<boolean> => {
+  const canCreate = useCallback(async (): Promise<boolean> => hasPermission('editor'), [hasPermission]);
+  
+  const canEdit = useCallback(async (): Promise<boolean> => hasPermission('editor'), [hasPermission]);
+  
+  const canManageTeam = useCallback(async (): Promise<boolean> => {
     // If in testing mode as admin, always return true for team management
     if (isTestingMode && 
         (testingRole === 'administrator' || 
@@ -87,10 +95,10 @@ export function usePermissions() {
     }
     
     return hasPermission('organization_admin');
-  };
+  }, [isTestingMode, testingRole, hasPermission]);
   
   // Check if user is a group admin
-  const canManageGroups = async (): Promise<boolean> => {
+  const canManageGroups = useCallback(async (): Promise<boolean> => {
     if (!user) return false;
     
     // If in testing mode with group_admin role, return true
@@ -118,9 +126,9 @@ export function usePermissions() {
       console.error('Error checking group admin permission:', error);
       return false;
     }
-  };
+  }, [user, isTestingMode, testingRole]);
   
-  const isAdmin = async (): Promise<boolean> => {
+  const isAdmin = useCallback(async (): Promise<boolean> => {
     // If testing mode is on and user has administrator role in testing
     if (isTestingMode && testingRole === 'administrator') {
       return true;
@@ -146,7 +154,7 @@ export function usePermissions() {
       console.error('Error checking admin permission:', error);
       return false;
     }
-  };
+  }, [user, isTestingMode, testingRole]);
 
   return {
     userRole,

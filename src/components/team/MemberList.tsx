@@ -15,12 +15,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import EditRoleDialog from './EditRoleDialog';
 import { Alert, AlertDescription } from '../ui/alert';
 import { usePermissions } from '../../hooks/usePermissions';
+import { useTestingMode } from '../../contexts/TestingModeContext';
 
 const ITEMS_PER_PAGE = 10;
 
 const MemberList = () => {
   const { currentOrganization } = useOrganization();
   const { userRole, hasPermission } = usePermissions();
+  const { isTestingMode, testingRole } = useTestingMode();
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -28,22 +30,47 @@ const MemberList = () => {
   const [selectedMember, setSelectedMember] = useState<OrganizationMember | null>(null);
   const [isEditRoleDialogOpen, setIsEditRoleDialogOpen] = useState(false);
   const [hasViewPermission, setHasViewPermission] = useState<boolean | null>(null);
+  const [isPermissionLoading, setIsPermissionLoading] = useState(true);
 
   // Check for team member view permission
   useEffect(() => {
     const checkPermission = async () => {
+      setIsPermissionLoading(true);
+      
       if (currentOrganization) {
-        const canView = await hasPermission('viewer');
-        setHasViewPermission(canView);
+        // If in testing mode with admin role, grant permission automatically
+        if (isTestingMode && 
+            (testingRole === 'organization_admin' || 
+             testingRole === 'group_admin' || 
+             testingRole === 'administrator' || 
+             testingRole === 'editor' || 
+             testingRole === 'viewer')) {
+          setHasViewPermission(true);
+          setIsPermissionLoading(false);
+          return;
+        }
+        
+        try {
+          const canView = await hasPermission('viewer');
+          console.log('Permission check result for viewer:', canView);
+          setHasViewPermission(canView);
+        } catch (error) {
+          console.error('Error checking view permission:', error);
+          setHasViewPermission(false);
+        }
+      } else {
+        setHasViewPermission(null);
       }
+      
+      setIsPermissionLoading(false);
     };
 
     checkPermission();
-  }, [currentOrganization, hasPermission]);
+  }, [currentOrganization, hasPermission, isTestingMode, testingRole]);
 
   const { 
     data: membersData, 
-    isLoading, 
+    isLoading: isDataLoading, 
     error, 
     refetch 
   } = useQuery({
@@ -94,8 +121,11 @@ const MemberList = () => {
         throw error;
       }
     },
-    enabled: !!currentOrganization && hasViewPermission !== false
+    enabled: !!currentOrganization && hasViewPermission !== false && !isPermissionLoading
   });
+
+  // Combined loading state
+  const isLoading = isPermissionLoading || isDataLoading;
 
   const filteredMembers = membersData?.members.filter(member => {
     const profile = membersData.profiles.find(p => p.id === member.user_id);
@@ -183,12 +213,26 @@ const MemberList = () => {
     );
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-8">
+        <div className="animate-spin h-8 w-8 border-4 border-brandPurple-500 border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
   if (hasViewPermission === false) {
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4 mr-2" />
         <AlertDescription>
           You do not have permission to view team members.
+          {isTestingMode && (
+            <span className="block mt-2 text-sm">
+              Testing Mode is enabled, but your role ({testingRole || 'none'}) doesn't have permission 
+              to view members. Change your testing role to viewer, editor, or admin.
+            </span>
+          )}
         </AlertDescription>
       </Alert>
     );
@@ -261,11 +305,7 @@ const MemberList = () => {
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-8">
-          <div className="animate-spin h-8 w-8 border-4 border-brandPurple-500 border-t-transparent rounded-full"></div>
-        </div>
-      ) : (!membersData?.members || membersData.members.length === 0) ? (
+      {(!membersData?.members || membersData.members.length === 0) ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
           <Users size={48} className="mx-auto text-gray-400 mb-4" />
           <p className="text-gray-500 mb-2 font-medium">No team members found</p>

@@ -11,18 +11,28 @@ import { useOrganization } from '../contexts/OrganizationContext';
 import OrganizationsList from '../components/team/OrganizationsList';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { useTestingMode } from '../contexts/TestingModeContext';
 
 const Team = () => {
   const { canManageTeam, isLoading, canManageGroups } = usePermissions();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [permissionChecked, setPermissionChecked] = useState(false);
   const { currentOrganization, organizations } = useOrganization();
+  const { isTestingMode, testingRole } = useTestingMode();
   const navigate = useNavigate();
   
   useEffect(() => {
     const checkPermission = async () => {
       try {
+        // In testing mode, grant access based on testing role
+        if (isTestingMode && ['administrator', 'group_admin', 'organization_admin'].includes(testingRole || '')) {
+          setHasPermission(true);
+          setPermissionChecked(true);
+          return;
+        }
+        
         const result = await canManageTeam();
+        console.log('Team management permission check result:', result);
         setHasPermission(result);
       } catch (error) {
         console.error('Error checking team management permission:', error);
@@ -35,7 +45,7 @@ const Team = () => {
     if (!isLoading) {
       checkPermission();
     }
-  }, [isLoading, canManageTeam]);
+  }, [isLoading, canManageTeam, isTestingMode, testingRole]);
 
   // Show loading state while checking permissions
   if (isLoading || !permissionChecked) {
@@ -52,6 +62,21 @@ const Team = () => {
 
   // Redirect if user doesn't have permission
   if (permissionChecked && !hasPermission) {
+    if (isTestingMode) {
+      return (
+        <MainLayout>
+          <div className="page-container">
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4 mr-2" />
+              <AlertDescription>
+                <p>In Testing Mode, you need an admin role to view this page.</p>
+                <p className="mt-2 text-sm">Current testing role: {testingRole || 'none'}</p>
+              </AlertDescription>
+            </Alert>
+          </div>
+        </MainLayout>
+      );
+    }
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -95,6 +120,16 @@ const Team = () => {
           subtitle="Manage members and permissions for your organization"
           className="mb-8"
         />
+        
+        {isTestingMode && (
+          <Alert variant="default" className="mb-6 bg-blue-50 border-blue-200">
+            <AlertCircle className="h-4 w-4 mr-2 text-blue-500" />
+            <AlertDescription>
+              <p>Testing Mode is enabled with role: <strong>{testingRole || 'none'}</strong></p>
+              <p className="text-sm mt-1">This is simulating permissions for that role level.</p>
+            </AlertDescription>
+          </Alert>
+        )}
         
         <div className="bg-white rounded-lg shadow-sm">
           <Tabs defaultValue="members" className="w-full">
