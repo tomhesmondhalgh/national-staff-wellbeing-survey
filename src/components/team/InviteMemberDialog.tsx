@@ -55,19 +55,15 @@ export default function InviteMemberDialog({
       
       console.log(`Creating invitation for ${email} with role ${role} to organization ${organizationId}`);
       
-      // Insert the invitation into the database
-      const { data, error } = await supabase
-        .from('invitations')
-        .insert({
-          email: email,
-          organization_id: organizationId,
-          role: role,
-          token: token,
-          invited_by: user.id,
-          expires_at: expiresAt.toISOString()
-        })
-        .select()
-        .single();
+      // Use a direct SQL query via RPC to avoid infinite recursion issues
+      const { data, error } = await supabase.rpc('create_invitation', {
+        user_email: email,
+        org_id: organizationId,
+        user_role: role,
+        invitation_token: token,
+        inviter_id: user.id,
+        expiry_date: expiresAt.toISOString()
+      });
       
       if (error) {
         console.error('Error creating invitation:', error);
@@ -75,14 +71,27 @@ export default function InviteMemberDialog({
         return;
       }
       
-      console.log('Invitation created successfully:', data);
+      console.log('Invitation created successfully', data);
       
-      // Send an email notification (handled by edge function)
-      const orgName = currentOrganization?.name || 'the organization';
-      
-      // Call the edge function to send the invitation email
-      // We'll just log success for now since the edge function isn't fully implemented with email service
-      console.log(`Would trigger email sending for invitation ${data.id}`);
+      // Try to call the edge function to send the email
+      try {
+        const orgName = currentOrganization?.name || 'the organization';
+        
+        const { error: functionError } = await supabase.functions.invoke('send-invitation-email', {
+          body: {
+            invitationId: data.id,
+            organizationName: orgName
+          }
+        });
+        
+        if (functionError) {
+          console.error('Error calling edge function:', functionError);
+          // Don't block the invite creation if email fails
+        }
+      } catch (emailError) {
+        console.error('Error sending invitation email:', emailError);
+        // Continue even if email sending fails
+      }
       
       toast.success(`Invitation sent to ${email}`);
       

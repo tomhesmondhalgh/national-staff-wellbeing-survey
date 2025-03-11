@@ -17,11 +17,10 @@ export function useTeamInvitations(organizationId: string | undefined) {
       try {
         console.log('Fetching invitations for organization:', organizationId);
         
-        const { data, error } = await supabase
-          .from('invitations')
-          .select('*')
-          .eq('organization_id', organizationId)
-          .is('accepted_at', null);
+        // Use a custom function to avoid recursion issues
+        const { data, error } = await supabase.rpc('get_organization_invitations', { 
+          org_id: organizationId 
+        });
           
         if (error) {
           console.error('Error fetching invitations:', error);
