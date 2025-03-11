@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '../ui/button';
-import { UserPlus, Search, MoreVertical, AlertCircle } from 'lucide-react';
+import { UserPlus, Search, MoreVertical, AlertCircle, Users } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useOrganization } from '../../contexts/OrganizationContext';
@@ -33,37 +33,42 @@ const MemberList = () => {
         return { members: [], profiles: [], total: 0 };
       }
       
-      const { data: members, error: membersError } = await supabase
-        .from('organization_members')
-        .select('*')
-        .eq('organization_id', currentOrganization.id);
+      try {
+        const { data: members, error: membersError } = await supabase
+          .from('organization_members')
+          .select('*')
+          .eq('organization_id', currentOrganization.id);
+          
+        if (membersError) {
+          console.error('Error fetching members:', membersError);
+          throw new Error(`Failed to load team members: ${membersError.message}`);
+        }
         
-      if (membersError) {
-        console.error('Error fetching members:', membersError);
-        throw new Error('Failed to load team members');
-      }
-      
-      if (!members || members.length === 0) {
-        return { members: [], profiles: [], total: 0 };
-      }
-      
-      // Get user profiles
-      const userIds = members.map(member => member.user_id);
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*')
-        .in('id', userIds);
+        if (!members || members.length === 0) {
+          return { members: [], profiles: [], total: 0 };
+        }
         
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
-        throw new Error('Failed to load member profiles');
+        // Get user profiles
+        const userIds = members.map(member => member.user_id);
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', userIds);
+          
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+          throw new Error('Failed to load member profiles');
+        }
+        
+        return {
+          members,
+          profiles: profiles || [],
+          total: members.length
+        };
+      } catch (error) {
+        console.error('Error in members query function:', error);
+        throw error;
       }
-      
-      return {
-        members,
-        profiles: profiles || [],
-        total: members.length
-      };
     },
     enabled: !!currentOrganization
   });
@@ -155,11 +160,19 @@ const MemberList = () => {
   }
 
   if (error) {
+    // Check if the error is related to database permissions
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const isPermissionError = errorMessage.includes('policy') || 
+                             errorMessage.includes('permission') || 
+                             errorMessage.includes('recursion');
+    
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4 mr-2" />
         <AlertDescription>
-          Failed to load team members. Please try again later.
+          {isPermissionError ? 
+            'You do not have permission to view team members.' : 
+            'Failed to load team members. Please try again later.'}
         </AlertDescription>
       </Alert>
     );
@@ -218,7 +231,9 @@ const MemberList = () => {
         </div>
       ) : (!membersData?.members || membersData.members.length === 0) ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <p className="text-gray-500">No team members found. Invite members to get started!</p>
+          <Users size={48} className="mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-500 mb-2 font-medium">No team members found</p>
+          <p className="text-gray-400 text-sm">Click "Invite Member" to add people to your organization.</p>
         </div>
       ) : (
         <>
