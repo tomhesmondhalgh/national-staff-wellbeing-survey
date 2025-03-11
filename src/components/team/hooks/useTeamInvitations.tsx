@@ -15,14 +15,13 @@ export function useTeamInvitations(organizationId: string | undefined) {
       if (!organizationId) return [];
       
       try {
-        console.log('Fetching invitations directly from the invitations table');
+        console.log('Fetching invitations for organization:', organizationId);
         
-        // Directly query the invitations table
         const { data, error } = await supabase
           .from('invitations')
           .select('*')
           .eq('organization_id', organizationId)
-          .eq('status', 'pending');
+          .is('accepted_at', null);
           
         if (error) {
           console.error('Error fetching invitations:', error);
@@ -37,13 +36,12 @@ export function useTeamInvitations(organizationId: string | undefined) {
       }
     },
     enabled: !!organizationId,
-    // Refresh every 5 seconds
     refetchInterval: 5000
   });
 
   useEffect(() => {
     if (invitations) {
-      console.log('Current invitations data:', invitations.length);
+      console.log('Current invitations data:', invitations);
     }
   }, [invitations]);
 

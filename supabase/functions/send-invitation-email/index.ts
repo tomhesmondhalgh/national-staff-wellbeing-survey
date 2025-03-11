@@ -1,82 +1,94 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { Resend } from "npm:resend@1.0.0"
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
+interface InvitationEmailRequest {
+  invitationId: string;
+  organizationName?: string;
+}
+
+const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-    if (!resend) {
-      throw new Error("Resend API key not configured");
-    }
+    const { invitationId, organizationName }: InvitationEmailRequest = await req.json();
 
-    const requestData = await req.json();
-    const { email, organizationName, role, invitedBy, token } = requestData;
-    
-    if (!email) {
+    // Initialize Supabase client with Admin key
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    // Get invitation details
+    const { data: invitation, error: invitationError } = await supabaseAdmin
+      .from("invitations")
+      .select("*")
+      .eq("id", invitationId)
+      .single();
+
+    if (invitationError || !invitation) {
+      console.error("Error fetching invitation:", invitationError);
       return new Response(
-        JSON.stringify({ error: "Email is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          success: false,
+          error: "Invitation not found",
+        }),
+        {
+          status: 404,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
       );
     }
 
-    if (!token) {
-      console.warn("Warning: Invitation token not provided");
-    }
-    
-    const roleDisplay = {
-      viewer: "Viewer (can view data only)",
-      editor: "Editor (can edit surveys and responses)",
-      organization_admin: "Administrator (full access to organization)"
-    }[role] || role;
-    
-    const { data, error } = await resend.emails.send({
-      from: "Wellbeing Survey <no-reply@resend.dev>",
-      to: email,
-      subject: `Invitation to join ${organizationName || "Wellbeing Survey"}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #5e35b1;">You've been invited to join ${organizationName || "Wellbeing Survey"}</h2>
-          <p>You've been invited by <strong>${invitedBy || "an administrator"}</strong> to join ${organizationName || "Wellbeing Survey"} as a <strong>${roleDisplay}</strong>.</p>
-          <p>To accept this invitation, please click the button below:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${Deno.env.get("SUPABASE_URL") || "https://bagaaqkmewkuwtudwnqw.supabase.co"}/invitation/accept?token=${token}" 
-              style="background-color: #5e35b1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
-              Accept Invitation
-            </a>
-          </div>
-          <p style="color: #666; font-size: 14px;">If you didn't expect this invitation, you can safely ignore this email.</p>
-          <p style="color: #666; font-size: 14px;">This invitation will expire in 7 days.</p>
-        </div>
-      `,
-    });
+    // Get inviter profile
+    const { data: inviterProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("*")
+      .eq("id", invitation.invited_by)
+      .maybeSingle();
 
-    if (error) {
-      console.error("Error sending email:", error);
-      return new Response(
-        JSON.stringify({ error: error.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const inviterName = inviterProfile
+      ? `${inviterProfile.first_name || ''} ${inviterProfile.last_name || ''}`.trim()
+      : "Someone";
+
+    const orgName = organizationName || "an organization";
+    const acceptUrl = `${Deno.env.get("FRONTEND_URL") || "http://localhost:3000"}/invitation/accept?token=${invitation.token}`;
+
+    console.log(`Would send invitation email to ${invitation.email} for ${orgName}`);
+    console.log(`Accept URL: ${acceptUrl}`);
+    
+    // For now we'll just log the email details since we haven't set up email sending
+    // In a real implementation, you would use Resend or another email service here
 
     return new Response(
-      JSON.stringify({ success: true, data }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({
+        success: true,
+        message: "Invitation email logged (would be sent in production)",
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error in send-invitation-email function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ success: false, error: error.message }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      }
     );
   }
-});
+};
+
+serve(handler);

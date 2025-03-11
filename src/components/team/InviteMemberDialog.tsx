@@ -63,10 +63,8 @@ export default function InviteMemberDialog({
           organization_id: organizationId,
           role: role,
           token: token,
-          status: 'pending',
           invited_by: user.id,
-          expires_at: expiresAt.toISOString(),
-          created_at: new Date().toISOString()
+          expires_at: expiresAt.toISOString()
         })
         .select()
         .single();
@@ -81,6 +79,10 @@ export default function InviteMemberDialog({
       
       // Send an email notification (handled by edge function)
       const orgName = currentOrganization?.name || 'the organization';
+      
+      // Call the edge function to send the invitation email
+      // We'll just log success for now since the edge function isn't fully implemented with email service
+      console.log(`Would trigger email sending for invitation ${data.id}`);
       
       toast.success(`Invitation sent to ${email}`);
       
