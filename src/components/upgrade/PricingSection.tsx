@@ -53,9 +53,7 @@ const PricingSection: React.FC = () => {
     if (planType === 'free' && isFree || planType === 'foundation' && isFoundation || planType === 'progress' && isProgress || planType === 'premium' && isPremium) {
       return 'Your Current Plan';
     }
-    if (planType === 'free') {
-      return 'Get Started';
-    }
+
     const planLevels = {
       free: 0,
       foundation: 1,
@@ -64,11 +62,16 @@ const PricingSection: React.FC = () => {
     };
     const currentPlanLevel = isFree ? 0 : isFoundation ? 1 : isProgress ? 2 : isPremium ? 3 : 0;
     const targetPlanLevel = planLevels[planType];
-    if (targetPlanLevel > currentPlanLevel) {
-      return `Upgrade to ${planType.charAt(0).toUpperCase() + planType.slice(1)}`;
-    } else {
-      return `Downgrade to ${planType.charAt(0).toUpperCase() + planType.slice(1)}`;
+    
+    if (targetPlanLevel < currentPlanLevel) {
+      return 'Contact to Downgrade';
     }
+    
+    if (planType === 'free') {
+      return 'Get Started';
+    }
+    
+    return `Upgrade to ${planType.charAt(0).toUpperCase() + planType.slice(1)}`;
   };
 
   const getButtonVariant = (planType: PlanType): 'default' | 'outline' => {
@@ -86,6 +89,24 @@ const PricingSection: React.FC = () => {
     return targetPlanLevel > currentPlanLevel ? 'default' : 'outline';
   };
 
+  const handleButtonClick = (planType: PlanType, onButtonClick: () => void) => {
+    const planLevels = {
+      free: 0,
+      foundation: 1,
+      progress: 2,
+      premium: 3
+    };
+    const currentPlanLevel = isFree ? 0 : isFoundation ? 1 : isProgress ? 2 : isPremium ? 3 : 0;
+    const targetPlanLevel = planLevels[planType];
+    
+    if (targetPlanLevel < currentPlanLevel) {
+      window.location.href = 'mailto:support@wellbeingsurvey.com?subject=Plan Downgrade Request';
+      return;
+    }
+    
+    onButtonClick();
+  };
+
   const plans = [
     {
       title: "Free",
@@ -100,7 +121,7 @@ const PricingSection: React.FC = () => {
         }
       ],
       planType: 'free' as PlanType,
-      onButtonClick: () => navigate('/dashboard'),
+      onButtonClick: () => handleButtonClick('free', () => navigate('/dashboard')),
       buttonText: getButtonText('free'),
       buttonVariant: getButtonVariant('free')
     },
@@ -121,7 +142,9 @@ const PricingSection: React.FC = () => {
         }
       ],
       planType: 'foundation' as PlanType,
-      onButtonClick: () => isFree || isLoading ? handleUpgrade('price_foundation', 'foundation', 'one-time') : null,
+      onButtonClick: () => handleButtonClick('foundation', () => 
+        isFree || isLoading ? handleUpgrade('price_foundation', 'foundation', 'one-time') : null
+      ),
       buttonText: getButtonText('foundation'),
       buttonVariant: getButtonVariant('foundation'),
       disabled: isFoundation || isProgress || isPremium
@@ -153,7 +176,9 @@ const PricingSection: React.FC = () => {
       ],
       planType: 'progress' as PlanType,
       isPopular: true,
-      onButtonClick: () => isFree || isFoundation || isLoading ? handleUpgrade('price_progress', 'progress', 'subscription') : null,
+      onButtonClick: () => handleButtonClick('progress', () => 
+        isFree || isFoundation || isLoading ? handleUpgrade('price_progress', 'progress', 'subscription') : null
+      ),
       buttonText: getButtonText('progress'),
       buttonVariant: getButtonVariant('progress'),
       disabled: isProgress || isPremium
@@ -176,7 +201,9 @@ const PricingSection: React.FC = () => {
         }
       ],
       planType: 'premium' as PlanType,
-      onButtonClick: () => isFree || isFoundation || isProgress || isLoading ? handleUpgrade('price_premium', 'premium', 'subscription') : null,
+      onButtonClick: () => handleButtonClick('premium', () => 
+        isFree || isFoundation || isProgress || isLoading ? handleUpgrade('price_premium', 'premium', 'subscription') : null
+      ),
       buttonText: getButtonText('premium'),
       buttonVariant: getButtonVariant('premium'),
       disabled: isPremium
