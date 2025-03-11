@@ -42,13 +42,19 @@ export function usePermissions() {
       }
 
       try {
+        console.log('Fetching role for user:', user.email);
+        
         // Check if user is system administrator
-        const { data: adminRole } = await supabase
+        const { data: adminRole, error: adminError } = await supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', user.id)
           .eq('role', 'administrator')
           .maybeSingle();
+          
+        if (adminError) {
+          console.error('Error checking admin role:', adminError);
+        }
           
         if (adminRole) {
           console.log('User is administrator:', user.email);
@@ -63,6 +69,8 @@ export function usePermissions() {
           setIsLoading(false);
           return;
         }
+        
+        console.log('Checking organization role for organization:', currentOrganization.name);
         
         // Check if user is organization admin for current organization
         const { data: orgMember, error: orgError } = await supabase
@@ -83,6 +91,8 @@ export function usePermissions() {
           return;
         }
         
+        console.log('Checking group-based access');
+        
         // Check group-based access
         try {
           const { data: groupRoles, error: groupError } = await supabase
@@ -94,24 +104,44 @@ export function usePermissions() {
                 group_organizations(organization_id)
               )
             `)
-            .eq('user_id', user.id) as { data: GroupMembership[] | null; error: any };
+            .eq('user_id', user.id);
             
           if (groupError) {
             console.error('Error fetching group roles:', groupError);
           }
           
+          console.log('Group roles data:', groupRoles);
+          
           if (groupRoles && groupRoles.length > 0) {
+            let foundRole = false;
+            
             for (const groupRole of groupRoles) {
-              if (groupRole.groups?.group_organizations) {
+              // Check if groups and group_organizations exist and are properly structured
+              if (groupRole.groups && 
+                  typeof groupRole.groups === 'object' && 
+                  groupRole.groups.group_organizations && 
+                  Array.isArray(groupRole.groups.group_organizations)) {
+                
                 for (const groupOrg of groupRole.groups.group_organizations) {
-                  if (groupOrg.organization_id === currentOrganization.id) {
+                  if (groupOrg && 
+                      typeof groupOrg === 'object' && 
+                      'organization_id' in groupOrg && 
+                      groupOrg.organization_id === currentOrganization.id) {
+                    
                     console.log('User has group role:', groupRole.role, 'for organization:', currentOrganization.name);
                     setUserRole(groupRole.role as UserRoleType);
-                    setIsLoading(false);
-                    return;
+                    foundRole = true;
+                    break;
                   }
                 }
+                
+                if (foundRole) break;
               }
+            }
+            
+            if (foundRole) {
+              setIsLoading(false);
+              return;
             }
           }
         } catch (error) {
