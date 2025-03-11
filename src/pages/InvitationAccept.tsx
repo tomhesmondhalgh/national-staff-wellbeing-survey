@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -33,7 +32,6 @@ const InvitationAccept: React.FC = () => {
       }
 
       try {
-        // Fetch invitation by token
         const { data, error: fetchError } = await supabase
           .from('invitations')
           .select('*, organizations:organization_id(school_name)')
@@ -44,12 +42,10 @@ const InvitationAccept: React.FC = () => {
           throw new Error('Invitation not found or has expired');
         }
 
-        // Check if invitation is already accepted
         if (data.accepted_at) {
           throw new Error('This invitation has already been accepted');
         }
 
-        // Check if invitation is expired
         const expiresAt = new Date(data.expires_at);
         const now = new Date();
         
@@ -74,7 +70,6 @@ const InvitationAccept: React.FC = () => {
     setIsLoading(true);
     try {
       if (!user) {
-        // If user is not logged in, show auth form
         setShowAuthForm(true);
         setIsLoading(false);
         return;
@@ -89,7 +84,6 @@ const InvitationAccept: React.FC = () => {
 
   const completeInvitationAcceptance = async () => {
     try {
-      // Check if user is already a member of the organization
       const { data: existingMember } = await supabase
         .from('organization_members')
         .select('*')
@@ -103,7 +97,6 @@ const InvitationAccept: React.FC = () => {
         return;
       }
 
-      // Add user to the organization with the specified role
       const { error: memberError } = await supabase
         .from('organization_members')
         .insert({
@@ -114,7 +107,6 @@ const InvitationAccept: React.FC = () => {
 
       if (memberError) throw memberError;
 
-      // Update invitation status
       const { error: updateError } = await supabase
         .from('invitations')
         .update({ accepted_at: new Date().toISOString() })
@@ -122,13 +114,11 @@ const InvitationAccept: React.FC = () => {
 
       if (updateError) throw updateError;
 
-      // Refresh organizations in context
       await refreshOrganizations();
 
       setAccountCreated(true);
       toast.success('You have successfully joined the organization');
       
-      // Wait a moment before redirecting to dashboard
       setTimeout(() => {
         navigate('/dashboard');
       }, 2000);
@@ -141,7 +131,6 @@ const InvitationAccept: React.FC = () => {
     setIsLoading(true);
     try {
       if (data.mode === 'login') {
-        // Handle login
         const { error, success } = await signIn(data.email, data.password);
         
         if (success) {
@@ -153,9 +142,6 @@ const InvitationAccept: React.FC = () => {
           setIsLoading(false);
         }
       } else {
-        // Handle signup
-        // Note: You're using a more complex signup flow for this app through SignUp.tsx
-        // Redirect to signup page with the token for the organization to join
         navigate(`/signup?invitation=${token}`);
       }
     } catch (err) {
@@ -220,7 +206,11 @@ const InvitationAccept: React.FC = () => {
             title="Complete Your Invitation" 
             subtitle={`Sign in or create an account to join ${invitation?.organizations?.school_name}`}
           />
-          <AuthForm onSubmit={handleAuthFormSubmit} isLoading={isLoading} />
+          <AuthForm 
+            mode="login" 
+            onSubmit={handleAuthFormSubmit} 
+            isLoading={isLoading} 
+          />
         </div>
       </MainLayout>
     );
