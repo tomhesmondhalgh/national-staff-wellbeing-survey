@@ -52,7 +52,7 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ isAdmin, canManageT
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="nav-link p-0 h-auto font-normal">
+        <Button variant="ghost" className="nav-link">
           <span className="flex items-center">
             <Settings size={16} className="mr-1" />
             Settings

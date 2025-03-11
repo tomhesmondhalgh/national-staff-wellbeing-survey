@@ -1,7 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Users } from 'lucide-react';
+import { useSubscription } from '../../hooks/useSubscription';
 import { usePermissions } from '../../hooks/usePermissions';
 
 interface NavLinksProps {
@@ -12,6 +12,7 @@ interface NavLinksProps {
 const NavLinks: React.FC<NavLinksProps> = ({ canManageTeam, setIsMenuOpen }) => {
   const location = useLocation();
   const { userRole } = usePermissions();
+  const { isPremium, isLoading } = useSubscription();
   
   useEffect(() => {
     console.log('NavLinks component - canManageTeam:', canManageTeam, 'userRole:', userRole);
@@ -54,15 +55,15 @@ const NavLinks: React.FC<NavLinksProps> = ({ canManageTeam, setIsMenuOpen }) => 
         Improve
       </Link>
       
-      <Link 
-        to="/team" 
-        className={`nav-link flex items-center ${location.pathname === '/team' ? 'text-brandPurple-600' : ''}`}
-        onClick={handleClick}
-        data-testid="team-link"
-      >
-        <Users size={16} className="mr-1" />
-        Team
-      </Link>
+      {!isPremium && !isLoading && (
+        <Link 
+          to="/upgrade" 
+          className={`nav-link ${location.pathname === '/upgrade' ? 'text-brandPurple-600' : ''}`}
+          onClick={handleClick}
+        >
+          Upgrade
+        </Link>
+      )}
     </>
   );
 };

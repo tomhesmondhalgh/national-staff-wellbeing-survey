@@ -8,11 +8,13 @@ import MembersAndInvitationsList from '../components/team/MembersAndInvitationsL
 import { useOrganization } from '../contexts/OrganizationContext';
 import OrganizationsList from '../components/team/OrganizationsList';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
-import { AlertCircle, Info, User, RefreshCw } from 'lucide-react';
+import { AlertCircle, Info, User, RefreshCw, ArrowRight } from 'lucide-react';
 import { useTestingMode } from '../contexts/TestingModeContext';
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
+import { useSubscription } from '../hooks/useSubscription';
+import { useNavigate } from 'react-router-dom';
 
 const Team = () => {
   const { userRole, error: permissionsError, isLoading: permissionsLoading } = usePermissions();
@@ -20,6 +22,22 @@ const Team = () => {
   const { user } = useAuth();
   const { isTestingMode, testingRole, setTestingRole } = useTestingMode();
   const [isAdmin, setIsAdmin] = useState(false);
+  const navigate = useNavigate();
+  const { isLoading: isSubscriptionLoading, isProgress, isPremium, hasAccess } = useSubscription();
+  const [hasProgressPlan, setHasProgressPlan] = useState<boolean | null>(null);
+  
+  // Check if user has Progress plan
+  useEffect(() => {
+    async function checkAccess() {
+      if (hasAccess) {
+        const canAccess = await hasAccess('progress');
+        setHasProgressPlan(canAccess);
+      }
+    }
+    if (!isSubscriptionLoading) {
+      checkAccess();
+    }
+  }, [hasAccess, isSubscriptionLoading]);
   
   // Determine if the user can see the Organisations tab
   // Only group_admin and administrator roles can see the Organisations tab
@@ -62,7 +80,7 @@ const Team = () => {
   }, [userRole, isTestingMode, testingRole, currentOrganization]);
 
   // If permissions are still loading, show a loading indicator
-  if (permissionsLoading) {
+  if (permissionsLoading || isSubscriptionLoading || hasProgressPlan === null) {
     return (
       <MainLayout>
         <div className="page-container">
@@ -73,6 +91,33 @@ const Team = () => {
           />
           <div className="flex justify-center py-8">
             <div className="animate-spin h-8 w-8 border-4 border-brandPurple-500 border-t-transparent rounded-full"></div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // Check if user has Progress plan
+  if (!hasProgressPlan && !isTestingMode) {
+    return (
+      <MainLayout>
+        <div className="page-container">
+          <PageTitle 
+            title="Team Management" 
+            subtitle="Manage members and permissions for your organisation"
+            className="mb-8"
+          />
+          
+          <div className="mt-8 rounded-lg border border-gray-200 bg-gray-50 p-8 text-center">
+            <h2 className="text-2xl font-bold mb-4">Upgrade to Access Team Management</h2>
+            <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
+              Team Management is available with Progress and Premium plans. 
+              Upgrade today to add additional users and collaborate on your wellbeing action plan.
+            </p>
+            
+            <Button onClick={() => navigate('/upgrade')} size="lg" className="px-8">
+              View Upgrade Options <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
           </div>
         </div>
       </MainLayout>

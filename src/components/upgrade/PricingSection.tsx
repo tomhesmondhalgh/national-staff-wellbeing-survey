@@ -142,6 +142,9 @@ const PricingSection: React.FC = () => {
           text: "Formal accreditation and a logo you can use on your website"
         },
         {
+          text: "Add additional users to collaborate on your plan"
+        },
+        {
           text: "Quarterly live staff wellbeing networks"
         },
         {
