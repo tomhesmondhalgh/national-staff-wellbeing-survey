@@ -14,7 +14,10 @@ export function useCombinedTeamMembers(
   const teamMembers: TeamMember[] = useMemo(() => {
     const items: TeamMember[] = [];
     
-    if (members) {
+    // Add regular members
+    if (members && members.length > 0) {
+      console.log(`Adding ${members.length} regular members to the display list`);
+      
       items.push(...members.map(member => ({
         id: member.id,
         type: 'member' as const,
@@ -26,34 +29,33 @@ export function useCombinedTeamMembers(
       })));
     }
     
+    // Add invitations
     if (invitations && Array.isArray(invitations) && invitations.length > 0) {
-      console.log('Processing invitations for display:', invitations.length);
+      console.log(`Adding ${invitations.length} invitations to the display list`);
       
-      invitations.forEach(invitation => {
-        console.log('Adding invitation:', invitation.id, invitation.email, invitation.role);
-        
-        items.push({
-          id: invitation.id,
-          type: 'invitation',
-          email: invitation.email,
-          role: invitation.role,
-          created_at: invitation.created_at,
-          expires_at: invitation.expires_at,
-          data: invitation
-        });
-      });
+      items.push(...invitations.map(invitation => ({
+        id: invitation.id,
+        type: 'invitation' as const,
+        email: invitation.email,
+        role: invitation.role,
+        created_at: invitation.created_at,
+        expires_at: invitation.expires_at,
+        data: invitation
+      })));
     } else {
-      console.log('No invitations to display');
+      console.log('No invitations to display or invitations data is invalid');
     }
     
-    console.log('Final team members array:', items.length);
+    console.log('Final team members array (combined):', items.length);
     return items;
   }, [members, invitations, profiles]);
 
+  // Debug logging
   useEffect(() => {
-    console.log('Team members array (combined):', teamMembers.length);
-    console.log('Members:', members?.length || 0);
-    console.log('Invitations:', invitations?.length || 0);
+    console.log('Combined team members:', teamMembers.length);
+    console.log('Members count:', members?.length || 0);
+    console.log('Invitations count:', invitations?.length || 0);
+    console.log('Invitations data:', invitations);
   }, [teamMembers, members, invitations]);
 
   const filteredItems = useMemo(() => {
