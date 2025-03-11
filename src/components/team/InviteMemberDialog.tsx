@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
 import { useOrganization } from '../../contexts/OrganizationContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 type InviteMemberDialogProps = {
   isOpen: boolean;
@@ -26,12 +27,18 @@ export default function InviteMemberDialog({
   const [role, setRole] = useState<string>('viewer');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { currentOrganization } = useOrganization();
+  const { user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email) {
       toast.error('Please enter an email address');
+      return;
+    }
+
+    if (!user) {
+      toast.error('You must be logged in to send invitations');
       return;
     }
     
@@ -41,6 +48,10 @@ export default function InviteMemberDialog({
       // Create a random token for the invitation
       const token = Math.random().toString(36).substring(2, 15) + 
                    Math.random().toString(36).substring(2, 15);
+      
+      // Calculate expiration date (7 days from now)
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
       
       console.log(`Creating invitation for ${email} with role ${role} to organization ${organizationId}`);
       
@@ -52,7 +63,10 @@ export default function InviteMemberDialog({
           organization_id: organizationId,
           role: role,
           token: token,
-          status: 'pending'
+          status: 'pending',
+          invited_by: user.id,
+          expires_at: expiresAt.toISOString(),
+          created_at: new Date().toISOString()
         })
         .select()
         .single();
@@ -65,17 +79,15 @@ export default function InviteMemberDialog({
       
       console.log('Invitation created successfully:', data);
       
-      // Send an email notification (this would be handled by a Supabase edge function)
+      // Send an email notification (handled by edge function)
       const orgName = currentOrganization?.name || 'the organization';
       
       toast.success(`Invitation sent to ${email}`);
       
-      // Wait a moment before completing to ensure database consistency
-      setTimeout(() => {
-        onComplete();
-        setEmail('');
-        setRole('viewer');
-      }, 500);
+      // Close dialog and reset form
+      onComplete();
+      setEmail('');
+      setRole('viewer');
       
     } catch (error: any) {
       console.error('Error in invitation process:', error);
