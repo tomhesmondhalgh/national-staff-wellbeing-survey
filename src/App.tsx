@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from './components/ui/toaster';
 import { AuthProvider } from './contexts/AuthContext';
@@ -53,80 +54,82 @@ function App() {
           <StripeProvider>
             <OrganizationProvider>
               <Router>
-                {/* Public routes */}
-                <Route path="/" element={<Index />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<SignUp />} />
-                <Route path="/email-confirmation" element={<EmailConfirmation />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/survey" element={<SurveyForm />} />
-                <Route path="/survey-complete" element={<SurveyComplete />} />
-                <Route path="/survey-closed" element={<SurveyClosed />} />
-                <Route path="/invitation/accept" element={<InvitationAccept />} />
-                <Route path="/payment-success" element={<PaymentSuccess />} />
-                
-                {/* Protected routes */}
-                <Route path="/onboarding" element={
-                  <ProtectedRoute>
-                    <Onboarding />
-                  </ProtectedRoute>
-                } />
-                <Route path="/dashboard" element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } />
-                <Route path="/surveys" element={
-                  <ProtectedRoute>
-                    <Surveys />
-                  </ProtectedRoute>
-                } />
-                <Route path="/surveys/:id/edit" element={
-                  <ProtectedRoute>
-                    <EditSurvey />
-                  </ProtectedRoute>
-                } />
-                <Route path="/new-survey" element={
-                  <ProtectedRoute>
-                    <NewSurvey />
-                  </ProtectedRoute>
-                } />
-                <Route path="/analysis" element={
-                  <ProtectedRoute>
-                    <Analysis />
-                  </ProtectedRoute>
-                } />
-                <Route path="/upgrade" element={
-                  <ProtectedRoute>
-                    <Upgrade />
-                  </ProtectedRoute>
-                } />
-                <Route path="/improve" element={
-                  <ProtectedRoute>
-                    <Improve />
-                  </ProtectedRoute>
-                } />
-                <Route path="/profile" element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin" element={
-                  <ProtectedRoute>
-                    <Admin />
-                  </ProtectedRoute>
-                } />
-                <Route path="/custom-questions" element={
-                  <ProtectedRoute>
-                    <CustomQuestions />
-                  </ProtectedRoute>
-                } />
-                <Route path="/team" element={
-                  <ProtectedRoute>
-                    <Team />
-                  </ProtectedRoute>
-                } />
-                <Route path="*" element={<NotFound />} />
+                <Routes>
+                  {/* Public routes */}
+                  <Route path="/" element={<Index />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<SignUp />} />
+                  <Route path="/email-confirmation" element={<EmailConfirmation />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="/survey" element={<SurveyForm />} />
+                  <Route path="/survey-complete" element={<SurveyComplete />} />
+                  <Route path="/survey-closed" element={<SurveyClosed />} />
+                  <Route path="/invitation/accept" element={<InvitationAccept />} />
+                  <Route path="/payment-success" element={<PaymentSuccess />} />
+                  
+                  {/* Protected routes */}
+                  <Route path="/onboarding" element={
+                    <ProtectedRoute>
+                      <Onboarding />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/dashboard" element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/surveys" element={
+                    <ProtectedRoute>
+                      <Surveys />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/surveys/:id/edit" element={
+                    <ProtectedRoute>
+                      <EditSurvey />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/new-survey" element={
+                    <ProtectedRoute>
+                      <NewSurvey />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/analysis" element={
+                    <ProtectedRoute>
+                      <Analysis />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/upgrade" element={
+                    <ProtectedRoute>
+                      <Upgrade />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/improve" element={
+                    <ProtectedRoute>
+                      <Improve />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/profile" element={
+                    <ProtectedRoute>
+                      <Profile />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/admin" element={
+                    <ProtectedRoute>
+                      <Admin />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/custom-questions" element={
+                    <ProtectedRoute>
+                      <CustomQuestions />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/team" element={
+                    <ProtectedRoute>
+                      <Team />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
               </Router>
               <Toaster />
             </OrganizationProvider>
