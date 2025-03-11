@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '../ui/button';
 import { UserPlus, Search, MoreVertical, AlertCircle, Users } from 'lucide-react';
@@ -14,25 +14,49 @@ import Pagination from '../surveys/Pagination';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import EditRoleDialog from './EditRoleDialog';
 import { Alert, AlertDescription } from '../ui/alert';
+import { usePermissions } from '../../hooks/usePermissions';
 
 const ITEMS_PER_PAGE = 10;
 
 const MemberList = () => {
   const { currentOrganization } = useOrganization();
+  const { userRole, hasPermission } = usePermissions();
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<OrganizationMember | null>(null);
   const [isEditRoleDialogOpen, setIsEditRoleDialogOpen] = useState(false);
+  const [hasViewPermission, setHasViewPermission] = useState<boolean | null>(null);
 
-  const { data: membersData, isLoading, error, refetch } = useQuery({
+  // Check for team member view permission
+  useEffect(() => {
+    const checkPermission = async () => {
+      if (currentOrganization) {
+        const canView = await hasPermission('viewer');
+        setHasViewPermission(canView);
+      }
+    };
+
+    checkPermission();
+  }, [currentOrganization, hasPermission]);
+
+  const { 
+    data: membersData, 
+    isLoading, 
+    error, 
+    refetch 
+  } = useQuery({
     queryKey: ['organizationMembers', currentOrganization?.id],
     queryFn: async () => {
       if (!currentOrganization) {
         return { members: [], profiles: [], total: 0 };
       }
       
+      if (hasViewPermission === false) {
+        throw new Error('permission_denied');
+      }
+
       try {
         const { data: members, error: membersError } = await supabase
           .from('organization_members')
@@ -70,7 +94,7 @@ const MemberList = () => {
         throw error;
       }
     },
-    enabled: !!currentOrganization
+    enabled: !!currentOrganization && hasViewPermission !== false
   });
 
   const filteredMembers = membersData?.members.filter(member => {
@@ -159,12 +183,24 @@ const MemberList = () => {
     );
   }
 
+  if (hasViewPermission === false) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4 mr-2" />
+        <AlertDescription>
+          You do not have permission to view team members.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   if (error) {
     // Check if the error is related to database permissions
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     const isPermissionError = errorMessage.includes('policy') || 
                              errorMessage.includes('permission') || 
-                             errorMessage.includes('recursion');
+                             errorMessage.includes('recursion') ||
+                             errorMessage === 'permission_denied';
     
     return (
       <Alert variant="destructive">
