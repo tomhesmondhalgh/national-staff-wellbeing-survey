@@ -29,47 +29,49 @@ const App = () => {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TestingModeProvider>
-        <AuthProvider>
-          <OrganizationProvider>
-            <StripeProvider>
-              <Routes>
-                {/* Public routes */}
-                <Route path="/" element={<Index />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<SignUp />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/email-confirmation" element={<EmailConfirmation />} />
-                <Route path="/invitation/accept" element={<InvitationAccept />} />
+    <BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <TestingModeProvider>
+          <AuthProvider>
+            <OrganizationProvider>
+              <StripeProvider>
+                <Routes>
+                  {/* Public routes */}
+                  <Route path="/" element={<Index />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<SignUp />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="/email-confirmation" element={<EmailConfirmation />} />
+                  <Route path="/invitation/accept" element={<InvitationAccept />} />
 
-                {/* Protected routes */}
-                <Route element={<ProtectedRoute children={<></>} />}>
-                  <Route path="/profile" element={<div>Profile Page</div>} />
-                  <Route path="/dashboard" element={<div>Dashboard Page</div>} />
-                  <Route path="/surveys" element={<div>Surveys Page</div>} />
-                  <Route path="/surveys/create" element={<div>Create Survey Page</div>} />
-                  <Route path="/surveys/:id/edit" element={<div>Edit Survey Page</div>} />
-                  <Route path="/surveys/:id/responses" element={<div>Survey Responses Page</div>} />
-                  <Route path="/team" element={<Team />} />
-                  <Route path="/settings" element={<div>Settings Page</div>} />
-                  <Route path="/subscription" element={<div>Subscription Page</div>} />
-                </Route>
+                  {/* Protected routes */}
+                  <Route element={<ProtectedRoute children={<></>} />}>
+                    <Route path="/profile" element={<div>Profile Page</div>} />
+                    <Route path="/dashboard" element={<div>Dashboard Page</div>} />
+                    <Route path="/surveys" element={<div>Surveys Page</div>} />
+                    <Route path="/surveys/create" element={<div>Create Survey Page</div>} />
+                    <Route path="/surveys/:id/edit" element={<div>Edit Survey Page</div>} />
+                    <Route path="/surveys/:id/responses" element={<div>Survey Responses Page</div>} />
+                    <Route path="/team" element={<Team />} />
+                    <Route path="/settings" element={<div>Settings Page</div>} />
+                    <Route path="/subscription" element={<div>Subscription Page</div>} />
+                  </Route>
 
-                {/* Survey form routes - these are public but have their own access control */}
-                <Route path="/s/:id" element={<div>Public Survey Form</div>} />
-                <Route path="/s/:id/:responseId" element={<div>Public Survey Form with Response ID</div>} />
+                  {/* Survey form routes - these are public but have their own access control */}
+                  <Route path="/s/:id" element={<div>Public Survey Form</div>} />
+                  <Route path="/s/:id/:responseId" element={<div>Public Survey Form with Response ID</div>} />
 
-                {/* Fallback route */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+                  {/* Fallback route */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
 
-              <Toaster />
-            </StripeProvider>
-          </OrganizationProvider>
-        </AuthProvider>
-      </TestingModeProvider>
-    </QueryClientProvider>
+                <Toaster />
+              </StripeProvider>
+            </OrganizationProvider>
+          </AuthProvider>
+        </TestingModeProvider>
+      </QueryClientProvider>
+    </BrowserRouter>
   );
 };
 
