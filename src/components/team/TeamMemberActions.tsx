@@ -15,6 +15,7 @@ type TeamMemberActionsProps = {
 export default function TeamMemberActions({ memberId, type, refetchAll, member }: TeamMemberActionsProps) {
   const [selectedMember, setSelectedMember] = useState<OrganizationMember | null>(null);
   const [isEditRoleDialogOpen, setIsEditRoleDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   const handleRemoveMember = async (memberId: string) => {
     if (!confirm("Are you sure you want to remove this member?")) return;
@@ -43,20 +44,22 @@ export default function TeamMemberActions({ memberId, type, refetchAll, member }
   const handleCancelInvitation = async (invitationId: string) => {
     if (!confirm("Are you sure you want to cancel this invitation?")) return;
     
+    setIsLoading(true);
     try {
-      // Use the REST API directly to avoid policy recursion issues
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/invitations?id=eq.${invitationId}`, {
-        method: 'DELETE',
+      // Use our custom edge function
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cancel-invitation`, {
+        method: 'POST',
         headers: {
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           'Content-Type': 'application/json',
-          'Prefer': 'return=minimal'
-        }
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        },
+        body: JSON.stringify({ invitationId })
       });
       
+      const data = await response.json();
+      
       if (!response.ok) {
-        throw new Error(`Server responded with status: ${response.status}`);
+        throw new Error(data.error || `Server responded with status: ${response.status}`);
       }
       
       toast.success('Invitation cancelled successfully');
@@ -64,6 +67,8 @@ export default function TeamMemberActions({ memberId, type, refetchAll, member }
     } catch (error) {
       console.error('Error cancelling invitation:', error);
       toast.error('Failed to cancel invitation');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -101,8 +106,9 @@ export default function TeamMemberActions({ memberId, type, refetchAll, member }
         <button 
           onClick={() => handleCancelInvitation(memberId)}
           className="text-red-600 hover:text-red-800 hover:bg-red-50"
+          disabled={isLoading}
         >
-          Cancel Invitation
+          {isLoading ? 'Cancelling...' : 'Cancel Invitation'}
         </button>
       )}
       
