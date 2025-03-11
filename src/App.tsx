@@ -1,139 +1,85 @@
-
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Toaster } from './components/ui/toaster';
-import { AuthProvider } from './contexts/AuthContext';
-import { OrganizationProvider } from './contexts/OrganizationContext';
-import { TestingModeProvider } from './contexts/TestingModeContext';
-import { Toaster as SonnerToaster } from 'sonner';
-import ProtectedRoute from './components/auth/ProtectedRoute';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-
-// Pages
-import Index from './pages/Index';
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, BrowserRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from 'react-query';
+import { Toaster } from 'sonner';
+import { Index } from './pages';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
+import ResetPassword from './pages/ResetPassword';
 import EmailConfirmation from './pages/EmailConfirmation';
-import Onboarding from './pages/Onboarding';
+import Profile from './pages/Profile';
 import Dashboard from './pages/Dashboard';
 import Surveys from './pages/Surveys';
-import NewSurvey from './pages/NewSurvey';
+import CreateSurvey from './pages/CreateSurvey';
 import EditSurvey from './pages/EditSurvey';
-import SurveyForm from './pages/SurveyForm';
-import SurveyComplete from './pages/SurveyComplete';
-import SurveyClosed from './pages/SurveyClosed';
-import Analysis from './pages/Analysis';
-import Upgrade from './pages/Upgrade';
-import Improve from './pages/Improve';
-import Profile from './pages/Profile';
-import ResetPassword from './pages/ResetPassword';
-import Admin from './pages/Admin';
-import NotFound from './pages/NotFound';
-import CustomQuestions from './pages/CustomQuestions';
+import SurveyResponses from './pages/SurveyResponses';
 import Team from './pages/Team';
+import Settings from './pages/Settings';
+import Subscription from './pages/Subscription';
+import NotFound from './pages/NotFound';
+import TestingMode from './pages/TestingMode';
+import TestingModeProvider from './contexts/TestingModeContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { OrganizationProvider } from './contexts/OrganizationContext';
+import { StripeProvider } from './contexts/StripeContext';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import PublicSurveyForm from './pages/PublicSurveyForm';
 import InvitationAccept from './pages/InvitationAccept';
 
-import './App.css';
+const queryClient = new QueryClient();
 
-// Create a new QueryClient instance
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+const App = () => {
+  const [isTestingMode, setIsTestingMode] = useState(false);
 
-function App() {
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const testing = params.get('testing');
+    setIsTestingMode(testing === 'true');
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
-      <Router>
+      <TestingModeProvider>
         <AuthProvider>
           <OrganizationProvider>
-            <TestingModeProvider>
+            <StripeProvider>
               <Routes>
                 {/* Public routes */}
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<SignUp />} />
-                <Route path="/email-confirmation" element={<EmailConfirmation />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/survey" element={<SurveyForm />} />
-                <Route path="/survey-complete" element={<SurveyComplete />} />
-                <Route path="/survey-closed" element={<SurveyClosed />} />
+                <Route path="/email-confirmation" element={<EmailConfirmation />} />
                 <Route path="/invitation/accept" element={<InvitationAccept />} />
-                
+
                 {/* Protected routes */}
-                <Route path="/onboarding" element={
-                  <ProtectedRoute>
-                    <Onboarding />
-                  </ProtectedRoute>
-                } />
-                <Route path="/dashboard" element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } />
-                <Route path="/surveys" element={
-                  <ProtectedRoute>
-                    <Surveys />
-                  </ProtectedRoute>
-                } />
-                <Route path="/surveys/:id/edit" element={
-                  <ProtectedRoute>
-                    <EditSurvey />
-                  </ProtectedRoute>
-                } />
-                <Route path="/new-survey" element={
-                  <ProtectedRoute>
-                    <NewSurvey />
-                  </ProtectedRoute>
-                } />
-                <Route path="/analysis" element={
-                  <ProtectedRoute>
-                    <Analysis />
-                  </ProtectedRoute>
-                } />
-                <Route path="/upgrade" element={
-                  <ProtectedRoute>
-                    <Upgrade />
-                  </ProtectedRoute>
-                } />
-                <Route path="/improve" element={
-                  <ProtectedRoute>
-                    <Improve />
-                  </ProtectedRoute>
-                } />
-                <Route path="/profile" element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin" element={
-                  <ProtectedRoute>
-                    <Admin />
-                  </ProtectedRoute>
-                } />
-                <Route path="/custom-questions" element={
-                  <ProtectedRoute>
-                    <CustomQuestions />
-                  </ProtectedRoute>
-                } />
-                <Route path="/team" element={
-                  <ProtectedRoute>
-                    <Team />
-                  </ProtectedRoute>
-                } />
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/surveys" element={<Surveys />} />
+                  <Route path="/surveys/create" element={<CreateSurvey />} />
+                  <Route path="/surveys/:id/edit" element={<EditSurvey />} />
+                  <Route path="/surveys/:id/responses" element={<SurveyResponses />} />
+                  <Route path="/team" element={<Team />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/subscription" element={<Subscription />} />
+                </Route>
+
+                {/* Survey form routes - these are public but have their own access control */}
+                <Route path="/s/:id" element={<PublicSurveyForm />} />
+                <Route path="/s/:id/:responseId" element={<PublicSurveyForm />} />
+
+                {/* Fallback route */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
+
               <Toaster />
-              <SonnerToaster closeButton position="bottom-right" />
-            </TestingModeProvider>
+            </StripeProvider>
           </OrganizationProvider>
         </AuthProvider>
-      </Router>
+      </TestingModeProvider>
     </QueryClientProvider>
   );
-}
+};
 
 export default App;

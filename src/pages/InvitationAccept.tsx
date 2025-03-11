@@ -30,7 +30,7 @@ const InvitationAccept: React.FC = () => {
         // Fetch invitation by token
         const { data, error: fetchError } = await supabase
           .from('invitations')
-          .select('*, organizations:organization_id(school_name)')
+          .select('*, organizations:organization_id(name)')
           .eq('token', token)
           .single();
 
@@ -150,7 +150,7 @@ const InvitationAccept: React.FC = () => {
       <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md text-center">
         <h1 className="text-2xl font-bold text-brandPurple-600 mb-4">Organization Invitation</h1>
         <p className="text-gray-700 mb-6">
-          You've been invited to join <span className="font-semibold">{invitation?.organizations?.school_name}</span> as a <span className="font-semibold">{invitation?.role.replace('_', ' ')}</span>.
+          You've been invited to join <span className="font-semibold">{invitation?.organizations?.name}</span> as a <span className="font-semibold">{invitation?.role.replace('_', ' ')}</span>.
         </p>
         
         <Button 
