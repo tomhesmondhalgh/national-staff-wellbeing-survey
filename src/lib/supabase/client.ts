@@ -1,4 +1,3 @@
-
 import { createClient } from "@supabase/supabase-js";
 
 // Check if environment variables exist, otherwise use placeholders for development
@@ -114,6 +113,25 @@ export interface Invitation {
   accepted_at: string | null;
 }
 
+// Define types for Supabase responses
+interface ProfileData {
+  id: string;
+  name?: string;
+  school_name?: string;
+  created_at: string;
+  [key: string]: any; // For other profile fields
+}
+
+interface GroupOrganization {
+  organization_id: string;
+  profiles: ProfileData;
+}
+
+interface GroupOrganizationsResponse {
+  group_id: string;
+  group_organizations: GroupOrganization[];
+}
+
 // Get all groups the current user belongs to
 export const getUserGroups = async (): Promise<Group[]> => {
   const { data: user } = await supabase.auth.getUser();
@@ -194,18 +212,17 @@ export const getUserOrganizations = async (): Promise<Organization[]> => {
       console.error('Error fetching group-based organization memberships:', groupError);
     } else if (groupOrgs) {
       // Add group-based orgs
-      groupOrgs.forEach(item => {
+      (groupOrgs as GroupOrganizationsResponse[]).forEach(item => {
         if (item.group_organizations && Array.isArray(item.group_organizations)) {
           item.group_organizations.forEach(go => {
             if (go.profiles && 
-                typeof go.profiles === 'object' && 
-                !Array.isArray(go.profiles) &&
-                'id' in go.profiles && 
-                (('name' in go.profiles && go.profiles.name) || ('school_name' in go.profiles && go.profiles.school_name)) && 
-                'created_at' in go.profiles && 
+                typeof go.profiles === 'object' &&
+                go.profiles.id && 
+                (go.profiles.name || go.profiles.school_name) && 
+                go.profiles.created_at && 
                 !organizations.some(o => o.id === go.organization_id)) {
               // Use school_name if available, fallback to name
-              const orgName = (go.profiles as any).school_name || (go.profiles as any).name;
+              const orgName = go.profiles.school_name || go.profiles.name || 'Unknown Organization';
               organizations.push({
                 id: go.profiles.id,
                 name: orgName,
