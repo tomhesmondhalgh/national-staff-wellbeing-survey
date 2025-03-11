@@ -79,7 +79,8 @@ serve(async (req: Request) => {
           quantity: 1,
         },
       ],
-      success_url: successUrl,
+      // Update the success URL to the new payment success page
+      success_url: `${new URL(successUrl).origin}/payment-success`,
       cancel_url: cancelUrl,
       metadata,
       client_reference_id: user.id,

@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from './components/ui/toaster';
 import { AuthProvider } from './contexts/AuthContext';
@@ -7,6 +6,7 @@ import { TestingModeProvider } from './contexts/TestingModeContext';
 import { Toaster as SonnerToaster } from 'sonner';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import StripeProvider from './components/stripe/StripeProvider';
 
 // Pages
 import Index from './pages/Index';
@@ -31,6 +31,7 @@ import NotFound from './pages/NotFound';
 import CustomQuestions from './pages/CustomQuestions';
 import Team from './pages/Team';
 import InvitationAccept from './pages/InvitationAccept';
+import PaymentSuccess from './pages/PaymentSuccess';
 
 import './App.css';
 
@@ -47,11 +48,11 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router>
-        <AuthProvider>
-          <OrganizationProvider>
-            <TestingModeProvider>
-              <Routes>
+      <AuthProvider>
+        <TestingModeProvider>
+          <StripeProvider>
+            <OrganizationProvider>
+              <Router>
                 {/* Public routes */}
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
@@ -62,6 +63,7 @@ function App() {
                 <Route path="/survey-complete" element={<SurveyComplete />} />
                 <Route path="/survey-closed" element={<SurveyClosed />} />
                 <Route path="/invitation/accept" element={<InvitationAccept />} />
+                <Route path="/payment-success" element={<PaymentSuccess />} />
                 
                 {/* Protected routes */}
                 <Route path="/onboarding" element={
@@ -125,13 +127,12 @@ function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="*" element={<NotFound />} />
-              </Routes>
+              </Router>
               <Toaster />
-              <SonnerToaster closeButton position="bottom-right" />
-            </TestingModeProvider>
-          </OrganizationProvider>
-        </AuthProvider>
-      </Router>
+            </OrganizationProvider>
+          </StripeProvider>
+        </TestingModeProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
