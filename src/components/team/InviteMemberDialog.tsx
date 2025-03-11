@@ -9,6 +9,7 @@ import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
 import { useOrganization } from '../../contexts/OrganizationContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { UserRoleType } from '../../lib/supabase/client';
 
 type InviteMemberDialogProps = {
   isOpen: boolean;
@@ -24,7 +25,7 @@ export default function InviteMemberDialog({
   organizationId,
 }: InviteMemberDialogProps) {
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<string>('viewer');
+  const [role, setRole] = useState<UserRoleType>('viewer');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { currentOrganization } = useOrganization();
   const { user } = useAuth();
@@ -129,7 +130,7 @@ export default function InviteMemberDialog({
           
           <div className="space-y-2">
             <Label htmlFor="role">Role</Label>
-            <Select value={role} onValueChange={setRole}>
+            <Select value={role} onValueChange={(value: UserRoleType) => setRole(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>
