@@ -28,6 +28,10 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    if (!token) {
+      console.warn("Warning: Invitation token not provided");
+    }
     
     const roleDisplay = {
       viewer: "Viewer (can view data only)",

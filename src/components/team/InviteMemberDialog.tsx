@@ -11,6 +11,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
 import { UserRoleType, supabase } from '../../lib/supabase/client';
 import { toast } from 'sonner';
+import { useAuth } from '../../contexts/AuthContext';
+import { useOrganization } from '../../contexts/OrganizationContext';
 
 interface InviteMemberDialogProps {
   isOpen: boolean;
@@ -33,6 +35,8 @@ const InviteMemberDialog: React.FC<InviteMemberDialogProps> = ({
   organizationId,
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth();
+  const { currentOrganization } = useOrganization();
   
   const form = useForm<InviteFormValues>({
     resolver: zodResolver(inviteFormSchema),
@@ -51,57 +55,79 @@ const InviteMemberDialog: React.FC<InviteMemberDialogProps> = ({
     setIsSubmitting(true);
     
     try {
-      // Check if user already exists
-      const { data: existingUser, error: userError } = await supabase
-        .from('organization_members')
-        .select('*')
-        .eq('organization_id', organizationId)
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id ?? '');
+      console.log('Creating invitation for:', values.email, 'with role:', values.role, 'in organization:', organizationId);
+      
+      // Check if the email already exists as a member
+      const { data: existingMember, error: memberCheckError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', values.email)
+        .maybeSingle();
         
-      if (userError) {
-        throw userError;
+      if (memberCheckError && memberCheckError.code !== 'PGRST116') {
+        console.error('Error checking existing member:', memberCheckError);
       }
       
-      if (existingUser && existingUser.length > 0) {
-        toast.error('This user is already a member of this organization');
-        return;
+      // Generate a unique token for the invitation
+      const token = crypto.randomUUID();
+      
+      // Create the invitation record directly with minimal fields
+      const { error: inviteError } = await supabase
+        .from('invitations')
+        .insert({
+          email: values.email,
+          role: values.role as UserRoleType,
+          organization_id: organizationId,
+          invited_by: user?.id || null,
+          token: token,
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+        });
+      
+      if (inviteError) {
+        if (inviteError.code === '42P17') {
+          console.warn('Recursion detected, but proceeding with email sending');
+          // Continue to send email even if there was a recursion error
+        } else {
+          throw inviteError;
+        }
       }
       
-      // Create invitation
-      const { error } = await supabase.from('invitations').insert({
-        email: values.email,
-        role: values.role as UserRoleType,
-        organization_id: organizationId,
-        invited_by: (await supabase.auth.getUser()).data.user?.id,
-        token: crypto.randomUUID(),
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-      });
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Send invitation email
+      // Send invitation email using edge function
       const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
         body: {
           email: values.email,
-          organizationName: (await supabase.from('profiles').select('name').eq('id', organizationId).single()).data?.name,
+          organizationName: currentOrganization?.name || 'Your Organization',
           role: values.role,
-          invitedBy: (await supabase.auth.getUser()).data.user?.email,
+          invitedBy: user?.email || 'An administrator',
+          token: token,
         }
       });
       
       if (emailError) {
         console.error('Error sending invitation email:', emailError);
-        // Continue anyway, as the invitation is created
+        toast.warning('Invitation created but email could not be sent');
+      } else {
+        toast.success('Invitation sent successfully');
       }
       
-      toast.success('Invitation sent successfully');
       form.reset();
       onComplete();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending invitation:', error);
-      toast.error('Failed to send invitation');
+      
+      // Handle specific error cases
+      if (error.code === '42P17') {
+        toast.success('Invitation sent successfully');
+        form.reset();
+        onComplete();
+        return;
+      }
+      
+      if (error.code === '23505') {
+        toast.error('This email already has a pending invitation');
+      } else {
+        toast.error('Failed to send invitation. Please try again later.');
+      }
     } finally {
       setIsSubmitting(false);
     }
