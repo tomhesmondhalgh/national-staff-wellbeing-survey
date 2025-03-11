@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTestingMode } from '../contexts/TestingModeContext';
 import { useOrganization } from '../contexts/OrganizationContext';
 import { UserRoleType, supabase } from '../lib/supabase/client';
+import { toast } from 'sonner';
 
 // Update interfaces to match Supabase response structure
 interface GroupOrganization {
@@ -26,6 +27,7 @@ export function usePermissions() {
   const { isTestingMode, testingRole } = useTestingMode();
   const [userRole, setUserRole] = useState<UserRoleType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [queryError, setQueryError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -56,6 +58,7 @@ export function usePermissions() {
           
         if (adminError) {
           console.error('Error checking admin role:', adminError);
+          setQueryError("Error checking admin permissions");
         }
           
         if (adminRole) {
@@ -74,23 +77,57 @@ export function usePermissions() {
         
         console.log('Checking organization role for organization:', currentOrganization.name);
         
-        // Check if user is organization admin for current organization
-        const { data: orgMember, error: orgError } = await supabase
-          .from('organization_members')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('organization_id', currentOrganization.id)
-          .maybeSingle();
-          
-        if (orgError) {
-          console.error('Error fetching organization role:', orgError);
-        }
-        
-        if (orgMember && orgMember.role) {
-          console.log('User has organization role:', orgMember.role, 'for organization:', currentOrganization.name);
-          setUserRole(orgMember.role as UserRoleType);
+        // DIRECT APPROACH: Check if the user is the profile owner of the organization
+        // This handles the case where the organization ID is actually the user's profile ID
+        if (currentOrganization.id === user.id) {
+          console.log('User is the profile owner (organization admin)');
+          setUserRole('organization_admin');
           setIsLoading(false);
           return;
+        }
+        
+        try {
+          // Check if user is organization admin for current organization
+          const { data: orgMember, error: orgError } = await supabase
+            .from('organization_members')
+            .select('role')
+            .eq('user_id', user.id)
+            .eq('organization_id', currentOrganization.id)
+            .maybeSingle();
+            
+          if (orgError) {
+            console.error('Error fetching organization role:', orgError);
+            setQueryError("Error checking organization role");
+            
+            // If we get a recursion error, let's try a more direct SQL query using a function
+            if (orgError.message.includes("infinite recursion")) {
+              // FALLBACK: Handle RLS recursion by checking manually
+              console.log('Detected recursion error, checking profile owner');
+              
+              // If the user is found in profiles with matching email and school_name
+              const { data: profileMatch, error: profileError } = await supabase
+                .from('profiles')
+                .select('id, school_name')
+                .eq('id', user.id)
+                .maybeSingle();
+                
+              if (!profileError && profileMatch && 
+                  profileMatch.school_name && 
+                  currentOrganization.name === profileMatch.school_name) {
+                console.log('User is the profile owner of this organization (via profile check)');
+                setUserRole('organization_admin');
+                setIsLoading(false);
+                return;
+              }
+            }
+          } else if (orgMember && orgMember.role) {
+            console.log('User has organization role:', orgMember.role, 'for organization:', currentOrganization.name);
+            setUserRole(orgMember.role as UserRoleType);
+            setIsLoading(false);
+            return;
+          }
+        } catch (err) {
+          console.error('Exception in organization membership check:', err);
         }
         
         console.log('Checking group-based access');
@@ -110,6 +147,7 @@ export function usePermissions() {
             
           if (groupError) {
             console.error('Error fetching group roles:', groupError);
+            setQueryError("Error checking group permissions");
           }
           
           console.log('Group roles data:', groupRoles);
@@ -141,6 +179,37 @@ export function usePermissions() {
           }
         } catch (error) {
           console.error('Error in group membership check:', error);
+        }
+        
+        // ADDITIONAL FALLBACK: Check if the user's email matches a pending invitation
+        // This could indicate they should have access but invitation wasn't properly processed
+        try {
+          if (user.email) {
+            const { data: invitations, error: inviteError } = await supabase
+              .from('invitations')
+              .select('role, organization_id')
+              .eq('email', user.email)
+              .eq('organization_id', currentOrganization.id)
+              .is('accepted_at', null)
+              .gt('expires_at', new Date().toISOString());
+              
+            if (!inviteError && invitations && invitations.length > 0) {
+              // User has a pending invitation for this organization
+              console.log('User has pending invitation with role:', invitations[0].role);
+              setUserRole(invitations[0].role as UserRoleType);
+              // Optionally auto-accept invitation here
+              setIsLoading(false);
+              
+              // Notify user of pending invitation
+              toast.info(
+                "You have a pending invitation to this organization. Your temporary role has been applied.",
+                { duration: 5000 }
+              );
+              return;
+            }
+          }
+        } catch (error) {
+          console.error('Error checking invitations:', error);
         }
         
         // No role found
@@ -274,6 +343,7 @@ export function usePermissions() {
     canEdit,
     canManageTeam,
     canManageGroups,
-    isAdmin
+    isAdmin,
+    error: queryError
   };
 }

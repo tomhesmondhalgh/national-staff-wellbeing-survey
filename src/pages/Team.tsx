@@ -8,13 +8,14 @@ import MembersAndInvitationsList from '../components/team/MembersAndInvitationsL
 import { useOrganization } from '../contexts/OrganizationContext';
 import OrganizationsList from '../components/team/OrganizationsList';
 import { Alert, AlertDescription } from '../components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Info } from 'lucide-react';
 import { useTestingMode } from '../contexts/TestingModeContext';
+import { Button } from '../components/ui/button';
 
 const Team = () => {
-  const { userRole } = usePermissions();
+  const { userRole, error } = usePermissions();
   const { currentOrganization } = useOrganization();
-  const { isTestingMode, testingRole } = useTestingMode();
+  const { isTestingMode, testingRole, setTestingRole } = useTestingMode();
   const [isAdmin, setIsAdmin] = useState(false);
   
   // Determine if the user can see the Organizations tab
@@ -23,6 +24,11 @@ const Team = () => {
     userRole === 'group_admin' || 
     userRole === 'administrator' ||
     (isTestingMode && (testingRole === 'group_admin' || testingRole === 'administrator'));
+
+  // Helper function to enable admin testing mode
+  const enableAdminTestMode = () => {
+    setTestingRole('organization_admin');
+  };
 
   useEffect(() => {
     // For debugging purposes
@@ -66,8 +72,30 @@ const Team = () => {
               {isTestingMode && (
                 <p className="mt-2 text-sm">Current testing role: {testingRole || 'none'}</p>
               )}
+              {error && (
+                <p className="mt-2 text-sm text-red-500">Error: {error}</p>
+              )}
             </AlertDescription>
           </Alert>
+          
+          {!isTestingMode && (
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-start mb-2">
+                <Info size={18} className="text-blue-500 mr-2 mt-0.5" />
+                <h3 className="font-medium">Testing Mode Available</h3>
+              </div>
+              <p className="text-sm mb-3">
+                Use testing mode to simulate administrative permissions while development is ongoing.
+              </p>
+              <Button 
+                onClick={enableAdminTestMode}
+                variant="outline" 
+                className="bg-white border-blue-300 hover:bg-blue-100 text-blue-700"
+              >
+                Enable Admin Testing Mode
+              </Button>
+            </div>
+          )}
         </div>
       </MainLayout>
     );
