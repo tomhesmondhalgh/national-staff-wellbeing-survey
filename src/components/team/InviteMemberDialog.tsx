@@ -102,7 +102,7 @@ export default function InviteMemberDialog({
         
         const { error: functionError } = await supabase.functions.invoke('send-invitation-email', {
           body: {
-            invitationId: data[0].id,
+            invitationId: data[0].invitation_id, // Updated to use the new column name
             organizationName: orgName
           }
         });

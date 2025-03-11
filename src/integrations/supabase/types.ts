@@ -1056,10 +1056,10 @@ export type Database = {
           expiry_date: string
         }
         Returns: {
-          id: string
-          email: string
-          organization_id: string
-          created_at: string
+          invitation_id: string
+          recipient_email: string
+          org_uuid: string
+          creation_date: string
         }[]
       }
       create_or_update_profile: {
