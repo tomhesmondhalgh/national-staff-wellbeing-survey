@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '../ui/button';
@@ -25,7 +26,7 @@ const MemberList = () => {
   const [selectedMember, setSelectedMember] = useState<OrganizationMember | null>(null);
   const [isEditRoleDialogOpen, setIsEditRoleDialogOpen] = useState(false);
 
-  const { data: membersData, isLoading, error } = useQuery({
+  const { data: membersData, isLoading, error, refetch } = useQuery({
     queryKey: ['organizationMembers', currentOrganization?.id],
     queryFn: async () => {
       if (!currentOrganization) {
