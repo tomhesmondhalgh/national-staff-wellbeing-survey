@@ -133,7 +133,15 @@ export const getUserGroups = async (): Promise<Group[]> => {
   }
 
   // Extract and transform the data to match the Group interface
-  return (data || []).map(item => item.groups as Group);
+  return (data || []).map(item => {
+    // Ensure groups is an object with the required properties
+    if (item.groups && typeof item.groups === 'object') {
+      return item.groups as Group;
+    }
+    // Return a default Group object if data is not as expected
+    console.warn('Group data is missing or malformed:', item);
+    return null;
+  }).filter((group): group is Group => group !== null);
 };
 
 // Get all organizations the current user belongs to
@@ -177,16 +185,17 @@ export const getUserOrganizations = async (): Promise<Organization[]> => {
   
   // Add direct orgs
   directOrgs?.forEach(item => {
-    if (item.profiles) {
+    if (item.profiles && typeof item.profiles === 'object' && 'id' in item.profiles) {
       allOrgs.push(item.profiles as Organization);
     }
   });
   
   // Add group-based orgs
   groupOrgs?.forEach(item => {
-    if (item.group_organizations) {
+    if (item.group_organizations && Array.isArray(item.group_organizations)) {
       item.group_organizations.forEach(go => {
-        if (go.profiles && !allOrgs.some(o => o.id === go.organization_id)) {
+        if (go.profiles && typeof go.profiles === 'object' && 'id' in go.profiles && 
+            !allOrgs.some(o => o.id === go.organization_id)) {
           allOrgs.push(go.profiles as Organization);
         }
       });
@@ -233,7 +242,7 @@ export const getUserRoleForOrganization = async (organizationId: string): Promis
     
   if (groupRoles) {
     for (const groupRole of groupRoles) {
-      if (groupRole.group_organizations) {
+      if (groupRole.group_organizations && Array.isArray(groupRole.group_organizations)) {
         for (const groupOrg of groupRole.group_organizations) {
           if (groupOrg.organization_id === organizationId) {
             return groupRole.role as UserRoleType;
