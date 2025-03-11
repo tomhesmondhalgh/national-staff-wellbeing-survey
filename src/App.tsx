@@ -29,6 +29,7 @@ import Admin from './pages/Admin';
 import NotFound from './pages/NotFound';
 import CustomQuestions from './pages/CustomQuestions';
 import Team from './pages/Team';
+import InvitationAccept from './pages/InvitationAccept';
 
 import './App.css';
 
@@ -48,6 +49,7 @@ function App() {
               <Route path="/survey" element={<SurveyForm />} />
               <Route path="/survey-complete" element={<SurveyComplete />} />
               <Route path="/survey-closed" element={<SurveyClosed />} />
+              <Route path="/invitation/accept" element={<InvitationAccept />} />
               
               {/* Protected routes */}
               <Route path="/onboarding" element={

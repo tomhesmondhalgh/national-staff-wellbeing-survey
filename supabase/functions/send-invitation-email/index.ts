@@ -20,7 +20,7 @@ serve(async (req) => {
     }
 
     const requestData = await req.json();
-    const { email, organizationName, role, invitedBy } = requestData;
+    const { email, organizationName, role, invitedBy, token } = requestData;
     
     if (!email) {
       return new Response(
@@ -45,7 +45,7 @@ serve(async (req) => {
           <p>You've been invited by <strong>${invitedBy || "an administrator"}</strong> to join ${organizationName || "Wellbeing Survey"} as a <strong>${roleDisplay}</strong>.</p>
           <p>To accept this invitation, please click the button below:</p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${Deno.env.get("SUPABASE_URL") || "https://bagaaqkmewkuwtudwnqw.supabase.co"}/invitation/accept?token=TOKEN_PLACEHOLDER" 
+            <a href="${Deno.env.get("SUPABASE_URL") || "https://bagaaqkmewkuwtudwnqw.supabase.co"}/invitation/accept?token=${token}" 
               style="background-color: #5e35b1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
               Accept Invitation
             </a>
