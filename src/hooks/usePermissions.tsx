@@ -1,18 +1,33 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTestingMode } from '../contexts/TestingModeContext';
 import { useOrganization } from '../contexts/OrganizationContext';
 import { UserRoleType, getUserRoleForOrganization, userHasPermission, supabase } from '../lib/supabase/client';
 
 export function usePermissions() {
   const { user } = useAuth();
   const { currentOrganization } = useOrganization();
+  const { isTestingMode, testingRole } = useTestingMode();
   const [userRole, setUserRole] = useState<UserRoleType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserRole = async () => {
-      if (!user || !currentOrganization) {
+      if (!user) {
+        setUserRole(null);
+        setIsLoading(false);
+        return;
+      }
+
+      // If in testing mode with a role, use that role
+      if (isTestingMode && testingRole) {
+        setUserRole(testingRole);
+        setIsLoading(false);
+        return;
+      }
+
+      if (!currentOrganization) {
         setUserRole(null);
         setIsLoading(false);
         return;
@@ -30,11 +45,26 @@ export function usePermissions() {
     };
 
     fetchUserRole();
-  }, [user, currentOrganization]);
+  }, [user, currentOrganization, isTestingMode, testingRole]);
 
   // Function to check if user has at least the specified role
   const hasPermission = async (requiredRole: UserRoleType): Promise<boolean> => {
-    if (!user || !currentOrganization) return false;
+    if (!user) return false;
+    
+    // If in testing mode with a role, use that role for permission checks
+    if (isTestingMode && testingRole) {
+      const roleHierarchy: Record<UserRoleType, number> = {
+        'administrator': 4,
+        'group_admin': 3,
+        'organization_admin': 2,
+        'editor': 1,
+        'viewer': 0
+      };
+      
+      return roleHierarchy[testingRole] >= roleHierarchy[requiredRole];
+    }
+    
+    if (!currentOrganization) return false;
     
     try {
       return await userHasPermission(currentOrganization.id, requiredRole);
@@ -52,6 +82,11 @@ export function usePermissions() {
   // Check if user is a group admin
   const canManageGroups = async (): Promise<boolean> => {
     if (!user) return false;
+    
+    // If in testing mode with group_admin role, return true
+    if (isTestingMode && testingRole === 'group_admin') {
+      return true;
+    }
     
     try {
       // Check if user has the group_admin role in any group

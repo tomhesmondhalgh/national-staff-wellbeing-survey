@@ -14,7 +14,10 @@ interface TestingModeContextType {
   testingRole: UserRoleType | null;
   enableTestingMode: (plan: PlanType) => void;
   enableRoleTestingMode: (role: UserRoleType) => void;
+  enableFullTestingMode: (plan: PlanType, role: UserRoleType) => void;
   disableTestingMode: () => void;
+  setTestingPlan: (plan: PlanType | null) => void;
+  setTestingRole: (role: UserRoleType | null) => void;
 }
 
 const TestingModeContext = createContext<TestingModeContextType | undefined>(undefined);
@@ -99,16 +102,21 @@ export function TestingModeProvider({ children }: { children: React.ReactNode })
     console.log('Enabling testing mode with plan:', plan);
     setIsTestingMode(true);
     setTestingPlan(plan);
-    // Clear role if switching to plan testing
-    setTestingRole(null);
+    // No longer clearing role when setting plan
   };
 
   const enableRoleTestingMode = (role: UserRoleType) => {
     console.log('Enabling testing mode with role:', role);
     setIsTestingMode(true);
     setTestingRole(role);
-    // Clear plan if switching to role testing
-    setTestingPlan(null);
+    // No longer clearing plan when setting role
+  };
+
+  const enableFullTestingMode = (plan: PlanType, role: UserRoleType) => {
+    console.log('Enabling full testing mode with plan:', plan, 'and role:', role);
+    setIsTestingMode(true);
+    setTestingPlan(plan);
+    setTestingRole(role);
   };
 
   const disableTestingMode = () => {
@@ -124,7 +132,10 @@ export function TestingModeProvider({ children }: { children: React.ReactNode })
     testingRole,
     enableTestingMode,
     enableRoleTestingMode,
-    disableTestingMode
+    enableFullTestingMode,
+    disableTestingMode,
+    setTestingPlan,
+    setTestingRole
   };
 
   console.log('TestingModeProvider current state:', contextValue);

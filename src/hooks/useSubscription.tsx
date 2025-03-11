@@ -33,15 +33,15 @@ export function useSubscription() {
     fetchSubscription();
   }, [user]);
 
-  // If in testing mode and admin, use the testing plan
-  const effectiveSubscription = (isAdmin && isTestingMode && testingPlan) ? {
+  // If in testing mode, use the testing plan regardless of admin status
+  const effectiveSubscription = (isTestingMode && testingPlan) ? {
     plan: testingPlan,
     isActive: true
   } : subscription;
 
   const hasAccess = async (requiredPlan: PlanType): Promise<boolean> => {
     if (!user) return false;
-    if (isAdmin && isTestingMode && testingPlan) {
+    if (isTestingMode && testingPlan) {
       const planLevels = { free: 0, foundation: 1, progress: 2, premium: 3 };
       return planLevels[testingPlan] >= planLevels[requiredPlan];
     }

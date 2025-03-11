@@ -11,6 +11,13 @@ import { useTestingMode } from '../contexts/TestingModeContext';
 import { PlanType } from '../lib/supabase/subscription';
 import { UserRoleType } from '../lib/supabase/client';
 import { Card } from '../components/ui/card';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 
 const Admin = () => {
   const [sendingTestEmails, setSendingTestEmails] = useState(false);
@@ -20,8 +27,8 @@ const Admin = () => {
     isTestingMode, 
     testingPlan, 
     testingRole, 
-    enableTestingMode, 
-    enableRoleTestingMode, 
+    setTestingPlan,
+    setTestingRole,
     disableTestingMode 
   } = useTestingMode();
 
@@ -53,6 +60,16 @@ const Admin = () => {
     }
   };
 
+  const handleTestingModeChange = (enabled: boolean) => {
+    if (!enabled) {
+      disableTestingMode();
+    } else if (!isTestingMode) {
+      // Enable testing mode with default values if not already enabled
+      setTestingPlan('free');
+      setTestingRole('viewer');
+    }
+  };
+
   if (!isAdmin) {
     return (
       <MainLayout>
@@ -77,54 +94,74 @@ const Admin = () => {
         <div className="mt-8 grid gap-6">
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Testing Mode</h2>
-            <p className="mb-4">Simulate different subscription plans or user roles to test and verify functionality.</p>
+            <p className="mb-4">Simulate different subscription plans and user roles simultaneously to test and verify functionality.</p>
             
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-medium mb-2">Subscription Plan Testing:</h3>
-                <div className="flex items-center gap-4">
-                  <Button
-                    onClick={() => disableTestingMode()}
-                    variant={!isTestingMode ? "outline" : "secondary"}
-                    className="w-32"
-                  >
-                    Normal Mode
-                  </Button>
-                  {(['free', 'foundation', 'progress', 'premium'] as PlanType[]).map((plan) => (
-                    <Button
-                      key={plan}
-                      onClick={() => enableTestingMode(plan)}
-                      variant={isTestingMode && testingPlan === plan ? "outline" : "secondary"}
-                      className="w-32 capitalize"
-                    >
-                      {plan}
-                    </Button>
-                  ))}
-                </div>
+            <div className="space-y-6">
+              {/* Testing Mode Toggle */}
+              <div className="flex items-center gap-4">
+                <Button
+                  onClick={() => handleTestingModeChange(false)}
+                  variant={!isTestingMode ? "default" : "outline"}
+                  className="w-32"
+                >
+                  Normal Mode
+                </Button>
+                <Button
+                  onClick={() => handleTestingModeChange(true)}
+                  variant={isTestingMode ? "default" : "outline"}
+                  className="w-32"
+                >
+                  Testing Mode
+                </Button>
               </div>
-              
-              <div>
-                <h3 className="font-medium mb-2">User Role Testing:</h3>
-                <div className="flex items-center gap-4 flex-wrap">
-                  {(['administrator', 'group_admin', 'organization_admin', 'editor', 'viewer'] as UserRoleType[]).map((role) => (
-                    <Button
-                      key={role}
-                      onClick={() => enableRoleTestingMode(role)}
-                      variant={isTestingMode && testingRole === role ? "outline" : "secondary"}
-                      className="w-auto capitalize"
-                    >
-                      {role.replace('_', ' ')}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-              
+
+              {/* Testing Mode Options (visible only when testing mode is enabled) */}
               {isTestingMode && (
-                <p className="text-sm text-yellow-600">
-                  Testing Mode Active: 
-                  {testingPlan && <span> Viewing app as {testingPlan} user</span>}
-                  {testingRole && <span> Simulating {testingRole.replace('_', ' ')} role</span>}
-                </p>
+                <div className="bg-muted/30 p-4 rounded-md space-y-4 border">
+                  <div>
+                    <h3 className="font-medium mb-2">Subscription Plan:</h3>
+                    <Select
+                      value={testingPlan || 'free'}
+                      onValueChange={(value) => setTestingPlan(value as PlanType)}
+                    >
+                      <SelectTrigger className="w-full md:w-64">
+                        <SelectValue placeholder="Select subscription plan" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(['free', 'foundation', 'progress', 'premium'] as PlanType[]).map((plan) => (
+                          <SelectItem key={plan} value={plan} className="capitalize">
+                            {plan}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-medium mb-2">User Role:</h3>
+                    <Select
+                      value={testingRole || 'viewer'}
+                      onValueChange={(value) => setTestingRole(value as UserRoleType)}
+                    >
+                      <SelectTrigger className="w-full md:w-64">
+                        <SelectValue placeholder="Select user role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(['administrator', 'group_admin', 'organization_admin', 'editor', 'viewer'] as UserRoleType[]).map((role) => (
+                          <SelectItem key={role} value={role} className="capitalize">
+                            {role.replace('_', ' ')}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <p className="text-sm text-yellow-600 bg-yellow-50 p-2 rounded border border-yellow-200">
+                    Testing Mode Active: 
+                    {testingPlan && <span> Viewing app as <strong className="capitalize">{testingPlan}</strong> subscriber</span>}
+                    {testingRole && <span> with <strong>{testingRole.replace('_', ' ')}</strong> role</span>}
+                  </p>
+                </div>
               )}
             </div>
           </Card>
