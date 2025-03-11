@@ -21,8 +21,8 @@ const Team = () => {
   const { isTestingMode, testingRole, setTestingRole } = useTestingMode();
   const [isAdmin, setIsAdmin] = useState(false);
   
-  // Determine if the user can see the Organizations tab
-  // Only group_admin and administrator roles can see the Organizations tab
+  // Determine if the user can see the Organisations tab
+  // Only group_admin and administrator roles can see the Organisations tab
   const canSeeOrganizationsTab = 
     userRole === 'group_admin' || 
     userRole === 'administrator' ||
@@ -31,7 +31,7 @@ const Team = () => {
   // Helper function to enable admin testing mode
   const enableAdminTestMode = () => {
     setTestingRole('organization_admin');
-    toast.success('Admin testing mode enabled. You now have organization_admin permissions.');
+    toast.success('Admin testing mode enabled. You now have organisation_admin permissions.');
   };
   
   // Helper function to force reload the page
@@ -42,7 +42,7 @@ const Team = () => {
   useEffect(() => {
     // For debugging purposes
     console.log('Team page - Current user role:', userRole);
-    console.log('Current organization:', currentOrganization?.name);
+    console.log('Current organisation:', currentOrganization?.name);
     
     // Simplified role check
     const checkAdmin = () => {
@@ -68,7 +68,7 @@ const Team = () => {
         <div className="page-container">
           <PageTitle 
             title="Team Management" 
-            subtitle="Manage members and permissions for your organization"
+            subtitle="Manage members and permissions for your organisation"
             className="mb-8"
           />
           <div className="flex justify-center py-8">
@@ -79,11 +79,11 @@ const Team = () => {
     );
   }
 
-  // Handle the case of personal organizations differently
-  // If user ID matches organization ID, they are automatically an admin of their own profile/organization
+  // Handle the case of personal organisations differently
+  // If user ID matches organisation ID, they are automatically an admin of their own profile/organisation
   const isPersonalOrg = currentOrganization?.id === user?.id;
   if (isPersonalOrg && !isAdmin) {
-    console.log('User is accessing their personal organization, granting implicit admin access');
+    console.log('User is accessing their personal organisation, granting implicit admin access');
     setIsAdmin(true);
   }
 
@@ -94,7 +94,7 @@ const Team = () => {
         <div className="page-container">
           <PageTitle 
             title="Team Management" 
-            subtitle="Manage members and permissions for your organization"
+            subtitle="Manage members and permissions for your organisation"
             className="mb-8"
           />
           
@@ -103,7 +103,7 @@ const Team = () => {
             <AlertDescription>
               <p>You need administrator permissions to access this page.</p>
               <p className="mt-2 text-sm">Current role: {userRole || 'none'}</p>
-              <p className="mt-2 text-sm">Current organization: {currentOrganization?.name || 'none'}</p>
+              <p className="mt-2 text-sm">Current organisation: {currentOrganization?.name || 'none'}</p>
               {isTestingMode && (
                 <p className="mt-2 text-sm">Current testing role: {testingRole || 'none'}</p>
               )}
@@ -134,10 +134,10 @@ const Team = () => {
             <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
               <div className="flex items-start mb-2">
                 <User size={18} className="text-gray-500 mr-2 mt-0.5" />
-                <h3 className="font-medium">Organization Owner?</h3>
+                <h3 className="font-medium">Organisation Owner?</h3>
               </div>
               <p className="text-sm mb-3">
-                If you are the organization owner, try refreshing the page or contact support if the issue persists.
+                If you are the organisation owner, try refreshing the page or contact support if the issue persists.
               </p>
               <Button 
                 onClick={refreshPage}
@@ -154,21 +154,21 @@ const Team = () => {
     );
   }
 
-  // Check if an organization is selected
+  // Check if an organisation is selected
   if (!currentOrganization) {
     return (
       <MainLayout>
         <div className="page-container">
           <PageTitle 
             title="Team Management" 
-            subtitle="Manage members and permissions for your organization"
+            subtitle="Manage members and permissions for your organisation"
             className="mb-8"
           />
           
           <Alert variant="destructive" className="mb-6">
             <AlertCircle className="h-4 w-4 mr-2" />
             <AlertDescription>
-              Please select an organization to manage team members.
+              Please select an organisation to manage team members.
             </AlertDescription>
           </Alert>
         </div>
@@ -181,7 +181,7 @@ const Team = () => {
       <div className="page-container">
         <PageTitle 
           title="Team Management" 
-          subtitle="Manage members and permissions for your organization"
+          subtitle="Manage members and permissions for your organisation"
           className="mb-8"
         />
         
@@ -198,9 +198,9 @@ const Team = () => {
         {isPersonalOrg && (
           <Alert variant="default" className="mb-6 bg-green-50 border-green-200">
             <Info className="h-4 w-4 mr-2 text-green-500" />
-            <AlertTitle>Personal Organization</AlertTitle>
+            <AlertTitle>Personal Organisation</AlertTitle>
             <AlertDescription>
-              This is your personal organization. You are automatically the admin.
+              This is your personal organisation. You are automatically the admin.
             </AlertDescription>
           </Alert>
         )}
@@ -209,7 +209,7 @@ const Team = () => {
           <Tabs defaultValue="members" className="w-full">
             <TabsList className="w-full justify-start border-b rounded-none px-6">
               <TabsTrigger value="members">Members</TabsTrigger>
-              {canSeeOrganizationsTab && <TabsTrigger value="organizations">Organizations</TabsTrigger>}
+              {canSeeOrganizationsTab && <TabsTrigger value="organizations">Organisations</TabsTrigger>}
             </TabsList>
             
             <TabsContent value="members" className="p-6">

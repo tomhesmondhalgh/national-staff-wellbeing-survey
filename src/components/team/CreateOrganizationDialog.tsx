@@ -19,7 +19,7 @@ interface CreateOrganizationDialogProps {
 }
 
 const createOrgFormSchema = z.object({
-  name: z.string().min(2, { message: "Organization name must be at least 2 characters" }),
+  name: z.string().min(2, { message: "Organisation name must be at least 2 characters" }),
   groupId: z.string().uuid({ message: "Please select a group" }),
 });
 
@@ -92,7 +92,7 @@ const CreateOrganizationDialog: React.FC<CreateOrganizationDialogProps> = ({
     setIsSubmitting(true);
     
     try {
-      // Create the organization in profiles table
+      // Create the organisation in profiles table
       const { data: orgData, error: orgError } = await supabase
         .from('profiles')
         .insert({
@@ -105,7 +105,7 @@ const CreateOrganizationDialog: React.FC<CreateOrganizationDialogProps> = ({
         throw orgError;
       }
       
-      // Add the organization to the group
+      // Add the organisation to the group
       const { error: groupOrgError } = await supabase
         .from('group_organizations')
         .insert({
@@ -117,12 +117,12 @@ const CreateOrganizationDialog: React.FC<CreateOrganizationDialogProps> = ({
         throw groupOrgError;
       }
       
-      toast.success('Organization created successfully');
+      toast.success('Organisation created successfully');
       form.reset();
       onComplete();
     } catch (error) {
-      console.error('Error creating organization:', error);
-      toast.error('Failed to create organization');
+      console.error('Error creating organisation:', error);
+      toast.error('Failed to create organisation');
     } finally {
       setIsSubmitting(false);
     }
@@ -132,9 +132,9 @@ const CreateOrganizationDialog: React.FC<CreateOrganizationDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Create Organization</DialogTitle>
+          <DialogTitle>Create Organisation</DialogTitle>
           <DialogDescription>
-            Create a new organization and add it to a group
+            Create a new organisation and add it to a group
           </DialogDescription>
         </DialogHeader>
         
@@ -145,10 +145,10 @@ const CreateOrganizationDialog: React.FC<CreateOrganizationDialogProps> = ({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Organization Name</FormLabel>
+                  <FormLabel>Organisation Name</FormLabel>
                   <FormControl>
                     <Input 
-                      placeholder="Enter organization name" 
+                      placeholder="Enter organisation name" 
                       {...field} 
                     />
                   </FormControl>
@@ -206,7 +206,7 @@ const CreateOrganizationDialog: React.FC<CreateOrganizationDialogProps> = ({
                 disabled={isSubmitting || isLoadingGroups || userGroups.length === 0}
                 className="bg-brandPurple-500 hover:bg-brandPurple-600"
               >
-                {isSubmitting ? 'Creating...' : 'Create Organization'}
+                {isSubmitting ? 'Creating...' : 'Create Organisation'}
               </Button>
             </DialogFooter>
           </form>

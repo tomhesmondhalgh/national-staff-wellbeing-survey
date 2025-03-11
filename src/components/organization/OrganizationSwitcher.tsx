@@ -16,7 +16,7 @@ const OrganizationSwitcher: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { userRole } = usePermissions();
   
-  // Don't show switcher for organization admins with only one organization
+  // Don't show switcher for organisation admins with only one organisation
   if (userRole === 'organization_admin' && organizations.length <= 1) {
     return currentOrganization ? (
       <div className="flex items-center space-x-2 px-3 py-2 text-sm">
@@ -26,7 +26,7 @@ const OrganizationSwitcher: React.FC = () => {
     ) : null;
   }
 
-  // Don't show switcher if there's only one organization (for any role)
+  // Don't show switcher if there's only one organisation (for any role)
   if (organizations.length <= 1) {
     return currentOrganization ? (
       <div className="flex items-center space-x-2 px-3 py-2 text-sm">
@@ -49,7 +49,7 @@ const OrganizationSwitcher: React.FC = () => {
     return (
       <div className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-500">
         <Building size={16} />
-        <span>No organization</span>
+        <span>No organisation</span>
       </div>
     );
   }

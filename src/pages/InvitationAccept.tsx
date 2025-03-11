@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -92,7 +93,7 @@ const InvitationAccept: React.FC = () => {
         .single();
 
       if (existingMember) {
-        toast.info('You are already a member of this organization');
+        toast.info('You are already a member of this organisation');
         navigate('/dashboard');
         return;
       }
@@ -117,7 +118,7 @@ const InvitationAccept: React.FC = () => {
       await refreshOrganizations();
 
       setAccountCreated(true);
-      toast.success('You have successfully joined the organization');
+      toast.success('You have successfully joined the organisation');
       
       setTimeout(() => {
         navigate('/dashboard');
@@ -225,7 +226,7 @@ const InvitationAccept: React.FC = () => {
               <Briefcase className="h-16 w-16 text-brandPurple-600" />
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-brandPurple-600 mb-4">Organization Invitation</h1>
+          <h1 className="text-2xl font-bold text-brandPurple-600 mb-4">Organisation Invitation</h1>
           <p className="text-gray-700 mb-6">
             You've been invited to join <span className="font-semibold">{invitation?.organizations?.school_name}</span> as a <span className="font-semibold">{invitation?.role.replace('_', ' ')}</span>.
           </p>

@@ -40,10 +40,10 @@ export default function TeamMembersError({
       <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
         <h3 className="font-medium mb-2">Troubleshooting Tips:</h3>
         <ul className="list-disc pl-5 space-y-2 text-sm">
-          <li>Ensure you have the correct permissions for this organization.</li>
+          <li>Ensure you have the correct permissions for this organisation.</li>
           <li>Your current role: <strong>{userRole || 'None'}</strong></li>
-          <li>Current organization: <strong>{organizationName || 'None'}</strong></li>
-          <li>If you're the organization owner, this might be a database configuration issue.</li>
+          <li>Current organisation: <strong>{organizationName || 'None'}</strong></li>
+          <li>If you're the organisation owner, this might be a database configuration issue.</li>
         </ul>
       </div>
     </div>
