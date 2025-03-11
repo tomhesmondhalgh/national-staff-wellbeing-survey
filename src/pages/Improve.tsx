@@ -101,10 +101,7 @@ const Improve = () => {
           <PageTitle title="Wellbeing Action Plan" subtitle="Track and improve staff wellbeing using this action planning tool" alignment="left" />
           
           {hasFoundationPlan && <div className="flex space-x-2">
-              <Button variant="outline" onClick={() => setShowSaveTemplate(true)} disabled={isLoading}>
-                <Save className="h-4 w-4 mr-2" />
-                Save as Template
-              </Button>
+              
               <Button variant="outline" onClick={handleExportPDF} disabled={isLoading || isGeneratingPDF}>
                 <Download className="h-4 w-4 mr-2" />
                 {isGeneratingPDF ? 'Generating...' : 'Export PDF'}
