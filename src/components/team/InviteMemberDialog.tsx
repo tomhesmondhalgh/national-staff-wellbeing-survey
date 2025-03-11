@@ -56,7 +56,8 @@ export default function InviteMemberDialog({
       
       console.log(`Creating invitation for ${email} with role ${role} to organization ${organizationId}`);
       
-      // Use a direct SQL query via RPC to avoid infinite recursion issues
+      // Use the role as string when passing to the RPC function
+      // The function will handle the casting to the enum type in PostgreSQL
       const { data, error } = await supabase.rpc('create_invitation', {
         user_email: email,
         org_id: organizationId,
