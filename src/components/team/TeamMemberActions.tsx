@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { OrganizationMember } from '../../lib/supabase/client';
 import { toast } from 'sonner';
@@ -45,18 +46,11 @@ export default function TeamMemberActions({ memberId, type, refetchAll, member }
     
     setIsLoading(true);
     try {
-      console.log('Cancelling invitation:', invitationId);
-      
       const { data, error } = await supabase.functions.invoke('cancel-invitation', {
         body: { invitationId }
       });
       
-      console.log('Edge function response:', data);
-      
-      if (error) {
-        console.error('Error from edge function:', error);
-        throw error;
-      }
+      if (error) throw error;
       
       if (!data.success) {
         throw new Error(data.error || 'Unknown error occurred');
