@@ -20,6 +20,8 @@ import { format } from "date-fns";
 import { cn } from "../lib/utils";
 import { Input } from "../components/ui/input";
 import { Form, FormControl, FormField, FormItem } from "../components/ui/form";
+import ScreenOrientationOverlay from '../components/ui/ScreenOrientationOverlay';
+import { useOrientation } from '../hooks/useOrientation';
 
 const SummarySection = ({
   summary
@@ -259,6 +261,8 @@ const Analysis = () => {
   const [summary, setSummary] = useState<any>({});
   const [noData, setNoData] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
+  const [overlayDismissed, setOverlayDismissed] = useState(false);
+  const { orientation, isMobile } = useOrientation();
 
   useEffect(() => {
     const loadSurveyOptions = async () => {
@@ -379,6 +383,8 @@ const Analysis = () => {
     }
   };
 
+  const shouldShowOverlay = isMobile && orientation === 'portrait' && !overlayDismissed;
+
   if (noData) {
     return <MainLayout>
         <div className="container mx-auto px-4 py-8">
@@ -399,6 +405,8 @@ const Analysis = () => {
   }
 
   return <MainLayout>
+      {shouldShowOverlay && <ScreenOrientationOverlay onDismiss={() => setOverlayDismissed(true)} />}
+      
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="mb-10 text-center">
           <h1 className="text-3xl font-bold mb-2">Survey Analysis</h1>
