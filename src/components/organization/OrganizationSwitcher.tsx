@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ChevronDown, Building } from 'lucide-react';
 import { useOrganization } from '../../contexts/OrganizationContext';
@@ -23,11 +22,20 @@ const OrganizationSwitcher: React.FC = () => {
     );
   }
 
-  if (!currentOrganization || organizations.length <= 1) {
+  if (!currentOrganization) {
+    return (
+      <div className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-500">
+        <Building size={16} />
+        <span>No organization</span>
+      </div>
+    );
+  }
+
+  if (organizations.length <= 1) {
     return (
       <div className="flex items-center space-x-2 px-3 py-2 text-sm">
         <Building size={16} />
-        <span>{currentOrganization?.name || 'No organization'}</span>
+        <span className="truncate max-w-[140px]">{currentOrganization.name}</span>
       </div>
     );
   }

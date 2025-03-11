@@ -16,7 +16,7 @@ const Team = () => {
   const { canManageTeam, isLoading, canManageGroups } = usePermissions();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [permissionChecked, setPermissionChecked] = useState(false);
-  const { currentOrganization } = useOrganization();
+  const { currentOrganization, organizations } = useOrganization();
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -66,12 +66,22 @@ const Team = () => {
             className="mb-8"
           />
           
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4 mr-2" />
-            <AlertDescription>
-              Please select an organization to manage team members.
-            </AlertDescription>
-          </Alert>
+          {organizations.length === 0 ? (
+            <Alert variant="default" className="mb-6 bg-blue-50 border-blue-200">
+              <AlertCircle className="h-4 w-4 mr-2 text-blue-500" />
+              <AlertDescription>
+                You don't have any organizations yet. Organizations are typically created by group admins. 
+                If you're an organization admin, your school information will be used as your organization.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4 mr-2" />
+              <AlertDescription>
+                Please select an organization to manage team members.
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
       </MainLayout>
     );

@@ -155,70 +155,72 @@ export const getUserOrganizations = async (): Promise<Organization[]> => {
   const { data: user } = await supabase.auth.getUser();
   if (!user.user) return [];
 
-  // First check direct organization memberships
-  const { data: directOrgs, error: directError } = await supabase
-    .from('organization_members')
-    .select(`
-      organization_id,
-      profiles:organization_id(*)
-    `)
-    .eq('user_id', user.user.id);
+  // Try to get the user profile as an organization (for organization admins)
+  // This is needed for organization admins who are not part of multiple organizations
+  const { data: userProfile, error: profileError } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.user.id)
+    .single();
 
-  if (directError) {
-    console.error('Error fetching direct organization memberships:', directError);
-    return [];
+  if (profileError) {
+    console.error('Error fetching user profile:', profileError);
   }
 
-  // Then check group memberships
-  const { data: groupOrgs, error: groupError } = await supabase
-    .from('group_members')
-    .select(`
-      group_id,
-      group_organizations!inner(
-        organization_id,
-        profiles:organization_id(*)
-      )
-    `)
-    .eq('user_id', user.user.id);
-
-  if (groupError) {
-    console.error('Error fetching group-based organization memberships:', groupError);
-    return [];
+  // If the user is an organization admin and has school_name, create an organization from their profile
+  const organizations: Organization[] = [];
+  if (userProfile && userProfile.school_name) {
+    organizations.push({
+      id: userProfile.id,
+      name: userProfile.school_name,
+      created_at: userProfile.created_at
+    });
   }
 
-  // Combine and deduplicate results
-  const allOrgs: Organization[] = [];
-  
-  // Add direct orgs
-  directOrgs?.forEach(item => {
-    if (item.profiles && 
-        typeof item.profiles === 'object' && 
-        !Array.isArray(item.profiles) &&
-        'id' in item.profiles && 
-        'name' in item.profiles && 
-        'created_at' in item.profiles) {
-      allOrgs.push(item.profiles as Organization);
-    }
-  });
-  
-  // Add group-based orgs
-  groupOrgs?.forEach(item => {
-    if (item.group_organizations && Array.isArray(item.group_organizations)) {
-      item.group_organizations.forEach(go => {
-        if (go.profiles && 
-            typeof go.profiles === 'object' && 
-            !Array.isArray(go.profiles) &&
-            'id' in go.profiles && 
-            'name' in go.profiles && 
-            'created_at' in go.profiles && 
-            !allOrgs.some(o => o.id === go.organization_id)) {
-          allOrgs.push(go.profiles as Organization);
+  // Then check group memberships for additional organizations
+  try {
+    const { data: groupOrgs, error: groupError } = await supabase
+      .from('group_members')
+      .select(`
+        group_id,
+        group_organizations!inner(
+          organization_id,
+          profiles:organization_id(*)
+        )
+      `)
+      .eq('user_id', user.user.id);
+
+    if (groupError) {
+      console.error('Error fetching group-based organization memberships:', groupError);
+    } else if (groupOrgs) {
+      // Add group-based orgs
+      groupOrgs.forEach(item => {
+        if (item.group_organizations && Array.isArray(item.group_organizations)) {
+          item.group_organizations.forEach(go => {
+            if (go.profiles && 
+                typeof go.profiles === 'object' && 
+                !Array.isArray(go.profiles) &&
+                'id' in go.profiles && 
+                (('name' in go.profiles && go.profiles.name) || ('school_name' in go.profiles && go.profiles.school_name)) && 
+                'created_at' in go.profiles && 
+                !organizations.some(o => o.id === go.organization_id)) {
+              // Use school_name if available, fallback to name
+              const orgName = (go.profiles as any).school_name || (go.profiles as any).name;
+              organizations.push({
+                id: go.profiles.id,
+                name: orgName,
+                created_at: go.profiles.created_at
+              });
+            }
+          });
         }
       });
     }
-  });
+  } catch (error) {
+    console.error('Error processing group organizations:', error);
+  }
 
-  return allOrgs;
+  return organizations;
 };
 
 // Get user's role for a specific organization
@@ -236,15 +238,10 @@ export const getUserRoleForOrganization = async (organizationId: string): Promis
     
   if (adminRole) return 'administrator';
   
-  // Check direct organization membership
-  const { data: directRole } = await supabase
-    .from('organization_members')
-    .select('role')
-    .eq('organization_id', organizationId)
-    .eq('user_id', user.user.id)
-    .maybeSingle();
-    
-  if (directRole) return directRole.role as UserRoleType;
+  // If the user is looking at their own organization profile
+  if (user.user.id === organizationId) {
+    return 'organization_admin';
+  }
   
   // Check group-based access
   const { data: groupRoles } = await supabase

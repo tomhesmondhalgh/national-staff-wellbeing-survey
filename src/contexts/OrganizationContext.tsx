@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Organization, getUserOrganizations } from '../lib/supabase/client';
 import { useAuth } from './AuthContext';
@@ -30,6 +31,7 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     try {
       setIsLoading(true);
       const orgs = await getUserOrganizations();
+      console.log('Fetched organizations:', orgs);
       setOrganizations(orgs);
       
       // If there are organizations, set the first one as current
