@@ -5,6 +5,19 @@ import { useTestingMode } from '../contexts/TestingModeContext';
 import { useOrganization } from '../contexts/OrganizationContext';
 import { UserRoleType, supabase } from '../lib/supabase/client';
 
+// Define interfaces for the group data structure
+interface GroupOrganization {
+  organization_id: string;
+}
+
+interface GroupMembership {
+  role: UserRoleType;
+  group_id: string;
+  groups: {
+    group_organizations: GroupOrganization[];
+  };
+}
+
 export function usePermissions() {
   const { user } = useAuth();
   const { currentOrganization } = useOrganization();
@@ -77,11 +90,11 @@ export function usePermissions() {
             .select(`
               role,
               group_id,
-              groups:group_id(
-                group_organizations!inner(organization_id)
+              groups(
+                group_organizations(organization_id)
               )
             `)
-            .eq('user_id', user.id);
+            .eq('user_id', user.id) as { data: GroupMembership[] | null; error: any };
             
           if (groupError) {
             console.error('Error fetching group roles:', groupError);
@@ -89,7 +102,7 @@ export function usePermissions() {
           
           if (groupRoles && groupRoles.length > 0) {
             for (const groupRole of groupRoles) {
-              if (groupRole.groups && groupRole.groups.group_organizations) {
+              if (groupRole.groups?.group_organizations) {
                 for (const groupOrg of groupRole.groups.group_organizations) {
                   if (groupOrg.organization_id === currentOrganization.id) {
                     console.log('User has group role:', groupRole.role, 'for organization:', currentOrganization.name);
