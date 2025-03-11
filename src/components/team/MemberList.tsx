@@ -1,13 +1,11 @@
-
-// Replace the import for supabase
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '../ui/button';
 import { UserPlus, Search, MoreVertical, AlertCircle } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useOrganization } from '../../contexts/OrganizationContext';
-import { supabase } from '../../lib/supabase';  // Updated import
+import { supabase } from '../../lib/supabase';
 import { OrganizationMember, UserRoleType } from '../../lib/supabase/client';
 import InviteMemberDialog from './InviteMemberDialog';
 import { toast } from 'sonner';
@@ -27,50 +25,48 @@ const MemberList = () => {
   const [selectedMember, setSelectedMember] = useState<OrganizationMember | null>(null);
   const [isEditRoleDialogOpen, setIsEditRoleDialogOpen] = useState(false);
 
-  const { data: membersData, isLoading, error, refetch } = useQuery({
+  const { data: membersData, isLoading, error } = useQuery({
     queryKey: ['organizationMembers', currentOrganization?.id],
     queryFn: async () => {
       if (!currentOrganization) {
         return { members: [], profiles: [], total: 0 };
       }
       
-      const { data: members, error } = await supabase
+      const { data: members, error: membersError } = await supabase
         .from('organization_members')
         .select('*')
         .eq('organization_id', currentOrganization.id);
         
-      if (error) {
-        toast.error('Failed to load team members');
-        throw error;
+      if (membersError) {
+        console.error('Error fetching members:', membersError);
+        throw new Error('Failed to load team members');
+      }
+      
+      if (!members || members.length === 0) {
+        return { members: [], profiles: [], total: 0 };
       }
       
       // Get user profiles
       const userIds = members.map(member => member.user_id);
-      
-      if (userIds.length === 0) {
-        return { members, profiles: [], total: members.length };
-      }
-      
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
         .in('id', userIds);
         
       if (profilesError) {
-        toast.error('Failed to load user profiles');
-        throw profilesError;
+        console.error('Error fetching profiles:', profilesError);
+        throw new Error('Failed to load member profiles');
       }
       
       return {
         members,
-        profiles,
+        profiles: profiles || [],
         total: members.length
       };
     },
     enabled: !!currentOrganization
   });
 
-  // Filter members based on search term and role filter
   const filteredMembers = membersData?.members.filter(member => {
     const profile = membersData.profiles.find(p => p.id === member.user_id);
     const fullName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.toLowerCase();
@@ -79,7 +75,6 @@ const MemberList = () => {
     return matchesSearch && matchesRole;
   }) || [];
   
-  // Pagination
   const totalPages = Math.ceil(filteredMembers.length / ITEMS_PER_PAGE);
   const paginatedMembers = filteredMembers.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -123,7 +118,6 @@ const MemberList = () => {
     setSelectedMember(null);
   };
 
-  // Display functions
   const getRoleBadgeClass = (role: UserRoleType) => {
     switch (role) {
       case 'organization_admin':
@@ -164,7 +158,7 @@ const MemberList = () => {
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4 mr-2" />
         <AlertDescription>
-          Error loading team members. Please try again later.
+          Failed to load team members. Please try again later.
         </AlertDescription>
       </Alert>
     );
@@ -191,7 +185,7 @@ const MemberList = () => {
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              setCurrentPage(1); // Reset to first page on search
+              setCurrentPage(1);
             }}
             className="pl-10"
           />
@@ -201,7 +195,7 @@ const MemberList = () => {
             value={roleFilter}
             onValueChange={(value) => {
               setRoleFilter(value);
-              setCurrentPage(1); // Reset to first page on filter change
+              setCurrentPage(1);
             }}
           >
             <SelectTrigger>
@@ -221,9 +215,9 @@ const MemberList = () => {
         <div className="flex justify-center py-8">
           <div className="animate-spin h-8 w-8 border-4 border-brandPurple-500 border-t-transparent rounded-full"></div>
         </div>
-      ) : paginatedMembers.length === 0 ? (
+      ) : (!membersData?.members || membersData.members.length === 0) ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <p className="text-gray-500">No members found</p>
+          <p className="text-gray-500">No team members found. Invite members to get started!</p>
         </div>
       ) : (
         <>
