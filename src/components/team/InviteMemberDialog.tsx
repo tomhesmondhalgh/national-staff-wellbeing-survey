@@ -46,6 +46,14 @@ export default function InviteMemberDialog({
     setIsSubmitting(true);
     
     try {
+      // Add detailed logging about the role type
+      console.log('Role type check:', {
+        roleValue: role,
+        roleType: typeof role,
+        allowedRoles: ['organization_admin', 'editor', 'viewer'],
+        isValidRole: ['organization_admin', 'editor', 'viewer'].includes(role)
+      });
+      
       // Create a random token for the invitation
       const token = Math.random().toString(36).substring(2, 15) + 
                    Math.random().toString(36).substring(2, 15);
@@ -54,10 +62,16 @@ export default function InviteMemberDialog({
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7);
       
-      console.log(`Creating invitation for ${email} with role ${role} to organization ${organizationId}`);
+      console.log('Invitation details:', {
+        email,
+        organizationId,
+        role,
+        token,
+        userId: user.id,
+        expiresAt: expiresAt.toISOString()
+      });
       
-      // Make a direct SQL query to create the invitation
-      // This is different from RPC to see if we can bypass the type casting issue
+      // Try inserting with explicit role casting
       const { data, error } = await supabase
         .from('invitations')
         .insert({
@@ -68,16 +82,21 @@ export default function InviteMemberDialog({
           invited_by: user.id,
           expires_at: expiresAt.toISOString()
         })
-        .select()
-        .single();
-      
+        .select();
+
       if (error) {
-        console.error('Error creating invitation:', error);
+        console.error('Full error object:', error);
+        console.error('Error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
         toast.error(`Failed to send invitation: ${error.message}`);
         return;
       }
       
-      console.log('Invitation created successfully', data);
+      console.log('Invitation created successfully:', data);
       
       // Try to call the edge function to send the email
       try {
@@ -85,17 +104,21 @@ export default function InviteMemberDialog({
         
         const { error: functionError } = await supabase.functions.invoke('send-invitation-email', {
           body: {
-            invitationId: data.id,
+            invitationId: data[0].id,
             organizationName: orgName
           }
         });
         
         if (functionError) {
-          console.error('Error calling edge function:', functionError);
+          console.error('Edge function error details:', {
+            message: functionError.message,
+            name: functionError.name,
+            stack: functionError.stack
+          });
           // Don't block the invite creation if email fails
         }
       } catch (emailError) {
-        console.error('Error sending invitation email:', emailError);
+        console.error('Email sending error:', emailError);
         // Continue even if email sending fails
       }
       
@@ -107,7 +130,8 @@ export default function InviteMemberDialog({
       setRole('viewer');
       
     } catch (error: any) {
-      console.error('Error in invitation process:', error);
+      console.error('Unexpected error:', error);
+      console.error('Error stack:', error.stack);
       toast.error(`An unexpected error occurred: ${error.message}`);
     } finally {
       setIsSubmitting(false);
