@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTestingMode } from '../contexts/TestingModeContext';
@@ -116,7 +117,10 @@ export function usePermissions() {
           if (groupRoles && groupRoles.length > 0) {
             let foundRole = false;
             
-            for (const groupRole of groupRoles as GroupMembership[]) {
+            // First cast the data to unknown, then to our interface type to satisfy TypeScript
+            const typedGroupRoles = groupRoles as unknown as GroupMembership[];
+            
+            for (const groupRole of typedGroupRoles) {
               if (groupRole.groups && groupRole.groups.group_organizations) {
                 for (const groupOrg of groupRole.groups.group_organizations) {
                   if (groupOrg.organization_id === currentOrganization.id) {
