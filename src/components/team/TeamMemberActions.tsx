@@ -46,20 +46,38 @@ export default function TeamMemberActions({ memberId, type, refetchAll, member }
     
     setIsLoading(true);
     try {
-      // Use our custom edge function
+      console.log('Cancelling invitation:', invitationId);
+      
+      // Get the session token for authorization
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      
+      if (!accessToken) {
+        throw new Error('No valid session found');
+      }
+      
+      // Call the edge function with proper authentication
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cancel-invitation`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+          'Authorization': `Bearer ${accessToken}`
         },
         body: JSON.stringify({ invitationId })
       });
       
-      const data = await response.json();
-      
+      // Parse response and check for success
       if (!response.ok) {
-        throw new Error(data.error || `Server responded with status: ${response.status}`);
+        const errorData = await response.text();
+        console.error('Error response from edge function:', errorData);
+        throw new Error(`Server responded with status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Edge function response:', data);
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Unknown error occurred');
       }
       
       toast.success('Invitation cancelled successfully');
