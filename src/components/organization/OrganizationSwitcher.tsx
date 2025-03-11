@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, Building } from 'lucide-react';
 import { useOrganization } from '../../contexts/OrganizationContext';
 import {
@@ -9,12 +9,24 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 import { Button } from '../ui/button';
+import { usePermissions } from '../../hooks/usePermissions';
 
 const OrganizationSwitcher: React.FC = () => {
   const { currentOrganization, organizations, switchOrganization, isLoading } = useOrganization();
   const [isOpen, setIsOpen] = useState(false);
+  const { userRole } = usePermissions();
+  
+  // Don't show switcher for organization admins with only one organization
+  if (userRole === 'organization_admin' && organizations.length <= 1) {
+    return currentOrganization ? (
+      <div className="flex items-center space-x-2 px-3 py-2 text-sm">
+        <Building size={16} />
+        <span className="truncate max-w-[140px]">{currentOrganization.name}</span>
+      </div>
+    ) : null;
+  }
 
-  // Don't show switcher if there's only one organization
+  // Don't show switcher if there's only one organization (for any role)
   if (organizations.length <= 1) {
     return currentOrganization ? (
       <div className="flex items-center space-x-2 px-3 py-2 text-sm">

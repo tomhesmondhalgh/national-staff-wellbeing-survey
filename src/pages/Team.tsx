@@ -99,7 +99,10 @@ const Team = () => {
   }
 
   // Determine if the user can see the Organizations tab
-  const canSeeOrganizationsTab = userRole === 'group_admin' || userRole === 'administrator';
+  // Only group_admin and administrator roles can see the Organizations tab
+  const canSeeOrganizationsTab = 
+    (userRole === 'group_admin' || userRole === 'administrator') ||
+    (isTestingMode && (testingRole === 'group_admin' || testingRole === 'administrator'));
 
   return (
     <MainLayout>

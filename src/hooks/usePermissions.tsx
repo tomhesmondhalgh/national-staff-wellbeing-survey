@@ -86,7 +86,12 @@ export function usePermissions() {
   const canEdit = useCallback(async (): Promise<boolean> => hasPermission('editor'), [hasPermission]);
   
   const canManageTeam = useCallback(async (): Promise<boolean> => {
-    // If in testing mode as admin, always return true for team management
+    // Organization admins should be able to manage team members
+    if (userRole === 'organization_admin') {
+      return true;
+    }
+    
+    // If in testing mode with appropriate admin role, allow team management
     if (isTestingMode && 
         (testingRole === 'administrator' || 
          testingRole === 'group_admin' || 
@@ -95,7 +100,7 @@ export function usePermissions() {
     }
     
     return hasPermission('organization_admin');
-  }, [isTestingMode, testingRole, hasPermission]);
+  }, [userRole, isTestingMode, testingRole, hasPermission]);
   
   // Check if user is a group admin
   const canManageGroups = useCallback(async (): Promise<boolean> => {

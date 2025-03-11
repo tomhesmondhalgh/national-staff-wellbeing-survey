@@ -19,9 +19,20 @@ import { useTestingMode } from '../../contexts/TestingModeContext';
 
 const ITEMS_PER_PAGE = 10;
 
+type TeamMember = {
+  id: string;
+  type: 'member' | 'invitation';
+  email: string | null;
+  role: UserRoleType;
+  created_at: string;
+  expires_at?: string;
+  profile?: any;
+  data: any;
+};
+
 const MembersAndInvitationsList = () => {
   const { currentOrganization } = useOrganization();
-  const { hasPermission } = usePermissions();
+  const { userRole } = usePermissions();
   const { isTestingMode, testingRole } = useTestingMode();
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
@@ -78,8 +89,8 @@ const MembersAndInvitationsList = () => {
     enabled: !!currentOrganization
   });
 
-  const filteredItems = React.useMemo(() => {
-    const items = [];
+  const teamMembers: TeamMember[] = React.useMemo(() => {
+    const items: TeamMember[] = [];
     
     // Add members
     if (combinedData?.members) {
@@ -107,14 +118,18 @@ const MembersAndInvitationsList = () => {
       })));
     }
 
-    return items.filter(item => {
+    return items;
+  }, [combinedData]);
+
+  const filteredItems = React.useMemo(() => {
+    return teamMembers.filter(item => {
       const matchesSearch = searchTerm === '' || 
         item.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (item.profile && `${item.profile.first_name} ${item.profile.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()));
       const matchesRole = roleFilter === 'all' || item.role === roleFilter;
       return matchesSearch && matchesRole;
     });
-  }, [combinedData, searchTerm, roleFilter]);
+  }, [teamMembers, searchTerm, roleFilter]);
 
   const paginatedItems = filteredItems.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -324,7 +339,7 @@ const MembersAndInvitationsList = () => {
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         item.type === 'member' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                       }`}>
-                        {item.type === 'member' ? 'Active' : 'Pending'}
+                        {item.type === 'member' ? 'Created Account' : 'Invited'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
