@@ -80,6 +80,11 @@ export async function signUpWithEmail(email: string, password: string, userData?
 // Handle sign out
 export async function signOutUser() {
   try {
+    // Clear testing mode by removing from localStorage explicitly
+    localStorage.removeItem('testing_mode_enabled');
+    localStorage.removeItem('testing_mode_plan');
+    localStorage.removeItem('testing_mode_role');
+    
     await supabase.auth.signOut();
     toast.success('Signed out successfully');
     return { error: null, success: true };

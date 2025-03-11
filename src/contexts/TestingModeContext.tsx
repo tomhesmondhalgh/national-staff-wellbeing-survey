@@ -1,15 +1,19 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { PlanType } from '../lib/supabase/subscription';
+import { UserRoleType } from '../lib/supabase/client';
 
 // Local storage keys
 const TESTING_MODE_ENABLED_KEY = 'testing_mode_enabled';
 const TESTING_MODE_PLAN_KEY = 'testing_mode_plan';
+const TESTING_MODE_ROLE_KEY = 'testing_mode_role';
 
 interface TestingModeContextType {
   isTestingMode: boolean;
   testingPlan: PlanType | null;
+  testingRole: UserRoleType | null;
   enableTestingMode: (plan: PlanType) => void;
+  enableRoleTestingMode: (role: UserRoleType) => void;
   disableTestingMode: () => void;
 }
 
@@ -42,6 +46,17 @@ export function TestingModeProvider({ children }: { children: React.ReactNode })
     }
   });
 
+  const [testingRole, setTestingRole] = useState<UserRoleType | null>(() => {
+    try {
+      const savedRole = localStorage.getItem(TESTING_MODE_ROLE_KEY);
+      console.log('Testing role from localStorage:', savedRole);
+      return savedRole ? (savedRole as UserRoleType) : null;
+    } catch (error) {
+      console.error('Error reading testing role from localStorage:', error);
+      return null;
+    }
+  });
+
   // Update localStorage when state changes
   useEffect(() => {
     try {
@@ -66,22 +81,49 @@ export function TestingModeProvider({ children }: { children: React.ReactNode })
     }
   }, [testingPlan]);
 
+  useEffect(() => {
+    try {
+      if (testingRole) {
+        console.log('Updating testing role in localStorage:', testingRole);
+        localStorage.setItem(TESTING_MODE_ROLE_KEY, testingRole);
+      } else {
+        console.log('Removing testing role from localStorage');
+        localStorage.removeItem(TESTING_MODE_ROLE_KEY);
+      }
+    } catch (error) {
+      console.error('Error saving testing role to localStorage:', error);
+    }
+  }, [testingRole]);
+
   const enableTestingMode = (plan: PlanType) => {
     console.log('Enabling testing mode with plan:', plan);
     setIsTestingMode(true);
     setTestingPlan(plan);
+    // Clear role if switching to plan testing
+    setTestingRole(null);
+  };
+
+  const enableRoleTestingMode = (role: UserRoleType) => {
+    console.log('Enabling testing mode with role:', role);
+    setIsTestingMode(true);
+    setTestingRole(role);
+    // Clear plan if switching to role testing
+    setTestingPlan(null);
   };
 
   const disableTestingMode = () => {
     console.log('Disabling testing mode');
     setIsTestingMode(false);
     setTestingPlan(null);
+    setTestingRole(null);
   };
 
   const contextValue = {
     isTestingMode,
     testingPlan,
+    testingRole,
     enableTestingMode,
+    enableRoleTestingMode,
     disableTestingMode
   };
 

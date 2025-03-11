@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
@@ -8,13 +9,21 @@ import { supabase } from '../lib/supabase';
 import { useAdminRole } from '../hooks/useAdminRole';
 import { useTestingMode } from '../contexts/TestingModeContext';
 import { PlanType } from '../lib/supabase/subscription';
+import { UserRoleType } from '../lib/supabase/client';
 import { Card } from '../components/ui/card';
 
 const Admin = () => {
   const [sendingTestEmails, setSendingTestEmails] = useState(false);
   const { user } = useAuth();
   const { isAdmin } = useAdminRole();
-  const { isTestingMode, testingPlan, enableTestingMode, disableTestingMode } = useTestingMode();
+  const { 
+    isTestingMode, 
+    testingPlan, 
+    testingRole, 
+    enableTestingMode, 
+    enableRoleTestingMode, 
+    disableTestingMode 
+  } = useTestingMode();
 
   const handleSendTestEmails = async () => {
     try {
@@ -68,32 +77,53 @@ const Admin = () => {
         <div className="mt-8 grid gap-6">
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Testing Mode</h2>
-            <p className="mb-4">Simulate different subscription plans to test and verify functionality.</p>
+            <p className="mb-4">Simulate different subscription plans or user roles to test and verify functionality.</p>
             
             <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <Button
-                  onClick={() => disableTestingMode()}
-                  variant={!isTestingMode ? "outline" : "secondary"}
-                  className="w-32"
-                >
-                  Normal Mode
-                </Button>
-                {(['free', 'foundation', 'progress', 'premium'] as PlanType[]).map((plan) => (
+              <div>
+                <h3 className="font-medium mb-2">Subscription Plan Testing:</h3>
+                <div className="flex items-center gap-4">
                   <Button
-                    key={plan}
-                    onClick={() => enableTestingMode(plan)}
-                    variant={isTestingMode && testingPlan === plan ? "outline" : "secondary"}
-                    className="w-32 capitalize"
+                    onClick={() => disableTestingMode()}
+                    variant={!isTestingMode ? "outline" : "secondary"}
+                    className="w-32"
                   >
-                    {plan}
+                    Normal Mode
                   </Button>
-                ))}
+                  {(['free', 'foundation', 'progress', 'premium'] as PlanType[]).map((plan) => (
+                    <Button
+                      key={plan}
+                      onClick={() => enableTestingMode(plan)}
+                      variant={isTestingMode && testingPlan === plan ? "outline" : "secondary"}
+                      className="w-32 capitalize"
+                    >
+                      {plan}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="font-medium mb-2">User Role Testing:</h3>
+                <div className="flex items-center gap-4 flex-wrap">
+                  {(['administrator', 'group_admin', 'organization_admin', 'editor', 'viewer'] as UserRoleType[]).map((role) => (
+                    <Button
+                      key={role}
+                      onClick={() => enableRoleTestingMode(role)}
+                      variant={isTestingMode && testingRole === role ? "outline" : "secondary"}
+                      className="w-auto capitalize"
+                    >
+                      {role.replace('_', ' ')}
+                    </Button>
+                  ))}
+                </div>
               </div>
               
               {isTestingMode && (
                 <p className="text-sm text-yellow-600">
-                  Testing Mode Active: Viewing app as {testingPlan} user
+                  Testing Mode Active: 
+                  {testingPlan && <span> Viewing app as {testingPlan} user</span>}
+                  {testingRole && <span> Simulating {testingRole.replace('_', ' ')} role</span>}
                 </p>
               )}
             </div>

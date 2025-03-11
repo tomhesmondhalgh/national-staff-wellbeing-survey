@@ -1,17 +1,29 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
+import { useTestingMode } from '../contexts/TestingModeContext';
+import { UserRoleType, supabase } from '../lib/supabase';
 
 export function useAdminRole() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
+  const { isTestingMode, testingRole } = useTestingMode();
 
   useEffect(() => {
     async function checkAdminRole() {
       if (!user) {
         setIsAdmin(false);
+        setIsLoading(false);
+        return;
+      }
+
+      // If testing mode is enabled with a role, use that
+      if (isTestingMode && testingRole) {
+        const isAdminInTestMode = testingRole === 'administrator' || 
+                                 testingRole === 'group_admin' || 
+                                 testingRole === 'organization_admin';
+        setIsAdmin(isAdminInTestMode);
         setIsLoading(false);
         return;
       }
@@ -40,7 +52,7 @@ export function useAdminRole() {
     }
 
     checkAdminRole();
-  }, [user]);
+  }, [user, isTestingMode, testingRole]);
 
   return { isAdmin, isLoading };
 }
