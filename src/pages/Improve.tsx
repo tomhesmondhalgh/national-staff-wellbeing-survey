@@ -9,7 +9,6 @@ import { toast } from 'sonner';
 import { initializeActionPlan, getSectionProgressSummary, generatePDF } from '../utils/actionPlanUtils';
 import { ACTION_PLAN_SECTIONS } from '../types/actionPlan';
 import DescriptorTable from '../components/action-plan/DescriptorTable';
-import SaveTemplateDialog from '../components/action-plan/SaveTemplateDialog';
 import SectionSummary from '../components/action-plan/SectionSummary';
 import BottomNavigation from '../components/action-plan/BottomNavigation';
 import ScreenOrientationOverlay from '../components/ui/ScreenOrientationOverlay';
@@ -24,7 +23,6 @@ const Improve = () => {
   const [activeTab, setActiveTab] = useState('summary');
   const [isLoading, setIsLoading] = useState(true);
   const [hasInitialized, setHasInitialized] = useState(false);
-  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const [summaryData, setSummaryData] = useState<any[]>([]);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [overlayDismissed, setOverlayDismissed] = useState(false);
@@ -101,10 +99,6 @@ const Improve = () => {
           <PageTitle title="Wellbeing Action Plan" subtitle="Track and improve staff wellbeing using this action planning tool" alignment="left" />
           
           {hasFoundationPlan && <div className="flex space-x-2">
-              <Button variant="outline" onClick={() => setShowSaveTemplate(true)} disabled={isLoading}>
-                <Save className="h-4 w-4 mr-2" />
-                Save as Template
-              </Button>
               <Button variant="outline" onClick={handleExportPDF} disabled={isLoading || isGeneratingPDF}>
                 <Download className="h-4 w-4 mr-2" />
                 {isGeneratingPDF ? 'Generating...' : 'Export PDF'}
@@ -156,7 +150,7 @@ const Improve = () => {
           </Tabs>}
       </div>
       
-      {user && hasFoundationPlan && <SaveTemplateDialog userId={user.id} isOpen={showSaveTemplate} onClose={() => setShowSaveTemplate(false)} />}
     </MainLayout>;
 };
+
 export default Improve;
