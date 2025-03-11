@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '../ui/button';
@@ -120,43 +119,63 @@ const MembersAndInvitationsList = () => {
     error: invitationsError,
     refetch: refetchInvitations
   } = useQuery({
-    queryKey: ['organizationInvitations', currentOrganization?.id, useDirectQuery],
+    queryKey: ['organizationInvitations', currentOrganization?.id],
     queryFn: async () => {
       if (!currentOrganization) return [];
       
       try {
         console.log('Fetching invitations for organization:', currentOrganization.id);
+        
         const { data, error } = await supabase
-          .from('invitations')
-          .select('*')
-          .eq('organization_id', currentOrganization.id)
-          .is('accepted_at', null);
+          .rpc('get_organization_invitations', { org_id: currentOrganization.id });
           
         if (error) {
-          if (error.code === '42P17') {
-            console.log('Detected recursion error in invitations, using empty results');
+          console.error('Error fetching invitations with RPC:', error);
+          
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('invitations')
+            .select('*')
+            .eq('organization_id', currentOrganization.id);
+            
+          if (fallbackError) {
+            console.error('Fallback query also failed:', fallbackError);
             return [];
           }
-          throw error;
+          
+          console.log('Fetched invitations with fallback query:', fallbackData?.length || 0);
+          return fallbackData || [];
         }
         
-        console.log('Invitations fetched:', data?.length || 0);
+        console.log('Fetched invitations with RPC:', data?.length || 0);
         return data || [];
       } catch (error) {
-        console.error('Error fetching invitations:', error);
+        console.error('Error in invitation fetch:', error);
+        
+        try {
+          const { data: manualData, error: manualError } = await supabase
+            .from('invitations')
+            .select('*')
+            .eq('organization_id', currentOrganization.id);
+            
+          if (!manualError) {
+            console.log('Manual invitations query succeeded:', manualData?.length || 0);
+            return manualData || [];
+          }
+        } catch (e) {
+          console.error('Manual query also failed:', e);
+        }
+        
         return [];
       }
     },
     enabled: !!currentOrganization,
-    retry: 1
+    retry: 2,
+    refetchInterval: 5000
   });
   
-  // For debugging
   useEffect(() => {
-    if (invitations && invitations.length > 0) {
-      console.log('Invitations data:', invitations);
-    } else {
-      console.log('No invitations found or invitations is empty');
+    if (invitations) {
+      console.log('Current invitations data:', invitations);
     }
   }, [invitations]);
   
@@ -210,23 +229,30 @@ const MembersAndInvitationsList = () => {
       })));
     }
     
-    if (invitations && invitations.length > 0) {
-      console.log('Adding invitations to team members list:', invitations.length);
-      items.push(...invitations.map(invitation => ({
-        id: invitation.id,
-        type: 'invitation' as const,
-        email: invitation.email,
-        role: invitation.role,
-        created_at: invitation.created_at,
-        expires_at: invitation.expires_at,
-        data: invitation
-      })));
+    if (invitations && Array.isArray(invitations) && invitations.length > 0) {
+      console.log('Processing invitations for display:', invitations.length);
+      
+      invitations.forEach(invitation => {
+        console.log('Adding invitation:', invitation.id, invitation.email, invitation.role);
+        
+        items.push({
+          id: invitation.id,
+          type: 'invitation',
+          email: invitation.email,
+          role: invitation.role,
+          created_at: invitation.created_at,
+          expires_at: invitation.expires_at,
+          data: invitation
+        });
+      });
+    } else {
+      console.log('No invitations to display');
     }
-
+    
+    console.log('Final team members array:', items.length);
     return items;
   }, [members, invitations, profiles]);
 
-  // For debugging - check the final teamMembers array
   useEffect(() => {
     console.log('Team members array (combined):', teamMembers.length);
     console.log('Members:', members?.length || 0);

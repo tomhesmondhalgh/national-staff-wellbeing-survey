@@ -57,8 +57,6 @@ const InviteMemberDialog: React.FC<InviteMemberDialogProps> = ({
     try {
       console.log('Creating invitation for:', values.email, 'with role:', values.role, 'in organization:', organizationId);
       
-      // Skip checking for existing member as profiles schema has changed
-      
       // Generate a unique token for the invitation
       const token = crypto.randomUUID();
       
@@ -76,19 +74,17 @@ const InviteMemberDialog: React.FC<InviteMemberDialogProps> = ({
         .select();
       
       if (inviteError) {
-        // Special case for recursion errors - proceed anyway
-        if (inviteError.code === '42P17') {
-          console.warn('Recursion detected, but proceeding with email sending');
-        } else if (inviteError.code === '23505') {
+        if (inviteError.code === '23505') {
           toast.error('This email already has a pending invitation');
           setIsSubmitting(false);
           return;
         } else {
+          console.error('Error creating invitation:', inviteError);
           throw inviteError;
         }
       }
       
-      console.log('Invitation created:', inviteData);
+      console.log('Invitation created successfully:', inviteData);
       
       // Send invitation email using edge function
       const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
@@ -109,19 +105,14 @@ const InviteMemberDialog: React.FC<InviteMemberDialogProps> = ({
       }
       
       form.reset();
-      onComplete();
+      
+      // Important: We need to wait a moment to ensure the database has time to 
+      // process the invitation before we try to fetch it in the parent component
+      setTimeout(() => {
+        onComplete();
+      }, 500);
     } catch (error: any) {
       console.error('Error sending invitation:', error);
-      
-      // Handle specific error cases
-      if (error.code === '42P17') {
-        console.log('Continuing despite recursion error');
-        toast.success('Invitation sent successfully');
-        form.reset();
-        onComplete();
-        return;
-      }
-      
       toast.error('Failed to send invitation. Please try again later.');
     } finally {
       setIsSubmitting(false);
