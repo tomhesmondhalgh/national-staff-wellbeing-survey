@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
@@ -36,12 +35,12 @@ const Navbar: React.FC = () => {
 
   // Check if user can manage team
   useEffect(() => {
-    // Organization admins should always be able to manage team
-    if (userRole === 'organization_admin' || userRole === 'group_admin' || userRole === 'administrator') {
-      setCanManageTeam(true);
-    } else {
-      setCanManageTeam(false);
-    }
+    const hasTeamAccess = userRole === 'organization_admin' || 
+                         userRole === 'group_admin' || 
+                         userRole === 'administrator';
+    setCanManageTeam(hasTeamAccess);
+    console.log('Current user role:', userRole);
+    console.log('Can manage team:', hasTeamAccess);
   }, [userRole]);
 
   const handleSignOut = async () => {

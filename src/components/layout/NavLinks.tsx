@@ -50,13 +50,11 @@ const NavLinks: React.FC<NavLinksProps> = ({ canManageTeam, setIsMenuOpen }) => 
       {canManageTeam && (
         <Link 
           to="/team" 
-          className={`nav-link ${location.pathname === '/team' ? 'text-brandPurple-600' : ''}`}
+          className={`nav-link flex items-center ${location.pathname === '/team' ? 'text-brandPurple-600' : ''}`}
           onClick={handleClick}
         >
-          <span className="flex items-center">
-            <Users size={16} className="mr-1" />
-            Team
-          </span>
+          <Users size={16} className="mr-1" />
+          Team
         </Link>
       )}
     </>
@@ -64,3 +62,4 @@ const NavLinks: React.FC<NavLinksProps> = ({ canManageTeam, setIsMenuOpen }) => 
 };
 
 export default NavLinks;
+
