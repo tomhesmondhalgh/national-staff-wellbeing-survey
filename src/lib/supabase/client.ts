@@ -187,12 +187,40 @@ export const getUserOrganizations = async (): Promise<Organization[]> => {
 
   // If the user is an organization admin and has school_name, create an organization from their profile
   const organizations: Organization[] = [];
+  
+  // First check: if they have a profile with a school_name, add it as an organization
   if (userProfile && userProfile.school_name) {
     organizations.push({
       id: userProfile.id,
       name: userProfile.school_name,
-      created_at: userProfile.created_at
+      created_at: userProfile.created_at || new Date().toISOString()
     });
+    
+    // Also check if we need to add them as an organization_admin
+    const { data: existingMember } = await supabase
+      .from('organization_members')
+      .select('*')
+      .eq('user_id', user.user.id)
+      .eq('organization_id', userProfile.id)
+      .single();
+      
+    if (!existingMember) {
+      // Create organization_member record to make them an admin of their own organization
+      const { error: memberError } = await supabase
+        .from('organization_members')
+        .insert({
+          organization_id: userProfile.id,
+          user_id: user.user.id,
+          role: 'organization_admin',
+          is_primary: true
+        });
+        
+      if (memberError) {
+        console.error('Error creating organization membership:', memberError);
+      } else {
+        console.log('Successfully created organization admin membership for user');
+      }
+    }
   }
 
   // Then check group memberships for additional organizations
