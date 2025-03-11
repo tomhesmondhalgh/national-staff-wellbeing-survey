@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { User, ShieldCheck, LogOut } from 'lucide-react';
+import { User, ShieldCheck, LogOut, Users } from 'lucide-react';
 import NavLinks from './NavLinks';
 import OrganizationSwitcher from '../organization/OrganizationSwitcher';
 
@@ -58,6 +58,19 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
                 Profile
               </span>
             </Link>
+            
+            {canManageTeam && (
+              <Link 
+                to="/team" 
+                className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <span className="flex items-center">
+                  <Users size={16} className="mr-1" />
+                  Team
+                </span>
+              </Link>
+            )}
             
             {isAdmin && (
               <Link 

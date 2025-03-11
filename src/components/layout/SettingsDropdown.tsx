@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, User, ShieldCheck, LogOut } from 'lucide-react';
+import { Settings, User, ShieldCheck, LogOut, Users } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,10 +12,11 @@ import { Button } from '../ui/button';
 
 interface SettingsDropdownProps {
   isAdmin: boolean;
+  canManageTeam: boolean;
   handleSignOut: () => Promise<void>;
 }
 
-const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ isAdmin, handleSignOut }) => {
+const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ isAdmin, canManageTeam, handleSignOut }) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -33,6 +34,15 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ isAdmin, handleSign
             Profile
           </Link>
         </DropdownMenuItem>
+        
+        {canManageTeam && (
+          <DropdownMenuItem asChild>
+            <Link to="/team" className="flex items-center w-full">
+              <Users size={16} className="mr-2" />
+              Team
+            </Link>
+          </DropdownMenuItem>
+        )}
         
         {isAdmin && (
           <DropdownMenuItem asChild>

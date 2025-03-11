@@ -24,7 +24,11 @@ const DesktopNav: React.FC<DesktopNavProps> = ({
       {isAuthenticated ? (
         <>
           <NavLinks canManageTeam={canManageTeam} />
-          <SettingsDropdown isAdmin={isAdmin} handleSignOut={handleSignOut} />
+          <SettingsDropdown 
+            isAdmin={isAdmin} 
+            canManageTeam={canManageTeam} 
+            handleSignOut={handleSignOut} 
+          />
         </>
       ) : (
         // Only show login/signup options if not on survey response or complete pages
