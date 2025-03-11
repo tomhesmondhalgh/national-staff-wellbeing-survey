@@ -116,20 +116,24 @@ export interface Invitation {
 
 // Get all groups the current user belongs to
 export const getUserGroups = async (): Promise<Group[]> => {
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) return [];
+
   const { data, error } = await supabase
     .from('group_members')
     .select(`
       group_id,
-      groups:group_id(*)
+      groups(*)
     `)
-    .eq('user_id', supabase.auth.getUser().then(({ data }) => data.user?.id));
+    .eq('user_id', user.user.id);
 
   if (error) {
     console.error('Error fetching user groups:', error);
     return [];
   }
 
-  return data?.map(item => item.groups) || [];
+  // Extract and transform the data to match the Group interface
+  return (data || []).map(item => item.groups as Group);
 };
 
 // Get all organizations the current user belongs to
@@ -180,11 +184,13 @@ export const getUserOrganizations = async (): Promise<Organization[]> => {
   
   // Add group-based orgs
   groupOrgs?.forEach(item => {
-    item.group_organizations.forEach(go => {
-      if (go.profiles && !allOrgs.some(o => o.id === go.organization_id)) {
-        allOrgs.push(go.profiles as Organization);
-      }
-    });
+    if (item.group_organizations) {
+      item.group_organizations.forEach(go => {
+        if (go.profiles && !allOrgs.some(o => o.id === go.organization_id)) {
+          allOrgs.push(go.profiles as Organization);
+        }
+      });
+    }
   });
 
   return allOrgs;
@@ -227,9 +233,11 @@ export const getUserRoleForOrganization = async (organizationId: string): Promis
     
   if (groupRoles) {
     for (const groupRole of groupRoles) {
-      for (const groupOrg of groupRole.group_organizations) {
-        if (groupOrg.organization_id === organizationId) {
-          return groupRole.role as UserRoleType;
+      if (groupRole.group_organizations) {
+        for (const groupOrg of groupRole.group_organizations) {
+          if (groupOrg.organization_id === organizationId) {
+            return groupRole.role as UserRoleType;
+          }
         }
       }
     }
