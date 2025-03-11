@@ -13,7 +13,7 @@ import { AlertCircle } from 'lucide-react';
 import { useTestingMode } from '../contexts/TestingModeContext';
 
 const Team = () => {
-  const { canManageTeam, isLoading, canManageGroups, userRole } = usePermissions();
+  const { userRole, isLoading } = usePermissions();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [permissionChecked, setPermissionChecked] = useState(false);
   const { currentOrganization } = useOrganization();
@@ -22,14 +22,21 @@ const Team = () => {
   useEffect(() => {
     const checkPermission = async () => {
       try {
+        // Organization admins should always have permission to manage their team
+        if (userRole === 'organization_admin' || userRole === 'group_admin' || userRole === 'administrator') {
+          setHasPermission(true);
+          setPermissionChecked(true);
+          return;
+        }
+        
+        // For testing mode with admin roles
         if (isTestingMode && ['administrator', 'group_admin', 'organization_admin'].includes(testingRole || '')) {
           setHasPermission(true);
           setPermissionChecked(true);
           return;
         }
         
-        const result = await canManageTeam();
-        setHasPermission(result);
+        setHasPermission(false);
       } catch (error) {
         console.error('Error checking team management permission:', error);
         setHasPermission(false);
@@ -41,7 +48,7 @@ const Team = () => {
     if (!isLoading) {
       checkPermission();
     }
-  }, [isLoading, canManageTeam, isTestingMode, testingRole]);
+  }, [isLoading, userRole, isTestingMode, testingRole]);
 
   // Show loading state while checking permissions
   if (isLoading || !permissionChecked) {

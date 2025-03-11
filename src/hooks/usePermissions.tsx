@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTestingMode } from '../contexts/TestingModeContext';
 import { useOrganization } from '../contexts/OrganizationContext';
-import { UserRoleType, getUserRoleForOrganization, userHasPermission, supabase } from '../lib/supabase/client';
+import { UserRoleType, supabase } from '../lib/supabase/client';
 
 export function usePermissions() {
   const { user } = useAuth();
@@ -23,7 +23,7 @@ export function usePermissions() {
       // If in testing mode with a role, use that role
       if (isTestingMode && testingRole) {
         console.log('Using testing role:', testingRole);
-        setUserRole(testingRole);
+        setUserRole(testingRole as UserRoleType);
         setIsLoading(false);
         return;
       }
@@ -36,9 +36,60 @@ export function usePermissions() {
       }
 
       try {
-        const role = await getUserRoleForOrganization(currentOrganization.id);
-        console.log(`Fetched user role for organization ${currentOrganization.id}:`, role);
-        setUserRole(role);
+        // Check if user is system administrator
+        const { data: adminRole } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'administrator')
+          .maybeSingle();
+          
+        if (adminRole) {
+          setUserRole('administrator');
+          setIsLoading(false);
+          return;
+        }
+        
+        // Check if user is organization admin for current organization
+        const { data: orgMember } = await supabase
+          .from('organization_members')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('organization_id', currentOrganization.id)
+          .maybeSingle();
+          
+        if (orgMember) {
+          setUserRole(orgMember.role as UserRoleType);
+          setIsLoading(false);
+          return;
+        }
+        
+        // Check group-based access
+        const { data: groupRoles } = await supabase
+          .from('group_members')
+          .select(`
+            role,
+            group_id,
+            group_organizations!inner(organization_id)
+          `)
+          .eq('user_id', user.id);
+          
+        if (groupRoles) {
+          for (const groupRole of groupRoles) {
+            if (groupRole.group_organizations && Array.isArray(groupRole.group_organizations)) {
+              for (const groupOrg of groupRole.group_organizations) {
+                if (groupOrg.organization_id === currentOrganization.id) {
+                  setUserRole(groupRole.role as UserRoleType);
+                  setIsLoading(false);
+                  return;
+                }
+              }
+            }
+          }
+        }
+        
+        // No role found
+        setUserRole(null);
       } catch (error) {
         console.error('Error fetching user role:', error);
         setUserRole(null);
@@ -65,20 +116,39 @@ export function usePermissions() {
         'viewer': 0
       };
       
-      return roleHierarchy[testingRole] >= roleHierarchy[requiredRole];
+      return roleHierarchy[testingRole as UserRoleType] >= roleHierarchy[requiredRole];
     }
     
     if (!currentOrganization) return false;
     
-    try {
-      const hasAccess = await userHasPermission(currentOrganization.id, requiredRole);
-      console.log(`Permission check for ${requiredRole} in org ${currentOrganization.id}: ${hasAccess}`);
-      return hasAccess;
-    } catch (error) {
-      console.error('Error checking permission:', error);
-      return false;
+    // Always give permission to organization admins for their own organization
+    if (userRole === 'organization_admin' && 
+        (requiredRole === 'organization_admin' || requiredRole === 'editor' || requiredRole === 'viewer')) {
+      return true;
     }
-  }, [user, currentOrganization, isTestingMode, testingRole]);
+    
+    // Always give permission to group admins
+    if (userRole === 'group_admin') {
+      return true;
+    }
+    
+    // Always give permission to system administrators
+    if (userRole === 'administrator') {
+      return true;
+    }
+    
+    // Check editor permissions
+    if (userRole === 'editor' && (requiredRole === 'editor' || requiredRole === 'viewer')) {
+      return true;
+    }
+    
+    // Check viewer permissions
+    if (userRole === 'viewer' && requiredRole === 'viewer') {
+      return true;
+    }
+    
+    return false;
+  }, [user, currentOrganization, isTestingMode, testingRole, userRole]);
 
   // Common permission checks
   const canCreate = useCallback(async (): Promise<boolean> => hasPermission('editor'), [hasPermission]);
@@ -87,7 +157,7 @@ export function usePermissions() {
   
   const canManageTeam = useCallback(async (): Promise<boolean> => {
     // Organization admins should be able to manage team members
-    if (userRole === 'organization_admin') {
+    if (userRole === 'organization_admin' || userRole === 'group_admin' || userRole === 'administrator') {
       return true;
     }
     
@@ -99,8 +169,8 @@ export function usePermissions() {
       return true;
     }
     
-    return hasPermission('organization_admin');
-  }, [userRole, isTestingMode, testingRole, hasPermission]);
+    return false;
+  }, [userRole, isTestingMode, testingRole]);
   
   // Check if user is a group admin
   const canManageGroups = useCallback(async (): Promise<boolean> => {
@@ -113,25 +183,18 @@ export function usePermissions() {
       return true;
     }
     
-    try {
-      // Check if user has the group_admin role in any group
-      const { data, error } = await supabase
-        .from('group_members')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'group_admin')
-        .limit(1);
-        
-      if (error) {
-        throw error;
-      }
-      
-      return data.length > 0;
-    } catch (error) {
-      console.error('Error checking group admin permission:', error);
-      return false;
+    // System administrators can manage groups
+    if (userRole === 'administrator') {
+      return true;
     }
-  }, [user, isTestingMode, testingRole]);
+    
+    // Group admins can manage groups
+    if (userRole === 'group_admin') {
+      return true;
+    }
+    
+    return false;
+  }, [user, isTestingMode, testingRole, userRole]);
   
   const isAdmin = useCallback(async (): Promise<boolean> => {
     // If testing mode is on and user has administrator role in testing
@@ -139,27 +202,13 @@ export function usePermissions() {
       return true;
     }
     
-    // Otherwise check for real admin privileges
-    try {
-      if (!user) return false;
-      
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'administrator')
-        .maybeSingle();
-        
-      if (error) {
-        throw error;
-      }
-      
-      return !!data;
-    } catch (error) {
-      console.error('Error checking admin permission:', error);
-      return false;
+    // Check for administrator role
+    if (userRole === 'administrator') {
+      return true;
     }
-  }, [user, isTestingMode, testingRole]);
+    
+    return false;
+  }, [userRole, isTestingMode, testingRole]);
 
   return {
     userRole,

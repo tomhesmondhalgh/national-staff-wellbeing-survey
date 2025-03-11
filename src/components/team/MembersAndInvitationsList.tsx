@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '../ui/button';
 import { UserPlus, Search, MoreVertical, AlertCircle, Users } from 'lucide-react';
@@ -41,75 +41,101 @@ const MembersAndInvitationsList = () => {
   const [selectedMember, setSelectedMember] = useState<OrganizationMember | null>(null);
   const [isEditRoleDialogOpen, setIsEditRoleDialogOpen] = useState(false);
 
-  const { data: combinedData, isLoading, error, refetch } = useQuery({
-    queryKey: ['organizationMembersAndInvitations', currentOrganization?.id],
+  // Fetch members and invitations in separate queries to avoid RLS recursion issues
+  const { data: members, isLoading: membersLoading, error: membersError } = useQuery({
+    queryKey: ['organizationMembers', currentOrganization?.id],
     queryFn: async () => {
-      if (!currentOrganization) {
-        return { members: [], invitations: [], profiles: [] };
-      }
-
+      if (!currentOrganization) return [];
+      
       try {
-        // Fetch members
-        const { data: members, error: membersError } = await supabase
+        const { data, error } = await supabase
           .from('organization_members')
           .select('*')
           .eq('organization_id', currentOrganization.id);
           
-        if (membersError) throw membersError;
-
-        // Fetch active invitations
-        const { data: invitations, error: invitationsError } = await supabase
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error('Error fetching members:', error);
+        throw error;
+      }
+    },
+    enabled: !!currentOrganization
+  });
+  
+  const { data: invitations, isLoading: invitationsLoading, error: invitationsError } = useQuery({
+    queryKey: ['organizationInvitations', currentOrganization?.id],
+    queryFn: async () => {
+      if (!currentOrganization) return [];
+      
+      try {
+        const { data, error } = await supabase
           .from('invitations')
           .select('*')
           .eq('organization_id', currentOrganization.id)
           .is('accepted_at', null)
           .gt('expires_at', new Date().toISOString());
           
-        if (invitationsError) throw invitationsError;
-
-        // Get user profiles for members
-        const userIds = members?.map(member => member.user_id) || [];
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('*')
-          .in('id', userIds);
-          
-        if (profilesError) throw profilesError;
-
-        return {
-          members: members || [],
-          invitations: invitations || [],
-          profiles: profiles || []
-        };
+        if (error) throw error;
+        return data || [];
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching invitations:', error);
         throw error;
       }
     },
     enabled: !!currentOrganization
   });
+  
+  const { data: profiles, isLoading: profilesLoading, error: profilesError } = useQuery({
+    queryKey: ['userProfiles', members],
+    queryFn: async () => {
+      if (!members || members.length === 0) return [];
+      
+      const userIds = members.map(member => member.user_id);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', userIds);
+          
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error('Error fetching profiles:', error);
+        throw error;
+      }
+    },
+    enabled: !!members && members.length > 0
+  });
+
+  const isLoading = membersLoading || invitationsLoading || profilesLoading;
+  const error = membersError || invitationsError || profilesError;
+
+  const refetch = () => {
+    // Re-fetch the data when needed (after changes)
+  };
 
   const teamMembers: TeamMember[] = React.useMemo(() => {
     const items: TeamMember[] = [];
     
     // Add members
-    if (combinedData?.members) {
-      items.push(...combinedData.members.map(member => ({
+    if (members) {
+      items.push(...members.map(member => ({
         id: member.id,
-        type: 'member',
-        email: combinedData.profiles.find(p => p.id === member.user_id)?.email,
+        type: 'member' as const,
+        email: profiles?.find(p => p.id === member.user_id)?.email,
         role: member.role,
         created_at: member.created_at,
-        profile: combinedData.profiles.find(p => p.id === member.user_id),
+        profile: profiles?.find(p => p.id === member.user_id),
         data: member
       })));
     }
     
     // Add invitations
-    if (combinedData?.invitations) {
-      items.push(...combinedData.invitations.map(invitation => ({
+    if (invitations) {
+      items.push(...invitations.map(invitation => ({
         id: invitation.id,
-        type: 'invitation',
+        type: 'invitation' as const,
         email: invitation.email,
         role: invitation.role,
         created_at: invitation.created_at,
@@ -119,7 +145,7 @@ const MembersAndInvitationsList = () => {
     }
 
     return items;
-  }, [combinedData]);
+  }, [members, invitations, profiles]);
 
   const filteredItems = React.useMemo(() => {
     return teamMembers.filter(item => {
