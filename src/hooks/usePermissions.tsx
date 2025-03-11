@@ -1,21 +1,22 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTestingMode } from '../contexts/TestingModeContext';
 import { useOrganization } from '../contexts/OrganizationContext';
 import { UserRoleType, supabase } from '../lib/supabase/client';
 
-// Define interfaces for the group data structure
+// Update interfaces to match Supabase response structure
 interface GroupOrganization {
   organization_id: string;
+}
+
+interface GroupData {
+  group_organizations: GroupOrganization[];
 }
 
 interface GroupMembership {
   role: UserRoleType;
   group_id: string;
-  groups: {
-    group_organizations: GroupOrganization[];
-  };
+  groups: GroupData;
 }
 
 export function usePermissions() {
@@ -115,26 +116,16 @@ export function usePermissions() {
           if (groupRoles && groupRoles.length > 0) {
             let foundRole = false;
             
-            for (const groupRole of groupRoles) {
-              // Check if groups and group_organizations exist and are properly structured
-              if (groupRole.groups && 
-                  typeof groupRole.groups === 'object' && 
-                  groupRole.groups.group_organizations && 
-                  Array.isArray(groupRole.groups.group_organizations)) {
-                
+            for (const groupRole of groupRoles as GroupMembership[]) {
+              if (groupRole.groups && groupRole.groups.group_organizations) {
                 for (const groupOrg of groupRole.groups.group_organizations) {
-                  if (groupOrg && 
-                      typeof groupOrg === 'object' && 
-                      'organization_id' in groupOrg && 
-                      groupOrg.organization_id === currentOrganization.id) {
-                    
+                  if (groupOrg.organization_id === currentOrganization.id) {
                     console.log('User has group role:', groupRole.role, 'for organization:', currentOrganization.name);
                     setUserRole(groupRole.role as UserRoleType);
                     foundRole = true;
                     break;
                   }
                 }
-                
                 if (foundRole) break;
               }
             }
