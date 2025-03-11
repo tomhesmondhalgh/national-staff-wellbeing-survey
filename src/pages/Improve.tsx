@@ -4,7 +4,7 @@ import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Download, Save } from 'lucide-react';
+import { Download, Save, ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import { initializeActionPlan, getSectionProgressSummary, generatePDF } from '../utils/actionPlanUtils';
@@ -15,9 +15,12 @@ import SectionSummary from '../components/action-plan/SectionSummary';
 import BottomNavigation from '../components/action-plan/BottomNavigation';
 import ScreenOrientationOverlay from '../components/ui/ScreenOrientationOverlay';
 import { useOrientation } from '../hooks/useOrientation';
+import { useSubscription } from '../hooks/useSubscription';
+import { useNavigate } from 'react-router-dom';
 
 const Improve = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('summary');
   const [isLoading, setIsLoading] = useState(true);
   const [hasInitialized, setHasInitialized] = useState(false);
@@ -26,13 +29,28 @@ const Improve = () => {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [overlayDismissed, setOverlayDismissed] = useState(false);
   const { orientation, isMobile } = useOrientation();
+  const { hasAccess, isLoading: isSubscriptionLoading } = useSubscription();
+  const [hasFoundationPlan, setHasFoundationPlan] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (user && !hasInitialized) {
+    async function checkAccess() {
+      if (hasAccess) {
+        const canAccess = await hasAccess('foundation');
+        setHasFoundationPlan(canAccess);
+      }
+    }
+    
+    if (!isSubscriptionLoading) {
+      checkAccess();
+    }
+  }, [hasAccess, isSubscriptionLoading]);
+
+  useEffect(() => {
+    if (user && !hasInitialized && hasFoundationPlan) {
       initializeActionPlanData();
       setHasInitialized(true);
     }
-  }, [user, hasInitialized]);
+  }, [user, hasInitialized, hasFoundationPlan]);
 
   const initializeActionPlanData = async () => {
     setIsLoading(true);
@@ -76,6 +94,7 @@ const Improve = () => {
   };
 
   const shouldShowOverlay = isMobile && orientation === 'portrait' && !overlayDismissed;
+  const isSubscriptionChecking = isSubscriptionLoading || hasFoundationPlan === null;
 
   return (
     <MainLayout>
@@ -91,27 +110,74 @@ const Improve = () => {
             subtitle="Track and improve staff wellbeing using this action planning tool" 
             alignment="left" 
           />
-          <div className="flex space-x-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowSaveTemplate(true)}
-              disabled={isLoading}
-            >
-              <Save className="h-4 w-4 mr-2" />
-              Save as Template
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleExportPDF}
-              disabled={isLoading || isGeneratingPDF}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              {isGeneratingPDF ? 'Generating...' : 'Export PDF'}
-            </Button>
-          </div>
+          
+          {hasFoundationPlan && (
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowSaveTemplate(true)}
+                disabled={isLoading}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Save as Template
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleExportPDF}
+                disabled={isLoading || isGeneratingPDF}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {isGeneratingPDF ? 'Generating...' : 'Export PDF'}
+              </Button>
+            </div>
+          )}
         </div>
         
-        {isLoading ? (
+        {isSubscriptionChecking ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="text-center">
+              <div className="mb-4">Checking subscription...</div>
+            </div>
+          </div>
+        ) : !hasFoundationPlan ? (
+          <div className="mt-8 rounded-lg border border-gray-200 bg-gray-50 p-8 text-center">
+            <h2 className="text-2xl font-bold mb-4">Upgrade to Access the Action Plan</h2>
+            <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
+              The Wellbeing Action Plan is available with Foundation, Progress, and Premium plans. 
+              Upgrade today to access powerful tools for planning and tracking staff wellbeing improvements.
+            </p>
+            
+            <div className="max-w-md mx-auto bg-white rounded-lg p-6 shadow-sm border border-gray-100 mb-6">
+              <h3 className="font-semibold text-lg mb-3">With the Action Plan you can:</h3>
+              <ul className="text-left space-y-2 mb-4">
+                <li className="flex items-start">
+                  <div className="mr-2 mt-1 text-brandPurple-500">•</div>
+                  <span>Track progress on wellbeing initiatives</span>
+                </li>
+                <li className="flex items-start">
+                  <div className="mr-2 mt-1 text-brandPurple-500">•</div>
+                  <span>Create detailed action plans based on survey results</span>
+                </li>
+                <li className="flex items-start">
+                  <div className="mr-2 mt-1 text-brandPurple-500">•</div>
+                  <span>Record progress notes and achievements</span>
+                </li>
+                <li className="flex items-start">
+                  <div className="mr-2 mt-1 text-brandPurple-500">•</div>
+                  <span>Export reports for stakeholders</span>
+                </li>
+              </ul>
+            </div>
+            
+            <Button 
+              onClick={() => navigate('/upgrade')} 
+              size="lg" 
+              className="px-8"
+            >
+              View Upgrade Options <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        ) : isLoading ? (
           <div className="flex justify-center items-center h-64">
             <div className="text-center">
               <div className="mb-4">Loading action plan...</div>
@@ -169,7 +235,7 @@ const Improve = () => {
         )}
       </div>
       
-      {user && (
+      {user && hasFoundationPlan && (
         <SaveTemplateDialog 
           userId={user.id}
           isOpen={showSaveTemplate}

@@ -6,14 +6,14 @@ import { Button } from '../ui/button';
 type TeamMembersErrorProps = {
   error: Error | null;
   userRole?: string | null;
-  organizationName?: string | null;
+  organisationName?: string | null;
   refetchAll: () => void;
 };
 
 export default function TeamMembersError({ 
   error, 
   userRole, 
-  organizationName, 
+  organisationName, 
   refetchAll 
 }: TeamMembersErrorProps) {
   return (
@@ -42,7 +42,7 @@ export default function TeamMembersError({
         <ul className="list-disc pl-5 space-y-2 text-sm">
           <li>Ensure you have the correct permissions for this organisation.</li>
           <li>Your current role: <strong>{userRole || 'None'}</strong></li>
-          <li>Current organisation: <strong>{organizationName || 'None'}</strong></li>
+          <li>Current organisation: <strong>{organisationName || 'None'}</strong></li>
           <li>If you're the organisation owner, this might be a database configuration issue.</li>
         </ul>
       </div>
