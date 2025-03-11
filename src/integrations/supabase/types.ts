@@ -190,6 +190,163 @@ export type Database = {
         }
         Relationships: []
       }
+      group_members: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          role: Database["public"]["Enums"]["user_role_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          role?: Database["public"]["Enums"]["user_role_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          role?: Database["public"]["Enums"]["user_role_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_organizations: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          organization_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          organization_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_organizations_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          group_id: string | null
+          id: string
+          invited_by: string
+          organization_id: string | null
+          role: Database["public"]["Enums"]["user_role_type"]
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at: string
+          group_id?: string | null
+          id?: string
+          invited_by: string
+          organization_id?: string | null
+          role: Database["public"]["Enums"]["user_role_type"]
+          token: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          group_id?: string | null
+          id?: string
+          invited_by?: string
+          organization_id?: string | null
+          role?: Database["public"]["Enums"]["user_role_type"]
+          token?: string
+        }
+        Relationships: []
+      }
+      organization_members: {
+        Row: {
+          created_at: string
+          id: string
+          is_primary: boolean
+          organization_id: string
+          role: Database["public"]["Enums"]["user_role_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          organization_id: string
+          role?: Database["public"]["Enums"]["user_role_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          organization_id?: string
+          role?: Database["public"]["Enums"]["user_role_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       payment_history: {
         Row: {
           amount: number
@@ -683,6 +840,7 @@ export type Database = {
       }
       subscriptions: {
         Row: {
+          billing_level: string | null
           created_at: string
           end_date: string | null
           id: string
@@ -697,6 +855,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          billing_level?: string | null
           created_at?: string
           end_date?: string | null
           id?: string
@@ -711,6 +870,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          billing_level?: string | null
           created_at?: string
           end_date?: string | null
           id?: string
@@ -897,6 +1057,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_user_organizations: {
+        Args: {
+          user_uuid: string
+        }
+        Returns: {
+          organization_id: string
+          role: Database["public"]["Enums"]["user_role_type"]
+        }[]
+      }
       get_user_role: {
         Args: {
           user_id: string
@@ -912,10 +1081,32 @@ export type Database = {
           is_active: boolean
         }[]
       }
+      user_can_edit_survey: {
+        Args: {
+          user_uuid: string
+          template_id: string
+        }
+        Returns: boolean
+      }
+      user_can_view_survey: {
+        Args: {
+          user_uuid: string
+          template_id: string
+        }
+        Returns: boolean
+      }
       user_has_access: {
         Args: {
           user_uuid: string
           required_plan: Database["public"]["Enums"]["plan_type"]
+        }
+        Returns: boolean
+      }
+      user_has_organization_role: {
+        Args: {
+          user_uuid: string
+          org_id: string
+          required_role: Database["public"]["Enums"]["user_role_type"]
         }
         Returns: boolean
       }
@@ -931,6 +1122,12 @@ export type Database = {
       payment_method: "stripe" | "invoice" | "manual"
       plan_type: "free" | "foundation" | "progress" | "premium"
       subscription_status: "active" | "canceled" | "expired" | "pending"
+      user_role_type:
+        | "administrator"
+        | "group_admin"
+        | "organization_admin"
+        | "editor"
+        | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
