@@ -28,6 +28,7 @@ import ResetPassword from './pages/ResetPassword';
 import Admin from './pages/Admin';
 import NotFound from './pages/NotFound';
 import CustomQuestions from './pages/CustomQuestions';
+import Team from './pages/Team';
 
 import './App.css';
 
