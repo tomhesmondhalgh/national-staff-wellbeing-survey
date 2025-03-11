@@ -1,17 +1,21 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Users } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdminRole } from '../../hooks/useAdminRole';
+import { usePermissions } from '../../hooks/usePermissions';
+import OrganizationSwitcher from '../organization/OrganizationSwitcher';
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [canManageTeam, setCanManageTeam] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { isAdmin } = useAdminRole();
+  const permissions = usePermissions();
   
   // Check if user is authenticated
   const isAuthenticated = !!user;
@@ -27,6 +31,18 @@ const Navbar: React.FC = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Check if user can manage team
+  useEffect(() => {
+    const checkTeamPermission = async () => {
+      if (permissions && !permissions.isLoading) {
+        const canManage = await permissions.canManageTeam();
+        setCanManageTeam(canManage);
+      }
+    };
+    
+    checkTeamPermission();
+  }, [permissions]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -46,6 +62,13 @@ const Navbar: React.FC = () => {
               Wellbeing<span className="text-brandPurple-500">Survey</span>
             </Link>
           </div>
+          
+          {/* Organization Switcher (only show when logged in) */}
+          {isAuthenticated && (
+            <div className="hidden md:flex items-center ml-4">
+              <OrganizationSwitcher />
+            </div>
+          )}
           
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8">
@@ -75,6 +98,17 @@ const Navbar: React.FC = () => {
                 >
                   Improve
                 </Link>
+                {canManageTeam && (
+                  <Link 
+                    to="/team" 
+                    className={`nav-link ${location.pathname === '/team' ? 'text-brandPurple-600' : ''}`}
+                  >
+                    <span className="flex items-center">
+                      <Users size={16} className="mr-1" />
+                      Team
+                    </span>
+                  </Link>
+                )}
                 <Link 
                   to="/profile" 
                   className={`nav-link ${location.pathname === '/profile' ? 'text-brandPurple-600' : ''}`}
@@ -122,6 +156,13 @@ const Navbar: React.FC = () => {
       {/* Mobile Navigation Menu */}
       {isMenuOpen && (
         <div className="md:hidden bg-white shadow-lg animate-slide-down">
+          {/* Organization Switcher for mobile */}
+          {isAuthenticated && (
+            <div className="px-4 pt-3">
+              <OrganizationSwitcher />
+            </div>
+          )}
+          
           <div className="px-2 pt-2 pb-3 space-y-1">
             {isAuthenticated ? (
               <>
@@ -153,6 +194,18 @@ const Navbar: React.FC = () => {
                 >
                   Improve
                 </Link>
+                {canManageTeam && (
+                  <Link 
+                    to="/team" 
+                    className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <span className="flex items-center">
+                      <Users size={16} className="mr-1" />
+                      Team
+                    </span>
+                  </Link>
+                )}
                 <Link 
                   to="/profile" 
                   className="block px-4 py-2 rounded-md font-medium hover:bg-brandPurple-50"

@@ -8,6 +8,7 @@ import Pagination from '../components/surveys/Pagination';
 import { toast } from "sonner";
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { usePermissions } from '../hooks/usePermissions';
 
 const SURVEYS_PER_PAGE = 10;
 
@@ -18,6 +19,19 @@ const Surveys = () => {
   const [surveys, setSurveys] = useState<any[]>([]);
   const [totalSurveys, setTotalSurveys] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [canCreateSurveys, setCanCreateSurveys] = useState(false);
+  const permissions = usePermissions();
+
+  useEffect(() => {
+    const checkCreatePermission = async () => {
+      if (permissions && !permissions.isLoading) {
+        const canCreate = await permissions.canCreate();
+        setCanCreateSurveys(canCreate);
+      }
+    };
+    
+    checkCreatePermission();
+  }, [permissions]);
 
   // Fetch surveys from Supabase
   useEffect(() => {
@@ -149,12 +163,14 @@ const Surveys = () => {
             subtitle="Manage all your wellbeing surveys in one place"
             className="mb-0 text-left"
           />
-          <Link 
-            to="/new-survey"
-            className="btn-primary"
-          >
-            New Survey
-          </Link>
+          {canCreateSurveys && (
+            <Link 
+              to="/new-survey"
+              className="btn-primary"
+            >
+              New Survey
+            </Link>
+          )}
         </div>
 
         {loading ? (

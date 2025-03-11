@@ -1,10 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Send, Copy, Edit } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePermissions } from '../../hooks/usePermissions';
 
 interface Survey {
   id: string;
@@ -27,8 +28,21 @@ interface SurveyListProps {
 const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [sendingReminder, setSendingReminder] = useState<string | null>(null);
+  const [canEditSurveys, setCanEditSurveys] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const permissions = usePermissions();
+
+  useEffect(() => {
+    const checkEditPermission = async () => {
+      if (permissions && !permissions.isLoading) {
+        const canEdit = await permissions.canEdit();
+        setCanEditSurveys(canEdit);
+      }
+    };
+    
+    checkEditPermission();
+  }, [permissions]);
 
   const copyToClipboard = (id: string, text: string) => {
     navigator.clipboard.writeText(text)
@@ -43,12 +57,22 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
   };
 
   const handleEditClick = (id: string) => {
+    if (!canEditSurveys) {
+      toast.error("You don't have permission to edit surveys");
+      return;
+    }
+    
     // Log before navigation to help debug
     console.log(`Navigating to edit survey: ${id}`);
     navigate(`/surveys/${id}/edit`);
   };
   
   const handleSendReminder = async (survey: Survey) => {
+    if (!canEditSurveys) {
+      toast.error("You don't have permission to send reminders");
+      return;
+    }
+    
     if (!survey.emails || !survey.emails.trim()) {
       toast.error("No email recipients", {
         description: "This survey doesn't have any email recipients configured."
@@ -109,9 +133,11 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 text-center py-12">
         <p className="text-gray-500 mb-4">No surveys found</p>
-        <Link to="/new-survey" className="bg-brandPurple-500 hover:bg-brandPurple-600 text-white font-medium py-2 px-6 rounded-md transition-all duration-200 inline-block">
-          Create Your First Survey
-        </Link>
+        {canEditSurveys && (
+          <Link to="/new-survey" className="bg-brandPurple-500 hover:bg-brandPurple-600 text-white font-medium py-2 px-6 rounded-md transition-all duration-200 inline-block">
+            Create Your First Survey
+          </Link>
+        )}
       </div>
     );
   }
@@ -132,12 +158,16 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
             <div className="col-span-3">
               <div>
                 <h3 className="text-gray-900 font-medium">
-                  <button 
-                    onClick={() => handleEditClick(survey.id)}
-                    className="hover:text-brandPurple-600 transition-colors text-left"
-                  >
-                    {survey.name}
-                  </button>
+                  {canEditSurveys ? (
+                    <button 
+                      onClick={() => handleEditClick(survey.id)}
+                      className="hover:text-brandPurple-600 transition-colors text-left"
+                    >
+                      {survey.name}
+                    </button>
+                  ) : (
+                    <span>{survey.name}</span>
+                  )}
                 </h3>
                 {survey.closeDisplayDate && (
                   <p className="text-xs text-gray-500 mt-1">{survey.closeDisplayDate}</p>
@@ -165,7 +195,7 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
             </div>
             
             <div className="col-span-4 flex justify-end space-x-4">
-              {survey.status === 'Sent' && (
+              {survey.status === 'Sent' && canEditSurveys && (
                 <button 
                   onClick={() => handleSendReminder(survey)}
                   className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors whitespace-nowrap"
@@ -190,14 +220,16 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
                 </button>
               )}
               
-              <button 
-                onClick={() => handleEditClick(survey.id)}
-                className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors whitespace-nowrap"
-                title="Edit survey details"
-              >
-                <Edit size={16} className="mr-1" />
-                <span>Edit</span>
-              </button>
+              {canEditSurveys && (
+                <button 
+                  onClick={() => handleEditClick(survey.id)}
+                  className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors whitespace-nowrap"
+                  title="Edit survey details"
+                >
+                  <Edit size={16} className="mr-1" />
+                  <span>Edit</span>
+                </button>
+              )}
             </div>
           </div>
         ))}
