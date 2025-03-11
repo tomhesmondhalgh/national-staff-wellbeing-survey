@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../hooks/useSubscription';
 import { useNavigate } from 'react-router-dom';
+import { Card, CardContent } from '../components/ui/card';
 
 const Team = () => {
   const { userRole, error: permissionsError, isLoading: permissionsLoading } = usePermissions();
@@ -108,17 +109,19 @@ const Team = () => {
             className="mb-8"
           />
           
-          <div className="mt-8 rounded-lg border border-gray-200 bg-gray-50 p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">Upgrade to Access Team Management</h2>
-            <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-              Team Management is available with Progress and Premium plans. 
-              Upgrade today to add additional users and collaborate on your wellbeing action plan.
-            </p>
-            
-            <Button onClick={() => navigate('/upgrade')} size="lg" className="px-8">
-              View Upgrade Options <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
+          <Card className="bg-white border border-gray-200 rounded-lg">
+            <CardContent className="p-8 text-center">
+              <h2 className="text-2xl font-bold mb-4">Upgrade to Access Team Management</h2>
+              <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
+                Team Management is available with Progress and Premium plans. 
+                Upgrade today to add additional users and collaborate on your wellbeing action plan.
+              </p>
+              
+              <Button onClick={() => navigate('/upgrade')} size="lg" className="bg-brandPurple-500 hover:bg-brandPurple-600">
+                View Upgrade Options <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </MainLayout>
     );
