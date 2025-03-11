@@ -14,8 +14,11 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      // Store the path the user was trying to access
-      const returnTo = encodeURIComponent(location.pathname + location.search);
+      // Store the path the user was trying to access for later redirect
+      const currentPath = location.pathname + location.search;
+      const returnTo = encodeURIComponent(currentPath);
+      
+      // Redirect to login with the return path
       navigate(`/login?returnTo=${returnTo}`);
     }
   }, [user, isLoading, navigate, location]);

@@ -16,7 +16,18 @@ const Login = () => {
   // Extract returnTo path from URL if present
   const getReturnPath = () => {
     const params = new URLSearchParams(location.search);
-    return params.get('returnTo') || '/dashboard';
+    const returnPath = params.get('returnTo');
+    // Handle invitation redirect special case
+    if (returnPath && returnPath.includes('/invitation/accept')) {
+      return returnPath;
+    }
+    return returnPath || '/dashboard';
+  };
+
+  // Check if we're coming from an invitation
+  const isFromInvitation = () => {
+    const returnPath = getReturnPath();
+    return returnPath.includes('/invitation/accept');
   };
 
   // Redirect authenticated users
@@ -77,8 +88,11 @@ const Login = () => {
     <MainLayout>
       <div className="page-container">
         <PageTitle 
-          title="Welcome back" 
-          subtitle="Log in to access your surveys and analytics"
+          title={isFromInvitation() ? "Log in to accept invitation" : "Welcome back"} 
+          subtitle={isFromInvitation() 
+            ? "Log in to your account to accept the organization invitation" 
+            : "Log in to access your surveys and analytics"
+          }
           alignment="center"
         />
         <AuthForm mode="login" onSubmit={handleSubmit} isLoading={isLoading} />
