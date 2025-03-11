@@ -17,8 +17,6 @@ const NavLinks: React.FC<NavLinksProps> = ({ canManageTeam, setIsMenuOpen }) => 
     }
   };
 
-  console.log('NavLinks render - canManageTeam:', canManageTeam);
-
   return (
     <>
       <Link 

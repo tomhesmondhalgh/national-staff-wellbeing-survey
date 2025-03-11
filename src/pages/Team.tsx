@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
 import { usePermissions } from '../hooks/usePermissions';
-import { Navigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import MembersAndInvitationsList from '../components/team/MembersAndInvitationsList';
 import { useOrganization } from '../contexts/OrganizationContext';
@@ -13,54 +12,58 @@ import { AlertCircle } from 'lucide-react';
 import { useTestingMode } from '../contexts/TestingModeContext';
 
 const Team = () => {
-  const { userRole, isLoading } = usePermissions();
-  const [hasPermission, setHasPermission] = useState<boolean>(true); // Default to true for now
-  const [permissionChecked, setPermissionChecked] = useState(true); // Default to true to prevent redirect
+  const { userRole } = usePermissions();
   const { currentOrganization } = useOrganization();
   const { isTestingMode, testingRole } = useTestingMode();
+  const [isAdmin, setIsAdmin] = useState(false);
   
+  // Determine if the user can see the Organizations tab
+  // Only group_admin and administrator roles can see the Organizations tab
+  const canSeeOrganizationsTab = 
+    userRole === 'group_admin' || 
+    userRole === 'administrator' ||
+    (isTestingMode && (testingRole === 'group_admin' || testingRole === 'administrator'));
+
   useEffect(() => {
-    console.log('Team page - userRole:', userRole);
-    console.log('Team page - isTestingMode:', isTestingMode);
-    console.log('Team page - testingRole:', testingRole);
+    // Simplified role check
+    const checkAdmin = () => {
+      if (userRole === 'administrator' || 
+          userRole === 'group_admin' || 
+          userRole === 'organization_admin' ||
+          (isTestingMode && ['administrator', 'group_admin', 'organization_admin'].includes(testingRole || ''))) {
+        setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
+      }
+    };
     
-    // For debugging, always set permission to true
-    setHasPermission(true);
-    setPermissionChecked(true);
+    checkAdmin();
   }, [userRole, isTestingMode, testingRole]);
 
-  // Show loading state while checking permissions
-  if (isLoading && !permissionChecked) {
+  // If user doesn't have admin permissions, show a message
+  if (!isAdmin) {
     return (
       <MainLayout>
         <div className="page-container">
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin h-8 w-8 border-4 border-brandPurple-500 border-t-transparent rounded-full"></div>
-          </div>
+          <PageTitle 
+            title="Team Management" 
+            subtitle="Manage members and permissions for your organization"
+            className="mb-8"
+          />
+          
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4 mr-2" />
+            <AlertDescription>
+              <p>You need administrator permissions to access this page.</p>
+              {isTestingMode && (
+                <p className="mt-2 text-sm">Current testing role: {testingRole || 'none'}</p>
+              )}
+            </AlertDescription>
+          </Alert>
         </div>
       </MainLayout>
     );
   }
-
-  // Disable redirect for now to debug the issue
-  // if (permissionChecked && !hasPermission) {
-  //   if (isTestingMode) {
-  //     return (
-  //       <MainLayout>
-  //         <div className="page-container">
-  //           <Alert variant="destructive" className="mb-6">
-  //             <AlertCircle className="h-4 w-4 mr-2" />
-  //             <AlertDescription>
-  //               <p>In Testing Mode, you need an admin role to view this page.</p>
-  //               <p className="mt-2 text-sm">Current testing role: {testingRole || 'none'}</p>
-  //             </AlertDescription>
-  //           </Alert>
-  //         </div>
-  //       </MainLayout>
-  //     );
-  //   }
-  //   return <Navigate to="/dashboard" replace />;
-  // }
 
   // Check if an organization is selected
   if (!currentOrganization) {
@@ -83,12 +86,6 @@ const Team = () => {
       </MainLayout>
     );
   }
-
-  // Determine if the user can see the Organizations tab
-  // Only group_admin and administrator roles can see the Organizations tab
-  const canSeeOrganizationsTab = 
-    (userRole === 'group_admin' || userRole === 'administrator') ||
-    (isTestingMode && (testingRole === 'group_admin' || testingRole === 'administrator'));
 
   return (
     <MainLayout>
