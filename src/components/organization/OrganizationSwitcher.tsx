@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, Building } from 'lucide-react';
 import { useOrganization } from '../../contexts/OrganizationContext';
 import {
@@ -10,30 +10,28 @@ import {
 } from '../ui/dropdown-menu';
 import { Button } from '../ui/button';
 import { usePermissions } from '../../hooks/usePermissions';
+import { useTestingMode } from '../../contexts/TestingModeContext';
 
 const OrganizationSwitcher: React.FC = () => {
   const { currentOrganization, organizations, switchOrganization, isLoading } = useOrganization();
   const [isOpen, setIsOpen] = useState(false);
   const { userRole } = usePermissions();
+  const { isTestingMode, testingRole } = useTestingMode();
+  const [canSwitchOrganizations, setCanSwitchOrganizations] = useState(false);
   
-  // Don't show switcher for organisation admins with only one organisation
-  if (userRole === 'organization_admin' && organizations.length <= 1) {
-    return currentOrganization ? (
-      <div className="flex items-center space-x-2 px-3 py-2 text-sm">
-        <Building size={16} />
-        <span className="truncate max-w-[140px]">{currentOrganization.name}</span>
-      </div>
-    ) : null;
-  }
-
-  // Don't show switcher if there's only one organisation (for any role)
-  if (organizations.length <= 1) {
-    return currentOrganization ? (
-      <div className="flex items-center space-x-2 px-3 py-2 text-sm">
-        <Building size={16} />
-        <span className="truncate max-w-[140px]">{currentOrganization.name}</span>
-      </div>
-    ) : null;
+  useEffect(() => {
+    // Check if user has group admin permissions (either real or in testing mode)
+    const isGroupAdmin = 
+      userRole === 'group_admin' || 
+      userRole === 'administrator' ||
+      (isTestingMode && (testingRole === 'group_admin' || testingRole === 'administrator'));
+      
+    setCanSwitchOrganizations(isGroupAdmin);
+  }, [userRole, isTestingMode, testingRole]);
+  
+  // Don't render anything if user can't switch organizations
+  if (!canSwitchOrganizations) {
+    return null;
   }
 
   if (isLoading) {
@@ -50,6 +48,16 @@ const OrganizationSwitcher: React.FC = () => {
       <div className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-500">
         <Building size={16} />
         <span>No organisation</span>
+      </div>
+    );
+  }
+
+  // Don't show switcher if there's only one organisation
+  if (organizations.length <= 1) {
+    return (
+      <div className="flex items-center space-x-2 px-3 py-2 text-sm">
+        <Building size={16} />
+        <span className="truncate max-w-[140px]">{currentOrganization.name}</span>
       </div>
     );
   }
@@ -87,3 +95,4 @@ const OrganizationSwitcher: React.FC = () => {
 };
 
 export default OrganizationSwitcher;
+
