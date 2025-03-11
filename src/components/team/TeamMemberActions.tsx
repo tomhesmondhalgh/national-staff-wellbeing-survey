@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { OrganizationMember } from '../../lib/supabase/client';
 import { toast } from 'sonner';
@@ -48,42 +47,16 @@ export default function TeamMemberActions({ memberId, type, refetchAll, member }
     try {
       console.log('Cancelling invitation:', invitationId);
       
-      // Get the session token for authorization
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
-      
-      if (!accessToken) {
-        console.error('No valid session found - cannot proceed with cancellation');
-        throw new Error('No valid session found');
-      }
-      
-      console.log('Session found, access token available');
-      
-      // Construct the full URL for the edge function
-      const edgeFunctionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cancel-invitation`;
-      console.log('Calling edge function at:', edgeFunctionUrl);
-      
-      // Call the edge function with proper authentication
-      const response = await fetch(edgeFunctionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
-        },
-        body: JSON.stringify({ invitationId })
+      const { data, error } = await supabase.functions.invoke('cancel-invitation', {
+        body: { invitationId }
       });
       
-      console.log('Edge function response status:', response.status);
+      console.log('Edge function response:', data);
       
-      // Parse response and check for success
-      if (!response.ok) {
-        const errorData = await response.text();
-        console.error('Error response from edge function:', errorData);
-        throw new Error(`Server responded with status: ${response.status}`);
+      if (error) {
+        console.error('Error from edge function:', error);
+        throw error;
       }
-      
-      const data = await response.json();
-      console.log('Edge function response data:', data);
       
       if (!data.success) {
         throw new Error(data.error || 'Unknown error occurred');

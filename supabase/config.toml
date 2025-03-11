@@ -76,3 +76,4 @@ verify_jwt = false
 
 [functions.cancel-invitation]
 verify_jwt = true
+
