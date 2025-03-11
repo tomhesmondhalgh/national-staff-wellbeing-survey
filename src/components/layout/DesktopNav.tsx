@@ -28,10 +28,12 @@ const DesktopNav: React.FC<DesktopNavProps> = ({
   }, [canManageTeam, userRole]);
 
   return (
-    <nav className="hidden md:flex space-x-8">
+    <nav className="hidden md:flex items-center space-x-8">
       {isAuthenticated ? (
         <>
-          <NavLinks canManageTeam={canManageTeam} />
+          <div className="flex items-center space-x-8">
+            <NavLinks canManageTeam={canManageTeam} />
+          </div>
           <SettingsDropdown 
             isAdmin={isAdmin} 
             canManageTeam={canManageTeam} 

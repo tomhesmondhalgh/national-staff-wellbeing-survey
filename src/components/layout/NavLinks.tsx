@@ -24,32 +24,37 @@ const NavLinks: React.FC<NavLinksProps> = ({ canManageTeam, setIsMenuOpen }) => 
     }
   };
 
+  // Common nav link class to maintain consistency
+  const navLinkClass = "nav-link font-medium text-sm transition-colors";
+  const activeNavLinkClass = "text-brandPurple-600";
+  const inactiveNavLinkClass = "text-gray-700 hover:text-brandPurple-500";
+
   return (
     <>
       <Link 
         to="/dashboard" 
-        className={`nav-link ${location.pathname === '/dashboard' ? 'text-brandPurple-600' : ''}`}
+        className={`${navLinkClass} ${location.pathname === '/dashboard' ? activeNavLinkClass : inactiveNavLinkClass}`}
         onClick={handleClick}
       >
         Dashboard
       </Link>
       <Link 
         to="/surveys" 
-        className={`nav-link ${location.pathname.startsWith('/survey') ? 'text-brandPurple-600' : ''}`}
+        className={`${navLinkClass} ${location.pathname.startsWith('/survey') ? activeNavLinkClass : inactiveNavLinkClass}`}
         onClick={handleClick}
       >
         Survey
       </Link>
       <Link 
         to="/analysis" 
-        className={`nav-link ${location.pathname === '/analysis' ? 'text-brandPurple-600' : ''}`}
+        className={`${navLinkClass} ${location.pathname === '/analysis' ? activeNavLinkClass : inactiveNavLinkClass}`}
         onClick={handleClick}
       >
         Analyse
       </Link>
       <Link 
         to="/improve" 
-        className={`nav-link ${location.pathname === '/improve' ? 'text-brandPurple-600' : ''}`}
+        className={`${navLinkClass} ${location.pathname === '/improve' ? activeNavLinkClass : inactiveNavLinkClass}`}
         onClick={handleClick}
       >
         Improve
@@ -58,7 +63,7 @@ const NavLinks: React.FC<NavLinksProps> = ({ canManageTeam, setIsMenuOpen }) => 
       {!isPremium && !isLoading && (
         <Link 
           to="/upgrade" 
-          className={`nav-link ${location.pathname === '/upgrade' ? 'text-brandPurple-600' : ''}`}
+          className={`${navLinkClass} ${location.pathname === '/upgrade' ? activeNavLinkClass : inactiveNavLinkClass}`}
           onClick={handleClick}
         >
           Upgrade

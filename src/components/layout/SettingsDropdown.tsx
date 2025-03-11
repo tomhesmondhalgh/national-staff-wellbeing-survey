@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, User, ShieldCheck, LogOut, Users } from 'lucide-react';
+import { Settings, User, ShieldCheck, LogOut, Users, ChevronDown } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,6 +11,7 @@ import {
 import { Button } from '../ui/button';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { useLocation } from 'react-router-dom';
 
 interface SettingsDropdownProps {
   isAdmin: boolean;
@@ -21,6 +22,17 @@ interface SettingsDropdownProps {
 const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ isAdmin, canManageTeam, handleSignOut }) => {
   const { user } = useAuth();
   const [isRealAdmin, setIsRealAdmin] = React.useState(false);
+  const location = useLocation();
+
+  // Common nav link class to match NavLinks component
+  const navLinkClass = "font-medium text-sm transition-colors flex items-center";
+  const activeNavLinkClass = "text-brandPurple-600";
+  const inactiveNavLinkClass = "text-gray-700 hover:text-brandPurple-500";
+  
+  // Active state for settings
+  const isSettingsActive = location.pathname === '/profile' || 
+                          location.pathname === '/team' || 
+                          location.pathname === '/admin';
 
   // Check if user is a real admin (not just in testing mode)
   React.useEffect(() => {
@@ -52,14 +64,12 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ isAdmin, canManageT
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="nav-link">
-          <span className="flex items-center">
-            <Settings size={16} className="mr-1" />
-            Settings
-          </span>
+        <Button variant="ghost" className={`${navLinkClass} ${isSettingsActive ? activeNavLinkClass : inactiveNavLinkClass}`}>
+          Settings
+          <ChevronDown size={16} className="ml-1" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
+      <DropdownMenuContent align="end" className="w-48 mt-1">
         <DropdownMenuItem asChild>
           <Link to="/profile" className="flex items-center w-full">
             <User size={16} className="mr-2" />
