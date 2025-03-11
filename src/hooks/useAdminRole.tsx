@@ -18,18 +18,8 @@ export function useAdminRole() {
         return;
       }
 
-      // If testing mode is enabled with a role, use that
-      if (isTestingMode && testingRole) {
-        const isAdminInTestMode = testingRole === 'administrator' || 
-                                 testingRole === 'group_admin' || 
-                                 testingRole === 'organization_admin';
-        setIsAdmin(isAdminInTestMode);
-        setIsLoading(false);
-        return;
-      }
-
       try {
-        // Check if the user has the administrator role
+        // First, check if the user has the administrator role in the database
         const { data, error } = await supabase
           .from('user_roles')
           .select('role')
@@ -37,11 +27,30 @@ export function useAdminRole() {
           .eq('role', 'administrator')
           .maybeSingle();
 
+        const isRealAdmin = !!data;
+
         if (error) {
           console.error('Error checking admin role:', error);
           setIsAdmin(false);
+          setIsLoading(false);
+          return;
+        }
+
+        // If user is a real admin, they should always have admin access
+        if (isRealAdmin) {
+          setIsAdmin(true);
+          setIsLoading(false);
+          return;
+        }
+
+        // If not a real admin but testing mode is enabled, check testing role
+        if (isTestingMode && testingRole) {
+          const isAdminInTestMode = testingRole === 'administrator' || 
+                                   testingRole === 'group_admin' || 
+                                   testingRole === 'organization_admin';
+          setIsAdmin(isAdminInTestMode);
         } else {
-          setIsAdmin(!!data);
+          setIsAdmin(false);
         }
       } catch (error) {
         console.error('Error in admin role check:', error);

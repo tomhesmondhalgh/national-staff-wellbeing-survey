@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
@@ -77,19 +76,6 @@ const Admin = () => {
       );
     }
   };
-
-  if (!isAdmin) {
-    return (
-      <MainLayout>
-        <div className="container mx-auto px-4 py-8">
-          <PageTitle 
-            title="Access Denied" 
-            subtitle="You do not have permission to access this page"
-          />
-        </div>
-      </MainLayout>
-    );
-  }
 
   return (
     <MainLayout>
