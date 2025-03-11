@@ -135,7 +135,13 @@ export const getUserGroups = async (): Promise<Group[]> => {
   // Extract and transform the data to match the Group interface
   return (data || []).map(item => {
     // Ensure groups is an object with the required properties
-    if (item.groups && typeof item.groups === 'object') {
+    if (item.groups && 
+        typeof item.groups === 'object' && 
+        !Array.isArray(item.groups) &&
+        'id' in item.groups && 
+        'name' in item.groups && 
+        'created_at' in item.groups &&
+        'updated_at' in item.groups) {
       return item.groups as Group;
     }
     // Return a default Group object if data is not as expected
@@ -185,7 +191,12 @@ export const getUserOrganizations = async (): Promise<Organization[]> => {
   
   // Add direct orgs
   directOrgs?.forEach(item => {
-    if (item.profiles && typeof item.profiles === 'object' && 'id' in item.profiles) {
+    if (item.profiles && 
+        typeof item.profiles === 'object' && 
+        !Array.isArray(item.profiles) &&
+        'id' in item.profiles && 
+        'name' in item.profiles && 
+        'created_at' in item.profiles) {
       allOrgs.push(item.profiles as Organization);
     }
   });
@@ -194,7 +205,12 @@ export const getUserOrganizations = async (): Promise<Organization[]> => {
   groupOrgs?.forEach(item => {
     if (item.group_organizations && Array.isArray(item.group_organizations)) {
       item.group_organizations.forEach(go => {
-        if (go.profiles && typeof go.profiles === 'object' && 'id' in go.profiles && 
+        if (go.profiles && 
+            typeof go.profiles === 'object' && 
+            !Array.isArray(go.profiles) &&
+            'id' in go.profiles && 
+            'name' in go.profiles && 
+            'created_at' in go.profiles && 
             !allOrgs.some(o => o.id === go.organization_id)) {
           allOrgs.push(go.profiles as Organization);
         }
