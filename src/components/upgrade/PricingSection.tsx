@@ -1,4 +1,3 @@
-
 import React from 'react';
 import PlanCard, { PlanType } from './PlanCard';
 import { useSubscription } from '../../hooks/useSubscription';
@@ -100,7 +99,7 @@ const PricingSection: React.FC = () => {
     const targetPlanLevel = planLevels[planType];
     
     if (targetPlanLevel < currentPlanLevel) {
-      window.location.href = 'mailto:support@wellbeingsurvey.com?subject=Plan Downgrade Request';
+      window.location.href = 'mailto:happytohelp@humankindaward.com?subject=Plan Downgrade Request';
       return;
     }
     
@@ -221,7 +220,7 @@ const PricingSection: React.FC = () => {
       </div>
       
       <div className="mt-8 text-center text-sm text-gray-500">
-        <p>Need help choosing the right plan? <a href="mailto:support@wellbeingsurvey.com" className="text-brandPurple-600 underline">Contact our support team</a></p>
+        <p>Need help choosing the right plan? <a href="mailto:happytohelp@humankindaward.com" className="text-brandPurple-600 underline">Contact our support team</a></p>
       </div>
     </div>
   );
