@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import PlanCard, { PlanType } from './PlanCard';
 import { useSubscription } from '../../hooks/useSubscription';
@@ -64,13 +63,8 @@ const PricingSection: React.FC = () => {
 
   const handleUpgrade = async (priceId: string, planType: 'foundation' | 'progress' | 'premium', purchaseType: 'subscription' | 'one-time') => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment-session`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('supabase.auth.token')}`
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('create-payment-session', {
+        body: {
           priceId,
           planType,
           purchaseType,
@@ -82,9 +76,13 @@ const PricingSection: React.FC = () => {
             contactName: `${userProfile?.firstName || ''} ${userProfile?.lastName || ''}`.trim(),
             contactEmail: userProfile?.email || ''
           }
-        })
+        }
       });
-      const data = await response.json();
+
+      if (error) {
+        throw error;
+      }
+
       if (data?.url) {
         window.location.href = data.url;
       } else {
