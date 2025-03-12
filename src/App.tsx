@@ -132,6 +132,7 @@ function App() {
                 </Routes>
               </Router>
               <Toaster />
+              <SonnerToaster position="top-right" />
             </OrganizationProvider>
           </StripeProvider>
         </TestingModeProvider>

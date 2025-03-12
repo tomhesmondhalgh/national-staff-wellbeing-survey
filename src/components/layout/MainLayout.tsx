@@ -10,7 +10,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-white to-brandPurple-50">
       <Navbar />
-      <main className="flex-grow">
+      <main className="flex-grow w-full">
         {children}
       </main>
       <footer className="py-6 border-t border-gray-100 bg-white/80 backdrop-blur-sm">
