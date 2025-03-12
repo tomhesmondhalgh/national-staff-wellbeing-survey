@@ -1,7 +1,7 @@
-
 import { supabase } from "../../lib/supabase";
 import { SurveyTemplate, SurveyWithResponses } from "../types/survey";
 import { countSurveyResponses } from "./responses";
+import { isSurveyClosed } from "./status";
 
 export const getSurveyById = async (id: string): Promise<SurveyTemplate | null> => {
   try {
@@ -29,11 +29,6 @@ export const getSurveyById = async (id: string): Promise<SurveyTemplate | null> 
     console.error('Unexpected error in getSurveyById:', error);
     return null;
   }
-};
-
-export const isSurveyClosed = (survey: SurveyTemplate): boolean => {
-  if (!survey.close_date) return false;
-  return new Date(survey.close_date) < new Date();
 };
 
 export const getAllSurveyTemplates = async (): Promise<SurveyTemplate[]> => {
