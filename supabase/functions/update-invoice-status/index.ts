@@ -13,7 +13,7 @@ const corsHeaders = {
 
 interface UpdateInvoiceRequest {
   paymentId: string;
-  status: 'pending' | 'completed' | 'cancelled';
+  status: 'pending' | 'paid' | 'cancelled'; // Updated enum values
   invoiceNumber?: string;
   adminUserId: string;
 }
@@ -167,9 +167,27 @@ async function handleUpdateInvoiceStatus(
     );
   }
 
-  // Prepare update data - REMOVED updated_at as it doesn't exist in the schema
+  // Map frontend status values to database enum values
+  let dbStatus;
+  switch (status) {
+    case 'completed':
+      dbStatus = 'paid';
+      break;
+    case 'pending':
+      dbStatus = 'pending';
+      break;
+    case 'cancelled':
+      dbStatus = 'cancelled';
+      break;
+    default:
+      dbStatus = 'pending';
+  }
+
+  console.log(`Mapping status from "${status}" to database value "${dbStatus}"`);
+
+  // Prepare update data
   const updateData: any = {
-    payment_status: status
+    payment_status: dbStatus
   };
   
   // Only add invoice_number to the update if it was provided
@@ -200,7 +218,7 @@ async function handleUpdateInvoiceStatus(
     console.log("Payment updated successfully:", JSON.stringify(payment));
 
     // If payment is marked as completed, update the subscription status
-    if (status === 'completed' && payment?.subscription_id) {
+    if (dbStatus === 'paid' && payment?.subscription_id) {
       console.log("Payment completed, updating subscription:", payment.subscription_id);
       
       try {
