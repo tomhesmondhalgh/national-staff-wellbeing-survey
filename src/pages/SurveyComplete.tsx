@@ -6,7 +6,7 @@ import PageTitle from '../components/ui/PageTitle';
 const SurveyComplete = () => {
   return (
     <MainLayout>
-      <div className="page-container max-w-3xl mx-auto px-4 py-8">
+      <div className="page-container max-w-3xl mx-auto py-8">
         <PageTitle
           title="Thank You for Completing the Survey!"
         />
