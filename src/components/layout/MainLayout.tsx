@@ -11,9 +11,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-white to-brandPurple-50">
       <Navbar />
       <main className="flex-grow w-full">
-        <div className="h-full">
-          {children}
-        </div>
+        {children}
       </main>
       <footer className="py-6 border-t border-gray-100 bg-white/80 backdrop-blur-sm">
         <div className="container mx-auto px-4 text-center text-sm text-gray-500">

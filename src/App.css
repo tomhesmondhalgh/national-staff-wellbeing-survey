@@ -8,12 +8,6 @@
   text-align: initial;
 }
 
-/* Add default background */
-body {
-  background: linear-gradient(to bottom, white, #f5f3ff);
-  min-height: 100vh;
-}
-
 /* Keep animation styles for logos */
 .logo {
   height: 6em;

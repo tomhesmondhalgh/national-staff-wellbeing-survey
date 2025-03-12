@@ -93,13 +93,8 @@
     @apply border-border;
   }
 
-  html, body {
-    @apply min-h-screen;
-  }
-
   body {
     @apply bg-background text-foreground font-sans;
-    background: linear-gradient(to bottom, white, #f5f3ff);
   }
 
   h1, h2, h3, h4, h5, h6 {
