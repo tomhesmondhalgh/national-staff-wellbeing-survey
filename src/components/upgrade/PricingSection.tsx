@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import PlanCard, { PlanType } from './PlanCard';
 import { useSubscription } from '../../hooks/useSubscription';
@@ -205,7 +204,7 @@ const PricingSection: React.FC = () => {
       ],
       planType: 'foundation' as PlanType,
       onButtonClick: () => handleButtonClick('foundation', () => 
-        isFree || isLoading ? handleUpgrade('price_foundation', 'foundation', 'one-time') : null
+        isFree || isLoading ? handleUpgrade('foundation_price', 'foundation', 'one-time') : null
       ),
       buttonText: getButtonText('foundation'),
       buttonVariant: getButtonVariant('foundation'),
@@ -239,7 +238,7 @@ const PricingSection: React.FC = () => {
       planType: 'progress' as PlanType,
       isPopular: true,
       onButtonClick: () => handleButtonClick('progress', () => 
-        isFree || isFoundation || isLoading ? handleUpgrade('price_progress', 'progress', 'subscription') : null
+        isFree || isFoundation || isLoading ? handleUpgrade('progress_price', 'progress', 'subscription') : null
       ),
       buttonText: getButtonText('progress'),
       buttonVariant: getButtonVariant('progress'),
@@ -264,7 +263,7 @@ const PricingSection: React.FC = () => {
       ],
       planType: 'premium' as PlanType,
       onButtonClick: () => handleButtonClick('premium', () => 
-        isFree || isFoundation || isProgress || isLoading ? handleUpgrade('price_premium', 'premium', 'subscription') : null
+        isFree || isFoundation || isProgress || isLoading ? handleUpgrade('premium_price', 'premium', 'subscription') : null
       ),
       buttonText: getButtonText('premium'),
       buttonVariant: getButtonVariant('premium'),

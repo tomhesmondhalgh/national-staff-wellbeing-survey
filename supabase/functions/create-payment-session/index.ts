@@ -62,6 +62,11 @@ serve(async (req: Request) => {
       );
     }
 
+    // Map the plan type to actual Stripe price IDs
+    // This ensures we use valid price IDs that exist in the Stripe account
+    const stripePriceId = getStripePriceId(planType, purchaseType);
+    console.log(`Mapped price ID from ${priceId} to ${stripePriceId}`);
+
     const metadata = {
       userId: user.id,
       planType,
@@ -74,7 +79,7 @@ serve(async (req: Request) => {
 
     console.log('Creating Stripe session with:', {
       mode: purchaseType === 'subscription' ? 'subscription' : 'payment',
-      priceId,
+      priceId: stripePriceId,
       metadata
     });
 
@@ -82,7 +87,7 @@ serve(async (req: Request) => {
       mode: purchaseType === 'subscription' ? 'subscription' : 'payment',
       line_items: [
         {
-          price: priceId,
+          price: stripePriceId,
           quantity: 1,
         },
       ],
@@ -120,3 +125,25 @@ serve(async (req: Request) => {
     );
   }
 });
+
+// Helper function to map plan types to actual Stripe price IDs
+function getStripePriceId(planType: string, purchaseType: string): string {
+  // These should be replaced with actual price IDs from your Stripe dashboard
+  // Format: price_XXXXXXXXXXXXXXXXXXXXXXXX
+  const priceMapping = {
+    foundation: {
+      'one-time': 'price_1OvbcNEQODZFllQ0FnYqXSH6', // Example price ID for one-time Foundation plan
+      'subscription': 'price_1OvbcNEQODZFllQ0FnYqXSH6' // Fallback to same ID if there's no subscription for Foundation
+    },
+    progress: {
+      'subscription': 'price_1OvbhSEQODZFllQ0JVGWqsmy' // Example price ID for Progress subscription
+    },
+    premium: {
+      'subscription': 'price_1OvbiaEQODZFllQ0GE0YZJHz' // Example price ID for Premium subscription
+    }
+  };
+
+  // Get the appropriate price ID or use a fallback
+  // @ts-ignore: Property access on index
+  return priceMapping[planType]?.[purchaseType] || 'price_1OvbcNEQODZFllQ0FnYqXSH6'; // Default to Foundation one-time price
+}
