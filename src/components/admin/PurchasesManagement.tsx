@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { 
@@ -49,7 +48,6 @@ const PurchasesManagement = () => {
   const fetchPurchases = async () => {
     setLoading(true);
     try {
-      // Get all payment records with subscription details
       const { data, error } = await supabase
         .from('payment_history')
         .select(`
@@ -66,7 +64,6 @@ const PurchasesManagement = () => {
         throw error;
       }
 
-      // Format the data to include subscription details
       const formattedPurchases = data.map(item => ({
         ...item,
         plan_type: item.subscription?.plan_type || 'unknown',
@@ -195,7 +192,6 @@ const PurchasesManagement = () => {
                           variant="outline" 
                           size="sm" 
                           onClick={() => handleUpdateInvoice(purchase)}
-                          disabled={purchase.payment_status === 'payment_made' && purchase.payment_method === 'stripe'}
                           className="flex items-center"
                         >
                           <Pencil className="h-4 w-4 mr-1" />
