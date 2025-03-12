@@ -54,11 +54,11 @@ const PurchasesManagement = () => {
   const fetchPurchases = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data: payments, error } = await supabase
         .from('payment_history')
         .select(`
           *,
-          subscription:subscriptions!payment_history_subscription_id_fkey (
+          subscription:subscriptions (
             id,
             plan_type,
             purchase_type
@@ -70,10 +70,13 @@ const PurchasesManagement = () => {
         throw error;
       }
 
-      const formattedPurchases = data.map(item => ({
+      // Add better handling for missing subscription data
+      const formattedPurchases = payments.map(item => ({
         ...item,
-        plan_type: item.subscription?.plan_type || 'unknown',
-        purchase_type: item.subscription?.purchase_type || 'unknown'
+        plan_type: item.subscription?.plan_type || 
+          (item.payment_method === 'stripe' ? 'foundation' : 'unknown'),
+        purchase_type: item.subscription?.purchase_type || 
+          (item.payment_method === 'stripe' ? 'subscription' : 'unknown')
       }));
 
       setPurchases(formattedPurchases);
