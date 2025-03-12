@@ -37,6 +37,9 @@ serve(async (req: Request) => {
   }
 
   try {
+    // Create a Supabase client with admin permissions
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
     // Get the authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -46,9 +49,6 @@ serve(async (req: Request) => {
       );
     }
 
-    // Create a Supabase client with admin permissions
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
     // Get user from the JWT
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
@@ -61,7 +61,15 @@ serve(async (req: Request) => {
     }
 
     // Parse request body
-    const requestData = await req.json();
+    let requestData;
+    try {
+      requestData = await req.json();
+    } catch (e) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON in request body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     
     // Check if this is an admin updating an invoice status
     if ('paymentId' in requestData && 'status' in requestData) {
@@ -129,63 +137,71 @@ async function handleUpdateInvoiceStatus(
     updateData.invoice_number = invoiceNumber;
   }
 
-  // Update payment history record
-  const { data: payment, error: paymentError } = await supabase
-    .from('payment_history')
-    .update(updateData)
-    .eq('id', paymentId)
-    .eq('payment_method', 'invoice')
-    .select('subscription_id')
-    .single();
+  try {
+    // Update payment history record
+    const { data: payment, error: paymentError } = await supabase
+      .from('payment_history')
+      .update(updateData)
+      .eq('id', paymentId)
+      .eq('payment_method', 'invoice')
+      .select('subscription_id')
+      .single();
 
-  if (paymentError) {
+    if (paymentError) {
+      return new Response(
+        JSON.stringify({ error: paymentError.message || 'Error updating payment' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // If payment is marked as completed, update the subscription status
+    if (status === 'completed' && payment?.subscription_id) {
+      const { data: subscription, error: subscriptionError } = await supabase
+        .from('subscriptions')
+        .select('plan_type, purchase_type, user_id')
+        .eq('id', payment.subscription_id)
+        .single();
+
+      if (subscriptionError) {
+        return new Response(
+          JSON.stringify({ error: subscriptionError.message || 'Error fetching subscription' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Update subscription to active
+      const { error: updateError } = await supabase
+        .from('subscriptions')
+        .update({
+          status: 'active',
+          start_date: new Date().toISOString(),
+          // Set end_date to 3 years from now for both one-time and subscription plans
+          // since this is manually managed
+          end_date: subscription.purchase_type === 'one-time' 
+            ? new Date(Date.now() + 3 * 365 * 24 * 60 * 60 * 1000).toISOString()
+            : new Date(Date.now() + 3 * 365 * 24 * 60 * 60 * 1000).toISOString()
+        })
+        .eq('id', payment.subscription_id);
+
+      if (updateError) {
+        return new Response(
+          JSON.stringify({ error: updateError.message || 'Error updating subscription' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     return new Response(
-      JSON.stringify({ error: paymentError.message || 'Error updating payment' }),
+      JSON.stringify({ success: true, message: `Invoice status updated to ${status}` }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('Error processing invoice update:', error);
+    return new Response(
+      JSON.stringify({ error: error.message || 'Server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
-
-  // If payment is marked as completed, update the subscription status
-  if (status === 'completed' && payment?.subscription_id) {
-    const { data: subscription, error: subscriptionError } = await supabase
-      .from('subscriptions')
-      .select('plan_type, purchase_type, user_id')
-      .eq('id', payment.subscription_id)
-      .single();
-
-    if (subscriptionError) {
-      return new Response(
-        JSON.stringify({ error: subscriptionError.message || 'Error fetching subscription' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Update subscription to active
-    const { error: updateError } = await supabase
-      .from('subscriptions')
-      .update({
-        status: 'active',
-        start_date: new Date().toISOString(),
-        // Set end_date to 3 years from now for both one-time and subscription plans
-        // since this is manually managed
-        end_date: subscription.purchase_type === 'one-time' 
-          ? new Date(Date.now() + 3 * 365 * 24 * 60 * 60 * 1000).toISOString()
-          : new Date(Date.now() + 3 * 365 * 24 * 60 * 60 * 1000).toISOString()
-      })
-      .eq('id', payment.subscription_id);
-
-    if (updateError) {
-      return new Response(
-        JSON.stringify({ error: updateError.message || 'Error updating subscription' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-  }
-
-  return new Response(
-    JSON.stringify({ success: true, message: `Invoice status updated to ${status}` }),
-    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-  );
 }
 
 // Handle user creating a new invoice request
@@ -204,60 +220,68 @@ async function handleCreateInvoiceRequest(
   };
   
   const amount = planPricing[planType] || 299;
-  
-  // Create a subscription record with payment_method 'invoice'
-  const { data: subscription, error: subscriptionError } = await supabase
-    .from('subscriptions')
-    .insert({
-      user_id: user.id,
-      plan_type: planType,
-      status: 'pending',
-      payment_method: 'invoice',
-      purchase_type: purchaseType,
-    })
-    .select()
-    .single();
 
-  if (subscriptionError) {
-    console.error('Error creating subscription:', subscriptionError);
+  try {
+    // Create a subscription record with payment_method 'invoice'
+    const { data: subscription, error: subscriptionError } = await supabase
+      .from('subscriptions')
+      .insert({
+        user_id: user.id,
+        plan_type: planType,
+        status: 'pending',
+        payment_method: 'invoice',
+        purchase_type: purchaseType,
+      })
+      .select()
+      .single();
+
+    if (subscriptionError) {
+      console.error('Error creating subscription:', subscriptionError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to create subscription record' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Add billing details to payment_history without an invoice number
+    const { data: payment, error: paymentError } = await supabase
+      .from('payment_history')
+      .insert({
+        subscription_id: subscription.id,
+        payment_method: 'invoice',
+        amount: amount,
+        currency: 'GBP',
+        payment_status: 'pending',
+        billing_school_name: billingDetails.schoolName,
+        billing_address: billingDetails.address,
+        billing_contact_name: billingDetails.contactName,
+        billing_contact_email: billingDetails.contactEmail,
+      })
+      .select()
+      .single();
+
+    if (paymentError) {
+      console.error('Error creating payment record:', paymentError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to create payment record' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     return new Response(
-      JSON.stringify({ error: 'Failed to create subscription record' }),
+      JSON.stringify({ 
+        success: true, 
+        message: 'Invoice request submitted successfully',
+        subscription: subscription.id,
+        payment: payment.id
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('Error creating invoice request:', error);
+    return new Response(
+      JSON.stringify({ error: error.message || 'Server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
-
-  // Add billing details to payment_history without an invoice number
-  const { data: payment, error: paymentError } = await supabase
-    .from('payment_history')
-    .insert({
-      subscription_id: subscription.id,
-      payment_method: 'invoice',
-      amount: amount,
-      currency: 'GBP',
-      payment_status: 'pending',
-      billing_school_name: billingDetails.schoolName,
-      billing_address: billingDetails.address,
-      billing_contact_name: billingDetails.contactName,
-      billing_contact_email: billingDetails.contactEmail,
-    })
-    .select()
-    .single();
-
-  if (paymentError) {
-    console.error('Error creating payment record:', paymentError);
-    return new Response(
-      JSON.stringify({ error: 'Failed to create payment record' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-
-  return new Response(
-    JSON.stringify({ 
-      success: true, 
-      message: 'Invoice request submitted successfully',
-      subscription: subscription.id,
-      payment: payment.id
-    }),
-    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-  );
 }

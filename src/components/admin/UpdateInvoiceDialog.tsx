@@ -21,7 +21,6 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Purchase } from './PurchasesManagement';
-import { CheckCircle, XCircle } from "lucide-react";
 import { formatCurrency } from '../../lib/utils';
 
 interface UpdateInvoiceDialogProps {
@@ -46,6 +45,12 @@ export function UpdateInvoiceDialog({
     setIsSubmitting(true);
 
     try {
+      console.log('Submitting invoice update:', {
+        paymentId: purchase.id,
+        status,
+        invoiceNumber
+      });
+
       // Call the Edge Function to update the invoice status
       const { data, error } = await supabase.functions.invoke('update-invoice-status', {
         body: {
@@ -57,15 +62,20 @@ export function UpdateInvoiceDialog({
       });
 
       if (error) {
-        throw error;
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Failed to update invoice');
       }
+
+      console.log('Update response:', data);
 
       // Show success message and close the dialog
       toast.success("Invoice updated successfully");
       onUpdated();
     } catch (error) {
       console.error('Error updating invoice:', error);
-      toast.error('Failed to update invoice');
+      toast.error('Failed to update invoice', { 
+        description: error.message || 'Please try again later'
+      });
     } finally {
       setIsSubmitting(false);
     }
