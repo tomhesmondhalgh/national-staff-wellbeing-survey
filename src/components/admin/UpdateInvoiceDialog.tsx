@@ -51,6 +51,7 @@ export function UpdateInvoiceDialog({
         body: {
           paymentId: purchase.id,
           status: status,
+          invoiceNumber: invoiceNumber,
           adminUserId: 'admin' // This is just for logging purposes
         }
       });
@@ -60,6 +61,7 @@ export function UpdateInvoiceDialog({
       }
 
       // Show success message and close the dialog
+      toast.success("Invoice updated successfully");
       onUpdated();
     } catch (error) {
       console.error('Error updating invoice:', error);
@@ -109,7 +111,6 @@ export function UpdateInvoiceDialog({
               value={invoiceNumber}
               onChange={(e) => setInvoiceNumber(e.target.value)}
               placeholder="Enter invoice number"
-              disabled={true} // Read-only as we're not implementing number updates in this version
             />
           </div>
 

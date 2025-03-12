@@ -13,6 +13,7 @@ const corsHeaders = {
 interface UpdateInvoiceRequest {
   paymentId: string;
   status: 'pending' | 'completed' | 'cancelled';
+  invoiceNumber?: string;
   adminUserId: string;
 }
 
@@ -108,7 +109,7 @@ async function handleUpdateInvoiceStatus(
     );
   }
 
-  const { paymentId, status, adminUserId } = data;
+  const { paymentId, status, invoiceNumber, adminUserId } = data;
 
   if (!paymentId || !status) {
     return new Response(
@@ -117,20 +118,31 @@ async function handleUpdateInvoiceStatus(
     );
   }
 
+  // Prepare update data
+  const updateData: any = {
+    payment_status: status,
+    updated_at: new Date().toISOString()
+  };
+  
+  // Only add invoice_number to the update if it was provided
+  if (invoiceNumber !== undefined) {
+    updateData.invoice_number = invoiceNumber;
+  }
+
   // Update payment history record
   const { data: payment, error: paymentError } = await supabase
     .from('payment_history')
-    .update({
-      payment_status: status,
-      updated_at: new Date().toISOString()
-    })
+    .update(updateData)
     .eq('id', paymentId)
     .eq('payment_method', 'invoice')
     .select('subscription_id')
     .single();
 
   if (paymentError) {
-    throw paymentError;
+    return new Response(
+      JSON.stringify({ error: paymentError.message || 'Error updating payment' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 
   // If payment is marked as completed, update the subscription status
@@ -142,7 +154,10 @@ async function handleUpdateInvoiceStatus(
       .single();
 
     if (subscriptionError) {
-      throw subscriptionError;
+      return new Response(
+        JSON.stringify({ error: subscriptionError.message || 'Error fetching subscription' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Update subscription to active
@@ -160,7 +175,10 @@ async function handleUpdateInvoiceStatus(
       .eq('id', payment.subscription_id);
 
     if (updateError) {
-      throw updateError;
+      return new Response(
+        JSON.stringify({ error: updateError.message || 'Error updating subscription' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
   }
 
@@ -208,7 +226,7 @@ async function handleCreateInvoiceRequest(
     );
   }
 
-  // Add billing details to payment_history
+  // Add billing details to payment_history without an invoice number
   const { data: payment, error: paymentError } = await supabase
     .from('payment_history')
     .insert({
@@ -221,7 +239,6 @@ async function handleCreateInvoiceRequest(
       billing_address: billingDetails.address,
       billing_contact_name: billingDetails.contactName,
       billing_contact_email: billingDetails.contactEmail,
-      invoice_number: `INV-${Date.now().toString().slice(-6)}`,
     })
     .select()
     .single();
