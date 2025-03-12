@@ -183,6 +183,13 @@ serve(async (req: Request) => {
         break;
       }
       
+      // New handler for manual invoice payments (admin action)
+      case 'invoice.payment_succeeded': {
+        // This could be used if you're tracking invoice payments in Stripe
+        console.log('Invoice payment succeeded event received');
+        break;
+      }
+      
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }

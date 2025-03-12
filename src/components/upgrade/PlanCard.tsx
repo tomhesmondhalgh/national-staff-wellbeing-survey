@@ -3,6 +3,8 @@ import React, { ReactNode } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import PlanFeatureItem from './PlanFeatureItem';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../../components/ui/dropdown-menu';
+import { ChevronDown } from 'lucide-react';
 
 export type PlanType = 'free' | 'foundation' | 'progress' | 'premium';
 
@@ -21,6 +23,8 @@ interface PlanCardProps {
   isPopular?: boolean;
   onButtonClick: () => void;
   disabled?: boolean;
+  hasInvoiceOption?: boolean; 
+  onInvoiceRequest?: () => void;
 }
 
 const PlanCard: React.FC<PlanCardProps> = ({
@@ -33,7 +37,9 @@ const PlanCard: React.FC<PlanCardProps> = ({
   buttonVariant,
   isPopular,
   onButtonClick,
-  disabled = false
+  disabled = false,
+  hasInvoiceOption = false,
+  onInvoiceRequest
 }) => {
   return (
     <Card className={`relative ${isPopular 
@@ -61,14 +67,34 @@ const PlanCard: React.FC<PlanCardProps> = ({
         </ul>
       </CardContent>
       <CardFooter className="mt-auto">
-        <Button 
-          onClick={onButtonClick} 
-          className="w-full" 
-          variant={buttonVariant}
-          disabled={disabled}
-        >
-          {buttonText}
-        </Button>
+        {hasInvoiceOption && onInvoiceRequest ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild disabled={disabled}>
+              <Button className="w-full" variant={buttonVariant}>
+                <span className="flex items-center justify-between w-full">
+                  {buttonText} <ChevronDown className="ml-2 h-4 w-4" />
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="w-56">
+              <DropdownMenuItem onClick={onButtonClick}>
+                Pay with Card
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onInvoiceRequest}>
+                Pay by Invoice
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <Button 
+            onClick={onButtonClick} 
+            className="w-full" 
+            variant={buttonVariant}
+            disabled={disabled}
+          >
+            {buttonText}
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );
