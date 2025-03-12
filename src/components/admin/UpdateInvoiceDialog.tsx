@@ -37,9 +37,14 @@ export function UpdateInvoiceDialog({
   onUpdated 
 }: UpdateInvoiceDialogProps) {
   const [invoiceNumber, setInvoiceNumber] = useState(purchase.invoice_number || '');
-  const [status, setStatus] = useState(purchase.payment_status);
+  const [status, setStatus] = useState<Purchase['payment_status']>(purchase.payment_status);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Create a type-safe handler for the Select component
+  const handleStatusChange = (value: string) => {
+    setStatus(value as Purchase['payment_status']);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,7 +155,7 @@ export function UpdateInvoiceDialog({
             <Label htmlFor="status">Payment Status</Label>
             <Select
               value={status}
-              onValueChange={setStatus}
+              onValueChange={handleStatusChange}
             >
               <SelectTrigger id="status" className="w-full">
                 <SelectValue placeholder="Select status" />

@@ -196,7 +196,7 @@ const PurchasesManagement = () => {
                             variant="outline" 
                             size="sm" 
                             onClick={() => handleUpdateInvoice(purchase)}
-                            disabled={purchase.payment_status === 'completed'}
+                            disabled={purchase.payment_status === 'payment_made'}
                             className="flex items-center"
                           >
                             <Pencil className="h-4 w-4 mr-1" />
