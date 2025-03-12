@@ -128,22 +128,21 @@ serve(async (req: Request) => {
 
 // Helper function to map plan types to actual Stripe price IDs
 function getStripePriceId(planType: string, purchaseType: string): string {
-  // These should be replaced with actual price IDs from your Stripe dashboard
-  // Format: price_XXXXXXXXXXXXXXXXXXXXXXXX
+  // Using the actual price IDs from your Stripe account
   const priceMapping = {
     foundation: {
-      'one-time': 'price_1OvbcNEQODZFllQ0FnYqXSH6', // Example price ID for one-time Foundation plan
-      'subscription': 'price_1OvbcNEQODZFllQ0FnYqXSH6' // Fallback to same ID if there's no subscription for Foundation
+      'one-time': 'price_1R1mapCEpf4RofE3Cfouca7W', // Foundation one-time payment
+      'subscription': 'price_1R1mapCEpf4RofE3Cfouca7W' // Fallback to same ID if needed
     },
     progress: {
-      'subscription': 'price_1OvbhSEQODZFllQ0JVGWqsmy' // Example price ID for Progress subscription
+      'subscription': 'price_1R1mcSCEpf4RofE3rOmSRsYx' // Progress subscription
     },
     premium: {
-      'subscription': 'price_1OvbiaEQODZFllQ0GE0YZJHz' // Example price ID for Premium subscription
+      'subscription': 'price_1R1md0CEpf4RofE3qaf3kA9C' // Premium subscription
     }
   };
 
   // Get the appropriate price ID or use a fallback
   // @ts-ignore: Property access on index
-  return priceMapping[planType]?.[purchaseType] || 'price_1OvbcNEQODZFllQ0FnYqXSH6'; // Default to Foundation one-time price
+  return priceMapping[planType]?.[purchaseType] || 'price_1R1mapCEpf4RofE3Cfouca7W'; // Default to Foundation one-time price
 }
