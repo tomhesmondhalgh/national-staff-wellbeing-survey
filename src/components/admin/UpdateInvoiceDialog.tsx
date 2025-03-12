@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Dialog, 
@@ -41,7 +40,6 @@ export function UpdateInvoiceDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Create a type-safe handler for the Select component
   const handleStatusChange = (value: string) => {
     setStatus(value as Purchase['payment_status']);
   };
@@ -58,13 +56,12 @@ export function UpdateInvoiceDialog({
         invoiceNumber
       });
 
-      // Call the Edge Function to update the payment status
       const { data, error } = await supabase.functions.invoke('update-invoice-status', {
         body: {
           paymentId: purchase.id,
-          status: status === 'payment_made' ? 'completed' : status, // Map DB value to frontend value
+          status: status === 'payment_made' ? 'completed' : status,
           invoiceNumber: invoiceNumber,
-          adminUserId: 'admin' // This is just for logging purposes
+          adminUserId: 'admin'
         }
       });
 
@@ -76,13 +73,11 @@ export function UpdateInvoiceDialog({
 
       console.log('Update response:', data);
 
-      // Show success message and close the dialog
       toast.success("Payment record updated successfully");
       onUpdated();
     } catch (error) {
       console.error('Error updating payment record:', error);
       
-      // Display more detailed error information
       let errorDetails = 'Please try again later';
       if (error.message) {
         errorDetails = error.message;
@@ -134,7 +129,7 @@ export function UpdateInvoiceDialog({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label className="text-muted-foreground">School</Label>
-              <div className="font-medium">{purchase.billing_school_name || 'Not provided'}</div>
+              <div className="font-medium truncate">{purchase.billing_school_name || 'Not provided'}</div>
             </div>
             <div>
               <Label className="text-muted-foreground">Amount</Label>
@@ -145,11 +140,13 @@ export function UpdateInvoiceDialog({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label className="text-muted-foreground">Contact</Label>
-              <div className="font-medium">{purchase.billing_contact_name || 'Not provided'}</div>
+              <div className="font-medium truncate">{purchase.billing_contact_name || 'Not provided'}</div>
             </div>
             <div>
               <Label className="text-muted-foreground">Email</Label>
-              <div className="font-medium">{purchase.billing_contact_email || 'Not provided'}</div>
+              <div className="font-medium truncate" title={purchase.billing_contact_email || 'Not provided'}>
+                {purchase.billing_contact_email || 'Not provided'}
+              </div>
             </div>
           </div>
 
