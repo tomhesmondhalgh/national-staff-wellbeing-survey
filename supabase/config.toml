@@ -79,3 +79,6 @@ verify_jwt = true
 
 [functions.update-invoice-status]
 verify_jwt = true
+
+[functions.cancel-subscription]
+verify_jwt = true

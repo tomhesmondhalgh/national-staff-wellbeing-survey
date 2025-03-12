@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, User, ShieldCheck, LogOut, Users, ChevronDown } from 'lucide-react';
+import { Settings, User, ShieldCheck, LogOut, Users, ChevronDown, CreditCard } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,7 +32,8 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ isAdmin, canManageT
   // Active state for settings
   const isSettingsActive = location.pathname === '/profile' || 
                           location.pathname === '/team' || 
-                          location.pathname === '/admin';
+                          location.pathname === '/admin' ||
+                          location.pathname === '/purchases';
 
   // Check if user is a real admin (not just in testing mode)
   React.useEffect(() => {
@@ -74,6 +75,13 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ isAdmin, canManageT
           <Link to="/profile" className="flex items-center w-full">
             <User size={16} className="mr-2" />
             Profile
+          </Link>
+        </DropdownMenuItem>
+        
+        <DropdownMenuItem asChild>
+          <Link to="/purchases" className="flex items-center w-full">
+            <CreditCard size={16} className="mr-2" />
+            My Purchases
           </Link>
         </DropdownMenuItem>
         
