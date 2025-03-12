@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import Stripe from "npm:stripe@13.9.0";
@@ -63,12 +62,9 @@ serve(async (req: Request) => {
       );
     }
 
-    // Map the plan type to actual Stripe price IDs
-    // This ensures we use valid price IDs that exist in the Stripe account
     const stripePriceId = getStripePriceId(planType, purchaseType);
     console.log(`Mapped price ID from ${priceId} to ${stripePriceId}`);
 
-    // Verify that the price exists in Stripe before trying to use it
     try {
       const price = await stripe.prices.retrieve(stripePriceId);
       console.log('Successfully retrieved price from Stripe:', {
@@ -103,7 +99,6 @@ serve(async (req: Request) => {
       cancelUrl
     });
 
-    // Create the checkout session with detailed configuration
     const session = await stripe.checkout.sessions.create({
       mode: purchaseType === 'subscription' ? 'subscription' : 'payment',
       line_items: [
@@ -119,7 +114,8 @@ serve(async (req: Request) => {
       customer_creation: 'always',
       billing_address_collection: 'required',
       payment_method_types: ['card'],
-      locale: 'en-GB', // Use UK English locale
+      locale: 'en-GB',
+      allow_promotion_codes: true,
     });
 
     await supabase.from('subscriptions').insert({
@@ -149,23 +145,19 @@ serve(async (req: Request) => {
   }
 });
 
-// Helper function to map plan types to actual Stripe price IDs
 function getStripePriceId(planType: string, purchaseType: string): string {
-  // Using the actual price IDs from your Stripe account
   const priceMapping = {
     foundation: {
-      'one-time': 'price_1R1mapCEpf4RofE3Cfouca7W', // Foundation one-time payment
-      'subscription': 'price_1R1mapCEpf4RofE3Cfouca7W' // Fallback to same ID if needed
+      'one-time': 'price_1R1mapCEpf4RofE3Cfouca7W',
+      'subscription': 'price_1R1mapCEpf4RofE3Cfouca7W'
     },
     progress: {
-      'subscription': 'price_1R1mcSCEpf4RofE3rOmSRsYx' // Progress subscription
+      'subscription': 'price_1R1mcSCEpf4RofE3rOmSRsYx'
     },
     premium: {
-      'subscription': 'price_1R1md0CEpf4RofE3qaf3kA9C' // Premium subscription
+      'subscription': 'price_1R1md0CEpf4RofE3qaf3kA9C'
     }
   };
 
-  // Get the appropriate price ID or use a fallback
-  // @ts-ignore: Property access on index
-  return priceMapping[planType]?.[purchaseType] || 'price_1R1mapCEpf4RofE3Cfouca7W'; // Default to Foundation one-time price
+  return priceMapping[planType]?.[purchaseType] || 'price_1R1mapCEpf4RofE3Cfouca7W';
 }
