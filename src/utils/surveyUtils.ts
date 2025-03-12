@@ -1,4 +1,3 @@
-
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -28,7 +27,6 @@ export const getSurveyById = async (id: string): Promise<SurveyTemplate | null> 
   try {
     console.log(`Fetching survey template with ID: ${id}`);
     
-    // Use a direct fetch with RLS bypass option for public survey templates
     const { data, error } = await supabase
       .from('survey_templates')
       .select('*')
@@ -81,19 +79,16 @@ export const getRecentSurveys = async (limit: number = 3, userId?: string): Prom
   try {
     console.log(`Fetching recent surveys, limit: ${limit}, userId: ${userId}`);
     
-    // Build the query
     let query = supabase
       .from('survey_templates')
       .select('*')
       .order('date', { ascending: false })
       .limit(limit);
     
-    // If userId is provided, filter by creator_id
     if (userId) {
       query = query.eq('creator_id', userId);
     }
     
-    // Execute the query
     const { data: templates, error: templatesError } = await query;
     
     if (templatesError) {
@@ -108,7 +103,6 @@ export const getRecentSurveys = async (limit: number = 3, userId?: string): Prom
       return [];
     }
     
-    // For each template, count the responses
     const surveysWithResponses = await Promise.all(
       templates.map(async (template) => {
         console.log(`Counting responses for survey ${template.id}`);
@@ -139,15 +133,12 @@ export const checkForClosedSurveys = async () => {
   try {
     console.log('Checking for surveys that have recently closed');
     
-    // Get current date in ISO format
     const now = new Date();
-    const todayStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+    const todayStr = now.toISOString().split('T')[0];
     
-    // Get the date range for today (start and end of the day)
     const todayStart = `${todayStr}T00:00:00.000Z`;
     const todayEnd = `${todayStr}T23:59:59.999Z`;
     
-    // Find surveys that closed today (close_date is between start and end of today)
     const { data: closedSurveys, error } = await supabase
       .from('survey_templates')
       .select(`
@@ -173,16 +164,13 @@ export const checkForClosedSurveys = async () => {
     
     console.log(`Found ${closedSurveys?.length || 0} surveys that closed today:`, closedSurveys);
     
-    // For each closed survey, send a notification to the creator
     if (closedSurveys && closedSurveys.length > 0) {
       for (const survey of closedSurveys) {
-        // Skip if there's no creator
         if (!survey.creator_id || !survey.profiles) {
           console.log(`Survey ${survey.id} has no creator, skipping notification`);
           continue;
         }
         
-        // Handle the profile data correctly - it's either an object or the first item in an array
         const creatorProfile = Array.isArray(survey.profiles) 
           ? survey.profiles[0] 
           : survey.profiles;
@@ -199,13 +187,11 @@ export const checkForClosedSurveys = async () => {
           lastName: creatorProfile.last_name
         };
         
-        // Generate the analysis URL
         const baseUrl = window.location.origin;
         const analysisUrl = `${baseUrl}/analysis?id=${survey.id}`;
         
         console.log(`Sending closure notification for survey ${survey.id} to ${creator.email}`);
         
-        // Call the Edge Function to send the notification
         const { data, error: notificationError } = await supabase.functions.invoke('send-closure-notification', {
           body: {
             surveyId: survey.id,
@@ -231,7 +217,6 @@ export const getDashboardStats = async () => {
   try {
     console.log('Fetching dashboard stats');
     
-    // Get the current authenticated user
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -239,7 +224,6 @@ export const getDashboardStats = async () => {
       return null;
     }
     
-    // Get total number of surveys for this user only
     const { count: surveyCount, error: surveyError } = await supabase
       .from('survey_templates')
       .select('*', { count: 'exact', head: true })
@@ -252,7 +236,6 @@ export const getDashboardStats = async () => {
     
     console.log('Total surveys for this user:', surveyCount);
     
-    // Get total number of respondents for surveys created by this user
     const { data: userSurveys, error: userSurveysError } = await supabase
       .from('survey_templates')
       .select('id')
@@ -263,7 +246,6 @@ export const getDashboardStats = async () => {
       return null;
     }
     
-    // If user has no surveys, return zero counts
     if (!userSurveys || userSurveys.length === 0) {
       return {
         totalSurveys: 0,
@@ -273,23 +255,21 @@ export const getDashboardStats = async () => {
       };
     }
     
-    // Extract just the IDs for the IN clause
     const surveyIds = userSurveys.map(survey => survey.id);
     
-    // Count responses only for surveys created by this user
     const { count: responseCount, error: responseError } = await supabase
       .from('survey_responses')
       .select('*', { count: 'exact', head: true })
-      .in('survey_template_id', surveyIds);
+      .in('survey_template_id', surveyIds)
+      .eq('response_type', 'email');
     
     if (responseError) {
       console.error('Error counting responses:', responseError);
       return null;
     }
     
-    console.log('Total responses for this user\'s surveys:', responseCount);
+    console.log('Total email responses for this user\'s surveys:', responseCount);
     
-    // Calculate benchmark score based on recommendation scores for this user's surveys
     const { data: recommendationData, error: recommendationError } = await supabase
       .from('survey_responses')
       .select('recommendation_score')
@@ -301,7 +281,6 @@ export const getDashboardStats = async () => {
     if (recommendationError) {
       console.error('Error fetching recommendation scores:', recommendationError);
     } else if (recommendationData && recommendationData.length > 0) {
-      // Calculate average recommendation score
       const validScores = recommendationData
         .map(response => Number(response.recommendation_score))
         .filter(score => !isNaN(score) && score > 0);
@@ -313,30 +292,24 @@ export const getDashboardStats = async () => {
       }
     }
     
-    // Get total number of recipients from emails field (to calculate response rate properly)
     const { data: surveyTemplates, error: templatesFetchError } = await supabase
       .from('survey_templates')
       .select('emails')
       .eq('creator_id', user.id)
       .not('emails', 'is', null)
       .not('emails', 'eq', '')
-      .filter('date', 'lt', new Date().toISOString()); // Only include surveys that have been sent (past date)
+      .filter('date', 'lt', new Date().toISOString());
     
     if (templatesFetchError) {
       console.error('Error fetching templates for response rate:', templatesFetchError);
-      // Fall back to simplified calculation if we can't get the email data
-      const avgResponsesPerSurvey = surveyCount ? Math.round((responseCount / surveyCount) * 100) / 100 : 0;
-      const fallbackResponseRate = Math.min(Math.round(avgResponsesPerSurvey * 10), 100);
-      
       return {
         totalSurveys: surveyCount || 0,
         totalRespondents: responseCount || 0,
-        responseRate: `${fallbackResponseRate}%`,
+        responseRate: "0%",
         benchmarkScore: benchmarkScore
       };
     }
     
-    // Count total recipients (each email address in the comma-separated list)
     let totalRecipients = 0;
     if (surveyTemplates && surveyTemplates.length > 0) {
       console.log('Calculating total recipients from sent surveys');
@@ -353,28 +326,21 @@ export const getDashboardStats = async () => {
       });
     }
     
-    console.log('Total recipients:', totalRecipients);
+    console.log('Total email recipients:', totalRecipients);
     
-    // Calculate actual response rate based on recipients
     let responseRate = 0;
     if (totalRecipients > 0) {
       responseRate = Math.round((responseCount / totalRecipients) * 100);
-    } else {
-      // Fallback if no recipients found
-      responseRate = surveyCount ? Math.min(Math.round((responseCount / surveyCount) * 20), 100) : 0;
     }
     
-    console.log('Calculated response rate:', responseRate);
+    console.log('Calculated email response rate:', responseRate);
     
-    const stats = {
+    return {
       totalSurveys: surveyCount || 0,
       totalRespondents: responseCount || 0,
       responseRate: `${responseRate}%`,
       benchmarkScore: benchmarkScore
     };
-    
-    console.log('Calculated stats:', stats);
-    return stats;
   } catch (error) {
     console.error('Unexpected error in getDashboardStats:', error);
     return null;
