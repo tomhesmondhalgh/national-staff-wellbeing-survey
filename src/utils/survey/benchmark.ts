@@ -1,13 +1,18 @@
 
 import { supabase } from "../../lib/supabase";
+import { PlanType } from "../../lib/supabase/subscription";
 
 /**
  * Calculates the benchmark score based on recommendation scores
  * 
  * @param surveyIds - Array of survey IDs to calculate the benchmark for
+ * @param hasNationalAccess - Whether the user has access to national benchmarks
  * @returns The formatted benchmark score as a string
  */
-export const calculateBenchmarkScore = async (surveyIds: string[]): Promise<string> => {
+export const calculateBenchmarkScore = async (
+  surveyIds: string[],
+  hasNationalAccess: boolean = false
+): Promise<string> => {
   try {
     const { data: recommendationData, error: recommendationError } = await supabase
       .from('survey_responses')
@@ -32,6 +37,12 @@ export const calculateBenchmarkScore = async (surveyIds: string[]): Promise<stri
         benchmarkScore = averageScore.toFixed(1);
         console.log('Calculated benchmark score from recommendation data:', benchmarkScore);
       }
+    }
+    
+    // If user doesn't have access to national benchmarks, return a string indicating this
+    if (!hasNationalAccess) {
+      console.log('User does not have access to national benchmarks');
+      return benchmarkScore;
     }
     
     return benchmarkScore;
