@@ -325,6 +325,35 @@ const Analysis = () => {
   }, [user, hasAccess]);
 
   useEffect(() => {
+    const loadSurveyOptions = async () => {
+      try {
+        if (!user) return;
+        
+        console.log('Fetching survey options for user:', user.id);
+        const options = await getSurveyOptions(user.id);
+        console.log('Fetched survey options:', options);
+        
+        setSurveyOptions(options);
+        
+        if (options.length === 0) {
+          setNoData(true);
+        } else {
+          setSelectedSurvey(options[0]?.id || "");
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Error loading survey options:', error);
+        toast.error("Failed to load surveys");
+        setLoading(false);
+        setNoData(true);
+      }
+    };
+    
+    loadSurveyOptions();
+  }, [user]);
+
+  useEffect(() => {
     const loadData = async () => {
       if (!selectedSurvey) return;
       try {

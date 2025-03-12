@@ -14,6 +14,9 @@ export const calculateBenchmarkScore = async (
   hasNationalAccess: boolean = false
 ): Promise<string> => {
   try {
+    console.log('Calculating benchmark for survey IDs:', surveyIds);
+    console.log('User has national access:', hasNationalAccess);
+    
     const { data: recommendationData, error: recommendationError } = await supabase
       .from('survey_responses')
       .select('recommendation_score')
@@ -39,12 +42,13 @@ export const calculateBenchmarkScore = async (
       }
     }
     
-    // If user doesn't have access to national benchmarks, return a string indicating this
+    // If user doesn't have access to national benchmarks, return only the local score
     if (!hasNationalAccess) {
-      console.log('User does not have access to national benchmarks');
+      console.log('User does not have access to national benchmarks, returning only local score');
       return benchmarkScore;
     }
     
+    console.log('Returning benchmark with national access:', benchmarkScore);
     return benchmarkScore;
   } catch (error) {
     console.error('Error calculating benchmark score:', error);
