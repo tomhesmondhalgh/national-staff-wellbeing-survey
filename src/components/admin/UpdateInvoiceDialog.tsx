@@ -76,8 +76,20 @@ export function UpdateInvoiceDialog({
       onUpdated();
     } catch (error) {
       console.error('Error updating invoice:', error);
+      
+      // Display more detailed error information
+      let errorDetails = 'Please try again later';
+      if (error.message) {
+        errorDetails = error.message;
+      }
+      
+      if (error.details) {
+        errorDetails += ` - ${typeof error.details === 'object' ? JSON.stringify(error.details) : error.details}`;
+      }
+      
+      setErrorMessage(errorDetails);
       toast.error('Failed to update invoice', { 
-        description: errorMessage || error.message || 'Please try again later'
+        description: errorDetails
       });
     } finally {
       setIsSubmitting(false);

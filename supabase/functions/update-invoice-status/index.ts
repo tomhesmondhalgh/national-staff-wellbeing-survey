@@ -167,10 +167,9 @@ async function handleUpdateInvoiceStatus(
     );
   }
 
-  // Prepare update data
+  // Prepare update data - REMOVED updated_at as it doesn't exist in the schema
   const updateData: any = {
-    payment_status: status,
-    updated_at: new Date().toISOString()
+    payment_status: status
   };
   
   // Only add invoice_number to the update if it was provided
