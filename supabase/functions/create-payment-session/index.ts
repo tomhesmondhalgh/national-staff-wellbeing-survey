@@ -12,19 +12,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface RequestBody {
-  priceId: string;
-  successUrl: string;
-  cancelUrl: string;
-  planType?: "foundation" | "progress" | "premium";
-  purchaseType?: "subscription" | "one-time";
-  billingDetails?: {
-    schoolName: string;
-    address: string;
-    contactName: string;
-    contactEmail: string;
-  };
-}
+console.log('Function initialized with config:', {
+  hasStripeKey: !!Deno.env.get("STRIPE_SECRET_KEY"),
+  supabaseUrl: Deno.env.get("SUPABASE_URL"),
+});
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -32,8 +23,14 @@ serve(async (req: Request) => {
   }
 
   try {
+    console.log('Request received:', {
+      method: req.method,
+      headers: Object.fromEntries(req.headers.entries()),
+    });
+
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.error('Missing Authorization header');
       return new Response(
         JSON.stringify({ error: 'Missing Authorization header' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -45,16 +42,20 @@ serve(async (req: Request) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
 
     if (userError || !user) {
+      console.error('User validation error:', userError);
       return new Response(
         JSON.stringify({ error: 'Invalid token or user not found' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const requestData: RequestBody = await req.json();
+    const requestData = await req.json();
+    console.log('Request data:', requestData);
+
     const { priceId, successUrl, cancelUrl, planType = "foundation", purchaseType = "subscription", billingDetails } = requestData;
 
     if (!priceId || !successUrl || !cancelUrl) {
+      console.error('Missing required fields:', { priceId, successUrl, cancelUrl });
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -71,6 +72,12 @@ serve(async (req: Request) => {
       billingContactEmail: billingDetails?.contactEmail || ''
     };
 
+    console.log('Creating Stripe session with:', {
+      mode: purchaseType === 'subscription' ? 'subscription' : 'payment',
+      priceId,
+      metadata
+    });
+
     const session = await stripe.checkout.sessions.create({
       mode: purchaseType === 'subscription' ? 'subscription' : 'payment',
       line_items: [
@@ -79,7 +86,6 @@ serve(async (req: Request) => {
           quantity: 1,
         },
       ],
-      // Update the success URL to the new payment success page
       success_url: `${new URL(successUrl).origin}/payment-success`,
       cancel_url: cancelUrl,
       metadata,
@@ -95,6 +101,11 @@ serve(async (req: Request) => {
       status: 'pending',
       payment_method: 'stripe',
       purchase_type: purchaseType,
+    });
+
+    console.log('Session created successfully:', {
+      sessionId: session.id,
+      url: session.url
     });
 
     return new Response(

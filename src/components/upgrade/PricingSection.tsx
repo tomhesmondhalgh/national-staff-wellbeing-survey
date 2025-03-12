@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import PlanCard, { PlanType } from './PlanCard';
 import { useSubscription } from '../../hooks/useSubscription';
@@ -63,6 +64,13 @@ const PricingSection: React.FC = () => {
 
   const handleUpgrade = async (priceId: string, planType: 'foundation' | 'progress' | 'premium', purchaseType: 'subscription' | 'one-time') => {
     try {
+      console.log('Initiating upgrade process:', {
+        priceId,
+        planType,
+        purchaseType,
+        userProfile
+      });
+
       const { data, error } = await supabase.functions.invoke('create-payment-session', {
         body: {
           priceId,
@@ -79,13 +87,18 @@ const PricingSection: React.FC = () => {
         }
       });
 
+      console.log('Payment session response:', { data, error });
+
       if (error) {
+        console.error('Error creating payment session:', error);
         throw error;
       }
 
       if (data?.url) {
+        console.log('Redirecting to payment URL:', data.url);
         window.location.href = data.url;
       } else {
+        console.error('No checkout URL returned:', data);
         throw new Error('No checkout URL returned');
       }
     } catch (error) {
