@@ -1,47 +1,7 @@
 
 import { supabase } from "../../lib/supabase";
-
-/**
- * Calculates the benchmark score based on recommendation scores
- * @param surveyIds Array of survey IDs to calculate benchmark for
- * @returns The calculated benchmark score as a string
- */
-export const calculateBenchmarkScore = async (surveyIds: string[]): Promise<string> => {
-  try {
-    if (!surveyIds.length) {
-      return "0";
-    }
-
-    const { data: recommendationData, error: recommendationError } = await supabase
-      .from('survey_responses')
-      .select('recommendation_score')
-      .in('survey_template_id', surveyIds)
-      .not('recommendation_score', 'is', null);
-    
-    if (recommendationError) {
-      console.error('Error fetching recommendation scores:', recommendationError);
-      return "0";
-    }
-
-    if (!recommendationData || recommendationData.length === 0) {
-      return "0";
-    }
-
-    const validScores = recommendationData
-      .map(response => Number(response.recommendation_score))
-      .filter(score => !isNaN(score) && score > 0);
-    
-    if (validScores.length === 0) {
-      return "0";
-    }
-    
-    const averageScore = validScores.reduce((sum, score) => sum + score, 0) / validScores.length;
-    return averageScore.toFixed(1);
-  } catch (error) {
-    console.error('Error calculating benchmark score:', error);
-    return "0";
-  }
-};
+import { calculateBenchmarkScore } from "./benchmark";
+import { countEmailResponses } from "./responses";
 
 export const getDashboardStats = async () => {
   try {
@@ -87,22 +47,16 @@ export const getDashboardStats = async () => {
     
     const surveyIds = userSurveys.map(survey => survey.id);
     
-    const { count: responseCount, error: responseError } = await supabase
-      .from('survey_responses')
-      .select('*', { count: 'exact', head: true })
-      .in('survey_template_id', surveyIds)
-      .eq('response_type', 'email');
-    
-    if (responseError) {
-      console.error('Error counting responses:', responseError);
-      return null;
+    // Use countEmailResponses for the email respondents count
+    let totalEmailRespondents = 0;
+    for (const surveyId of surveyIds) {
+      const emailResponses = await countEmailResponses(surveyId);
+      totalEmailRespondents += emailResponses;
     }
     
-    console.log('Total email responses for this user\'s surveys:', responseCount);
+    console.log('Total email responses for this user\'s surveys:', totalEmailRespondents);
     
-    // Use the new function to calculate the benchmark score
     const benchmarkScore = await calculateBenchmarkScore(surveyIds);
-    console.log('Calculated benchmark score:', benchmarkScore);
     
     const { data: surveyTemplates, error: templatesFetchError } = await supabase
       .from('survey_templates')
@@ -116,7 +70,7 @@ export const getDashboardStats = async () => {
       console.error('Error fetching templates for response rate:', templatesFetchError);
       return {
         totalSurveys: surveyCount || 0,
-        totalRespondents: responseCount || 0,
+        totalRespondents: totalEmailRespondents,
         responseRate: "0%",
         benchmarkScore: benchmarkScore
       };
@@ -142,14 +96,14 @@ export const getDashboardStats = async () => {
     
     let responseRate = 0;
     if (totalRecipients > 0) {
-      responseRate = Math.round((responseCount / totalRecipients) * 100);
+      responseRate = Math.round((totalEmailRespondents / totalRecipients) * 100);
     }
     
     console.log('Calculated email response rate:', responseRate);
     
     return {
       totalSurveys: surveyCount || 0,
-      totalRespondents: responseCount || 0,
+      totalRespondents: totalEmailRespondents,
       responseRate: `${responseRate}%`,
       benchmarkScore: benchmarkScore
     };

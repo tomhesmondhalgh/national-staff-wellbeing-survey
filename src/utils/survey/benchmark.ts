@@ -1,0 +1,42 @@
+
+import { supabase } from "../../lib/supabase";
+
+/**
+ * Calculates the benchmark score based on recommendation scores
+ * 
+ * @param surveyIds - Array of survey IDs to calculate the benchmark for
+ * @returns The formatted benchmark score as a string
+ */
+export const calculateBenchmarkScore = async (surveyIds: string[]): Promise<string> => {
+  try {
+    const { data: recommendationData, error: recommendationError } = await supabase
+      .from('survey_responses')
+      .select('recommendation_score')
+      .in('survey_template_id', surveyIds)
+      .not('recommendation_score', 'is', null);
+    
+    let benchmarkScore = "0";
+    
+    if (recommendationError) {
+      console.error('Error fetching recommendation scores:', recommendationError);
+      return benchmarkScore;
+    }
+    
+    if (recommendationData && recommendationData.length > 0) {
+      const validScores = recommendationData
+        .map(response => Number(response.recommendation_score))
+        .filter(score => !isNaN(score) && score > 0);
+      
+      if (validScores.length > 0) {
+        const averageScore = validScores.reduce((sum, score) => sum + score, 0) / validScores.length;
+        benchmarkScore = averageScore.toFixed(1);
+        console.log('Calculated benchmark score from recommendation data:', benchmarkScore);
+      }
+    }
+    
+    return benchmarkScore;
+  } catch (error) {
+    console.error('Error calculating benchmark score:', error);
+    return "0";
+  }
+};
