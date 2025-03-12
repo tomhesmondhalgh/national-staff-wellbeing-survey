@@ -1,3 +1,4 @@
+
 import { User, Provider } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
@@ -124,9 +125,11 @@ export async function signInWithSocialProvider(provider: Provider) {
 // Handle profile completion
 export async function completeUserProfile(userId: string, userData: any) {
   try {
-    // Update user metadata with school information
+    // Update user metadata with profile information
     const { error: metadataError } = await supabase.auth.updateUser({
       data: {
+        first_name: userData.firstName,
+        last_name: userData.lastName,
         job_title: userData.jobTitle,
         school_name: userData.schoolName,
         school_address: userData.schoolAddress,
@@ -194,13 +197,54 @@ export async function completeUserProfile(userId: string, userData: any) {
       // Don't fail the signup if Hubspot integration fails
     }
 
-    toast.success('Account setup completed successfully!', {
-      description: 'Please check your email to confirm your account.'
-    });
+    toast.success('Profile updated successfully!');
     
     return { error: null, success: true };
   } catch (error) {
     console.error('Error completing user profile:', error);
+    return { error: error as Error, success: false };
+  }
+}
+
+// Function to update user email
+export async function updateUserEmail(newEmail: string) {
+  try {
+    const { data, error } = await supabase.auth.updateUser({
+      email: newEmail,
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    toast.success(
+      'Email update initiated', 
+      { description: 'Please check your new email inbox for a confirmation link.' }
+    );
+    return { error: null, success: true };
+  } catch (error) {
+    console.error('Error updating email:', error);
+    return { error: error as Error, success: false };
+  }
+}
+
+// Function to update user details (name, etc.)
+export async function updateUserDetails(userData: { firstName?: string; lastName?: string; }) {
+  try {
+    const { data, error } = await supabase.auth.updateUser({
+      data: {
+        first_name: userData.firstName,
+        last_name: userData.lastName,
+      },
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return { error: null, success: true };
+  } catch (error) {
+    console.error('Error updating user details:', error);
     return { error: error as Error, success: false };
   }
 }
