@@ -54,6 +54,7 @@ const PurchasesManagement = () => {
   const fetchPurchases = async () => {
     setLoading(true);
     try {
+      // First, fetch all payment history records
       const { data: payments, error } = await supabase
         .from('payment_history')
         .select(`
@@ -70,16 +71,42 @@ const PurchasesManagement = () => {
         throw error;
       }
 
-      // Add better handling for missing subscription data
-      const formattedPurchases = payments.map(item => ({
-        ...item,
-        plan_type: item.subscription?.plan_type || 
-          (item.payment_method === 'stripe' ? 'foundation' : 'unknown'),
-        purchase_type: item.subscription?.purchase_type || 
-          (item.payment_method === 'stripe' ? 'subscription' : 'unknown')
+      // For each payment, if subscription data is missing, attempt to fetch it directly
+      const enhancedPayments = await Promise.all(payments.map(async (payment) => {
+        if (payment.subscription) {
+          return {
+            ...payment,
+            plan_type: payment.subscription.plan_type,
+            purchase_type: payment.subscription.purchase_type
+          };
+        }
+        
+        // If subscription reference is missing but we have the subscription_id, try to fetch it directly
+        if (payment.subscription_id) {
+          const { data: subData } = await supabase
+            .from('subscriptions')
+            .select('plan_type, purchase_type')
+            .eq('id', payment.subscription_id)
+            .maybeSingle();
+            
+          if (subData) {
+            return {
+              ...payment,
+              plan_type: subData.plan_type,
+              purchase_type: subData.purchase_type
+            };
+          }
+        }
+        
+        // Fall back to intelligent defaults based on payment method
+        return {
+          ...payment,
+          plan_type: payment.payment_method === 'stripe' ? 'foundation' : 'unknown',
+          purchase_type: payment.payment_method === 'stripe' ? 'subscription' : 'unknown'
+        };
       }));
 
-      setPurchases(formattedPurchases);
+      setPurchases(enhancedPayments);
     } catch (error) {
       console.error('Error fetching purchases:', error);
       toast.error('Failed to load purchases data');

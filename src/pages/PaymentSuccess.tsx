@@ -4,13 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import { Button } from '../components/ui/button';
 import { useToast } from '../hooks/use-toast';
-import { useEffect } from 'react';
-import { getUserSubscription } from '../lib/supabase/subscription';
+import { useEffect, useState } from 'react';
+import { getUserSubscription, checkAndCreateSubscription } from '../lib/supabase/subscription';
 import { supabase } from '../lib/supabase/client';
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isVerifying, setIsVerifying] = useState(true);
   
   useEffect(() => {
     // Show success toast on page load
@@ -22,13 +23,38 @@ const PaymentSuccess = () => {
     
     // Check subscription status and update if needed
     const checkSubscriptionStatus = async () => {
+      setIsVerifying(true);
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!user) {
+          setIsVerifying(false);
+          return;
+        }
+        
+        // Check for URL params that might contain payment info
+        const urlParams = new URLSearchParams(window.location.search);
+        const stripePaymentId = urlParams.get('payment_id');
         
         // Refresh subscription data
-        const subscription = await getUserSubscription(user.id);
-        console.log('Current subscription status:', subscription);
+        let subscription = await getUserSubscription(user.id);
+        console.log('Initial subscription status:', subscription);
+        
+        // If we have a payment ID but no active subscription, try to create one
+        if (stripePaymentId && (!subscription?.isActive)) {
+          console.log('Attempting to create subscription for payment:', stripePaymentId);
+          const success = await checkAndCreateSubscription(
+            user.id, 
+            'foundation', 
+            stripePaymentId, 
+            'subscription'
+          );
+          
+          if (success) {
+            console.log('Successfully created subscription from payment ID');
+            // Re-fetch the subscription
+            subscription = await getUserSubscription(user.id);
+          }
+        }
         
         if (!subscription?.isActive) {
           toast({
@@ -39,6 +65,8 @@ const PaymentSuccess = () => {
         }
       } catch (error) {
         console.error('Error checking subscription:', error);
+      } finally {
+        setIsVerifying(false);
       }
     };
     
@@ -77,6 +105,12 @@ const PaymentSuccess = () => {
           <p className="text-gray-600 mb-8">
             You will receive a confirmation email shortly with details of your purchase.
           </p>
+
+          {isVerifying && (
+            <p className="text-blue-600 mb-4">
+              Verifying your subscription status...
+            </p>
+          )}
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button onClick={() => navigate("/dashboard")} variant="default">
