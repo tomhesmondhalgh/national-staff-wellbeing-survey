@@ -15,6 +15,7 @@ const corsHeaders = {
 console.log('Function initialized with config:', {
   hasStripeKey: !!Deno.env.get("STRIPE_SECRET_KEY"),
   supabaseUrl: Deno.env.get("SUPABASE_URL"),
+  stripeKeyLength: (Deno.env.get("STRIPE_SECRET_KEY") || "").length, // Log length to check if it's valid
 });
 
 serve(async (req: Request) => {
@@ -67,6 +68,23 @@ serve(async (req: Request) => {
     const stripePriceId = getStripePriceId(planType, purchaseType);
     console.log(`Mapped price ID from ${priceId} to ${stripePriceId}`);
 
+    // Verify that the price exists in Stripe before trying to use it
+    try {
+      const price = await stripe.prices.retrieve(stripePriceId);
+      console.log('Successfully retrieved price from Stripe:', {
+        id: price.id,
+        active: price.active,
+        currency: price.currency,
+        type: price.type,
+      });
+    } catch (priceError) {
+      console.error('Error retrieving price from Stripe:', priceError);
+      return new Response(
+        JSON.stringify({ error: `Invalid price ID: ${stripePriceId}` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const metadata = {
       userId: user.id,
       planType,
@@ -80,9 +98,12 @@ serve(async (req: Request) => {
     console.log('Creating Stripe session with:', {
       mode: purchaseType === 'subscription' ? 'subscription' : 'payment',
       priceId: stripePriceId,
-      metadata
+      metadata,
+      successUrl: `${new URL(successUrl).origin}/payment-success`,
+      cancelUrl
     });
 
+    // Create the checkout session with detailed configuration
     const session = await stripe.checkout.sessions.create({
       mode: purchaseType === 'subscription' ? 'subscription' : 'payment',
       line_items: [
@@ -98,6 +119,7 @@ serve(async (req: Request) => {
       customer_creation: 'always',
       billing_address_collection: 'required',
       payment_method_types: ['card'],
+      locale: 'en-GB', // Use UK English locale
     });
 
     await supabase.from('subscriptions').insert({
@@ -110,7 +132,8 @@ serve(async (req: Request) => {
 
     console.log('Session created successfully:', {
       sessionId: session.id,
-      url: session.url
+      url: session.url,
+      hasUrlParameter: !!session.url
     });
 
     return new Response(
@@ -120,7 +143,7 @@ serve(async (req: Request) => {
   } catch (error) {
     console.error('Error creating Stripe checkout session:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message, stack: error.stack }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

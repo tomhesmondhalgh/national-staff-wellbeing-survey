@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import PlanCard, { PlanType } from './PlanCard';
 import { useSubscription } from '../../hooks/useSubscription';
@@ -18,6 +19,7 @@ const PricingSection: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   const {
     subscription,
     isLoading,
@@ -63,11 +65,24 @@ const PricingSection: React.FC = () => {
 
   const handleUpgrade = async (priceId: string, planType: 'foundation' | 'progress' | 'premium', purchaseType: 'subscription' | 'one-time') => {
     try {
+      // Prevent multiple clicks
+      if (isProcessing) {
+        console.log('Already processing a payment request, please wait...');
+        return;
+      }
+      
+      setIsProcessing(true);
+      
       console.log('Initiating upgrade process:', {
         priceId,
         planType,
         purchaseType,
         userProfile
+      });
+
+      toast({
+        title: 'Processing',
+        description: 'Preparing your payment session...',
       });
 
       const { data, error } = await supabase.functions.invoke('create-payment-session', {
@@ -90,14 +105,27 @@ const PricingSection: React.FC = () => {
 
       if (error) {
         console.error('Error creating payment session:', error);
+        toast({
+          title: 'Error',
+          description: `Failed to create payment session: ${error.message || 'Unknown error'}`,
+          variant: 'destructive'
+        });
+        setIsProcessing(false);
         throw error;
       }
 
       if (data?.url) {
         console.log('Redirecting to payment URL:', data.url);
+        // Use window.open in a new tab to prevent issues with the current page
         window.location.href = data.url;
       } else {
         console.error('No checkout URL returned:', data);
+        toast({
+          title: 'Error',
+          description: 'No payment URL was returned. Please try again later.',
+          variant: 'destructive'
+        });
+        setIsProcessing(false);
         throw new Error('No checkout URL returned');
       }
     } catch (error) {
@@ -107,6 +135,7 @@ const PricingSection: React.FC = () => {
         description: 'Failed to process your request. Please try again later.',
         variant: 'destructive'
       });
+      setIsProcessing(false);
     }
   };
 
@@ -277,7 +306,7 @@ const PricingSection: React.FC = () => {
       
       <div className="grid md:grid-cols-4 gap-8">
         {plans.map((plan, index) => (
-          <PlanCard key={index} {...plan} />
+          <PlanCard key={index} {...plan} disabled={plan.disabled || isProcessing} />
         ))}
       </div>
       
