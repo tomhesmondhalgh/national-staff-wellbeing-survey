@@ -16,6 +16,19 @@ interface UpdateInvoiceRequest {
   adminUserId: string;
 }
 
+interface CreateInvoiceRequest {
+  planType: 'foundation' | 'progress' | 'premium';
+  purchaseType: 'subscription' | 'one-time';
+  billingDetails: {
+    schoolName: string;
+    address: string;
+    contactName: string;
+    contactEmail: string;
+    purchaseOrderNumber?: string;
+    additionalInformation?: string;
+  };
+}
+
 serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -46,86 +59,188 @@ serve(async (req: Request) => {
       );
     }
 
-    // Check if user is an admin
-    const { data: adminRole } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('role', 'administrator')
-      .maybeSingle();
-      
-    if (!adminRole) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized. Admin access required.' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Parse request body
+    const requestData = await req.json();
+    
+    // Check if this is an admin updating an invoice status
+    if ('paymentId' in requestData && 'status' in requestData) {
+      return handleUpdateInvoiceStatus(requestData, user, supabase);
     }
-
-    const { paymentId, status, adminUserId }: UpdateInvoiceRequest = await req.json();
-
-    if (!paymentId || !status) {
+    
+    // Or if it's a user creating a new invoice request
+    else if ('planType' in requestData && 'purchaseType' in requestData) {
+      return handleCreateInvoiceRequest(requestData, user, supabase);
+    }
+    
+    else {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
+        JSON.stringify({ error: 'Invalid request format' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    // Update payment history record
-    const { data: payment, error: paymentError } = await supabase
-      .from('payment_history')
-      .update({
-        payment_status: status,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', paymentId)
-      .eq('payment_method', 'invoice')
-      .select('subscription_id')
-      .single();
-
-    if (paymentError) {
-      throw paymentError;
-    }
-
-    // If payment is marked as completed, update the subscription status
-    if (status === 'completed' && payment?.subscription_id) {
-      const { data: subscription, error: subscriptionError } = await supabase
-        .from('subscriptions')
-        .select('plan_type, purchase_type, user_id')
-        .eq('id', payment.subscription_id)
-        .single();
-
-      if (subscriptionError) {
-        throw subscriptionError;
-      }
-
-      // Update subscription to active
-      const { error: updateError } = await supabase
-        .from('subscriptions')
-        .update({
-          status: 'active',
-          start_date: new Date().toISOString(),
-          // Set end_date to 3 years from now for both one-time and subscription plans
-          // since this is manually managed
-          end_date: subscription.purchase_type === 'one-time' 
-            ? new Date(Date.now() + 3 * 365 * 24 * 60 * 60 * 1000).toISOString()
-            : new Date(Date.now() + 3 * 365 * 24 * 60 * 60 * 1000).toISOString()
-        })
-        .eq('id', payment.subscription_id);
-
-      if (updateError) {
-        throw updateError;
-      }
-    }
-
-    return new Response(
-      JSON.stringify({ success: true, message: `Invoice status updated to ${status}` }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
   } catch (error) {
-    console.error('Error updating invoice status:', error);
+    console.error('Error in update-invoice-status function:', error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Error updating invoice status' }),
+      JSON.stringify({ error: error.message || 'Error processing request' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
+
+// Handle admin updating an invoice status
+async function handleUpdateInvoiceStatus(
+  data: UpdateInvoiceRequest, 
+  user: any,
+  supabase: any
+) {
+  // Check if user is an admin
+  const { data: adminRole } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', user.id)
+    .eq('role', 'administrator')
+    .maybeSingle();
+    
+  if (!adminRole) {
+    return new Response(
+      JSON.stringify({ error: 'Unauthorized. Admin access required.' }),
+      { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  const { paymentId, status, adminUserId } = data;
+
+  if (!paymentId || !status) {
+    return new Response(
+      JSON.stringify({ error: 'Missing required fields' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Update payment history record
+  const { data: payment, error: paymentError } = await supabase
+    .from('payment_history')
+    .update({
+      payment_status: status,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', paymentId)
+    .eq('payment_method', 'invoice')
+    .select('subscription_id')
+    .single();
+
+  if (paymentError) {
+    throw paymentError;
+  }
+
+  // If payment is marked as completed, update the subscription status
+  if (status === 'completed' && payment?.subscription_id) {
+    const { data: subscription, error: subscriptionError } = await supabase
+      .from('subscriptions')
+      .select('plan_type, purchase_type, user_id')
+      .eq('id', payment.subscription_id)
+      .single();
+
+    if (subscriptionError) {
+      throw subscriptionError;
+    }
+
+    // Update subscription to active
+    const { error: updateError } = await supabase
+      .from('subscriptions')
+      .update({
+        status: 'active',
+        start_date: new Date().toISOString(),
+        // Set end_date to 3 years from now for both one-time and subscription plans
+        // since this is manually managed
+        end_date: subscription.purchase_type === 'one-time' 
+          ? new Date(Date.now() + 3 * 365 * 24 * 60 * 60 * 1000).toISOString()
+          : new Date(Date.now() + 3 * 365 * 24 * 60 * 60 * 1000).toISOString()
+      })
+      .eq('id', payment.subscription_id);
+
+    if (updateError) {
+      throw updateError;
+    }
+  }
+
+  return new Response(
+    JSON.stringify({ success: true, message: `Invoice status updated to ${status}` }),
+    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+// Handle user creating a new invoice request
+async function handleCreateInvoiceRequest(
+  data: CreateInvoiceRequest,
+  user: any,
+  supabase: any
+) {
+  const { planType, purchaseType, billingDetails } = data;
+  
+  // Get pricing based on plan type
+  const planPricing = {
+    foundation: 299,
+    progress: 1499,
+    premium: 2499
+  };
+  
+  const amount = planPricing[planType] || 299;
+  
+  // Create a subscription record with payment_method 'invoice'
+  const { data: subscription, error: subscriptionError } = await supabase
+    .from('subscriptions')
+    .insert({
+      user_id: user.id,
+      plan_type: planType,
+      status: 'pending',
+      payment_method: 'invoice',
+      purchase_type: purchaseType,
+    })
+    .select()
+    .single();
+
+  if (subscriptionError) {
+    console.error('Error creating subscription:', subscriptionError);
+    return new Response(
+      JSON.stringify({ error: 'Failed to create subscription record' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Add billing details to payment_history
+  const { data: payment, error: paymentError } = await supabase
+    .from('payment_history')
+    .insert({
+      subscription_id: subscription.id,
+      payment_method: 'invoice',
+      amount: amount,
+      currency: 'GBP',
+      payment_status: 'pending',
+      billing_school_name: billingDetails.schoolName,
+      billing_address: billingDetails.address,
+      billing_contact_name: billingDetails.contactName,
+      billing_contact_email: billingDetails.contactEmail,
+      invoice_number: `INV-${Date.now().toString().slice(-6)}`,
+    })
+    .select()
+    .single();
+
+  if (paymentError) {
+    console.error('Error creating payment record:', paymentError);
+    return new Response(
+      JSON.stringify({ error: 'Failed to create payment record' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  return new Response(
+    JSON.stringify({ 
+      success: true, 
+      message: 'Invoice request submitted successfully',
+      subscription: subscription.id,
+      payment: payment.id
+    }),
+    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import PlanCard, { PlanType } from './PlanCard';
 import { useSubscription } from '../../hooks/useSubscription';
@@ -192,51 +191,33 @@ const PricingSection: React.FC = () => {
     setIsProcessing(true);
     
     try {
-      // Create a subscription record with payment_method 'invoice'
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .insert({
-          user_id: user.id,
-          plan_type: currentPlan.type,
-          status: 'pending',
-          payment_method: 'invoice',
-          purchase_type: currentPlan.purchaseType,
-        })
-        .select()
-        .single();
+      // Use the Edge Function instead of direct database access
+      const { data, error } = await supabase.functions.invoke('update-invoice-status', {
+        body: {
+          planType: currentPlan.type,
+          purchaseType: currentPlan.purchaseType,
+          billingDetails: {
+            schoolName: invoiceDetails.schoolName,
+            address: invoiceDetails.address,
+            contactName: invoiceDetails.contactName,
+            contactEmail: invoiceDetails.contactEmail,
+            purchaseOrderNumber: invoiceDetails.purchaseOrderNumber,
+            additionalInformation: invoiceDetails.additionalInformation
+          }
+        }
+      });
 
       if (error) {
         throw error;
       }
 
-      if (data) {
-        // Add billing details to payment_history
-        await supabase.from('payment_history').insert({
-          subscription_id: data.id,
-          payment_method: 'invoice',
-          // Use standard UK pricing (no VAT included here)
-          amount: currentPlan.type === 'foundation' 
-            ? 299 
-            : currentPlan.type === 'progress' 
-              ? 1499 
-              : 2499,
-          currency: 'GBP',
-          payment_status: 'pending',
-          billing_school_name: invoiceDetails.schoolName,
-          billing_address: invoiceDetails.address,
-          billing_contact_name: invoiceDetails.contactName,
-          billing_contact_email: invoiceDetails.contactEmail,
-          invoice_number: `INV-${Date.now().toString().slice(-6)}`, // Simple invoice number generation
-        });
+      toast({
+        title: 'Success',
+        description: 'Your invoice request has been submitted. Our team will contact you shortly.',
+      });
 
-        toast({
-          title: 'Success',
-          description: 'Your invoice request has been submitted. Our team will contact you shortly.',
-        });
-
-        setShowInvoiceDialog(false);
-        navigate('/dashboard?payment=invoice-requested');
-      }
+      setShowInvoiceDialog(false);
+      navigate('/dashboard?payment=invoice-requested');
     } catch (error) {
       console.error('Error requesting invoice:', error);
       toast({
