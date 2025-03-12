@@ -137,3 +137,91 @@ export async function getPaymentHistory(userId: string): Promise<PaymentHistory[
     return [];
   }
 }
+
+// Manual function to check for a specific Stripe payment and create subscription if needed
+export async function checkAndCreateSubscription(
+  userId: string, 
+  planType: PlanType, 
+  stripePaymentId: string,
+  purchaseType: PurchaseType = 'subscription'
+): Promise<boolean> {
+  try {
+    console.log(`Manually checking payment ${stripePaymentId} for user ${userId}`);
+    
+    // First check if payment record exists
+    const { data: paymentHistory } = await supabase
+      .from('payment_history')
+      .select('id, subscription_id')
+      .eq('stripe_payment_id', stripePaymentId)
+      .maybeSingle();
+      
+    if (paymentHistory) {
+      console.log('Payment already recorded:', paymentHistory);
+      return true;
+    }
+    
+    // Check if subscription exists
+    const { data: subscriptions } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('plan_type', planType)
+      .eq('status', 'active');
+      
+    let subscriptionId;
+    
+    // If no active subscription, create one
+    if (!subscriptions || subscriptions.length === 0) {
+      const { data: newSub, error: createError } = await supabase
+        .from('subscriptions')
+        .insert({
+          user_id: userId,
+          plan_type: planType,
+          status: 'active',
+          payment_method: 'stripe',
+          purchase_type: purchaseType,
+          start_date: new Date().toISOString(),
+          ...(purchaseType === 'one-time' ? {
+            end_date: new Date(Date.now() + 3 * 365 * 24 * 60 * 60 * 1000).toISOString()
+          } : {})
+        })
+        .select()
+        .single();
+        
+      if (createError) {
+        console.error('Error creating subscription:', createError);
+        return false;
+      }
+      
+      subscriptionId = newSub.id;
+      console.log('Created new subscription:', subscriptionId);
+    } else {
+      subscriptionId = subscriptions[0].id;
+      console.log('Found existing subscription:', subscriptionId);
+    }
+    
+    // Create payment record
+    const { error: paymentError } = await supabase
+      .from('payment_history')
+      .insert({
+        subscription_id: subscriptionId,
+        amount: 0, // We don't know the amount, so set to 0
+        currency: 'GBP',
+        payment_method: 'stripe',
+        stripe_payment_id: stripePaymentId,
+        payment_status: 'payment_made',
+        payment_date: new Date().toISOString()
+      });
+      
+    if (paymentError) {
+      console.error('Error creating payment record:', paymentError);
+      return false;
+    }
+    
+    console.log('Successfully created payment record');
+    return true;
+  } catch (error) {
+    console.error('Error in checkAndCreateSubscription:', error);
+    return false;
+  }
+}

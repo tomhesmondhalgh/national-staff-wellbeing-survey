@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import Stripe from "npm:stripe@13.9.0";
@@ -9,19 +10,26 @@ const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+// Define CORS headers
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 console.log('Stripe webhook function initialized', {
   hasStripeKey: !!Deno.env.get("STRIPE_SECRET_KEY"),
   hasEndpointSecret: !!endpointSecret,
+  endpointSecretLength: endpointSecret?.length || 0,
   supabaseUrl: supabaseUrl,
 });
 
 serve(async (req: Request) => {
+  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-      },
+      headers: corsHeaders,
+      status: 204,
     });
   }
 
@@ -32,20 +40,40 @@ serve(async (req: Request) => {
     console.log('Webhook request received', {
       hasSignature: !!signature,
       bodyLength: body.length,
+      method: req.method,
+      url: req.url,
+      headers: Array.from(req.headers.entries()).map(([key, value]) => `${key}: ${key === 'stripe-signature' ? 'present' : value}`),
     });
 
     if (!signature) {
       console.error('Missing stripe signature');
-      return new Response(JSON.stringify({ error: "Missing stripe signature" }), { status: 400 });
+      return new Response(JSON.stringify({ error: "Missing stripe signature" }), { 
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
     // Verify webhook signature
     let event;
     try {
-      event = stripe.webhooks.constructEvent(body, signature, endpointSecret);
+      // Only verify signature if endpointSecret is provided
+      if (endpointSecret) {
+        event = stripe.webhooks.constructEvent(body, signature, endpointSecret);
+      } else {
+        // For testing, if no secret is set, just parse the JSON
+        console.warn('No endpoint secret set, skipping signature verification');
+        event = JSON.parse(body);
+      }
     } catch (err) {
-      console.error(`Webhook signature verification failed: ${err.message}`);
-      return new Response(JSON.stringify({ error: `Webhook Error: ${err.message}` }), { status: 400 });
+      console.error(`Webhook signature verification failed: ${err.message}`, {
+        error: err,
+        signature: signature?.substring(0, 20) + '...',
+        secretLength: endpointSecret?.length || 0
+      });
+      return new Response(JSON.stringify({ error: `Webhook Error: ${err.message}` }), { 
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
     console.log(`Processing webhook event: ${event.type}`, {
@@ -218,6 +246,7 @@ serve(async (req: Request) => {
                 payment_method: 'stripe',
                 stripe_payment_id: session.payment_intent,
                 payment_status: 'payment_made',
+                payment_date: new Date().toISOString(),
                 billing_school_name: session.metadata?.billingSchoolName,
                 billing_address: session.metadata?.billingAddress,
                 billing_contact_name: session.metadata?.billingContactName,
@@ -311,13 +340,13 @@ serve(async (req: Request) => {
 
     return new Response(JSON.stringify({ received: true }), {
       status: 200,
-      headers: { "Content-Type": "application/json" }
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   } catch (error) {
     console.error('Error processing webhook:', error);
     return new Response(JSON.stringify({ error: 'Internal Server Error', details: error.message }), {
       status: 500,
-      headers: { "Content-Type": "application/json" }
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   }
 });

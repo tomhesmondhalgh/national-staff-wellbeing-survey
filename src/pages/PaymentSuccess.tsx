@@ -5,6 +5,8 @@ import MainLayout from '../components/layout/MainLayout';
 import { Button } from '../components/ui/button';
 import { useToast } from '../hooks/use-toast';
 import { useEffect } from 'react';
+import { getUserSubscription } from '../lib/supabase/subscription';
+import { supabase } from '../lib/supabase/client';
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
@@ -17,6 +19,30 @@ const PaymentSuccess = () => {
       description: "Thank you for your purchase. Your subscription has been activated.",
       variant: "default",
     });
+    
+    // Check subscription status and update if needed
+    const checkSubscriptionStatus = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        
+        // Refresh subscription data
+        const subscription = await getUserSubscription(user.id);
+        console.log('Current subscription status:', subscription);
+        
+        if (!subscription?.isActive) {
+          toast({
+            title: "Subscription Activation Pending",
+            description: "We're processing your payment. Your subscription will be activated shortly.",
+            variant: "default",
+          });
+        }
+      } catch (error) {
+        console.error('Error checking subscription:', error);
+      }
+    };
+    
+    checkSubscriptionStatus();
   }, [toast]);
 
   return (
