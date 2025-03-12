@@ -58,7 +58,7 @@ const PurchasesManagement = () => {
         .from('payment_history')
         .select(`
           *,
-          subscription:subscriptions (
+          subscription:subscriptions!payment_history_subscription_id_fkey (
             id,
             plan_type,
             purchase_type
