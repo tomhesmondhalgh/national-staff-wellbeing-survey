@@ -25,6 +25,7 @@ interface PlanCardProps {
   disabled?: boolean;
   hasInvoiceOption?: boolean; 
   onInvoiceRequest?: () => void;
+  onCardPayment?: () => void; // Add this new prop
 }
 
 const PlanCard: React.FC<PlanCardProps> = ({
@@ -39,7 +40,8 @@ const PlanCard: React.FC<PlanCardProps> = ({
   onButtonClick,
   disabled = false,
   hasInvoiceOption = false,
-  onInvoiceRequest
+  onInvoiceRequest,
+  onCardPayment
 }) => {
   return (
     <Card className={`relative ${isPopular 
@@ -67,7 +69,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
         </ul>
       </CardContent>
       <CardFooter className="mt-auto">
-        {hasInvoiceOption && onInvoiceRequest ? (
+        {hasInvoiceOption && onInvoiceRequest && onCardPayment ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild disabled={disabled}>
               <Button className="w-full" variant={buttonVariant}>
@@ -76,11 +78,11 @@ const PlanCard: React.FC<PlanCardProps> = ({
                 </span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className="w-56">
-              <DropdownMenuItem onClick={onButtonClick}>
+            <DropdownMenuContent align="center" className="w-56 bg-white">
+              <DropdownMenuItem onClick={onCardPayment} className="cursor-pointer">
                 Pay with Card
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onInvoiceRequest}>
+              <DropdownMenuItem onClick={onInvoiceRequest} className="cursor-pointer">
                 Pay by Invoice
               </DropdownMenuItem>
             </DropdownMenuContent>

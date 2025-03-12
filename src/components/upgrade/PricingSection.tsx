@@ -79,7 +79,6 @@ const PricingSection: React.FC = () => {
             schoolAddress: data.school_address || ''
           });
 
-          // Pre-fill invoice details with profile data
           setInvoiceDetails({
             schoolName: data.school_name || '',
             address: data.school_address || '',
@@ -99,7 +98,6 @@ const PricingSection: React.FC = () => {
 
   const handleUpgrade = async (priceId: string, planType: 'foundation' | 'progress' | 'premium', purchaseType: 'subscription' | 'one-time') => {
     try {
-      // Prevent multiple clicks
       if (isProcessing) {
         console.log('Already processing a payment request, please wait...');
         return;
@@ -150,7 +148,6 @@ const PricingSection: React.FC = () => {
 
       if (data?.url) {
         console.log('Redirecting to payment URL:', data.url);
-        // Use window.open in a new tab to prevent issues with the current page
         window.location.href = data.url;
       } else {
         console.error('No checkout URL returned:', data);
@@ -191,7 +188,6 @@ const PricingSection: React.FC = () => {
     setIsProcessing(true);
     
     try {
-      // Use the Edge Function instead of direct database access
       const { data, error } = await supabase.functions.invoke('update-invoice-status', {
         body: {
           planType: currentPlan.type,
@@ -325,15 +321,15 @@ const PricingSection: React.FC = () => {
       planType: 'foundation' as PlanType,
       onButtonClick: () => handleButtonClick('foundation', () => 
         isFree || isLoading 
-          ? (userProfile && user
-              ? () => openInvoiceDialog('foundation', 'one-time')
-              : handleUpgrade('foundation_price', 'foundation', 'one-time'))
+          ? handleUpgrade('price_1R1mapCEpf4RofE3Cfouca7W', 'foundation', 'one-time')
           : null
       ),
       buttonText: getButtonText('foundation'),
       buttonVariant: getButtonVariant('foundation'),
       disabled: isFoundation || isProgress || isPremium,
-      hasInvoiceOption: true
+      hasInvoiceOption: true,
+      onCardPayment: () => handleUpgrade('price_1R1mapCEpf4RofE3Cfouca7W', 'foundation', 'one-time'),
+      onInvoiceRequest: () => openInvoiceDialog('foundation', 'one-time')
     },
     {
       title: "Progress",
@@ -364,15 +360,15 @@ const PricingSection: React.FC = () => {
       isPopular: true,
       onButtonClick: () => handleButtonClick('progress', () => 
         isFree || isFoundation || isLoading 
-          ? (userProfile && user
-              ? () => openInvoiceDialog('progress', 'subscription')
-              : handleUpgrade('progress_price', 'progress', 'subscription'))
+          ? handleUpgrade('price_1R1mcSCEpf4RofE3rOmSRsYx', 'progress', 'subscription')
           : null
       ),
       buttonText: getButtonText('progress'),
       buttonVariant: getButtonVariant('progress'),
       disabled: isProgress || isPremium,
-      hasInvoiceOption: true
+      hasInvoiceOption: true,
+      onCardPayment: () => handleUpgrade('price_1R1mcSCEpf4RofE3rOmSRsYx', 'progress', 'subscription'),
+      onInvoiceRequest: () => openInvoiceDialog('progress', 'subscription')
     },
     {
       title: "Premium",
@@ -394,15 +390,15 @@ const PricingSection: React.FC = () => {
       planType: 'premium' as PlanType,
       onButtonClick: () => handleButtonClick('premium', () => 
         isFree || isFoundation || isProgress || isLoading 
-          ? (userProfile && user
-              ? () => openInvoiceDialog('premium', 'subscription')
-              : handleUpgrade('premium_price', 'premium', 'subscription'))
+          ? handleUpgrade('price_1R1md0CEpf4RofE3qaf3kA9C', 'premium', 'subscription')
           : null
       ),
       buttonText: getButtonText('premium'),
       buttonVariant: getButtonVariant('premium'),
       disabled: isPremium,
-      hasInvoiceOption: true
+      hasInvoiceOption: true,
+      onCardPayment: () => handleUpgrade('price_1R1md0CEpf4RofE3qaf3kA9C', 'premium', 'subscription'),
+      onInvoiceRequest: () => openInvoiceDialog('premium', 'subscription')
     }
   ];
 
@@ -417,10 +413,8 @@ const PricingSection: React.FC = () => {
             {...plan} 
             disabled={plan.disabled || isProcessing} 
             hasInvoiceOption={plan.hasInvoiceOption}
-            onInvoiceRequest={plan.hasInvoiceOption && user ? 
-              () => openInvoiceDialog(plan.planType as 'foundation' | 'progress' | 'premium', 
-                plan.planType === 'foundation' ? 'one-time' : 'subscription') 
-              : undefined}
+            onInvoiceRequest={plan.hasInvoiceOption ? plan.onInvoiceRequest : undefined}
+            onCardPayment={plan.hasInvoiceOption ? plan.onCardPayment : undefined}
           />
         ))}
       </div>
@@ -429,7 +423,6 @@ const PricingSection: React.FC = () => {
         <p>Need help choosing the right plan? <a href="mailto:happytohelp@humankindaward.com" className="text-brandPurple-600 underline">Contact our support team</a></p>
       </div>
 
-      {/* Invoice Request Dialog */}
       <Dialog open={showInvoiceDialog} onOpenChange={setShowInvoiceDialog}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
