@@ -1,6 +1,7 @@
+
 import React, { ReactNode, useEffect, useState } from 'react';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
-import { Elements, StripeElementsOptions } from '@stripe/react-stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
 import { useToast } from '../../hooks/use-toast';
 
 // Get the publishable key from environment variables
@@ -46,8 +47,8 @@ const StripeProvider: React.FC<StripeProviderProps> = ({ children }) => {
     checkStripeLoading();
   }, [toast]);
 
-  const stripeOptions: StripeElementsOptions = {
-    locale: 'en-GB' as const,
+  const stripeOptions = {
+    locale: 'en-GB' as 'en-GB', // Explicitly type as a literal
   };
 
   return (
