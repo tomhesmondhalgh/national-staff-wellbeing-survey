@@ -39,10 +39,12 @@ export function UpdateInvoiceDialog({
   const [invoiceNumber, setInvoiceNumber] = useState(purchase.invoice_number || '');
   const [status, setStatus] = useState(purchase.payment_status);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setErrorMessage(null);
 
     try {
       console.log('Submitting invoice update:', {
@@ -63,6 +65,7 @@ export function UpdateInvoiceDialog({
 
       if (error) {
         console.error('Edge function error:', error);
+        setErrorMessage(error.message || 'Failed to update invoice');
         throw new Error(error.message || 'Failed to update invoice');
       }
 
@@ -74,7 +77,7 @@ export function UpdateInvoiceDialog({
     } catch (error) {
       console.error('Error updating invoice:', error);
       toast.error('Failed to update invoice', { 
-        description: error.message || 'Please try again later'
+        description: errorMessage || error.message || 'Please try again later'
       });
     } finally {
       setIsSubmitting(false);
@@ -92,6 +95,13 @@ export function UpdateInvoiceDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
+          {errorMessage && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
+              <strong className="font-bold">Error: </strong>
+              <span className="block sm:inline">{errorMessage}</span>
+            </div>
+          )}
+          
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label className="text-muted-foreground">School</Label>
