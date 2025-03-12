@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { 
@@ -18,9 +19,11 @@ import {
 } from "../ui/card";
 import { Button } from "../ui/button";
 import { toast } from "sonner";
-import { Pencil, CheckCircle, XCircle, CreditCard, FileText } from "lucide-react";
+import { Input } from "../ui/input";
+import { Pencil, CheckCircle, XCircle, CreditCard, FileText, Search } from "lucide-react";
 import { UpdateInvoiceDialog } from './UpdateInvoiceDialog';
 import { formatCurrency } from '../../lib/utils';
+import Pagination from '../surveys/Pagination';
 
 export type Purchase = {
   id: string;
@@ -44,6 +47,9 @@ const PurchasesManagement = () => {
   const [loading, setLoading] = useState(true);
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const recordsPerPage = 10;
 
   const fetchPurchases = async () => {
     setLoading(true);
@@ -123,6 +129,30 @@ const PurchasesManagement = () => {
     }
   };
 
+  // Filter purchases based on search query
+  const filteredPurchases = purchases.filter(purchase => {
+    const searchLower = searchQuery.toLowerCase();
+    return (
+      (purchase.billing_school_name || '').toLowerCase().includes(searchLower) ||
+      (purchase.billing_contact_name || '').toLowerCase().includes(searchLower) ||
+      (purchase.billing_contact_email || '').toLowerCase().includes(searchLower) ||
+      (purchase.invoice_number || '').toLowerCase().includes(searchLower) ||
+      purchase.plan_type.toLowerCase().includes(searchLower) ||
+      purchase.payment_method.toLowerCase().includes(searchLower) ||
+      purchase.payment_status.toLowerCase().includes(searchLower)
+    );
+  });
+
+  // Pagination calculation
+  const totalPages = Math.ceil(filteredPurchases.length / recordsPerPage);
+  const indexOfLastRecord = currentPage * recordsPerPage;
+  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+  const currentRecords = filteredPurchases.slice(indexOfFirstRecord, indexOfLastRecord);
+
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -135,75 +165,100 @@ const PurchasesManagement = () => {
         {loading ? (
           <div className="text-center py-4">Loading purchases data...</div>
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>School/Customer</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Payment Method</TableHead>
-                  <TableHead>Invoice #</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {purchases.length === 0 ? (
+          <>
+            <div className="mb-4 relative">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by school, contact, invoice number, plan, or status..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1); // Reset to first page when searching
+                  }}
+                  className="pl-10 w-full"
+                />
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-4">
-                      No purchases found
-                    </TableCell>
+                    <TableHead>Date</TableHead>
+                    <TableHead>School/Customer</TableHead>
+                    <TableHead>Plan</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Payment Method</TableHead>
+                    <TableHead>Invoice #</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ) : (
-                  purchases.map((purchase) => (
-                    <TableRow key={purchase.id}>
-                      <TableCell>
-                        {new Date(purchase.created_at).toLocaleDateString('en-GB')}
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{purchase.billing_school_name || 'N/A'}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {purchase.billing_contact_name}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="capitalize font-medium">{purchase.plan_type}</div>
-                        <div className="text-xs text-muted-foreground capitalize">
-                          {purchase.purchase_type}
-                        </div>
-                      </TableCell>
-                      <TableCell>{formatCurrency(purchase.amount, purchase.currency)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          {getPaymentMethodIcon(purchase.payment_method)}
-                          <span className="capitalize">{purchase.payment_method}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {purchase.invoice_number || '—'}
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(purchase.payment_status)}
-                      </TableCell>
-                      <TableCell>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => handleUpdateInvoice(purchase)}
-                          className="flex items-center"
-                        >
-                          <Pencil className="h-4 w-4 mr-1" />
-                          Update
-                        </Button>
+                </TableHeader>
+                <TableBody>
+                  {currentRecords.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-4">
+                        {searchQuery ? 'No purchases match your search criteria' : 'No purchases found'}
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                  ) : (
+                    currentRecords.map((purchase) => (
+                      <TableRow key={purchase.id}>
+                        <TableCell>
+                          {new Date(purchase.created_at).toLocaleDateString('en-GB')}
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium">{purchase.billing_school_name || 'N/A'}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {purchase.billing_contact_name}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="capitalize font-medium">{purchase.plan_type}</div>
+                          <div className="text-xs text-muted-foreground capitalize">
+                            {purchase.purchase_type}
+                          </div>
+                        </TableCell>
+                        <TableCell>{formatCurrency(purchase.amount, purchase.currency)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center">
+                            {getPaymentMethodIcon(purchase.payment_method)}
+                            <span className="capitalize">{purchase.payment_method}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {purchase.invoice_number || '—'}
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(purchase.payment_status)}
+                        </TableCell>
+                        <TableCell>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => handleUpdateInvoice(purchase)}
+                            className="flex items-center"
+                          >
+                            <Pencil className="h-4 w-4 mr-1" />
+                            Update
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            {filteredPurchases.length > recordsPerPage && (
+              <div className="mt-4 flex justify-center">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
+              </div>
+            )}
+          </>
         )}
       </CardContent>
 
