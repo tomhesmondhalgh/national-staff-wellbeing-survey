@@ -57,7 +57,7 @@ export function UpdateInvoiceDialog({
       const { data, error } = await supabase.functions.invoke('update-invoice-status', {
         body: {
           paymentId: purchase.id,
-          status: status,
+          status: status === 'payment_made' ? 'completed' : status, // Map DB value to frontend value
           invoiceNumber: invoiceNumber,
           adminUserId: 'admin' // This is just for logging purposes
         }
@@ -150,7 +150,7 @@ export function UpdateInvoiceDialog({
             <Label htmlFor="status">Payment Status</Label>
             <Select
               value={status}
-              onValueChange={(value: 'pending' | 'completed' | 'cancelled') => setStatus(value)}
+              onValueChange={setStatus}
             >
               <SelectTrigger id="status" className="w-full">
                 <SelectValue placeholder="Select status" />
@@ -162,16 +162,28 @@ export function UpdateInvoiceDialog({
                     Pending
                   </div>
                 </SelectItem>
-                <SelectItem value="completed">
+                <SelectItem value="invoice_raised">
+                  <div className="flex items-center">
+                    <span className="h-2 w-2 rounded-full bg-blue-500 mr-2"></span>
+                    Invoice Raised
+                  </div>
+                </SelectItem>
+                <SelectItem value="payment_made">
                   <div className="flex items-center">
                     <span className="h-2 w-2 rounded-full bg-green-500 mr-2"></span>
-                    Completed
+                    Payment Made
                   </div>
                 </SelectItem>
                 <SelectItem value="cancelled">
                   <div className="flex items-center">
                     <span className="h-2 w-2 rounded-full bg-red-500 mr-2"></span>
                     Cancelled
+                  </div>
+                </SelectItem>
+                <SelectItem value="refunded">
+                  <div className="flex items-center">
+                    <span className="h-2 w-2 rounded-full bg-purple-500 mr-2"></span>
+                    Refunded
                   </div>
                 </SelectItem>
               </SelectContent>
@@ -192,7 +204,7 @@ export function UpdateInvoiceDialog({
             <Button 
               type="submit" 
               disabled={isSubmitting}
-              className={status === 'completed' ? 'bg-green-600 hover:bg-green-700' : 
+              className={status === 'payment_made' ? 'bg-green-600 hover:bg-green-700' : 
                           status === 'cancelled' ? 'bg-red-600 hover:bg-red-700' : ''}
             >
               {isSubmitting ? 'Updating...' : 'Update Invoice'}

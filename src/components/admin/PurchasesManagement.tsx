@@ -29,7 +29,7 @@ export type Purchase = {
   payment_method: 'stripe' | 'invoice' | 'manual';
   amount: number;
   currency: string;
-  payment_status: 'pending' | 'completed' | 'cancelled';
+  payment_status: 'pending' | 'invoice_raised' | 'payment_made' | 'cancelled' | 'refunded';
   invoice_number?: string;
   billing_school_name?: string;
   billing_contact_name?: string;
@@ -100,12 +100,16 @@ const PurchasesManagement = () => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'completed':
-        return <Badge className="bg-green-500">Completed</Badge>;
+      case 'payment_made':
+        return <Badge className="bg-green-500">Payment Made</Badge>;
+      case 'invoice_raised':
+        return <Badge className="bg-blue-500">Invoice Raised</Badge>;
       case 'pending':
         return <Badge className="bg-yellow-500">Pending</Badge>;
       case 'cancelled':
         return <Badge className="bg-red-500">Cancelled</Badge>;
+      case 'refunded':
+        return <Badge className="bg-purple-500">Refunded</Badge>;
       default:
         return <Badge className="bg-gray-500">{status}</Badge>;
     }
