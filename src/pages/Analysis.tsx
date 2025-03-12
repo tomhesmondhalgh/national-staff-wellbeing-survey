@@ -12,7 +12,7 @@ import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Card } from "../components/ui/card";
-import { Check, ArrowRight, CalendarIcon, Download, Share } from "lucide-react";
+import { Check, ArrowRight, CalendarIcon, Download, Share, Lock } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
 import { Calendar } from "../components/ui/calendar";
@@ -22,6 +22,7 @@ import { Input } from "../components/ui/input";
 import { Form, FormControl, FormField, FormItem } from "../components/ui/form";
 import ScreenOrientationOverlay from '../components/ui/ScreenOrientationOverlay';
 import { useOrientation } from '../hooks/useOrientation';
+import { useSubscription } from '../hooks/useSubscription';
 
 const SummarySection = ({
   summary
@@ -83,10 +84,12 @@ const SummarySection = ({
 
 const RecommendationScoreSection = ({
   score,
-  nationalAverage
+  nationalAverage,
+  hasAccess
 }: {
   score: number;
   nationalAverage: number;
+  hasAccess: boolean;
 }) => <Card className="p-6 h-full">
     <h3 className="text-lg mb-4 font-semibold">Recommendation Score</h3>
     <div className="flex items-center justify-center space-x-12 h-52">
@@ -94,10 +97,21 @@ const RecommendationScoreSection = ({
         <p className="text-4xl font-bold text-indigo-600">{score.toFixed(1)}</p>
         <p className="text-sm text-gray-500">Your score</p>
       </div>
-      <div className="text-center">
-        <p className="text-4xl font-bold text-gray-500">{nationalAverage.toFixed(1)}</p>
-        <p className="text-sm text-gray-500">National average</p>
-      </div>
+      {hasAccess ? (
+        <div className="text-center">
+          <p className="text-4xl font-bold text-gray-500">{nationalAverage.toFixed(1)}</p>
+          <p className="text-sm text-gray-500">National average</p>
+        </div>
+      ) : (
+        <div className="text-center border border-gray-200 rounded-lg p-4 bg-gray-50">
+          <Lock className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+          <p className="text-sm font-medium text-gray-700">National Average</p>
+          <p className="text-xs text-gray-500 mt-1 mb-2">Available on Foundation plan or higher</p>
+          <Button size="sm" variant="outline" onClick={() => window.location.href = '/upgrade'}>
+            Upgrade
+          </Button>
+        </div>
+      )}
     </div>
     <p className="text-xs text-gray-500 text-center mt-4">
       Average score for "How likely would you recommend this organization to others as a place to work?" (0-10)
@@ -105,9 +119,11 @@ const RecommendationScoreSection = ({
   </Card>;
 
 const LeavingContemplationChart = ({
-  data
+  data,
+  hasAccess
 }: {
   data: Record<string, number>;
+  hasAccess: boolean;
 }) => {
   const chartData = [{
     name: "Your School",
@@ -115,14 +131,20 @@ const LeavingContemplationChart = ({
     "Disagree": data["Disagree"] || 0,
     "Agree": data["Agree"] || 0,
     "Strongly Agree": data["Strongly Agree"] || 0
-  }, {
-    name: "National Average",
-    "Strongly Disagree": 0.25,
-    "Disagree": 0.25,
-    "Agree": 0.40,
-    "Strongly Agree": 0.10
   }];
+  
+  if (hasAccess) {
+    chartData.push({
+      name: "National Average",
+      "Strongly Disagree": 0.25,
+      "Disagree": 0.25,
+      "Agree": 0.40,
+      "Strongly Agree": 0.10
+    });
+  }
+  
   const hasData = Object.values(data).some(val => val > 0);
+  
   return <Card className="p-6 h-full">
       <h3 className="text-lg mb-4 font-semibold">Staff Contemplating Leaving</h3>
       <div className="h-52">
@@ -138,8 +160,8 @@ const LeavingContemplationChart = ({
               <YAxis type="category" dataKey="name" width={100} />
               <Tooltip formatter={(value, name) => [`${(Number(value) * 100).toFixed(0)}%`, name]} />
               <Legend wrapperStyle={{
-            fontSize: '10px'
-          }} iconSize={8} layout="horizontal" verticalAlign="bottom" />
+                fontSize: '10px'
+              }} iconSize={8} layout="horizontal" verticalAlign="bottom" />
               <Bar dataKey="Strongly Disagree" stackId="a" fill="#FF5252" />
               <Bar dataKey="Disagree" stackId="a" fill="#FFA726" />
               <Bar dataKey="Agree" stackId="a" fill="#81C784" />
@@ -149,6 +171,17 @@ const LeavingContemplationChart = ({
             </div>}
         </ResponsiveContainer>
       </div>
+      {!hasAccess && (
+        <div className="mt-4 border border-gray-200 rounded-lg p-3 bg-gray-50 flex items-center">
+          <Lock className="h-4 w-4 text-gray-400 mr-2" />
+          <div className="flex-1">
+            <p className="text-xs font-medium text-gray-700">National Average comparison requires Foundation plan or higher</p>
+          </div>
+          <Button size="sm" variant="outline" className="text-xs py-1 h-7" onClick={() => window.location.href = '/upgrade'}>
+            Upgrade
+          </Button>
+        </div>
+      )}
       <p className="text-xs text-gray-500 text-center mt-2">
         Responses to: "I have considered leaving this organization in the past year"
       </p>
@@ -157,10 +190,12 @@ const LeavingContemplationChart = ({
 
 const WellbeingQuestionChart = ({
   title,
-  data
+  data,
+  hasAccess
 }: {
   title: string;
   data: any;
+  hasAccess: boolean;
 }) => {
   const chartData = [{
     name: "Your School",
@@ -168,13 +203,18 @@ const WellbeingQuestionChart = ({
     "Disagree": data.schoolResponses?.["Disagree"] || 0,
     "Agree": data.schoolResponses?.["Agree"] || 0,
     "Strongly Agree": data.schoolResponses?.["Strongly Agree"] || 0
-  }, {
-    name: "National Average",
-    "Strongly Disagree": data.nationalResponses?.["Strongly Disagree"] || 0,
-    "Disagree": data.nationalResponses?.["Disagree"] || 0,
-    "Agree": data.nationalResponses?.["Agree"] || 0,
-    "Strongly Agree": data.nationalResponses?.["Strongly Agree"] || 0
   }];
+  
+  if (hasAccess) {
+    chartData.push({
+      name: "National Average",
+      "Strongly Disagree": data.nationalResponses?.["Strongly Disagree"] || 0,
+      "Disagree": data.nationalResponses?.["Disagree"] || 0,
+      "Agree": data.nationalResponses?.["Agree"] || 0,
+      "Strongly Agree": data.nationalResponses?.["Strongly Agree"] || 0
+    });
+  }
+  
   return <Card className="p-4">
       <h3 className="text-md mb-2 font-semibold my-0 py-[10px]">{title}</h3>
       <div className="h-52">
@@ -190,8 +230,8 @@ const WellbeingQuestionChart = ({
             <YAxis type="category" dataKey="name" width={100} />
             <Tooltip formatter={(value, name) => [`${(Number(value) * 100).toFixed(0)}%`, name]} />
             <Legend wrapperStyle={{
-            fontSize: '10px'
-          }} iconSize={8} layout="horizontal" verticalAlign="bottom" />
+              fontSize: '10px'
+            }} iconSize={8} layout="horizontal" verticalAlign="bottom" />
             <Bar dataKey="Strongly Disagree" stackId="a" fill="#FF5252" />
             <Bar dataKey="Disagree" stackId="a" fill="#FFA726" />
             <Bar dataKey="Agree" stackId="a" fill="#81C784" />
@@ -199,6 +239,15 @@ const WellbeingQuestionChart = ({
           </BarChart>
         </ResponsiveContainer>
       </div>
+      {!hasAccess && (
+        <div className="mt-2 border border-gray-200 rounded-lg p-2 bg-gray-50 flex items-center text-xs">
+          <Lock className="h-3 w-3 text-gray-400 mr-1" />
+          <span className="text-gray-700">National Average requires Foundation plan</span>
+          <Button size="sm" variant="outline" className="text-xs py-0 h-6 ml-auto" onClick={() => window.location.href = '/upgrade'}>
+            Upgrade
+          </Button>
+        </div>
+      )}
     </Card>;
 };
 
@@ -232,9 +281,7 @@ const TextResponsesSection = ({
   </div>;
 
 const Analysis = () => {
-  const {
-    user
-  } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const analysisRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
@@ -263,27 +310,19 @@ const Analysis = () => {
   const [exportLoading, setExportLoading] = useState(false);
   const [overlayDismissed, setOverlayDismissed] = useState(false);
   const { orientation, isMobile } = useOrientation();
-
+  const { hasAccess, isLoading: subscriptionLoading } = useSubscription();
+  const [hasNationalAccess, setHasNationalAccess] = useState(false);
+  
   useEffect(() => {
-    const loadSurveyOptions = async () => {
-      try {
-        const options = await getSurveyOptions(user?.id);
-        setSurveyOptions(options);
-        if (options.length > 0) {
-          setSelectedSurvey(options[0].id);
-        } else {
-          setNoData(true);
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error('Error loading survey options:', error);
-        toast.error("Failed to load surveys");
+    const checkAccess = async () => {
+      if (user) {
+        const foundationAccess = await hasAccess('foundation');
+        setHasNationalAccess(foundationAccess);
       }
     };
-    if (user) {
-      loadSurveyOptions();
-    }
-  }, [user]);
+    
+    checkAccess();
+  }, [user, hasAccess]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -487,7 +526,7 @@ const Analysis = () => {
           </div>
         </div>
 
-        {loading ? <div className="text-center py-12">
+        {loading || subscriptionLoading ? <div className="text-center py-12">
             <div className="animate-spin h-8 w-8 border-4 border-brandPurple-500 border-t-transparent rounded-full mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading data...</p>
           </div> : <div ref={analysisRef}>
@@ -496,15 +535,27 @@ const Analysis = () => {
             <div className="mb-12">
               <h2 className="text-xl font-semibold mb-6 text-center">Survey Results</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <RecommendationScoreSection score={recommendationScore.score} nationalAverage={recommendationScore.nationalAverage} />
-                <LeavingContemplationChart data={leavingContemplation} />
+                <RecommendationScoreSection 
+                  score={recommendationScore.score} 
+                  nationalAverage={recommendationScore.nationalAverage} 
+                  hasAccess={hasNationalAccess} 
+                />
+                <LeavingContemplationChart 
+                  data={leavingContemplation} 
+                  hasAccess={hasNationalAccess} 
+                />
               </div>
             </div>
 
             <div className="mb-12">
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {detailedResponses.map((question, index) => <WellbeingQuestionChart key={index} title={question.question} data={question} />)}
+                {detailedResponses.map((question, index) => <WellbeingQuestionChart 
+                  key={index} 
+                  title={question.question} 
+                  data={question} 
+                  hasAccess={hasNationalAccess} 
+                />)}
               </div>
             </div>
 
