@@ -95,7 +95,7 @@ const PurchasesManagement = () => {
     setUpdateDialogOpen(false);
     setSelectedPurchase(null);
     fetchPurchases();
-    toast.success('Invoice updated successfully');
+    toast.success('Payment record updated successfully');
   };
 
   const getStatusBadge = (status: string) => {
@@ -191,18 +191,16 @@ const PurchasesManagement = () => {
                         {getStatusBadge(purchase.payment_status)}
                       </TableCell>
                       <TableCell>
-                        {purchase.payment_method === 'invoice' && (
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => handleUpdateInvoice(purchase)}
-                            disabled={purchase.payment_status === 'payment_made'}
-                            className="flex items-center"
-                          >
-                            <Pencil className="h-4 w-4 mr-1" />
-                            Update
-                          </Button>
-                        )}
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleUpdateInvoice(purchase)}
+                          disabled={purchase.payment_status === 'payment_made' && purchase.payment_method === 'stripe'}
+                          className="flex items-center"
+                        >
+                          <Pencil className="h-4 w-4 mr-1" />
+                          Update
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))

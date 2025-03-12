@@ -52,13 +52,13 @@ export function UpdateInvoiceDialog({
     setErrorMessage(null);
 
     try {
-      console.log('Submitting invoice update:', {
+      console.log('Submitting payment update:', {
         paymentId: purchase.id,
         status,
         invoiceNumber
       });
 
-      // Call the Edge Function to update the invoice status
+      // Call the Edge Function to update the payment status
       const { data, error } = await supabase.functions.invoke('update-invoice-status', {
         body: {
           paymentId: purchase.id,
@@ -70,17 +70,17 @@ export function UpdateInvoiceDialog({
 
       if (error) {
         console.error('Edge function error:', error);
-        setErrorMessage(error.message || 'Failed to update invoice');
-        throw new Error(error.message || 'Failed to update invoice');
+        setErrorMessage(error.message || 'Failed to update payment record');
+        throw new Error(error.message || 'Failed to update payment record');
       }
 
       console.log('Update response:', data);
 
       // Show success message and close the dialog
-      toast.success("Invoice updated successfully");
+      toast.success("Payment record updated successfully");
       onUpdated();
     } catch (error) {
-      console.error('Error updating invoice:', error);
+      console.error('Error updating payment record:', error);
       
       // Display more detailed error information
       let errorDetails = 'Please try again later';
@@ -93,7 +93,7 @@ export function UpdateInvoiceDialog({
       }
       
       setErrorMessage(errorDetails);
-      toast.error('Failed to update invoice', { 
+      toast.error('Failed to update payment record', { 
         description: errorDetails
       });
     } finally {
@@ -101,13 +101,25 @@ export function UpdateInvoiceDialog({
     }
   };
 
+  const getDialogTitle = () => {
+    return purchase.payment_method === 'invoice' 
+      ? "Update Invoice" 
+      : "Update Payment";
+  };
+
+  const getDialogDescription = () => {
+    return purchase.payment_method === 'invoice'
+      ? "Update invoice details and payment status"
+      : "Update payment details and status";
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Update Invoice</DialogTitle>
+          <DialogTitle>{getDialogTitle()}</DialogTitle>
           <DialogDescription>
-            Update invoice details and payment status
+            {getDialogDescription()}
           </DialogDescription>
         </DialogHeader>
 
@@ -195,12 +207,14 @@ export function UpdateInvoiceDialog({
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-muted-foreground">Address</Label>
-            <div className="text-sm bg-gray-50 p-2 rounded">
-              {purchase.billing_address || 'No address provided'}
+          {purchase.billing_address && (
+            <div className="space-y-2">
+              <Label className="text-muted-foreground">Address</Label>
+              <div className="text-sm bg-gray-50 p-2 rounded">
+                {purchase.billing_address}
+              </div>
             </div>
-          </div>
+          )}
 
           <DialogFooter className="pt-4">
             <Button variant="outline" type="button" onClick={onClose}>
@@ -212,7 +226,7 @@ export function UpdateInvoiceDialog({
               className={status === 'payment_made' ? 'bg-green-600 hover:bg-green-700' : 
                           status === 'cancelled' ? 'bg-red-600 hover:bg-red-700' : ''}
             >
-              {isSubmitting ? 'Updating...' : 'Update Invoice'}
+              {isSubmitting ? 'Updating...' : 'Update Payment'}
             </Button>
           </DialogFooter>
         </form>

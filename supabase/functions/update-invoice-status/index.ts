@@ -11,9 +11,9 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
 };
 
-interface UpdateInvoiceRequest {
+interface UpdatePaymentRequest {
   paymentId: string;
-  status: 'pending' | 'completed' | 'cancelled'; // Frontend status values
+  status: 'pending' | 'completed' | 'cancelled' | 'refunded'; // Frontend status values
   invoiceNumber?: string;
   adminUserId: string;
 }
@@ -86,10 +86,10 @@ serve(async (req: Request) => {
       );
     }
     
-    // Check if this is an admin updating an invoice status
+    // Check if this is an admin updating a payment status
     if ('paymentId' in requestData && 'status' in requestData) {
-      console.log("Handling invoice update request");
-      return handleUpdateInvoiceStatus(requestData, user, supabase);
+      console.log("Handling payment update request");
+      return handleUpdatePaymentStatus(requestData, user, supabase);
     }
     
     // Or if it's a user creating a new invoice request
@@ -114,13 +114,13 @@ serve(async (req: Request) => {
   }
 });
 
-// Handle admin updating an invoice status
-async function handleUpdateInvoiceStatus(
-  data: UpdateInvoiceRequest, 
+// Handle admin updating a payment status
+async function handleUpdatePaymentStatus(
+  data: UpdatePaymentRequest, 
   user: any,
   supabase: any
 ) {
-  console.log("Starting handleUpdateInvoiceStatus with data:", JSON.stringify(data));
+  console.log("Starting handleUpdatePaymentStatus with data:", JSON.stringify(data));
   
   // Check if user is an admin
   try {
@@ -179,6 +179,9 @@ async function handleUpdateInvoiceStatus(
     case 'cancelled':
       dbStatus = 'cancelled';
       break;
+    case 'refunded':
+      dbStatus = 'refunded';
+      break;
     default:
       dbStatus = 'pending';
   }
@@ -198,12 +201,11 @@ async function handleUpdateInvoiceStatus(
   try {
     console.log("Updating payment record:", paymentId, "with data:", JSON.stringify(updateData));
     
-    // Update payment history record
+    // Update payment history record - removed the payment_method filter to allow updating any payment type
     const { data: payment, error: paymentError } = await supabase
       .from('payment_history')
       .update(updateData)
       .eq('id', paymentId)
-      .eq('payment_method', 'invoice')
       .select('subscription_id')
       .single();
 
@@ -271,11 +273,11 @@ async function handleUpdateInvoiceStatus(
     }
 
     return new Response(
-      JSON.stringify({ success: true, message: `Invoice status updated to ${status}` }),
+      JSON.stringify({ success: true, message: `Payment status updated to ${status}` }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error processing invoice update:', error);
+    console.error('Error processing payment update:', error);
     return new Response(
       JSON.stringify({ error: 'Server error', details: error.message, stack: error.stack }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
