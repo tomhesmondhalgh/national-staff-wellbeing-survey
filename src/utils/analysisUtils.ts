@@ -43,6 +43,8 @@ export const getSurveyOptions = async (userId?: string): Promise<SurveyOption[]>
       throw error;
     }
     
+    console.log('Survey data from database:', data);
+    
     // Return the actual data, even if empty
     return data?.map(survey => ({
       id: survey.id,
