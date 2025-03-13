@@ -1,6 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { Select } from '../ui/select';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '../ui/select';
 import { Button } from '../ui/button';
 import { Alert, AlertDescription } from '../ui/alert';
 import { useTestingMode } from '../../contexts/TestingModeContext';
@@ -61,31 +67,39 @@ export function TestingMode() {
 
       <div className="grid gap-6">
         <div className="space-y-2">
-          <label htmlFor="plan" className="text-sm font-medium">Subscription Plan:</label>
-          <Select
-            id="plan"
-            value={selectedPlan}
+          <label htmlFor="plan-select" className="text-sm font-medium">Subscription Plan:</label>
+          <Select 
+            value={selectedPlan} 
             onValueChange={(value) => setSelectedPlan(value as PlanType)}
           >
-            <option value="free">Free</option>
-            <option value="foundation">Foundation</option>
-            <option value="progress">Progress</option>
-            <option value="premium">Premium</option>
+            <SelectTrigger id="plan-select">
+              <SelectValue placeholder="Select a plan" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="free">Free</SelectItem>
+              <SelectItem value="foundation">Foundation</SelectItem>
+              <SelectItem value="progress">Progress</SelectItem>
+              <SelectItem value="premium">Premium</SelectItem>
+            </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="role" className="text-sm font-medium">User Role:</label>
-          <Select
-            id="role"
-            value={selectedRole}
+          <label htmlFor="role-select" className="text-sm font-medium">User Role:</label>
+          <Select 
+            value={selectedRole} 
             onValueChange={(value) => setSelectedRole(value as UserRoleType)}
           >
-            <option value="viewer">Viewer</option>
-            <option value="editor">Editor</option>
-            <option value="administrator">Administrator</option>
-            <option value="group_admin">Group Admin</option>
-            <option value="organization_admin">Organization Admin</option>
+            <SelectTrigger id="role-select">
+              <SelectValue placeholder="Select a role" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="viewer">Viewer</SelectItem>
+              <SelectItem value="editor">Editor</SelectItem>
+              <SelectItem value="administrator">Administrator</SelectItem>
+              <SelectItem value="group_admin">Group Admin</SelectItem>
+              <SelectItem value="organization_admin">Organization Admin</SelectItem>
+            </SelectContent>
           </Select>
         </div>
       </div>
