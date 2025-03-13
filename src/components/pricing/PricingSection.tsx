@@ -25,7 +25,7 @@ export const PricingSection: React.FC<PricingSectionProps> = ({
     if (plans && plans.length > 0) {
       // Sort plans by sort_order
       const sortedPlans = [...plans].sort((a, b) => a.sort_order - b.sort_order);
-      setActivePlans(sortedPlans);
+      setActivePlans(sortedPlans as Plan[]);
     }
   }, [plans]);
 
