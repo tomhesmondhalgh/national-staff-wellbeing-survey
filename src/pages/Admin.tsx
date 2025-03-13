@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Card, CardContent } from '../components/ui/card';
-import { PageTitle } from '../components/ui/PageTitle';
-import { PurchasesManagement } from '../components/admin/PurchasesManagement';
+import PageTitle from '../components/ui/PageTitle';
+import PurchasesManagement from '../components/admin/PurchasesManagement';
 import { PlansManagement } from '../components/admin/PlansManagement';
 
 function Admin() {
@@ -11,7 +11,7 @@ function Admin() {
 
   return (
     <div className="container py-6 space-y-6 max-w-7xl">
-      <PageTitle>Admin Dashboard</PageTitle>
+      <PageTitle title="Admin Dashboard" />
 
       <Tabs defaultValue="purchases" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2 md:max-w-md">
