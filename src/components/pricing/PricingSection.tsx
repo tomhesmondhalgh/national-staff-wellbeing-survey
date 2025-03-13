@@ -30,8 +30,8 @@ export const PricingSection: React.FC<PricingSectionProps> = ({
   }, [plans]);
 
   React.useEffect(() => {
-    if (subscription) {
-      setCurrentPlanType(subscription.plan_type);
+    if (subscription && subscription.plan) {
+      setCurrentPlanType(subscription.plan.toLowerCase());
     }
   }, [subscription]);
 
