@@ -8,9 +8,11 @@ import PricingSection from '../components/pricing/PricingSection';
 const Upgrade = () => {
   return (
     <MainLayout>
-      <IntroSection />
-      <BenefitsSection />
-      <PricingSection />
+      <div className="container mx-auto px-4 py-8">
+        <IntroSection />
+        <BenefitsSection />
+        <PricingSection />
+      </div>
     </MainLayout>
   );
 };

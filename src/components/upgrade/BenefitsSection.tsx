@@ -1,6 +1,6 @@
 
 import React from 'react';
-import BenefitItem from './BenefitItem';
+import { Check } from 'lucide-react';
 
 const BenefitsSection: React.FC = () => {
   const benefits = [
@@ -10,9 +10,12 @@ const BenefitsSection: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col md:flex-row md:justify-center gap-4 md:gap-6 mt-6 mb-8">
+    <div className="flex flex-col md:flex-row justify-center gap-8 mb-12">
       {benefits.map((benefit, index) => (
-        <BenefitItem key={index} text={benefit} />
+        <div key={index} className="flex items-center">
+          <Check className="h-5 w-5 text-green-500 mr-2 shrink-0" />
+          <span className="text-gray-700 font-medium">{benefit}</span>
+        </div>
       ))}
     </div>
   );
