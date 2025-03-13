@@ -1,10 +1,9 @@
-
 import { supabase } from './client';
 
 export type PlanType = 'free' | 'foundation' | 'progress' | 'premium';
 export type SubscriptionStatus = 'active' | 'canceled' | 'expired' | 'pending';
 export type PaymentMethod = 'stripe' | 'invoice' | 'manual';
-export type PurchaseType = 'subscription' | 'one-time';
+export type PurchaseType = 'subscription' | 'one-time' | 'free';
 
 export interface Subscription {
   id: string;
@@ -31,6 +30,23 @@ export interface PaymentHistory {
   invoice_number?: string;
   stripe_payment_id?: string;
   created_at: string;
+}
+
+export interface Plan {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  purchase_type: PurchaseType;
+  duration_months?: number;
+  stripe_price_id?: string;
+  features: string[];
+  is_popular: boolean;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface SubscriptionAccess {
@@ -223,5 +239,88 @@ export async function checkAndCreateSubscription(
   } catch (error) {
     console.error('Error in checkAndCreateSubscription:', error);
     return false;
+  }
+}
+
+/**
+ * Get all active subscription plans ordered by sort_order
+ * @returns Array of Plan objects
+ */
+export async function getPlans(): Promise<Plan[]> {
+  try {
+    const { data, error } = await supabase
+      .from('plans')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order');
+
+    if (error) {
+      console.error('Error fetching plans:', error);
+      return [];
+    }
+
+    return data.map(plan => ({
+      ...plan,
+      features: plan.features as unknown as string[],
+    }));
+  } catch (error) {
+    console.error('Exception in getPlans:', error);
+    return [];
+  }
+}
+
+/**
+ * Get a specific plan by ID
+ * @param planId The UUID of the plan to retrieve
+ * @returns Plan object or null if not found
+ */
+export async function getPlanById(planId: string): Promise<Plan | null> {
+  try {
+    const { data, error } = await supabase
+      .from('plans')
+      .select('*')
+      .eq('id', planId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching plan by ID:', error);
+      return null;
+    }
+
+    return {
+      ...data,
+      features: data.features as unknown as string[],
+    };
+  } catch (error) {
+    console.error('Exception in getPlanById:', error);
+    return null;
+  }
+}
+
+/**
+ * Get a plan by its Stripe price ID
+ * @param stripePriceId The Stripe price ID
+ * @returns Plan object or null if not found
+ */
+export async function getPlanByStripeId(stripePriceId: string): Promise<Plan | null> {
+  try {
+    const { data, error } = await supabase
+      .from('plans')
+      .select('*')
+      .eq('stripe_price_id', stripePriceId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching plan by Stripe ID:', error);
+      return null;
+    }
+
+    return {
+      ...data,
+      features: data.features as unknown as string[],
+    };
+  } catch (error) {
+    console.error('Exception in getPlanByStripeId:', error);
+    return null;
   }
 }
