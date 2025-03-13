@@ -15,4 +15,3 @@
 # Configure functions directory for Supabase functions
 [functions]
   directory = "supabase/functions"
-
