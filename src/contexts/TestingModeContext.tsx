@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { PlanType } from '../lib/supabase/subscription';
 import { UserRoleType } from '../lib/supabase/types';
@@ -52,7 +51,12 @@ interface TestingModeProviderProps {
 
 // Logging middleware
 const loggingMiddleware: TestingModeMiddleware = (action, next) => {
-  console.log('TestingMode action:', action.type, action.payload);
+  // Only log the payload if it exists
+  if ('payload' in action) {
+    console.log('TestingMode action:', action.type, action.payload);
+  } else {
+    console.log('TestingMode action:', action.type);
+  }
   next(action);
 };
 
