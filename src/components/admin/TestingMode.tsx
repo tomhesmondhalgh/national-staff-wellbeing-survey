@@ -14,7 +14,9 @@ export function TestingMode() {
     testingPlan, 
     testingRole, 
     enableFullTestingMode, 
-    disableTestingMode 
+    disableTestingMode,
+    setTestingPlan,
+    setTestingRole
   } = useTestingMode();
 
   const [selectedPlan, setSelectedPlan] = useState<PlanType>(testingPlan || 'free');
@@ -23,8 +25,11 @@ export function TestingMode() {
   // Update local state when context values change
   useEffect(() => {
     if (testingPlan) setSelectedPlan(testingPlan);
+  }, [testingPlan]);
+
+  useEffect(() => {
     if (testingRole) setSelectedRole(testingRole);
-  }, [testingPlan, testingRole]);
+  }, [testingRole]);
 
   const handleEnableTestingMode = () => {
     enableFullTestingMode(selectedPlan, selectedRole);
@@ -32,6 +37,21 @@ export function TestingMode() {
 
   const handleDisableTestingMode = () => {
     disableTestingMode();
+  };
+
+  // When local selections change, update the context if testing mode is active
+  const handlePlanChange = (plan: PlanType) => {
+    setSelectedPlan(plan);
+    if (isTestingMode) {
+      setTestingPlan(plan);
+    }
+  };
+
+  const handleRoleChange = (role: UserRoleType) => {
+    setSelectedRole(role);
+    if (isTestingMode) {
+      setTestingRole(role);
+    }
   };
 
   return (
@@ -52,12 +72,12 @@ export function TestingMode() {
       <div className="grid gap-6">
         <PlanSelector 
           selectedPlan={selectedPlan} 
-          onPlanChange={setSelectedPlan} 
+          onPlanChange={handlePlanChange} 
         />
         
         <RoleSelector 
           selectedRole={selectedRole} 
-          onRoleChange={setSelectedRole} 
+          onRoleChange={handleRoleChange} 
         />
       </div>
 
