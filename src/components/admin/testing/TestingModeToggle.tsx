@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Button } from '../../ui/button';
-import { useTestingMode } from '../../../contexts/TestingModeContext';
 
 interface TestingModeToggleProps {
   isTestingMode: boolean;

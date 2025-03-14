@@ -1,7 +1,7 @@
 
 import React from 'react';
 import Navbar from './Navbar';
-import { useTestingMode } from '../../contexts/TestingModeContext';
+import { useTestingModeStatus } from '../../contexts/TestingModeContext';
 import { TestingModeStatus } from '../admin/testing/TestingModeStatus';
 
 interface MainLayoutProps {
@@ -9,7 +9,7 @@ interface MainLayoutProps {
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
-  const { isTestingMode, testingPlan, testingRole } = useTestingMode();
+  const { isTestingMode, testingPlan, testingRole } = useTestingModeStatus();
   
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-white to-brandPurple-50">
