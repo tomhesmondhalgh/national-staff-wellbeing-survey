@@ -9,7 +9,7 @@ interface MainLayoutProps {
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
-  const { isTestingMode, selectedPlan, selectedRole } = useTestingMode();
+  const { isTestingMode, testingPlan, testingRole } = useTestingMode();
   
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-white to-brandPurple-50">
@@ -17,8 +17,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       {isTestingMode && (
         <TestingModeStatus 
           isTestingMode={isTestingMode} 
-          selectedPlan={selectedPlan} 
-          selectedRole={selectedRole} 
+          selectedPlan={testingPlan || 'free'} 
+          selectedRole={testingRole || 'viewer'} 
         />
       )}
       <main className="flex-grow w-full px-5 sm:px-20">
