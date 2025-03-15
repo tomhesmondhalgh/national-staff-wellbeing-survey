@@ -1,19 +1,42 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Card, CardContent } from '../components/ui/card';
 import PageTitle from '../components/ui/PageTitle';
 import PurchasesManagement from '../components/admin/PurchasesManagement';
 import { PlansManagement } from '../components/admin/PlansManagement';
 import { TestingMode } from '../components/admin/TestingMode';
+import { XeroIntegration } from '../components/admin/XeroIntegration';
 import { useAdminRole } from '../hooks/useAdminRole';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
 import MainLayout from '../components/layout/MainLayout';
+import { toast } from 'sonner';
 
 function Admin() {
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState('testing');
   const { isAdmin, isLoading } = useAdminRole();
+
+  useEffect(() => {
+    // Handle Xero OAuth response parameters
+    const xeroError = searchParams.get('xerror');
+    const xeroConnected = searchParams.get('xero');
+
+    if (xeroError) {
+      toast.error(`Xero connection failed: ${xeroError.replace(/_/g, ' ')}`);
+      // Clean up URL parameters
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+      setActiveTab('integrations');
+    } else if (xeroConnected === 'connected') {
+      toast.success('Successfully connected to Xero');
+      // Clean up URL parameters
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+      setActiveTab('integrations');
+    }
+  }, [searchParams]);
 
   if (isLoading) {
     return (
@@ -37,10 +60,11 @@ function Admin() {
           />
 
           <Tabs defaultValue="testing" value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3 md:max-w-2xl">
+            <TabsList className="grid w-full grid-cols-4 md:max-w-3xl">
               <TabsTrigger value="testing">Testing Mode</TabsTrigger>
               <TabsTrigger value="purchases">Purchases</TabsTrigger>
               <TabsTrigger value="plans">Plans</TabsTrigger>
+              <TabsTrigger value="integrations">Integrations</TabsTrigger>
             </TabsList>
 
             <div className="mt-6">
@@ -64,6 +88,14 @@ function Admin() {
                 <Card>
                   <CardContent className="p-6">
                     <PlansManagement />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="integrations" className="mt-0">
+                <Card>
+                  <CardContent className="p-6">
+                    <XeroIntegration />
                   </CardContent>
                 </Card>
               </TabsContent>
