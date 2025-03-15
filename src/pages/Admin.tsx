@@ -22,9 +22,16 @@ function Admin() {
     // Handle Xero OAuth response parameters
     const xeroError = searchParams.get('xerror');
     const xeroConnected = searchParams.get('xero');
+    const errorDetail = searchParams.get('error_detail');
 
     if (xeroError) {
-      toast.error(`Xero connection failed: ${xeroError.replace(/_/g, ' ')}`);
+      const errorMessage = errorDetail 
+        ? `${xeroError.replace(/_/g, ' ')}: ${errorDetail}`
+        : xeroError.replace(/_/g, ' ');
+      
+      console.error('Xero connection error:', errorMessage);
+      toast.error(`Xero connection failed: ${errorMessage}`);
+      
       // Clean up URL parameters
       const newUrl = window.location.pathname;
       window.history.replaceState({}, '', newUrl);

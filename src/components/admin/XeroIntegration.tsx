@@ -15,25 +15,32 @@ export function XeroIntegration() {
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
   const [isDisconnecting, setIsDisconnecting] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   const checkConnectionStatus = async () => {
     try {
       setIsLoading(true);
+      setError(null);
+      
+      console.log('Checking Xero connection status...');
       const { data, error } = await supabase.functions.invoke('xero-auth', {
         body: { action: 'status' }
       });
 
       if (error) {
         console.error('Error checking Xero connection:', error);
+        setError(`Failed to check connection: ${error.message || 'Unknown error'}`);
         toast.error('Failed to check Xero connection status');
         return;
       }
 
+      console.log('Xero connection status response:', data);
       setIsConnected(data.connected);
       setLastUpdated(data.last_updated);
       setExpiresAt(data.expires_at);
     } catch (error) {
       console.error('Error checking Xero connection:', error);
+      setError(`Exception checking connection: ${error.message || 'Unknown error'}`);
       toast.error('Failed to check Xero connection status');
     } finally {
       setIsLoading(false);
@@ -47,20 +54,33 @@ export function XeroIntegration() {
   const handleConnect = async () => {
     try {
       setIsConnecting(true);
+      setError(null);
+      
+      console.log('Starting Xero connection process...');
       const { data, error } = await supabase.functions.invoke('xero-auth', {
         body: { action: 'authorize' }
       });
 
       if (error) {
         console.error('Error starting Xero connection:', error);
+        setError(`Failed to start connection: ${error.message || 'Unknown error'}`);
         toast.error('Failed to connect to Xero');
         return;
       }
 
+      if (!data || !data.url) {
+        console.error('Invalid response from Xero auth function:', data);
+        setError('Invalid response from server - missing URL');
+        toast.error('Failed to connect to Xero - invalid response');
+        return;
+      }
+
+      console.log('Redirecting to Xero authorization page:', data.url);
       // Redirect to Xero authorization page
       window.location.href = data.url;
     } catch (error) {
       console.error('Error connecting to Xero:', error);
+      setError(`Exception during connection: ${error.message || 'Unknown error'}`);
       toast.error('Failed to connect to Xero');
     } finally {
       setIsConnecting(false);
@@ -70,12 +90,16 @@ export function XeroIntegration() {
   const handleDisconnect = async () => {
     try {
       setIsDisconnecting(true);
+      setError(null);
+      
+      console.log('Disconnecting from Xero...');
       const { error } = await supabase.functions.invoke('xero-auth', {
         body: { action: 'disconnect' }
       });
 
       if (error) {
         console.error('Error disconnecting Xero:', error);
+        setError(`Failed to disconnect: ${error.message || 'Unknown error'}`);
         toast.error('Failed to disconnect from Xero');
         return;
       }
@@ -86,6 +110,7 @@ export function XeroIntegration() {
       setExpiresAt(null);
     } catch (error) {
       console.error('Error disconnecting from Xero:', error);
+      setError(`Exception during disconnection: ${error.message || 'Unknown error'}`);
       toast.error('Failed to disconnect from Xero');
     } finally {
       setIsDisconnecting(false);
@@ -95,10 +120,14 @@ export function XeroIntegration() {
   const handleRefreshToken = async () => {
     try {
       setIsRefreshing(true);
+      setError(null);
+      
+      console.log('Refreshing Xero token...');
       const { data, error } = await supabase.functions.invoke('xero-token-refresh', {});
 
       if (error) {
         console.error('Error refreshing Xero token:', error);
+        setError(`Failed to refresh token: ${error.message || 'Unknown error'}`);
         toast.error('Failed to refresh Xero token');
         return;
       }
@@ -112,6 +141,7 @@ export function XeroIntegration() {
       }
     } catch (error) {
       console.error('Error refreshing Xero token:', error);
+      setError(`Exception during token refresh: ${error.message || 'Unknown error'}`);
       toast.error('Failed to refresh Xero token');
     } finally {
       setIsRefreshing(false);
@@ -192,6 +222,22 @@ export function XeroIntegration() {
           </div>
         ) : (
           <div className="space-y-4">
+            {error && (
+              <div className="rounded-md bg-red-50 p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <AlertCircle className="h-5 w-5 text-red-400" />
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-red-800">Error</h3>
+                    <div className="mt-2 text-sm text-red-700">
+                      <p>{error}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="rounded-md bg-amber-50 p-4">
               <div className="flex">
                 <div className="flex-shrink-0">
@@ -203,6 +249,26 @@ export function XeroIntegration() {
                     <p>
                       You'll need to connect to Xero before you can use invoice integration features.
                       Click "Connect to Xero" to authorize this application.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="rounded-md bg-blue-50 p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <AlertCircle className="h-5 w-5 text-blue-400" />
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-blue-800">Setup Requirements</h3>
+                  <div className="mt-2 text-sm text-blue-700">
+                    <p>
+                      Ensure your Xero application is properly configured with the correct redirect URL:
+                      <br />
+                      <code className="text-xs bg-blue-100 p-1 rounded">
+                        {window.location.origin}/xero-auth/callback
+                      </code>
                     </p>
                   </div>
                 </div>
