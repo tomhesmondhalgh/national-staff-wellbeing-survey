@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
@@ -16,11 +15,13 @@ export function XeroIntegration() {
   const [isDisconnecting, setIsDisconnecting] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [detailedError, setDetailedError] = useState<string | null>(null);
 
   const checkConnectionStatus = async () => {
     try {
       setIsLoading(true);
       setError(null);
+      setDetailedError(null);
       
       console.log('Checking Xero connection status...');
       const { data, error } = await supabase.functions.invoke('xero-auth', {
@@ -30,6 +31,7 @@ export function XeroIntegration() {
       if (error) {
         console.error('Error checking Xero connection:', error);
         setError(`Failed to check connection: ${error.message || 'Unknown error'}`);
+        setDetailedError(JSON.stringify(error, null, 2));
         toast.error('Failed to check Xero connection status');
         return;
       }
@@ -41,6 +43,7 @@ export function XeroIntegration() {
     } catch (error) {
       console.error('Error checking Xero connection:', error);
       setError(`Exception checking connection: ${error.message || 'Unknown error'}`);
+      setDetailedError(JSON.stringify(error, null, 2));
       toast.error('Failed to check Xero connection status');
     } finally {
       setIsLoading(false);
@@ -55,6 +58,7 @@ export function XeroIntegration() {
     try {
       setIsConnecting(true);
       setError(null);
+      setDetailedError(null);
       
       console.log('Starting Xero connection process...');
       const { data, error } = await supabase.functions.invoke('xero-auth', {
@@ -64,6 +68,7 @@ export function XeroIntegration() {
       if (error) {
         console.error('Error starting Xero connection:', error);
         setError(`Failed to start connection: ${error.message || 'Unknown error'}`);
+        setDetailedError(JSON.stringify(error, null, 2));
         toast.error('Failed to connect to Xero');
         return;
       }
@@ -71,6 +76,7 @@ export function XeroIntegration() {
       if (!data || !data.url) {
         console.error('Invalid response from Xero auth function:', data);
         setError('Invalid response from server - missing URL');
+        setDetailedError(JSON.stringify(data, null, 2));
         toast.error('Failed to connect to Xero - invalid response');
         return;
       }
@@ -81,6 +87,7 @@ export function XeroIntegration() {
     } catch (error) {
       console.error('Error connecting to Xero:', error);
       setError(`Exception during connection: ${error.message || 'Unknown error'}`);
+      setDetailedError(JSON.stringify(error, null, 2));
       toast.error('Failed to connect to Xero');
     } finally {
       setIsConnecting(false);
@@ -238,6 +245,15 @@ export function XeroIntegration() {
               </div>
             )}
             
+            {detailedError && (
+              <div className="rounded-md bg-slate-100 p-4 mt-2">
+                <h4 className="text-sm font-medium mb-2">Technical Details</h4>
+                <pre className="text-xs overflow-auto max-h-[200px] p-2 bg-slate-200 rounded">
+                  {detailedError}
+                </pre>
+              </div>
+            )}
+            
             <div className="rounded-md bg-amber-50 p-4">
               <div className="flex">
                 <div className="flex-shrink-0">
@@ -270,6 +286,9 @@ export function XeroIntegration() {
                         {window.location.origin}/xero-auth/callback
                       </code>
                     </p>
+                    <p className="mt-2">
+                      Current project URL: <code className="text-xs bg-blue-100 p-1 rounded">{window.location.origin}</code>
+                    </p>
                   </div>
                 </div>
               </div>
@@ -279,7 +298,7 @@ export function XeroIntegration() {
       </CardContent>
       <CardFooter className="flex justify-between">
         {isConnected ? (
-          <>
+          <React.Fragment>
             <Button 
               variant="outline" 
               onClick={handleDisconnect}
@@ -315,25 +334,34 @@ export function XeroIntegration() {
                 </span>
               )}
             </Button>
-          </>
+          </React.Fragment>
         ) : (
-          <Button 
-            onClick={handleConnect}
-            disabled={isConnecting}
-            className="ml-auto"
-          >
-            {isConnecting ? (
-              <span className="flex items-center gap-1">
-                <RefreshCw className="h-4 w-4 animate-spin" />
-                Connecting...
-              </span>
-            ) : (
-              <span className="flex items-center gap-1">
-                <LinkIcon className="h-4 w-4" />
-                Connect to Xero
-              </span>
-            )}
-          </Button>
+          <React.Fragment>
+            <Button 
+              variant="outline"
+              onClick={checkConnectionStatus}
+              className="mr-2"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Retry Status Check
+            </Button>
+            <Button 
+              onClick={handleConnect}
+              disabled={isConnecting}
+            >
+              {isConnecting ? (
+                <span className="flex items-center gap-1">
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  Connecting...
+                </span>
+              ) : (
+                <span className="flex items-center gap-1">
+                  <LinkIcon className="h-4 w-4" />
+                  Connect to Xero
+                </span>
+              )}
+            </Button>
+          </React.Fragment>
         )}
       </CardFooter>
     </Card>

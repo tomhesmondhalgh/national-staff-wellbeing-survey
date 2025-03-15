@@ -43,6 +43,11 @@ function Admin() {
       window.history.replaceState({}, '', newUrl);
       setActiveTab('integrations');
     }
+
+    // Check for Xero endpoint in URL path to automatically open integrations tab
+    if (window.location.pathname.includes('xero')) {
+      setActiveTab('integrations');
+    }
   }, [searchParams]);
 
   if (isLoading) {

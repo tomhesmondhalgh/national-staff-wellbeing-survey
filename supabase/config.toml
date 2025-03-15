@@ -88,3 +88,9 @@ verify_jwt = false
 
 [functions.generate-survey-summary]
 verify_jwt = false
+
+[functions.xero-auth]
+verify_jwt = false
+
+[functions.xero-token-refresh]
+verify_jwt = false
