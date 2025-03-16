@@ -94,4 +94,3 @@ verify_jwt = false
 
 [functions.xero-token-refresh]
 verify_jwt = false
-

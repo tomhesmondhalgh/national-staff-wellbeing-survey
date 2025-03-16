@@ -59,9 +59,25 @@ serve(async (req) => {
       );
     }
 
-    const url = new URL(req.url);
-    const action = url.pathname.split('/').pop();
-    console.log(`Processing Xero auth action: ${action}`);
+    // Parse request body or query parameters
+    let action = '';
+    
+    if (req.method === 'GET') {
+      const url = new URL(req.url);
+      action = url.pathname.split('/').pop() || '';
+      console.log(`Processing Xero auth GET action: ${action} from URL path`);
+    } else {
+      try {
+        const body = await req.json();
+        action = body.action || '';
+        console.log(`Processing Xero auth POST action: ${action} from request body`, body);
+      } catch (e) {
+        console.log('Could not parse request body as JSON, trying URL path');
+        const url = new URL(req.url);
+        action = url.pathname.split('/').pop() || '';
+        console.log(`Falling back to URL path action: ${action}`);
+      }
+    }
 
     // Check authorization for non-public endpoints
     if (action !== 'callback') {
@@ -73,7 +89,7 @@ serve(async (req) => {
         );
       }
 
-      // Verify the token (simplified - in production, use proper JWT verification)
+      // Verify the token
       const { data: { user }, error: userError } = await supabase.auth.getUser(token);
       
       if (userError || !user) {
@@ -89,9 +105,10 @@ serve(async (req) => {
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
+        .eq('role', 'administrator')
         .single();
 
-      if (rolesError || !roles || roles.role !== 'administrator') {
+      if (rolesError || !roles) {
         console.error('Admin check error:', rolesError);
         return new Response(
           JSON.stringify({ error: 'Unauthorized - Admin access required' }),
@@ -101,10 +118,15 @@ serve(async (req) => {
     }
 
     // Main routes for OAuth flow
+    console.log(`Processing action: ${action}`);
+    
+    const url = new URL(req.url);
+    const baseUrl = `${url.protocol}//${url.host}`;
+    
     switch (action) {
       case 'authorize': {
         // Generate OAuth URL for Xero authorization
-        const redirectUri = `${url.origin}/xero-auth/callback`;
+        const redirectUri = `${baseUrl}/xero-auth/callback`;
         console.log(`Xero authorize with redirect URI: ${redirectUri}`);
         const state = crypto.randomUUID(); // Generate a random state for security
         
@@ -130,7 +152,7 @@ serve(async (req) => {
         });
         
         const authUrl = `${XERO_AUTH_URL}?${queryParams.toString()}`;
-        console.log(`Generated Xero auth URL (not showing full URL for security)`);
+        console.log(`Generated Xero auth URL (partial for security): ${authUrl.substring(0, 50)}...`);
         
         return new Response(
           JSON.stringify({ url: authUrl }),
@@ -140,7 +162,7 @@ serve(async (req) => {
       
       case 'callback': {
         // Handle the OAuth callback from Xero
-        const params = url.searchParams;
+        const params = new URL(req.url).searchParams;
         const code = params.get('code');
         const state = params.get('state');
         const error = params.get('error');
@@ -154,7 +176,7 @@ serve(async (req) => {
             status: 302,
             headers: {
               ...corsHeaders,
-              'Location': `${url.origin}/admin?xerror=${error}`
+              'Location': `${baseUrl}/admin?xerror=${error}`
             }
           });
         }
@@ -165,7 +187,7 @@ serve(async (req) => {
             status: 302,
             headers: {
               ...corsHeaders,
-              'Location': `${url.origin}/admin?xerror=missing_params`
+              'Location': `${baseUrl}/admin?xerror=missing_params`
             }
           });
         }
@@ -183,7 +205,7 @@ serve(async (req) => {
             status: 302,
             headers: {
               ...corsHeaders,
-              'Location': `${url.origin}/admin?xerror=invalid_state`
+              'Location': `${baseUrl}/admin?xerror=invalid_state`
             }
           });
         }
@@ -195,7 +217,7 @@ serve(async (req) => {
           .eq('state', state);
         
         // Exchange the code for tokens
-        const redirectUri = `${url.origin}/xero-auth/callback`;
+        const redirectUri = `${baseUrl}/xero-auth/callback`;
         console.log(`Exchanging code for tokens with redirect URI: ${redirectUri}`);
         
         try {
@@ -219,7 +241,7 @@ serve(async (req) => {
               status: 302,
               headers: {
                 ...corsHeaders,
-                'Location': `${url.origin}/admin?xerror=token_exchange_failed&error_detail=${encodeURIComponent(errorData)}`
+                'Location': `${baseUrl}/admin?xerror=token_exchange_failed&error_detail=${encodeURIComponent(errorData)}`
               }
             });
           }
@@ -249,7 +271,7 @@ serve(async (req) => {
               status: 302,
               headers: {
                 ...corsHeaders,
-                'Location': `${url.origin}/admin?xerror=token_storage_failed`
+                'Location': `${baseUrl}/admin?xerror=token_storage_failed`
               }
             });
           }
@@ -259,7 +281,7 @@ serve(async (req) => {
             status: 302,
             headers: {
               ...corsHeaders,
-              'Location': `${url.origin}/admin?xero=connected`
+              'Location': `${baseUrl}/admin?xero=connected`
             }
           });
         } catch (error) {
@@ -268,7 +290,7 @@ serve(async (req) => {
             status: 302,
             headers: {
               ...corsHeaders,
-              'Location': `${url.origin}/admin?xerror=token_exchange_exception&error_detail=${encodeURIComponent(error.message)}`
+              'Location': `${baseUrl}/admin?xerror=token_exchange_exception&error_detail=${encodeURIComponent(error.message)}`
             }
           });
         }
@@ -280,12 +302,15 @@ serve(async (req) => {
           .from('xero_credentials')
           .select('updated_at, expires_at')
           .eq('id', 1)
-          .single();
+          .maybeSingle();
           
         if (xeroError) {
           console.error('Xero status check error:', xeroError);
           return new Response(
-            JSON.stringify({ connected: false }),
+            JSON.stringify({ 
+              connected: false,
+              error: xeroError.message
+            }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
@@ -322,15 +347,16 @@ serve(async (req) => {
       }
       
       default:
+        console.error('Invalid action requested:', action);
         return new Response(
-          JSON.stringify({ error: 'Invalid action' }),
+          JSON.stringify({ error: 'Invalid action', requested: action }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
     }
   } catch (error) {
     console.error('Xero auth error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message, stack: error.stack }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

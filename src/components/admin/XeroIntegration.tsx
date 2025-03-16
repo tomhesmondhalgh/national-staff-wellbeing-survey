@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
@@ -24,14 +25,19 @@ export function XeroIntegration() {
       setDetailedError(null);
       
       console.log('Checking Xero connection status...');
-      const { data, error } = await supabase.functions.invoke('xero-auth', {
-        body: { action: 'status' }
+      const response = await fetch('/xero-auth/status', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        }
       });
-
-      if (error) {
-        console.error('Error checking Xero connection:', error);
-        setError(`Failed to check connection: ${error.message || 'Unknown error'}`);
-        setDetailedError(JSON.stringify(error, null, 2));
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        console.error('Error checking Xero connection:', data);
+        setError(`Failed to check connection: ${data.error || 'Unknown error'}`);
+        setDetailedError(JSON.stringify(data, null, 2));
         toast.error('Failed to check Xero connection status');
         return;
       }
@@ -61,18 +67,24 @@ export function XeroIntegration() {
       setDetailedError(null);
       
       console.log('Starting Xero connection process...');
-      const { data, error } = await supabase.functions.invoke('xero-auth', {
-        body: { action: 'authorize' }
+      const response = await fetch('/xero-auth/authorize', {
+        method: 'GET', 
+        headers: {
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        }
       });
-
-      if (error) {
-        console.error('Error starting Xero connection:', error);
-        setError(`Failed to start connection: ${error.message || 'Unknown error'}`);
-        setDetailedError(JSON.stringify(error, null, 2));
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error starting Xero connection:', errorData);
+        setError(`Failed to start connection: ${errorData.error || 'Unknown error'}`);
+        setDetailedError(JSON.stringify(errorData, null, 2));
         toast.error('Failed to connect to Xero');
         return;
       }
 
+      const data = await response.json();
+      
       if (!data || !data.url) {
         console.error('Invalid response from Xero auth function:', data);
         setError('Invalid response from server - missing URL');
@@ -100,13 +112,17 @@ export function XeroIntegration() {
       setError(null);
       
       console.log('Disconnecting from Xero...');
-      const { error } = await supabase.functions.invoke('xero-auth', {
-        body: { action: 'disconnect' }
+      const response = await fetch('/xero-auth/disconnect', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        }
       });
 
-      if (error) {
-        console.error('Error disconnecting Xero:', error);
-        setError(`Failed to disconnect: ${error.message || 'Unknown error'}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error disconnecting Xero:', errorData);
+        setError(`Failed to disconnect: ${errorData.error || 'Unknown error'}`);
         toast.error('Failed to disconnect from Xero');
         return;
       }
@@ -298,7 +314,7 @@ export function XeroIntegration() {
       </CardContent>
       <CardFooter className="flex justify-between">
         {isConnected ? (
-          <React.Fragment>
+          <>
             <Button 
               variant="outline" 
               onClick={handleDisconnect}
@@ -334,9 +350,9 @@ export function XeroIntegration() {
                 </span>
               )}
             </Button>
-          </React.Fragment>
+          </>
         ) : (
-          <React.Fragment>
+          <>
             <Button 
               variant="outline"
               onClick={checkConnectionStatus}
@@ -361,7 +377,7 @@ export function XeroIntegration() {
                 </span>
               )}
             </Button>
-          </React.Fragment>
+          </>
         )}
       </CardFooter>
     </Card>

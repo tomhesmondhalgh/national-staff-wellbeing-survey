@@ -111,9 +111,10 @@ serve(async (req) => {
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
-      .single();
+      .eq('role', 'administrator')
+      .maybeSingle();
 
-    if (rolesError || !roles || roles.role !== 'administrator') {
+    if (rolesError || !roles) {
       console.error('Admin check error:', rolesError);
       return new Response(
         JSON.stringify({ error: 'Unauthorized - Admin access required' }),
@@ -126,10 +127,18 @@ serve(async (req) => {
       .from('xero_credentials')
       .select('*')
       .eq('id', 1)
-      .single();
+      .maybeSingle();
       
-    if (credentialsError || !credentials) {
+    if (credentialsError) {
       console.error('Credentials retrieval error:', credentialsError);
+      return new Response(
+        JSON.stringify({ error: 'Error retrieving Xero credentials', details: credentialsError }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    if (!credentials) {
+      console.log('No Xero credentials found');
       return new Response(
         JSON.stringify({ error: 'No Xero credentials found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
