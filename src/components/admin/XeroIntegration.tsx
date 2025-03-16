@@ -25,23 +25,32 @@ export function XeroIntegration() {
       setDetailedError(null);
       
       console.log('Checking Xero connection status...');
-      const response = await fetch('/xero-auth/status', {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+      
+      const response = await fetch(`${window.location.origin}/functions/v1/xero-auth/status`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
-      const data = await response.json();
-      
       if (!response.ok) {
-        console.error('Error checking Xero connection:', data);
-        setError(`Failed to check connection: ${data.error || 'Unknown error'}`);
-        setDetailedError(JSON.stringify(data, null, 2));
+        const errorText = await response.text();
+        console.error('Error checking Xero connection:', response.status, errorText);
+        setError(`Failed to check connection: ${response.status} ${errorText}`);
+        setDetailedError(errorText);
         toast.error('Failed to check Xero connection status');
         return;
       }
-
+      
+      const data = await response.json();
+      
       console.log('Xero connection status response:', data);
       setIsConnected(data.connected);
       setLastUpdated(data.last_updated);
@@ -67,18 +76,34 @@ export function XeroIntegration() {
       setDetailedError(null);
       
       console.log('Starting Xero connection process...');
-      const response = await fetch('/xero-auth/authorize', {
-        method: 'GET', 
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+      
+      const response = await fetch(`${window.location.origin}/functions/v1/xero-auth/authorize`, {
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error starting Xero connection:', errorData);
-        setError(`Failed to start connection: ${errorData.error || 'Unknown error'}`);
-        setDetailedError(JSON.stringify(errorData, null, 2));
+        const errorText = await response.text();
+        console.error('Error starting Xero connection:', response.status, errorText);
+        try {
+          // Try to parse as JSON if possible
+          const errorData = JSON.parse(errorText);
+          setError(`Failed to start connection: ${errorData.error || 'Unknown error'}`);
+          setDetailedError(JSON.stringify(errorData, null, 2));
+        } catch (e) {
+          // If not JSON, use text
+          setError(`Failed to start connection: ${response.status} ${errorText}`);
+          setDetailedError(errorText);
+        }
         toast.error('Failed to connect to Xero');
         return;
       }
@@ -112,17 +137,30 @@ export function XeroIntegration() {
       setError(null);
       
       console.log('Disconnecting from Xero...');
-      const response = await fetch('/xero-auth/disconnect', {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+      
+      const response = await fetch(`${window.location.origin}/functions/v1/xero-auth/disconnect`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error disconnecting Xero:', errorData);
-        setError(`Failed to disconnect: ${errorData.error || 'Unknown error'}`);
+        const errorText = await response.text();
+        console.error('Error disconnecting Xero:', response.status, errorText);
+        try {
+          const errorData = JSON.parse(errorText);
+          setError(`Failed to disconnect: ${errorData.error || 'Unknown error'}`);
+        } catch (e) {
+          setError(`Failed to disconnect: ${response.status} ${errorText}`);
+        }
         toast.error('Failed to disconnect from Xero');
         return;
       }
@@ -146,15 +184,36 @@ export function XeroIntegration() {
       setError(null);
       
       console.log('Refreshing Xero token...');
-      const { data, error } = await supabase.functions.invoke('xero-token-refresh', {});
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+      
+      const response = await fetch(`${window.location.origin}/functions/v1/xero-token-refresh`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
 
-      if (error) {
-        console.error('Error refreshing Xero token:', error);
-        setError(`Failed to refresh token: ${error.message || 'Unknown error'}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error refreshing Xero token:', response.status, errorText);
+        try {
+          const errorData = JSON.parse(errorText);
+          setError(`Failed to refresh token: ${errorData.error || 'Unknown error'}`);
+        } catch (e) {
+          setError(`Failed to refresh token: ${response.status} ${errorText}`);
+        }
         toast.error('Failed to refresh Xero token');
         return;
       }
 
+      const data = await response.json();
+      
       if (data.refreshed) {
         toast.success('Successfully refreshed Xero token');
         setExpiresAt(data.expires_at);
@@ -299,7 +358,7 @@ export function XeroIntegration() {
                       Ensure your Xero application is properly configured with the correct redirect URL:
                       <br />
                       <code className="text-xs bg-blue-100 p-1 rounded">
-                        {window.location.origin}/xero-auth/callback
+                        {window.location.origin}/functions/v1/xero-auth/callback
                       </code>
                     </p>
                     <p className="mt-2">

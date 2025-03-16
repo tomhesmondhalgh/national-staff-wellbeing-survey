@@ -59,25 +59,17 @@ serve(async (req) => {
       );
     }
 
-    // Parse request body or query parameters
+    // Parse URL to determine action
+    const url = new URL(req.url);
     let action = '';
     
-    if (req.method === 'GET') {
-      const url = new URL(req.url);
-      action = url.pathname.split('/').pop() || '';
-      console.log(`Processing Xero auth GET action: ${action} from URL path`);
-    } else {
-      try {
-        const body = await req.json();
-        action = body.action || '';
-        console.log(`Processing Xero auth POST action: ${action} from request body`, body);
-      } catch (e) {
-        console.log('Could not parse request body as JSON, trying URL path');
-        const url = new URL(req.url);
-        action = url.pathname.split('/').pop() || '';
-        console.log(`Falling back to URL path action: ${action}`);
-      }
+    // Extract action from the URL path
+    const pathParts = url.pathname.split('/');
+    if (pathParts.length > 0) {
+      action = pathParts[pathParts.length - 1];
     }
+    
+    console.log(`Processing Xero auth action: ${action} from URL path`);
 
     // Check authorization for non-public endpoints
     if (action !== 'callback') {
@@ -106,7 +98,7 @@ serve(async (req) => {
         .select('role')
         .eq('user_id', user.id)
         .eq('role', 'administrator')
-        .single();
+        .maybeSingle();
 
       if (rolesError || !roles) {
         console.error('Admin check error:', rolesError);
@@ -120,13 +112,12 @@ serve(async (req) => {
     // Main routes for OAuth flow
     console.log(`Processing action: ${action}`);
     
-    const url = new URL(req.url);
     const baseUrl = `${url.protocol}//${url.host}`;
     
     switch (action) {
       case 'authorize': {
         // Generate OAuth URL for Xero authorization
-        const redirectUri = `${baseUrl}/xero-auth/callback`;
+        const redirectUri = `${baseUrl}/functions/v1/xero-auth/callback`;
         console.log(`Xero authorize with redirect URI: ${redirectUri}`);
         const state = crypto.randomUUID(); // Generate a random state for security
         
@@ -197,7 +188,7 @@ serve(async (req) => {
           .from('xero_oauth_states')
           .select()
           .eq('state', state)
-          .single();
+          .maybeSingle();
           
         if (stateError || !stateData) {
           console.error('Invalid state:', stateError);
@@ -217,7 +208,7 @@ serve(async (req) => {
           .eq('state', state);
         
         // Exchange the code for tokens
-        const redirectUri = `${baseUrl}/xero-auth/callback`;
+        const redirectUri = `${baseUrl}/functions/v1/xero-auth/callback`;
         console.log(`Exchanging code for tokens with redirect URI: ${redirectUri}`);
         
         try {
