@@ -61,15 +61,33 @@ serve(async (req) => {
 
     // Parse URL to determine action
     const url = new URL(req.url);
+    const pathParts = url.pathname.split('/');
     let action = '';
     
-    // Extract action from the URL path
-    const pathParts = url.pathname.split('/');
-    if (pathParts.length > 0) {
-      action = pathParts[pathParts.length - 1];
+    // Find the action in the path
+    for (let i = 0; i < pathParts.length; i++) {
+      if (pathParts[i] === 'xero-auth' && i + 1 < pathParts.length) {
+        action = pathParts[i + 1];
+        break;
+      }
     }
     
-    console.log(`Processing Xero auth action: ${action} from URL path`);
+    console.log(`Request URL: ${req.url}`);
+    console.log(`Parsed action from URL: ${action}`);
+    
+    // If no action found in path, check query params (for backwards compatibility)
+    if (!action) {
+      action = url.searchParams.get('action') || '';
+      console.log(`Action from query params: ${action}`);
+    }
+    
+    if (!action) {
+      console.error('No action specified in URL path or query parameters');
+      return new Response(
+        JSON.stringify({ error: 'Missing action parameter' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Check authorization for non-public endpoints
     if (action !== 'callback') {

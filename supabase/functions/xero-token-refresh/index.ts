@@ -71,6 +71,8 @@ serve(async (req) => {
   }
   
   try {
+    console.log('Request URL:', req.url);
+    
     // Verify environment variables
     if (!xeroClientId || !xeroClientSecret) {
       console.error('Missing required environment variables for Xero token refresh');
@@ -185,7 +187,7 @@ serve(async (req) => {
       if (updateError) {
         console.error('Token update error:', updateError);
         return new Response(
-          JSON.stringify({ error: 'Failed to update tokens' }),
+          JSON.stringify({ error: 'Failed to update tokens', details: updateError }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -207,7 +209,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Token refresh error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message, stack: error.stack }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
