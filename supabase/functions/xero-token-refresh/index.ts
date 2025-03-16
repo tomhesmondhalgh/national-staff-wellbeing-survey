@@ -17,6 +17,13 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string;
 const xeroClientId = Deno.env.get('XERO_CLIENT_ID') as string;
 const xeroClientSecret = Deno.env.get('XERO_CLIENT_SECRET') as string;
 
+// Log environment variable status (without revealing their values)
+console.log('Environment variables check:');
+console.log(`SUPABASE_URL: ${supabaseUrl ? 'Present' : 'Missing'}`);
+console.log(`SUPABASE_SERVICE_ROLE_KEY: ${supabaseServiceKey ? 'Present' : 'Missing'}`);
+console.log(`XERO_CLIENT_ID: ${xeroClientId ? 'Present' : 'Missing'}`);
+console.log(`XERO_CLIENT_SECRET: ${xeroClientSecret ? 'Present' : 'Missing'}`);
+
 // Initialize Supabase client with service role key
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -31,6 +38,10 @@ interface XeroTokenResponse {
 
 async function refreshXeroToken(refreshToken: string): Promise<XeroTokenResponse> {
   console.log('Refreshing Xero token');
+  
+  if (!xeroClientId || !xeroClientSecret) {
+    throw new Error('Missing required Xero API credentials');
+  }
   
   const response = await fetch(XERO_TOKEN_URL, {
     method: 'POST',
@@ -60,6 +71,21 @@ serve(async (req) => {
   }
   
   try {
+    // Verify environment variables
+    if (!xeroClientId || !xeroClientSecret) {
+      console.error('Missing required environment variables for Xero token refresh');
+      return new Response(
+        JSON.stringify({ 
+          error: 'Configuration error', 
+          details: 'Missing required Xero API credentials'
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
     // Verify authentication
     const token = req.headers.get('Authorization')?.split('Bearer ')[1];
     if (!token) {
@@ -128,40 +154,47 @@ serve(async (req) => {
     }
     
     // Refresh the token
-    const tokenData = await refreshXeroToken(credentials.refresh_token);
-    
-    // Update stored tokens
-    const newExpiresAt = new Date();
-    newExpiresAt.setSeconds(newExpiresAt.getSeconds() + tokenData.expires_in);
-    
-    const { error: updateError } = await supabase
-      .from('xero_credentials')
-      .update({
-        access_token: tokenData.access_token,
-        refresh_token: tokenData.refresh_token,
-        expires_at: newExpiresAt.toISOString(),
-        token_type: tokenData.token_type,
-        scope: tokenData.scope,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', 1);
+    try {
+      const tokenData = await refreshXeroToken(credentials.refresh_token);
       
-    if (updateError) {
-      console.error('Token update error:', updateError);
+      // Update stored tokens
+      const newExpiresAt = new Date();
+      newExpiresAt.setSeconds(newExpiresAt.getSeconds() + tokenData.expires_in);
+      
+      const { error: updateError } = await supabase
+        .from('xero_credentials')
+        .update({
+          access_token: tokenData.access_token,
+          refresh_token: tokenData.refresh_token,
+          expires_at: newExpiresAt.toISOString(),
+          token_type: tokenData.token_type,
+          scope: tokenData.scope,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', 1);
+        
+      if (updateError) {
+        console.error('Token update error:', updateError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to update tokens' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       return new Response(
-        JSON.stringify({ error: 'Failed to update tokens' }),
+        JSON.stringify({
+          refreshed: true,
+          expires_at: newExpiresAt.toISOString()
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } catch (error) {
+      console.error('Token refresh error:', error);
+      return new Response(
+        JSON.stringify({ error: error.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    
-    return new Response(
-      JSON.stringify({
-        refreshed: true,
-        expires_at: newExpiresAt.toISOString()
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-    
   } catch (error) {
     console.error('Token refresh error:', error);
     return new Response(

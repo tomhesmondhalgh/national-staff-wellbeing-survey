@@ -18,6 +18,13 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string;
 const xeroClientId = Deno.env.get('XERO_CLIENT_ID') as string;
 const xeroClientSecret = Deno.env.get('XERO_CLIENT_SECRET') as string;
 
+// Log environment variable status (without revealing their values)
+console.log('Environment variables check:');
+console.log(`SUPABASE_URL: ${supabaseUrl ? 'Present' : 'Missing'}`);
+console.log(`SUPABASE_SERVICE_ROLE_KEY: ${supabaseServiceKey ? 'Present' : 'Missing'}`);
+console.log(`XERO_CLIENT_ID: ${xeroClientId ? 'Present' : 'Missing'}`);
+console.log(`XERO_CLIENT_SECRET: ${xeroClientSecret ? 'Present' : 'Missing'}`);
+
 // Initialize Supabase client with service role key
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -37,8 +44,24 @@ serve(async (req) => {
   }
 
   try {
+    // Verify environment variables
+    if (!xeroClientId || !xeroClientSecret) {
+      console.error('Missing required environment variables for Xero authentication');
+      return new Response(
+        JSON.stringify({ 
+          error: 'Configuration error', 
+          details: 'Missing required Xero API credentials'
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     const url = new URL(req.url);
     const action = url.pathname.split('/').pop();
+    console.log(`Processing Xero auth action: ${action}`);
 
     // Check authorization for non-public endpoints
     if (action !== 'callback') {
@@ -82,6 +105,7 @@ serve(async (req) => {
       case 'authorize': {
         // Generate OAuth URL for Xero authorization
         const redirectUri = `${url.origin}/xero-auth/callback`;
+        console.log(`Xero authorize with redirect URI: ${redirectUri}`);
         const state = crypto.randomUUID(); // Generate a random state for security
         
         // Store state for validation during callback
@@ -106,6 +130,7 @@ serve(async (req) => {
         });
         
         const authUrl = `${XERO_AUTH_URL}?${queryParams.toString()}`;
+        console.log(`Generated Xero auth URL (not showing full URL for security)`);
         
         return new Response(
           JSON.stringify({ url: authUrl }),
@@ -119,6 +144,8 @@ serve(async (req) => {
         const code = params.get('code');
         const state = params.get('state');
         const error = params.get('error');
+        
+        console.log(`Xero callback received: ${error ? 'Error' : 'Success'}`);
         
         if (error) {
           console.error('Xero auth error:', error);
@@ -169,68 +196,82 @@ serve(async (req) => {
         
         // Exchange the code for tokens
         const redirectUri = `${url.origin}/xero-auth/callback`;
-        const tokenResponse = await fetch(XERO_TOKEN_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Authorization': `Basic ${btoa(`${xeroClientId}:${xeroClientSecret}`)}`
-          },
-          body: new URLSearchParams({
-            grant_type: 'authorization_code',
-            code,
-            redirect_uri: redirectUri
-          })
-        });
+        console.log(`Exchanging code for tokens with redirect URI: ${redirectUri}`);
         
-        if (!tokenResponse.ok) {
-          const errorData = await tokenResponse.text();
-          console.error('Token exchange error:', errorData);
-          return new Response(null, {
-            status: 302,
+        try {
+          const tokenResponse = await fetch(XERO_TOKEN_URL, {
+            method: 'POST',
             headers: {
-              ...corsHeaders,
-              'Location': `${url.origin}/admin?xerror=token_exchange_failed`
-            }
-          });
-        }
-        
-        const tokenData: XeroTokenResponse = await tokenResponse.json();
-        
-        // Store tokens in Supabase
-        const expiresAt = new Date();
-        expiresAt.setSeconds(expiresAt.getSeconds() + tokenData.expires_in);
-        
-        const { error: tokenStoreError } = await supabase
-          .from('xero_credentials')
-          .upsert({
-            id: 1, // Using a single row for simplicity
-            access_token: tokenData.access_token,
-            refresh_token: tokenData.refresh_token,
-            expires_at: expiresAt.toISOString(),
-            token_type: tokenData.token_type,
-            scope: tokenData.scope,
-            updated_at: new Date().toISOString()
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'Authorization': `Basic ${btoa(`${xeroClientId}:${xeroClientSecret}`)}`
+            },
+            body: new URLSearchParams({
+              grant_type: 'authorization_code',
+              code,
+              redirect_uri: redirectUri
+            })
           });
           
-        if (tokenStoreError) {
-          console.error('Token storage error:', tokenStoreError);
+          if (!tokenResponse.ok) {
+            const errorData = await tokenResponse.text();
+            console.error('Token exchange error:', tokenResponse.status, errorData);
+            return new Response(null, {
+              status: 302,
+              headers: {
+                ...corsHeaders,
+                'Location': `${url.origin}/admin?xerror=token_exchange_failed&error_detail=${encodeURIComponent(errorData)}`
+              }
+            });
+          }
+          
+          const tokenData: XeroTokenResponse = await tokenResponse.json();
+          console.log('Successfully received Xero tokens');
+          
+          // Store tokens in Supabase
+          const expiresAt = new Date();
+          expiresAt.setSeconds(expiresAt.getSeconds() + tokenData.expires_in);
+          
+          const { error: tokenStoreError } = await supabase
+            .from('xero_credentials')
+            .upsert({
+              id: 1, // Using a single row for simplicity
+              access_token: tokenData.access_token,
+              refresh_token: tokenData.refresh_token,
+              expires_at: expiresAt.toISOString(),
+              token_type: tokenData.token_type,
+              scope: tokenData.scope,
+              updated_at: new Date().toISOString()
+            });
+            
+          if (tokenStoreError) {
+            console.error('Token storage error:', tokenStoreError);
+            return new Response(null, {
+              status: 302,
+              headers: {
+                ...corsHeaders,
+                'Location': `${url.origin}/admin?xerror=token_storage_failed`
+              }
+            });
+          }
+          
+          // Redirect back to admin page with success
           return new Response(null, {
             status: 302,
             headers: {
               ...corsHeaders,
-              'Location': `${url.origin}/admin?xerror=token_storage_failed`
+              'Location': `${url.origin}/admin?xero=connected`
+            }
+          });
+        } catch (error) {
+          console.error('Token exchange exception:', error);
+          return new Response(null, {
+            status: 302,
+            headers: {
+              ...corsHeaders,
+              'Location': `${url.origin}/admin?xerror=token_exchange_exception&error_detail=${encodeURIComponent(error.message)}`
             }
           });
         }
-        
-        // Redirect back to admin page with success
-        return new Response(null, {
-          status: 302,
-          headers: {
-            ...corsHeaders,
-            'Location': `${url.origin}/admin?xero=connected`
-          }
-        });
       }
       
       case 'status': {
