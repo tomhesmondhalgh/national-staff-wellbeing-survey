@@ -1,7 +1,6 @@
-
 import { User, Provider } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 
 // Handle sign in with email and password
 export async function signInWithEmail(email: string, password: string) {
@@ -27,7 +26,10 @@ export async function signInWithEmail(email: string, password: string) {
       throw error;
     }
 
-    toast.success('Logged in successfully!');
+    toast({
+      title: 'Success',
+      description: 'Logged in successfully!'
+    });
     return { error: null, success: true };
   } catch (error) {
     console.error('Error signing in:', error);
@@ -87,11 +89,18 @@ export async function signOutUser() {
     localStorage.removeItem('testing_mode_role');
     
     await supabase.auth.signOut();
-    toast.success('Signed out successfully');
+    toast({
+      title: 'Success',
+      description: 'Signed out successfully'
+    });
     return { error: null, success: true };
   } catch (error) {
     console.error('Error signing out:', error);
-    toast.error('Error signing out');
+    toast({
+      title: 'Error',
+      description: 'Error signing out',
+      variant: 'destructive'
+    });
     return { error: error as Error, success: false };
   }
 }
@@ -117,7 +126,11 @@ export async function signInWithSocialProvider(provider: Provider) {
     return { error: null, success: true };
   } catch (error) {
     console.error(`Detailed error signing in with ${provider}:`, error);
-    toast.error(`Failed to sign in with ${provider}`);
+    toast({
+      title: 'Error',
+      description: `Failed to sign in with ${provider}`,
+      variant: 'destructive'
+    });
     return { error: error as Error, success: false };
   }
 }
@@ -217,10 +230,11 @@ export async function updateUserEmail(newEmail: string) {
       throw error;
     }
 
-    toast.success(
-      'Email update initiated', 
-      { description: 'Please check your new email inbox for a confirmation link.' }
-    );
+    toast({
+      title: 'Success',
+      description: 'Email update initiated',
+      description: 'Please check your new email inbox for a confirmation link.'
+    });
     return { error: null, success: true };
   } catch (error) {
     console.error('Error updating email:', error);

@@ -1,10 +1,8 @@
-
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Toaster } from './components/ui/toaster';
 import { AuthProvider } from './contexts/AuthContext';
 import { OrganizationProvider } from './contexts/OrganizationContext';
 import { TestingModeProvider } from './contexts/TestingModeContext';
-import { Toaster as SonnerToaster } from 'sonner';
+import { Toaster } from 'sonner';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import StripeProvider from './components/stripe/StripeProvider';
@@ -136,8 +134,8 @@ function App() {
                   } />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
-                <Toaster />
-                <SonnerToaster position="top-right" />
+                {/* Single Toaster component for the entire app */}
+                <Toaster position="bottom-right" />
               </OrganizationProvider>
             </StripeProvider>
           </TestingModeProvider>

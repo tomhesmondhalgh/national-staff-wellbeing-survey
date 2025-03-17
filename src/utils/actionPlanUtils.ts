@@ -1,6 +1,7 @@
+
 import { supabase } from '../lib/supabase/client';
 import { ActionPlanDescriptor, ActionPlanTemplate, ProgressNote, DescriptorStatus, ACTION_PLAN_SECTIONS } from '../types/actionPlan';
-import { toast } from '../hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 

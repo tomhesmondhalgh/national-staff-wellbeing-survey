@@ -1,20 +1,32 @@
 
 import { toast as sonnerToast } from "sonner";
 
-// Enhanced toast function that matches the expected interface
-export const toast = (props: {
-  title?: string; 
-  description?: string; 
+type ToastProps = {
+  title?: string;
+  description?: string;
   variant?: "default" | "destructive";
+  duration?: number;
   [key: string]: any;
-}) => {
-  if (props.variant === "destructive") {
-    return sonnerToast.error(props.title, {
-      description: props.description
+};
+
+// Enhanced toast function that matches the expected interface
+export const toast = (props: ToastProps) => {
+  const { title, description, variant, duration, ...rest } = props;
+  
+  // Handle destructive variant (errors)
+  if (variant === "destructive") {
+    return sonnerToast.error(title || 'Error', {
+      description,
+      duration: duration || 5000,
+      ...rest
     });
   }
-  return sonnerToast(props.title, {
-    description: props.description
+  
+  // Use success variant for non-destructive
+  return sonnerToast.success(title || 'Success', {
+    description,
+    duration: duration || 5000,
+    ...rest
   });
 };
 
