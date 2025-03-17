@@ -1,3 +1,4 @@
+
 import { User, Provider } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { toast } from '@/hooks/use-toast';
@@ -210,7 +211,10 @@ export async function completeUserProfile(userId: string, userData: any) {
       // Don't fail the signup if Hubspot integration fails
     }
 
-    toast.success('Profile updated successfully!');
+    toast({
+      title: 'Success',
+      description: 'Profile updated successfully!'
+    });
     
     return { error: null, success: true };
   } catch (error) {
@@ -232,7 +236,6 @@ export async function updateUserEmail(newEmail: string) {
 
     toast({
       title: 'Success',
-      description: 'Email update initiated',
       description: 'Please check your new email inbox for a confirmation link.'
     });
     return { error: null, success: true };
