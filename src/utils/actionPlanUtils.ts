@@ -1,4 +1,3 @@
-
 import { supabase } from '../lib/supabase/client';
 import { ActionPlanDescriptor, ActionPlanTemplate, ProgressNote, DescriptorStatus, ACTION_PLAN_SECTIONS } from '../types/actionPlan';
 import { toast } from 'sonner';
@@ -113,7 +112,7 @@ export const getActionPlanDescriptors = async (userId: string, section?: string)
   }
 };
 
-// Update a descriptor
+// Update descriptor
 export const updateDescriptor = async (descriptorId: string, updates: Partial<ActionPlanDescriptor>) => {
   try {
     console.log('Updating descriptor:', descriptorId, updates);
