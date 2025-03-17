@@ -1,6 +1,8 @@
 
 import React from 'react';
 import Navbar from './Navbar';
+import { Toaster } from '@/components/ui/toaster';
+import { Toaster as SonnerToaster } from '@/components/ui/sonner';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -18,6 +20,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           <p>© {new Date().getFullYear()} National Staff Wellbeing Survey. All rights reserved.</p>
         </div>
       </footer>
+      <Toaster />
+      <SonnerToaster position="bottom-right" />
     </div>
   );
 };
