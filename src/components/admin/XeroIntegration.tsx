@@ -35,10 +35,9 @@ export function XeroIntegration() {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-        query: {
-          action: 'status'
-        }
+        body: { action: 'status' }
       });
       
       if (fnError) {
@@ -85,10 +84,9 @@ export function XeroIntegration() {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-        query: {
-          action: 'authorize'
-        }
+        body: { action: 'authorize' }
       });
       
       if (fnError) {
@@ -136,10 +134,9 @@ export function XeroIntegration() {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-        query: {
-          action: 'disconnect'
-        }
+        body: { action: 'disconnect' }
       });
 
       if (fnError) {
@@ -179,6 +176,7 @@ export function XeroIntegration() {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         }
       });
 
