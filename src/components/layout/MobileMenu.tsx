@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { User, ShieldCheck, LogOut, Users, ClipboardList, Settings } from 'lucide-react';
+import { User, ShieldCheck, LogOut, Users, ClipboardList, Settings, CreditCard } from 'lucide-react';
 import { NavLinks } from './NavLinks';
 import OrganizationSwitcher from '../organization/OrganizationSwitcher';
 
@@ -67,7 +67,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
               onClick={() => setIsMenuOpen(false)}
             >
               <span className="flex items-center">
-                <User size={16} className="mr-1" />
+                <CreditCard size={16} className="mr-1" />
                 My Purchases
               </span>
             </Link>

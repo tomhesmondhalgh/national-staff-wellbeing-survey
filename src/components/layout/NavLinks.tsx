@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { NavLink as RouterNavLink, useLocation } from 'react-router-dom';
-import { useAdminRole } from '@/hooks/useAdminRole';
 
 interface NavLinksProps {
   closeMobileMenu?: () => void;
@@ -53,6 +52,7 @@ export const NavLinks: React.FC<NavLinksProps> = ({
     }
   };
   
+  // Only include main navigation items (Dashboard, Survey, Analyse, Improve, Upgrade)
   return (
     <div className="flex flex-col gap-1 md:flex-row md:items-center">
       <NavLink 
