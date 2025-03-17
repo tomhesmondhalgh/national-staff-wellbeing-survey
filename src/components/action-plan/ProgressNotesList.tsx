@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -25,17 +25,11 @@ const ProgressNotesList: React.FC<ProgressNotesListProps> = ({
   const [notes, setNotes] = useState<ProgressNote[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch notes when the modal opens with a valid descriptor ID
-  useEffect(() => {
-    if (isOpen && descriptorId) {
-      console.log('Fetching notes for descriptor:', descriptorId);
-      fetchNotes();
-    }
-    
-    // Don't reset notes when closing to avoid flash of empty content
-  }, [isOpen, descriptorId]);
+  // Create cache key for this descriptor's notes
+  const cacheKey = `notes_${descriptorId}`;
 
-  const fetchNotes = async () => {
+  // Fetch notes function with caching
+  const fetchNotes = useCallback(async () => {
     setIsLoading(true);
     try {
       console.log('Calling getProgressNotes for descriptor:', descriptorId);
@@ -44,6 +38,9 @@ const ProgressNotesList: React.FC<ProgressNotesListProps> = ({
       if (result.success && result.data) {
         console.log('Fetched notes successfully:', result.data);
         setNotes(result.data);
+        
+        // Cache the notes for this descriptor
+        sessionStorage.setItem(cacheKey, JSON.stringify(result.data));
       } else {
         console.error('Error fetching notes:', result.error);
         toast.error('Failed to load progress notes');
@@ -54,7 +51,29 @@ const ProgressNotesList: React.FC<ProgressNotesListProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [descriptorId, cacheKey]);
+
+  // Check for cached notes first, then fetch if needed
+  useEffect(() => {
+    if (isOpen && descriptorId) {
+      const cachedNotes = sessionStorage.getItem(cacheKey);
+      
+      if (cachedNotes) {
+        try {
+          setNotes(JSON.parse(cachedNotes));
+          setIsLoading(false);
+          
+          // Still fetch in the background to ensure up-to-date data
+          fetchNotes().catch(console.error);
+        } catch (e) {
+          console.error('Error parsing cached notes:', e);
+          fetchNotes().catch(console.error);
+        }
+      } else {
+        fetchNotes().catch(console.error);
+      }
+    }
+  }, [isOpen, descriptorId, fetchNotes, cacheKey]);
 
   // Format date for display
   const formatDate = (dateString: string) => {
@@ -82,7 +101,7 @@ const ProgressNotesList: React.FC<ProgressNotesListProps> = ({
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 max-h-[400px] overflow-y-auto">
-          {isLoading ? (
+          {isLoading && notes.length === 0 ? (
             <div className="flex justify-center py-6">Loading notes...</div>
           ) : notes.length === 0 ? (
             <div className="text-center py-6 text-gray-500">No progress notes yet</div>

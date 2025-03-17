@@ -21,6 +21,9 @@ const NotesActions: React.FC<NotesActionsProps> = ({
     return `${numCount} ${numCount === 1 ? 'Note' : 'Notes'}`;
   };
 
+  // Use memoization to avoid unnecessary re-renders
+  const formattedCount = React.useMemo(() => formatNoteCount(notesCount), [notesCount]);
+
   return (
     <div className="flex flex-col space-y-1">
       <Button 
@@ -30,7 +33,7 @@ const NotesActions: React.FC<NotesActionsProps> = ({
         className="h-7 px-2 text-xs w-full justify-start"
       >
         <FileText className="h-3 w-3 mr-1" />
-        {formatNoteCount(notesCount)}
+        {formattedCount}
       </Button>
       <Button 
         size="sm" 
