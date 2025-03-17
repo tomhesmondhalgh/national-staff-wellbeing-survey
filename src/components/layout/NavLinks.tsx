@@ -37,7 +37,6 @@ export const NavLinks: React.FC<NavLinksProps> = ({
   setIsMenuOpen
 }) => {
   const location = useLocation();
-  const { isAdmin } = useAdminRole();
   
   // Helper to check if a route is active
   const isActive = (path: string) => {
@@ -69,7 +68,7 @@ export const NavLinks: React.FC<NavLinksProps> = ({
         active={isActive('/surveys')} 
         onClick={handleLinkClick}
       >
-        Surveys
+        Survey
       </NavLink>
       
       <NavLink 
@@ -77,7 +76,7 @@ export const NavLinks: React.FC<NavLinksProps> = ({
         active={isActive('/analysis')} 
         onClick={handleLinkClick}
       >
-        Analysis
+        Analyse
       </NavLink>
       
       <NavLink 
@@ -89,30 +88,12 @@ export const NavLinks: React.FC<NavLinksProps> = ({
       </NavLink>
       
       <NavLink 
-        to="/team" 
-        active={isActive('/team')} 
+        to="/upgrade" 
+        active={isActive('/upgrade')} 
         onClick={handleLinkClick}
       >
-        Team
+        Upgrade
       </NavLink>
-      
-      <NavLink 
-        to="/custom-questions" 
-        active={isActive('/custom-questions')} 
-        onClick={handleLinkClick}
-      >
-        Custom Questions
-      </NavLink>
-      
-      {isAdmin && (
-        <NavLink 
-          to="/admin" 
-          active={isActive('/admin')} 
-          onClick={handleLinkClick}
-        >
-          Admin
-        </NavLink>
-      )}
     </div>
   );
 };

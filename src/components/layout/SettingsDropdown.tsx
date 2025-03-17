@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, User, ShieldCheck, LogOut, Users, ChevronDown, CreditCard } from 'lucide-react';
+import { Settings, User, ShieldCheck, LogOut, Users, ChevronDown, CreditCard, ClipboardList } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,7 +33,9 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ isAdmin, canManageT
   const isSettingsActive = location.pathname === '/profile' || 
                           location.pathname === '/team' || 
                           location.pathname === '/admin' ||
-                          location.pathname === '/purchases';
+                          location.pathname === '/purchases' ||
+                          location.pathname === '/custom-questions' ||
+                          location.pathname === '/xero';
 
   // Check if user is a real admin (not just in testing mode)
   React.useEffect(() => {
@@ -85,14 +87,26 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ isAdmin, canManageT
           </Link>
         </DropdownMenuItem>
         
-        {canManageTeam && (
-          <DropdownMenuItem asChild>
-            <Link to="/team" className="flex items-center w-full">
-              <Users size={16} className="mr-2" />
-              Team
-            </Link>
-          </DropdownMenuItem>
-        )}
+        <DropdownMenuItem asChild>
+          <Link to="/custom-questions" className="flex items-center w-full">
+            <ClipboardList size={16} className="mr-2" />
+            Custom Questions
+          </Link>
+        </DropdownMenuItem>
+        
+        <DropdownMenuItem asChild>
+          <Link to="/team" className="flex items-center w-full">
+            <Users size={16} className="mr-2" />
+            Team
+          </Link>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem asChild>
+          <Link to="/xero" className="flex items-center w-full">
+            <Settings size={16} className="mr-2" />
+            Xero Integration
+          </Link>
+        </DropdownMenuItem>
         
         {/* Show Admin link if user is either in testing mode as admin OR a real admin */}
         {(isAdmin || isRealAdmin) && (

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { User, ShieldCheck, LogOut, Users } from 'lucide-react';
+import { User, ShieldCheck, LogOut, Users, ClipboardList, Settings } from 'lucide-react';
 import { NavLinks } from './NavLinks';
 import OrganizationSwitcher from '../organization/OrganizationSwitcher';
 
@@ -41,7 +41,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
         {isAuthenticated ? (
           <>
             <div className="flex flex-col space-y-1">
-              <NavLinks canManageTeam={canManageTeam} setIsMenuOpen={setIsMenuOpen} />
+              <NavLinks setIsMenuOpen={setIsMenuOpen} />
             </div>
             
             {/* Settings Section Header - Increased font size */}
@@ -60,8 +60,29 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
                 Profile
               </span>
             </Link>
+
+            <Link 
+              to="/purchases" 
+              className="block px-4 py-2 rounded-md font-medium text-base hover:bg-brandPurple-50"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <span className="flex items-center">
+                <User size={16} className="mr-1" />
+                My Purchases
+              </span>
+            </Link>
             
-            {/* Always show Team link in settings for debugging - Increased font size */}
+            <Link 
+              to="/custom-questions" 
+              className="block px-4 py-2 rounded-md font-medium text-base hover:bg-brandPurple-50"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <span className="flex items-center">
+                <ClipboardList size={16} className="mr-1" />
+                Custom Questions
+              </span>
+            </Link>
+            
             <Link 
               to="/team" 
               className="block px-4 py-2 rounded-md font-medium text-base hover:bg-brandPurple-50"
@@ -70,6 +91,17 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
               <span className="flex items-center">
                 <Users size={16} className="mr-1" />
                 Team
+              </span>
+            </Link>
+
+            <Link 
+              to="/xero" 
+              className="block px-4 py-2 rounded-md font-medium text-base hover:bg-brandPurple-50"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <span className="flex items-center">
+                <Settings size={16} className="mr-1" />
+                Xero Integration
               </span>
             </Link>
             
