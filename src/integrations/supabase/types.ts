@@ -473,6 +473,14 @@ export type Database = {
           school_address: string | null
           school_name: string | null
           updated_at: string
+          xero_access_token: string | null
+          xero_auth_state: string | null
+          xero_code_verifier: string | null
+          xero_connected: boolean | null
+          xero_connected_at: string | null
+          xero_redirect_uri: string | null
+          xero_refresh_token: string | null
+          xero_token_expires_at: number | null
         }
         Insert: {
           created_at?: string
@@ -483,6 +491,14 @@ export type Database = {
           school_address?: string | null
           school_name?: string | null
           updated_at?: string
+          xero_access_token?: string | null
+          xero_auth_state?: string | null
+          xero_code_verifier?: string | null
+          xero_connected?: boolean | null
+          xero_connected_at?: string | null
+          xero_redirect_uri?: string | null
+          xero_refresh_token?: string | null
+          xero_token_expires_at?: number | null
         }
         Update: {
           created_at?: string
@@ -493,6 +509,14 @@ export type Database = {
           school_address?: string | null
           school_name?: string | null
           updated_at?: string
+          xero_access_token?: string | null
+          xero_auth_state?: string | null
+          xero_code_verifier?: string | null
+          xero_connected?: boolean | null
+          xero_connected_at?: string | null
+          xero_redirect_uri?: string | null
+          xero_refresh_token?: string | null
+          xero_token_expires_at?: number | null
         }
         Relationships: []
       }

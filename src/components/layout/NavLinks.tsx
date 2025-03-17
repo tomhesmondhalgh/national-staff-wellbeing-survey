@@ -1,9 +1,12 @@
+
 import React from 'react';
 import { NavLink as RouterNavLink, useLocation } from 'react-router-dom';
 import { useAdminRole } from '@/hooks/useAdminRole';
 
 interface NavLinksProps {
   closeMobileMenu?: () => void;
+  canManageTeam?: boolean;
+  setIsMenuOpen?: (isOpen: boolean) => void;
 }
 
 interface NavLinkProps {
@@ -29,7 +32,10 @@ const NavLink: React.FC<NavLinkProps> = ({ to, active, onClick, children }) => {
   );
 };
 
-export const NavLinks: React.FC<NavLinksProps> = ({ closeMobileMenu }) => {
+export const NavLinks: React.FC<NavLinksProps> = ({ 
+  closeMobileMenu,
+  setIsMenuOpen
+}) => {
   const location = useLocation();
   const { isAdmin } = useAdminRole();
   
@@ -42,6 +48,9 @@ export const NavLinks: React.FC<NavLinksProps> = ({ closeMobileMenu }) => {
   const handleLinkClick = () => {
     if (closeMobileMenu) {
       closeMobileMenu();
+    }
+    if (setIsMenuOpen) {
+      setIsMenuOpen(false);
     }
   };
   
