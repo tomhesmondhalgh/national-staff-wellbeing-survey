@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import Stripe from "https://esm.sh/stripe@13.9.0";
@@ -62,23 +63,40 @@ serve(async (req: Request) => {
       );
     }
 
-    const stripePriceId = getStripePriceId(planType, purchaseType);
-    console.log(`Mapped price ID from ${priceId} to ${stripePriceId}`);
+    // Get plan details from the database using stripe_price_id
+    const { data: planData, error: planError } = await supabase
+      .from('plans')
+      .select('*')
+      .eq('stripe_price_id', priceId)
+      .eq('is_active', true)
+      .maybeSingle();
 
-    try {
-      const price = await stripe.prices.retrieve(stripePriceId);
-      console.log('Successfully retrieved price from Stripe:', {
-        id: price.id,
-        active: price.active,
-        currency: price.currency,
-        type: price.type,
+    if (planError || !planData) {
+      console.error('Error retrieving plan from database:', planError);
+      
+      // Fallback to directly retrieving from Stripe
+      try {
+        const price = await stripe.prices.retrieve(priceId);
+        console.log('Successfully retrieved price from Stripe:', {
+          id: price.id,
+          active: price.active,
+          currency: price.currency,
+          type: price.type,
+        });
+      } catch (priceError) {
+        console.error('Error retrieving price from Stripe:', priceError);
+        return new Response(
+          JSON.stringify({ error: `Invalid price ID: ${priceId}` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } else {
+      console.log('Successfully retrieved plan from database:', {
+        id: planData.id,
+        name: planData.name,
+        price: planData.price,
+        stripe_price_id: planData.stripe_price_id
       });
-    } catch (priceError) {
-      console.error('Error retrieving price from Stripe:', priceError);
-      return new Response(
-        JSON.stringify({ error: `Invalid price ID: ${stripePriceId}` }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
     }
 
     const metadata = {
@@ -93,30 +111,38 @@ serve(async (req: Request) => {
 
     console.log('Creating Stripe session with:', {
       mode: purchaseType === 'subscription' ? 'subscription' : 'payment',
-      priceId: stripePriceId,
+      priceId: priceId,
       metadata,
-      successUrl: `${new URL(successUrl).origin}/payment-success`,
+      successUrl,
       cancelUrl
     });
 
-    const session = await stripe.checkout.sessions.create({
+    // Fix: Set customer_creation only for 'payment' mode
+    const sessionOptions = {
       mode: purchaseType === 'subscription' ? 'subscription' : 'payment',
       line_items: [
         {
-          price: stripePriceId,
+          price: priceId,
           quantity: 1,
         },
       ],
-      success_url: `${new URL(successUrl).origin}/payment-success`,
+      success_url: successUrl,
       cancel_url: cancelUrl,
       metadata,
       client_reference_id: user.id,
-      customer_creation: 'always',
       billing_address_collection: 'required',
       payment_method_types: ['card'],
       locale: 'en-GB',
       allow_promotion_codes: true,
-    });
+    };
+
+    // Only add customer_creation for payment mode
+    if (purchaseType !== 'subscription') {
+      // @ts-ignore - Add customer_creation only for payment mode
+      sessionOptions.customer_creation = 'always';
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionOptions);
 
     await supabase.from('subscriptions').insert({
       user_id: user.id,
@@ -144,20 +170,3 @@ serve(async (req: Request) => {
     );
   }
 });
-
-function getStripePriceId(planType: string, purchaseType: string): string {
-  const priceMapping = {
-    foundation: {
-      'one-time': 'price_1R1mapCEpf4RofE3Cfouca7W',
-      'subscription': 'price_1R1mapCEpf4RofE3Cfouca7W'
-    },
-    progress: {
-      'subscription': 'price_1R1mcSCEpf4RofE3rOmSRsYx'
-    },
-    premium: {
-      'subscription': 'price_1R1md0CEpf4RofE3qaf3kA9C'
-    }
-  };
-
-  return priceMapping[planType]?.[purchaseType] || 'price_1R1mapCEpf4RofE3Cfouca7W';
-}

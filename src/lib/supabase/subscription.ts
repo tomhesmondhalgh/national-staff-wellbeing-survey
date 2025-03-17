@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 
 export type PlanType = 'free' | 'foundation' | 'progress' | 'premium';
@@ -36,6 +35,23 @@ export interface PaymentHistory {
 export interface SubscriptionAccess {
   plan: PlanType;
   isActive: boolean;
+}
+
+export interface Plan {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  purchase_type: 'subscription' | 'one-time' | null;
+  duration_months: number | null;
+  stripe_price_id: string | null;
+  features: string[];
+  is_popular: boolean;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
 }
 
 // Fetch user's current subscription
@@ -223,5 +239,68 @@ export async function checkAndCreateSubscription(
   } catch (error) {
     console.error('Error in checkAndCreateSubscription:', error);
     return false;
+  }
+}
+
+// Get all active plans ordered by sort_order
+export async function getPlans(): Promise<Plan[]> {
+  try {
+    const { data, error } = await supabase
+      .from('plans')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order');
+    
+    if (error) {
+      console.error('Error fetching plans:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error in getPlans:', error);
+    return [];
+  }
+}
+
+// Get a single plan by ID
+export async function getPlanById(planId: string): Promise<Plan | null> {
+  try {
+    const { data, error } = await supabase
+      .from('plans')
+      .select('*')
+      .eq('id', planId)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error fetching plan by ID:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error in getPlanById:', error);
+    return null;
+  }
+}
+
+// Get a plan by its Stripe price ID
+export async function getPlanByStripeId(stripePriceId: string): Promise<Plan | null> {
+  try {
+    const { data, error } = await supabase
+      .from('plans')
+      .select('*')
+      .eq('stripe_price_id', stripePriceId)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error fetching plan by Stripe ID:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error in getPlanByStripeId:', error);
+    return null;
   }
 }

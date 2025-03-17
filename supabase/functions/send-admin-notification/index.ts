@@ -34,8 +34,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Preparing to send admin notification about new user: ${email}`);
 
+    // Updated: Use the new sender format
     const emailResponse = await resend.emails.send({
-      from: "Wellbeing Surveys <no-reply@creativeeducation.co.uk>",
+      from: "Human Kind <contact@humankindaward.com>",
       to: ["tom.hesmondhalgh@creativeeducation.co.uk"],
       subject: "New Registration",
       html: `

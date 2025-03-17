@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import PlanCard, { PlanType } from './PlanCard';
 import { useSubscription } from '../../hooks/useSubscription';
+import { useSubscriptionPlans } from '../../hooks/useSubscriptionPlans';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../hooks/use-toast';
 import { useAuth } from '../../contexts/AuthContext';
@@ -46,12 +48,19 @@ const PricingSection: React.FC = () => {
 
   const {
     subscription,
-    isLoading,
+    isLoading: isSubscriptionLoading,
     isFree,
     isFoundation,
     isProgress,
     isPremium
   } = useSubscription();
+  
+  const {
+    plans,
+    isLoading: isPlansLoading,
+    formatPrice
+  } = useSubscriptionPlans();
+  
   const { toast } = useToast();
 
   useEffect(() => {
@@ -96,7 +105,7 @@ const PricingSection: React.FC = () => {
     fetchUserProfile();
   }, [user]);
 
-  const handleUpgrade = async (priceId: string, planType: 'foundation' | 'progress' | 'premium', purchaseType: 'subscription' | 'one-time') => {
+  const handleUpgrade = async (stripePriceId: string, planType: 'foundation' | 'progress' | 'premium', purchaseType: 'subscription' | 'one-time') => {
     try {
       if (isProcessing) {
         console.log('Already processing a payment request, please wait...');
@@ -106,7 +115,7 @@ const PricingSection: React.FC = () => {
       setIsProcessing(true);
       
       console.log('Initiating upgrade process:', {
-        priceId,
+        stripePriceId,
         planType,
         purchaseType,
         userProfile
@@ -119,7 +128,7 @@ const PricingSection: React.FC = () => {
 
       const { data, error } = await supabase.functions.invoke('create-payment-session', {
         body: {
-          priceId,
+          priceId: stripePriceId,
           planType,
           purchaseType,
           successUrl: `${window.location.origin}/dashboard?payment=success`,
@@ -284,130 +293,75 @@ const PricingSection: React.FC = () => {
     onButtonClick();
   };
 
-  const plans = [
-    {
-      title: "Free",
-      description: "Establish priority areas",
-      price: "Free",
-      features: [
-        {
-          text: "Easily issue surveys to staff by email or survey link"
-        },
-        {
-          text: "Analyse survey results for your school"
+  // Show loading state when plans are loading
+  if (isPlansLoading || isSubscriptionLoading) {
+    return (
+      <div className="mt-12 text-center">
+        <h2 className="text-2xl font-bold mb-10 py-[30px]">Loading Plans...</h2>
+        <div className="flex justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brandPurple-600"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Convert database plans to display format
+  const displayPlans = plans.map(plan => {
+    const planType = plan.name.toLowerCase() as PlanType;
+    const price = formatPrice(plan.price);
+    const priceSubtext = plan.price > 0 
+      ? `+ VAT (${plan.purchase_type === 'subscription' ? `${plan.duration_months ? plan.duration_months/12 : 3}-year subscription` : 'one-off payment'})`
+      : undefined;
+    
+    // Handle the case when the plan is the free plan
+    const isPaidPlan = planType !== 'free';
+    const upgradePlanType = isPaidPlan ? planType as 'foundation' | 'progress' | 'premium' : 'foundation';
+    
+    return {
+      title: plan.name,
+      description: plan.description,
+      price: plan.price === 0 ? "Free" : price,
+      priceSubtext,
+      features: plan.features.map(feature => ({ text: feature })),
+      planType,
+      isPopular: plan.is_popular,
+      onButtonClick: () => handleButtonClick(planType, () => {
+        if (planType === 'free') {
+          navigate('/dashboard');
+        } else if (isFree || isSubscriptionLoading || 
+            (planType === 'progress' && isFoundation) || 
+            (planType === 'premium' && (isFoundation || isProgress))) {
+          handleUpgrade(plan.stripe_price_id || '', upgradePlanType, plan.purchase_type || 'subscription');
         }
-      ],
-      planType: 'free' as PlanType,
-      onButtonClick: () => handleButtonClick('free', () => navigate('/dashboard')),
-      buttonText: getButtonText('free'),
-      buttonVariant: getButtonVariant('free')
-    },
-    {
-      title: "Foundation",
-      description: "Plan for improvement",
-      price: "£299",
-      priceSubtext: "+ VAT (one-off payment)",
-      features: [
-        {
-          text: "Everything in the Free plan, plus..."
-        },
-        {
-          text: "Compare your survey results to national averages"
-        },
-        {
-          text: "Easily plan for improvement with the Human Kind Framework and planning tool"
-        }
-      ],
-      planType: 'foundation' as PlanType,
-      onButtonClick: () => handleButtonClick('foundation', () => 
-        isFree || isLoading 
-          ? handleUpgrade('price_1R1mapCEpf4RofE3Cfouca7W', 'foundation', 'one-time')
-          : null
-      ),
-      buttonText: getButtonText('foundation'),
-      buttonVariant: getButtonVariant('foundation'),
-      disabled: isFoundation || isProgress || isPremium,
-      hasInvoiceOption: true,
-      onCardPayment: () => handleUpgrade('price_1R1mapCEpf4RofE3Cfouca7W', 'foundation', 'one-time'),
-      onInvoiceRequest: () => openInvoiceDialog('foundation', 'one-time')
-    },
-    {
-      title: "Progress",
-      description: "Comprehensive support & accreditation",
-      price: "£1,499",
-      priceSubtext: "+ VAT (3-year subscription)",
-      features: [
-        {
-          text: "Everything in the Foundation plan, plus..."
-        },
-        {
-          text: "1 space on our course 'Leading Staff Wellbeing'"
-        },
-        {
-          text: "Formal accreditation and a logo you can use on your website"
-        },
-        {
-          text: "Add additional users to collaborate on your plan"
-        },
-        {
-          text: "Quarterly live staff wellbeing networks"
-        },
-        {
-          text: "Unlimited email support"
-        }
-      ],
-      planType: 'progress' as PlanType,
-      isPopular: true,
-      onButtonClick: () => handleButtonClick('progress', () => 
-        isFree || isFoundation || isLoading 
-          ? handleUpgrade('price_1R1mcSCEpf4RofE3rOmSRsYx', 'progress', 'subscription')
-          : null
-      ),
-      buttonText: getButtonText('progress'),
-      buttonVariant: getButtonVariant('progress'),
-      disabled: isProgress || isPremium,
-      hasInvoiceOption: true,
-      onCardPayment: () => handleUpgrade('price_1R1mcSCEpf4RofE3rOmSRsYx', 'progress', 'subscription'),
-      onInvoiceRequest: () => openInvoiceDialog('progress', 'subscription')
-    },
-    {
-      title: "Premium",
-      description: "Maximum support & coaching",
-      price: "£2,499",
-      priceSubtext: "+ VAT (3-year subscription)",
-      features: [
-        {
-          text: "Everything in the Progress plan, plus..."
-        },
-        {
-          text: "Termly coaching meetings throughout your 3 year accreditation period"
-        },
-        {
-          text: "Gold award' logo when accredited to celebrate your achievement",
-          icon: 'trophy' as const
-        }
-      ],
-      planType: 'premium' as PlanType,
-      onButtonClick: () => handleButtonClick('premium', () => 
-        isFree || isFoundation || isProgress || isLoading 
-          ? handleUpgrade('price_1R1md0CEpf4RofE3qaf3kA9C', 'premium', 'subscription')
-          : null
-      ),
-      buttonText: getButtonText('premium'),
-      buttonVariant: getButtonVariant('premium'),
-      disabled: isPremium,
-      hasInvoiceOption: true,
-      onCardPayment: () => handleUpgrade('price_1R1md0CEpf4RofE3qaf3kA9C', 'premium', 'subscription'),
-      onInvoiceRequest: () => openInvoiceDialog('premium', 'subscription')
-    }
-  ];
+      }),
+      buttonText: getButtonText(planType),
+      buttonVariant: getButtonVariant(planType),
+      disabled: (planType === 'foundation' && (isFoundation || isProgress || isPremium)) ||
+                (planType === 'progress' && (isProgress || isPremium)) ||
+                (planType === 'premium' && isPremium),
+      hasInvoiceOption: planType !== 'free',
+      onCardPayment: () => isPaidPlan ? 
+        handleUpgrade(plan.stripe_price_id || '', upgradePlanType, plan.purchase_type || 'subscription') : 
+        navigate('/dashboard'),
+      onInvoiceRequest: () => isPaidPlan ? 
+        openInvoiceDialog(upgradePlanType, plan.purchase_type || 'subscription') : 
+        null
+    };
+  });
+
+  // Sort plans by sort_order
+  displayPlans.sort((a, b) => {
+    const aOrder = plans.find(p => p.name.toLowerCase() === a.planType)?.sort_order || 0;
+    const bOrder = plans.find(p => p.name.toLowerCase() === b.planType)?.sort_order || 0;
+    return aOrder - bOrder;
+  });
 
   return (
     <div className="mt-12">
       <h2 className="text-2xl font-bold text-center mb-10 py-[30px]">Choose the Right Plan for Your Organisation</h2>
       
       <div className="grid md:grid-cols-4 gap-8">
-        {plans.map((plan, index) => (
+        {displayPlans.map((plan, index) => (
           <PlanCard 
             key={index} 
             {...plan} 
