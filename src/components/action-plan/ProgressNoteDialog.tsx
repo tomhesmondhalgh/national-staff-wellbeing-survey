@@ -36,14 +36,23 @@ const ProgressNoteDialog: React.FC<ProgressNoteDialogProps> = ({
     }
 
     setIsSubmitting(true);
-    const result = await addProgressNote(descriptorId, noteText);
-    setIsSubmitting(false);
+    try {
+      const result = await addProgressNote(descriptorId, noteText);
+      setIsSubmitting(false);
 
-    if (result.success) {
-      toast.success('Progress note added');
-      setNoteText('');
-      onSuccess();
-      onClose();
+      if (result.success) {
+        toast.success('Progress note added');
+        setNoteText('');
+        onSuccess();
+        onClose();
+      } else {
+        console.error('Error adding note:', result.error);
+        toast.error('Failed to add note');
+      }
+    } catch (error) {
+      console.error('Exception adding note:', error);
+      setIsSubmitting(false);
+      toast.error('An error occurred while saving the note');
     }
   };
 

@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { getProgressNotes } from '@/utils/actionPlanUtils';
 import { ProgressNote } from '@/types/actionPlan';
+import { toast } from 'sonner';
 
 interface ProgressNotesListProps {
   descriptorId: string;
@@ -32,11 +33,21 @@ const ProgressNotesList: React.FC<ProgressNotesListProps> = ({
 
   const fetchNotes = async () => {
     setIsLoading(true);
-    const result = await getProgressNotes(descriptorId);
-    setIsLoading(false);
+    try {
+      const result = await getProgressNotes(descriptorId);
+      setIsLoading(false);
 
-    if (result.success && result.data) {
-      setNotes(result.data);
+      if (result.success && result.data) {
+        console.log('Fetched notes:', result.data);
+        setNotes(result.data);
+      } else {
+        console.error('Error fetching notes:', result.error);
+        toast.error('Failed to load progress notes');
+      }
+    } catch (error) {
+      console.error('Exception fetching notes:', error);
+      setIsLoading(false);
+      toast.error('An error occurred while loading notes');
     }
   };
 

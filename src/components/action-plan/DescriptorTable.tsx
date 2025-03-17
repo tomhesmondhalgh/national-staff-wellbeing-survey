@@ -29,25 +29,33 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
 
   const fetchDescriptors = async () => {
     setIsLoading(true);
-    const result = await getActionPlanDescriptors(userId, section);
-    setIsLoading(false);
+    try {
+      const result = await getActionPlanDescriptors(userId, section);
+      setIsLoading(false);
 
-    if (result.success && result.data) {
-      const sortedDescriptors = result.data.sort((a, b) => {
-        if (!a.index_number) return 1;
-        if (!b.index_number) return -1;
-        return a.index_number.localeCompare(b.index_number, undefined, { numeric: true });
-      });
-      
-      const uniqueDescriptors = Array.from(
-        new Map(sortedDescriptors.map(descriptor => 
-          [descriptor.index_number + descriptor.reference, descriptor]
-        )).values()
-      );
-      
-      setDescriptors(uniqueDescriptors);
-    } else {
-      toast.error('Failed to load data');
+      if (result.success && result.data) {
+        console.log('Fetched descriptors:', result.data);
+        const sortedDescriptors = result.data.sort((a, b) => {
+          if (!a.index_number) return 1;
+          if (!b.index_number) return -1;
+          return a.index_number.localeCompare(b.index_number, undefined, { numeric: true });
+        });
+        
+        const uniqueDescriptors = Array.from(
+          new Map(sortedDescriptors.map(descriptor => 
+            [descriptor.index_number + descriptor.reference, descriptor]
+          )).values()
+        );
+        
+        setDescriptors(uniqueDescriptors);
+      } else {
+        console.error('Failed to load descriptors:', result.error);
+        toast.error('Failed to load data');
+      }
+    } catch (error) {
+      console.error('Exception fetching descriptors:', error);
+      setIsLoading(false);
+      toast.error('An error occurred while loading data');
     }
   };
 
@@ -61,17 +69,29 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
   );
 
   const handleStatusChange = async (id: string, status: DescriptorStatus) => {
-    const result = await updateDescriptor(id, { status });
-    if (result.success) {
-      setDescriptors(descriptors.map(d => d.id === id ? { ...d, status } : d));
-      onRefreshSummary();
+    try {
+      const result = await updateDescriptor(id, { status });
+      if (result.success) {
+        setDescriptors(descriptors.map(d => d.id === id ? { ...d, status } : d));
+        onRefreshSummary();
+      } else {
+        console.error('Failed to update status:', result.error);
+      }
+    } catch (error) {
+      console.error('Exception updating status:', error);
     }
   };
 
   const handleDateChange = async (id: string, date: string) => {
-    const result = await updateDescriptor(id, { deadline: date || null });
-    if (result.success) {
-      setDescriptors(descriptors.map(d => d.id === id ? { ...d, deadline: date } : d));
+    try {
+      const result = await updateDescriptor(id, { deadline: date || null });
+      if (result.success) {
+        setDescriptors(descriptors.map(d => d.id === id ? { ...d, deadline: date } : d));
+      } else {
+        console.error('Failed to update date:', result.error);
+      }
+    } catch (error) {
+      console.error('Exception updating date:', error);
     }
   };
 
@@ -81,10 +101,16 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
     const { id, field } = editingCell;
     const updates: Partial<ActionPlanDescriptor> = { [field]: editValue };
     
-    const result = await updateDescriptor(id, updates);
-    if (result.success) {
-      setDescriptors(descriptors.map(d => d.id === id ? { ...d, [field]: editValue } : d));
-      setEditingCell(null);
+    try {
+      const result = await updateDescriptor(id, updates);
+      if (result.success) {
+        setDescriptors(descriptors.map(d => d.id === id ? { ...d, [field]: editValue } : d));
+        setEditingCell(null);
+      } else {
+        console.error('Failed to save edit:', result.error);
+      }
+    } catch (error) {
+      console.error('Exception saving edit:', error);
     }
   };
 

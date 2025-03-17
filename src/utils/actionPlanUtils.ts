@@ -87,14 +87,20 @@ export const updateDescriptor = async (descriptorId: string, updates: Partial<Ac
 // Get progress notes for a descriptor
 export const getProgressNotes = async (descriptorId: string) => {
   try {
+    console.log('Fetching progress notes for descriptor:', descriptorId);
+    
     const { data, error } = await supabase
       .from('action_plan_progress_notes')
       .select('*')
       .eq('descriptor_id', descriptorId)
       .order('note_date', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error fetching progress notes:', error);
+      throw error;
+    }
 
+    console.log('Fetched progress notes:', data);
     return { success: true, data: data || [] };
   } catch (error: any) {
     console.error('Error fetching progress notes:', error);
@@ -105,16 +111,23 @@ export const getProgressNotes = async (descriptorId: string) => {
 // Add a progress note
 export const addProgressNote = async (descriptorId: string, noteText: string) => {
   try {
-    const { error } = await supabase
+    console.log('Adding progress note for descriptor:', descriptorId);
+    
+    const { data, error } = await supabase
       .from('action_plan_progress_notes')
       .insert({
         descriptor_id: descriptorId,
         note_text: noteText
-      });
+      })
+      .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error adding progress note:', error);
+      throw error;
+    }
 
-    return { success: true };
+    console.log('Added progress note:', data);
+    return { success: true, data };
   } catch (error: any) {
     console.error('Error adding progress note:', error);
     toast.error('Failed to add note: ' + error.message);
