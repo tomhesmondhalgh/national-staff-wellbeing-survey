@@ -39,10 +39,10 @@ serve(async (req) => {
     const surveyUrl = "https://example.com/survey?id=test-123";
     const analysisUrl = "https://example.com/analysis?id=test-123";
     
-    // Updated: Use a consistent verified sender address format
+    // Updated: Use the new sender format
     // Send test survey invitation email
     const invitationResponse = await resend.emails.send({
-      from: "Wellbeing Surveys <notifications@creativeeducation.co.uk>",
+      from: "Human Kind <contact@humankindaward.com>",
       to: email,
       subject: `[TEST] You're invited to complete the "${surveyName}" wellbeing survey`,
       html: `
@@ -76,10 +76,10 @@ serve(async (req) => {
       `,
     });
     
-    // Updated: Use a consistent verified sender address format
+    // Updated: Use the new sender format
     // Send test reminder email
     const reminderResponse = await resend.emails.send({
-      from: "Wellbeing Surveys <notifications@creativeeducation.co.uk>",
+      from: "Human Kind <contact@humankindaward.com>",
       to: email,
       subject: `[TEST] Reminder: Please complete the "${surveyName}" wellbeing survey`,
       html: `
@@ -113,10 +113,10 @@ serve(async (req) => {
       `,
     });
     
-    // Updated: Use a consistent verified sender address format
+    // Updated: Use the new sender format
     // Send test closure notification email
     const closureResponse = await resend.emails.send({
-      from: "Wellbeing Surveys <notifications@creativeeducation.co.uk>",
+      from: "Human Kind <contact@humankindaward.com>",
       to: email,
       subject: `[TEST] Your survey "${surveyName}" has now closed - see the results...`,
       html: `

@@ -79,9 +79,9 @@ const handler = async (req: Request): Promise<Response> => {
         .join(' ');
     };
     
-    // Updated: Use a consistent verified sender address format
+    // Updated: Use the new sender format
     const emailData = {
-      from: "Wellbeing Surveys <notifications@creativeeducation.co.uk>",
+      from: "Human Kind <contact@humankindaward.com>",
       to: [invitation.email],
       subject: "You have been invited to access our wellbeing surveys",
       html: `

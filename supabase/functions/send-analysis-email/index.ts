@@ -45,9 +45,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Sending analysis email to ${to} for survey ${surveyName}`);
 
-    // Updated: Use a consistent verified sender address format
+    // Updated: Use the new sender format
     const emailResponse = await resend.emails.send({
-      from: "Wellbeing Surveys <notifications@creativeeducation.co.uk>",
+      from: "Human Kind <contact@humankindaward.com>",
       to: [to],
       subject: subject || `Survey Analysis Report: ${surveyName}`,
       html: htmlContent,

@@ -46,9 +46,9 @@ serve(async (req) => {
           ? `Reminder: Please complete the "${surveyName}" wellbeing survey`
           : `You're invited to complete the "${surveyName}" wellbeing survey`;
         
-        // Updated: Use a consistent verified sender address format
+        // Updated: Use the new sender format
         const response = await resend.emails.send({
-          from: "Wellbeing Surveys <notifications@creativeeducation.co.uk>",
+          from: "Human Kind <contact@humankindaward.com>",
           to: email,
           subject: subject,
           html: `
