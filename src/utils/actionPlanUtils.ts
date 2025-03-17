@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase/client';
 import { ActionPlanDescriptor, ActionPlanTemplate, ProgressNote, DescriptorStatus, ACTION_PLAN_SECTIONS } from '../types/actionPlan';
-import { toast } from 'sonner';
+import { toast } from '../hooks/use-toast';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
@@ -131,7 +131,11 @@ export const updateDescriptor = async (descriptorId: string, updates: Partial<Ac
     return { success: true };
   } catch (error: any) {
     console.error('Error updating descriptor:', error);
-    toast.error('Failed to update: ' + error.message);
+    toast({
+      title: 'Failed to update',
+      description: error.message,
+      variant: 'destructive'
+    });
     return { success: false, error: error.message };
   }
 };
@@ -187,7 +191,11 @@ export const addProgressNote = async (descriptorId: string, noteText: string) =>
     return { success: true, data };
   } catch (error: any) {
     console.error('Error adding progress note:', error);
-    toast.error('Failed to add note: ' + error.message);
+    toast({
+      title: 'Failed to add note',
+      description: error.message,
+      variant: 'destructive'
+    });
     return { success: false, error: error.message };
   }
 };
@@ -219,7 +227,11 @@ export const saveAsTemplate = async (userId: string, templateName: string) => {
     return { success: true, templateId: template.id };
   } catch (error: any) {
     console.error('Error saving template:', error);
-    toast.error('Failed to save template: ' + error.message);
+    toast({
+      title: 'Failed to save template',
+      description: error.message,
+      variant: 'destructive'
+    });
     return { success: false, error: error.message };
   }
 };
@@ -372,7 +384,11 @@ export const generatePDF = async (userId: string) => {
     return { success: true };
   } catch (error: any) {
     console.error('Error generating PDF:', error);
-    toast.error('Failed to generate PDF: ' + error.message);
+    toast({
+      title: 'Failed to generate PDF',
+      description: error.message,
+      variant: 'destructive'
+    });
     return { success: false, error: error.message };
   }
 };

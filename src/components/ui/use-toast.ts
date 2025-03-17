@@ -1,14 +1,5 @@
 
-import { toast } from "sonner";
+// Re-export from the hooks version for consistency
+import { toast, useToast } from "@/hooks/use-toast";
 
-// Re-export the toast from sonner only
-export { toast };
-
-// For backwards compatibility, provide an empty useToast function
-export const useToast = () => {
-  return {
-    toast,
-    dismiss: () => {},
-    toasts: []
-  };
-};
+export { toast, useToast };

@@ -1,14 +1,28 @@
 
-import { toast } from "sonner";
+import { toast as sonnerToast } from "sonner";
 
-// Re-export the toast function from sonner
-export { toast };
+// Enhanced toast function that matches the expected interface
+export const toast = (props: {
+  title?: string; 
+  description?: string; 
+  variant?: "default" | "destructive";
+  [key: string]: any;
+}) => {
+  if (props.variant === "destructive") {
+    return sonnerToast.error(props.title, {
+      description: props.description
+    });
+  }
+  return sonnerToast(props.title, {
+    description: props.description
+  });
+};
 
-// For backwards compatibility, provide a useToast function that wraps sonner's toast
+// Export a compatible useToast hook interface
 export const useToast = () => {
   return {
     toast,
-    dismiss: () => {},
+    dismiss: sonnerToast.dismiss,
     toasts: []
   };
 };
