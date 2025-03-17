@@ -294,55 +294,15 @@ async function handleCreateInvoiceRequest(
   console.log("Starting handleCreateInvoiceRequest");
   const { planType, purchaseType, billingDetails } = data;
   
-  // Get plan data from the plans table
-  try {
-    console.log("Fetching plan data for:", planType);
-    const { data: plan, error: planError } = await supabase
-      .from('plans')
-      .select('*')
-      .eq('name', planType)
-      .ilike('purchase_type', purchaseType)
-      .single();
-      
-    if (planError || !plan) {
-      console.error("Error fetching plan data:", planError);
-      
-      // Fallback to legacy pricing if plan not found
-      const legacyPricing = {
-        foundation: 299,
-        progress: 1499,
-        premium: 2499
-      };
-      
-      const amount = legacyPricing[planType] || 299;
-      
-      console.log("Using legacy pricing:", amount);
-      
-      return createInvoiceSubscription(user, planType, purchaseType, amount, billingDetails, supabase);
-    }
-    
-    console.log("Found plan:", plan.name, "with price:", plan.price);
-    
-    // Use the plan's price from the database
-    return createInvoiceSubscription(user, planType, purchaseType, plan.price, billingDetails, supabase);
-  } catch (error) {
-    console.error("Error in plan lookup:", error);
-    return new Response(
-      JSON.stringify({ error: 'Error fetching plan data', details: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-}
+  // Get pricing based on plan type
+  const planPricing = {
+    foundation: 299,
+    progress: 1499,
+    premium: 2499
+  };
+  
+  const amount = planPricing[planType] || 299;
 
-// Helper function to create subscription and payment records
-async function createInvoiceSubscription(
-  user: any,
-  planType: string,
-  purchaseType: string,
-  amount: number,
-  billingDetails: any,
-  supabase: any
-) {
   try {
     console.log("Creating subscription record for user:", user.id);
     

@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import Stripe from "https://esm.sh/stripe@13.9.0";
@@ -63,48 +62,23 @@ serve(async (req: Request) => {
       );
     }
 
-    // Fetch plan from database using priceId
-    const { data: plan, error: planError } = await supabase
-      .from('plans')
-      .select('*')
-      .eq('stripe_price_id', priceId)
-      .single();
+    const stripePriceId = getStripePriceId(planType, purchaseType);
+    console.log(`Mapped price ID from ${priceId} to ${stripePriceId}`);
 
-    if (planError || !plan) {
-      console.error('Error fetching plan:', planError || 'Plan not found');
-      
-      // Fallback to checking if priceId is directly a Stripe price ID
-      try {
-        const price = await stripe.prices.retrieve(priceId);
-        console.log('Using direct Stripe price ID:', {
-          id: price.id,
-          active: price.active,
-          currency: price.currency,
-          type: price.type,
-        });
-      } catch (priceError) {
-        console.error('Error retrieving price from Stripe:', priceError);
-        return new Response(
-          JSON.stringify({ error: `Invalid price ID: ${priceId}` }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-    } else {
-      console.log('Found plan in database:', {
-        name: plan.name,
-        price: plan.price,
-        currency: plan.currency,
-        stripePriceId: plan.stripe_price_id,
+    try {
+      const price = await stripe.prices.retrieve(stripePriceId);
+      console.log('Successfully retrieved price from Stripe:', {
+        id: price.id,
+        active: price.active,
+        currency: price.currency,
+        type: price.type,
       });
-      
-      // Use the plan's stripe_price_id if available
-      if (plan.stripe_price_id) {
-        priceId = plan.stripe_price_id;
-      }
-      
-      // Update planType and purchaseType from the database plan
-      planType = plan.name.toLowerCase() as any;
-      purchaseType = plan.purchase_type as any;
+    } catch (priceError) {
+      console.error('Error retrieving price from Stripe:', priceError);
+      return new Response(
+        JSON.stringify({ error: `Invalid price ID: ${stripePriceId}` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const metadata = {
@@ -119,7 +93,7 @@ serve(async (req: Request) => {
 
     console.log('Creating Stripe session with:', {
       mode: purchaseType === 'subscription' ? 'subscription' : 'payment',
-      priceId,
+      priceId: stripePriceId,
       metadata,
       successUrl: `${new URL(successUrl).origin}/payment-success`,
       cancelUrl
@@ -129,7 +103,7 @@ serve(async (req: Request) => {
       mode: purchaseType === 'subscription' ? 'subscription' : 'payment',
       line_items: [
         {
-          price: priceId,
+          price: stripePriceId,
           quantity: 1,
         },
       ],
@@ -170,3 +144,20 @@ serve(async (req: Request) => {
     );
   }
 });
+
+function getStripePriceId(planType: string, purchaseType: string): string {
+  const priceMapping = {
+    foundation: {
+      'one-time': 'price_1R1mapCEpf4RofE3Cfouca7W',
+      'subscription': 'price_1R1mapCEpf4RofE3Cfouca7W'
+    },
+    progress: {
+      'subscription': 'price_1R1mcSCEpf4RofE3rOmSRsYx'
+    },
+    premium: {
+      'subscription': 'price_1R1md0CEpf4RofE3qaf3kA9C'
+    }
+  };
+
+  return priceMapping[planType]?.[purchaseType] || 'price_1R1mapCEpf4RofE3Cfouca7W';
+}
