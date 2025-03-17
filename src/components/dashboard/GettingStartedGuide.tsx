@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BookOpen, CheckCircle, List, Rocket, MessageSquare } from 'lucide-react';
+import { BookOpen, CheckCircle, List, Rocket } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -146,19 +146,6 @@ const GettingStartedGuide = () => {
                   </div>
                 </div>
               ))}
-            </div>
-            <div className="mt-4 flex justify-end">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="text-xs text-gray-500 flex items-center"
-                asChild
-              >
-                <a href="https://nationalstaffwellbeingsurvey.co.uk/help" target="_blank" rel="noopener noreferrer">
-                  <MessageSquare className="mr-1 h-3 w-3" />
-                  Need help? View our support guides
-                </a>
-              </Button>
             </div>
           </CardContent>
         </CollapsibleContent>
