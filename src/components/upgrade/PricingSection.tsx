@@ -313,6 +313,10 @@ const PricingSection: React.FC = () => {
       ? `+ VAT (${plan.purchase_type === 'subscription' ? `${plan.duration_months ? plan.duration_months/12 : 3}-year subscription` : 'one-off payment'})`
       : undefined;
     
+    // Handle the case when the plan is the free plan
+    const isPaidPlan = planType !== 'free';
+    const upgradePlanType = isPaidPlan ? planType as 'foundation' | 'progress' | 'premium' : 'foundation';
+    
     return {
       title: plan.name,
       description: plan.description,
@@ -327,7 +331,7 @@ const PricingSection: React.FC = () => {
         } else if (isFree || isSubscriptionLoading || 
             (planType === 'progress' && isFoundation) || 
             (planType === 'premium' && (isFoundation || isProgress))) {
-          handleUpgrade(plan.stripe_price_id || '', planType, plan.purchase_type || 'subscription');
+          handleUpgrade(plan.stripe_price_id || '', upgradePlanType, plan.purchase_type || 'subscription');
         }
       }),
       buttonText: getButtonText(planType),
@@ -336,8 +340,12 @@ const PricingSection: React.FC = () => {
                 (planType === 'progress' && (isProgress || isPremium)) ||
                 (planType === 'premium' && isPremium),
       hasInvoiceOption: planType !== 'free',
-      onCardPayment: () => handleUpgrade(plan.stripe_price_id || '', planType, plan.purchase_type || 'subscription'),
-      onInvoiceRequest: () => openInvoiceDialog(planType, plan.purchase_type || 'subscription')
+      onCardPayment: () => isPaidPlan ? 
+        handleUpgrade(plan.stripe_price_id || '', upgradePlanType, plan.purchase_type || 'subscription') : 
+        navigate('/dashboard'),
+      onInvoiceRequest: () => isPaidPlan ? 
+        openInvoiceDialog(upgradePlanType, plan.purchase_type || 'subscription') : 
+        null
     };
   });
 
