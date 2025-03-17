@@ -294,16 +294,99 @@ async function handleCreateInvoiceRequest(
   console.log("Starting handleCreateInvoiceRequest");
   const { planType, purchaseType, billingDetails } = data;
   
-  // Get pricing based on plan type
-  const planPricing = {
-    foundation: 299,
-    progress: 1499,
-    premium: 2499
-  };
-  
-  const amount = planPricing[planType] || 299;
-
   try {
+    // Get plan details from the database
+    const { data: planData, error: planError } = await supabase
+      .from('plans')
+      .select('*')
+      .eq('name', planType)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (planError || !planData) {
+      console.error('Error retrieving plan from database:', planError);
+      
+      // Fallback to hardcoded values if plan not found
+      const planPricing = {
+        foundation: 29900,
+        progress: 149900,
+        premium: 249900
+      };
+      
+      const amount = planPricing[planType] || 29900;
+      
+      console.log("Using fallback pricing:", amount);
+      
+      console.log("Creating subscription record for user:", user.id);
+      
+      // Create a subscription record with payment_method 'invoice'
+      const { data: subscription, error: subscriptionError } = await supabase
+        .from('subscriptions')
+        .insert({
+          user_id: user.id,
+          plan_type: planType,
+          status: 'pending',
+          payment_method: 'invoice',
+          purchase_type: purchaseType,
+        })
+        .select()
+        .single();
+
+      if (subscriptionError) {
+        console.error('Error creating subscription:', subscriptionError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to create subscription record', details: subscriptionError }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log("Subscription created:", subscription.id);
+
+      // Add billing details to payment_history without an invoice number
+      const { data: payment, error: paymentError } = await supabase
+        .from('payment_history')
+        .insert({
+          subscription_id: subscription.id,
+          payment_method: 'invoice',
+          amount: amount,
+          currency: 'GBP',
+          payment_status: 'pending',
+          billing_school_name: billingDetails.schoolName,
+          billing_address: billingDetails.address,
+          billing_contact_name: billingDetails.contactName,
+          billing_contact_email: billingDetails.contactEmail,
+        })
+        .select()
+        .single();
+
+      if (paymentError) {
+        console.error('Error creating payment record:', paymentError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to create payment record', details: paymentError }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log("Payment record created:", payment.id);
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'Invoice request submitted successfully',
+          subscription: subscription.id,
+          payment: payment.id
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Use plan data from database
+    console.log("Retrieved plan data:", {
+      id: planData.id,
+      name: planData.name,
+      price: planData.price
+    });
+    
     console.log("Creating subscription record for user:", user.id);
     
     // Create a subscription record with payment_method 'invoice'
@@ -335,8 +418,8 @@ async function handleCreateInvoiceRequest(
       .insert({
         subscription_id: subscription.id,
         payment_method: 'invoice',
-        amount: amount,
-        currency: 'GBP',
+        amount: planData.price,
+        currency: planData.currency || 'GBP',
         payment_status: 'pending',
         billing_school_name: billingDetails.schoolName,
         billing_address: billingDetails.address,
