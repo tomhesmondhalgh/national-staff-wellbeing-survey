@@ -18,10 +18,8 @@ const Navbar: React.FC = () => {
   const { isAdmin } = useAdminRole();
   const { userRole } = usePermissions();
   
-  // Check if user is authenticated
   const isAuthenticated = !!user;
   
-  // Check if current page is a survey response or survey completion page
   const hideAuthButtons = location.pathname === '/survey' || location.pathname === '/survey-complete';
 
   useEffect(() => {
@@ -34,7 +32,6 @@ const Navbar: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Set canManageTeam based on the user's role - allow admin, group_admin, and organization_admin
     if (userRole === 'administrator' || userRole === 'group_admin' || userRole === 'organization_admin') {
       setCanManageTeam(true);
     } else {
@@ -57,17 +54,15 @@ const Navbar: React.FC = () => {
       }`}
     >
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-24">
           <NavbarBrand />
           
-          {/* Organization Switcher (only show when logged in) */}
           {isAuthenticated && (
             <div className="hidden md:flex items-center ml-4">
               <OrganizationSwitcher />
             </div>
           )}
           
-          {/* Desktop Navigation */}
           <DesktopNav 
             isAuthenticated={isAuthenticated}
             hideAuthButtons={hideAuthButtons}
@@ -76,7 +71,6 @@ const Navbar: React.FC = () => {
             handleSignOut={handleSignOut}
           />
           
-          {/* Mobile Navigation Button */}
           <div className="md:hidden">
             <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -89,7 +83,6 @@ const Navbar: React.FC = () => {
         </div>
       </div>
       
-      {/* Mobile Navigation Menu */}
       <MobileMenu 
         isOpen={isMenuOpen}
         isAuthenticated={isAuthenticated}
