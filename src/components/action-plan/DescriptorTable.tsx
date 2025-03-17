@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { ActionPlanDescriptor, DescriptorStatus } from '@/types/actionPlan';
 import { updateDescriptor, getActionPlanDescriptors } from '@/utils/actionPlanUtils';
@@ -23,20 +23,13 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
   const [viewNotesId, setViewNotesId] = useState<string | null>(null);
   const { editingCell, editValue, setEditValue, handleEditStart, setEditingCell } = useEditableCell();
 
-  // Fetch descriptors on mount and when section/userId changes
-  useEffect(() => {
-    if (userId && section) {
-      fetchDescriptors();
-    }
-  }, [userId, section]);
-
-  const fetchDescriptors = async () => {
+  // Memoize fetchDescriptors to prevent unnecessary recreations
+  const fetchDescriptors = useCallback(async () => {
     setIsLoading(true);
     try {
       console.log('Fetching descriptors for user:', userId, 'section:', section);
       const result = await getActionPlanDescriptors(userId, section);
-      setIsLoading(false);
-
+      
       if (result.success && result.data) {
         console.log('Fetched descriptors successfully:', result.data);
         const sortedDescriptors = result.data.sort((a, b) => {
@@ -58,10 +51,18 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
       }
     } catch (error) {
       console.error('Exception fetching descriptors:', error);
-      setIsLoading(false);
       toast.error('An error occurred while loading data');
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [userId, section]);
+
+  // Fetch descriptors on mount and when section/userId changes
+  useEffect(() => {
+    if (userId && section) {
+      fetchDescriptors();
+    }
+  }, [userId, section, fetchDescriptors]);
 
   const filteredDescriptors = descriptors.filter(
     descriptor => 
@@ -124,6 +125,11 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
     onRefreshSummary();
   };
 
+  const handleViewNotes = (id: string) => {
+    console.log('Viewing notes for descriptor:', id);
+    setViewNotesId(id);
+  };
+
   return (
     <div className="space-y-4">
       <SearchBar 
@@ -147,7 +153,7 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
           onEditSave={handleEditSave}
           onStatusChange={handleStatusChange}
           onDateChange={handleDateChange}
-          onViewNotes={setViewNotesId}
+          onViewNotes={handleViewNotes}
           onAddNote={setProgressNoteId}
         />
       )}

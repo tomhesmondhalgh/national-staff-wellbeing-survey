@@ -16,10 +16,12 @@ const NotesActions: React.FC<NotesActionsProps> = ({
 }) => {
   // Format note count safely
   const formatNoteCount = (count: number | null | undefined) => {
-    if (typeof count === 'number') {
-      return `${count} ${count === 1 ? 'Note' : 'Notes'}`;
-    }
-    return '0 Notes';
+    // Ensure count is treated as a number
+    const numCount = typeof count === 'number' ? count : 
+                    (count && typeof count === 'object' && 'count' in count) ? 
+                    Number(count.count) : 0;
+    
+    return `${numCount} ${numCount === 1 ? 'Note' : 'Notes'}`;
   };
 
   return (

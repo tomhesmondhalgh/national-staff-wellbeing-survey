@@ -44,6 +44,8 @@ const ProgressNoteDialog: React.FC<ProgressNoteDialogProps> = ({
         console.log('Note added successfully');
         toast.success('Progress note added');
         setNoteText('');
+        
+        // Always call onSuccess before closing to ensure data is refreshed
         onSuccess();
         onClose();
       } else {
@@ -81,6 +83,7 @@ const ProgressNoteDialog: React.FC<ProgressNoteDialogProps> = ({
             onChange={(e) => setNoteText(e.target.value)}
             rows={5}
             className="w-full"
+            autoFocus
           />
         </div>
         <DialogFooter>

@@ -61,6 +61,16 @@ const ProgressNotesList: React.FC<ProgressNotesListProps> = ({
     }
   };
 
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleString();
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return dateString;
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[525px]">
@@ -80,7 +90,7 @@ const ProgressNotesList: React.FC<ProgressNotesListProps> = ({
               {notes.map((note) => (
                 <div key={note.id} className="border p-4 rounded-md">
                   <div className="text-sm font-medium text-gray-500 mb-1">
-                    {new Date(note.note_date).toLocaleString()}
+                    {formatDate(note.note_date)}
                   </div>
                   <div className="whitespace-pre-wrap">{note.note_text}</div>
                 </div>
