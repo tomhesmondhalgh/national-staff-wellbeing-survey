@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -39,8 +39,7 @@ const ProgressNoteDialog: React.FC<ProgressNoteDialogProps> = ({
     try {
       console.log('Adding progress note for descriptor:', descriptorId);
       const result = await addProgressNote(descriptorId, noteText);
-      setIsSubmitting(false);
-
+      
       if (result.success) {
         console.log('Note added successfully');
         toast.success('Progress note added');
@@ -53,13 +52,14 @@ const ProgressNoteDialog: React.FC<ProgressNoteDialogProps> = ({
       }
     } catch (error) {
       console.error('Exception adding note:', error);
-      setIsSubmitting(false);
       toast.error('An error occurred while saving the note');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   // Reset the note text when the dialog opens/closes
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isOpen) {
       setNoteText('');
     }

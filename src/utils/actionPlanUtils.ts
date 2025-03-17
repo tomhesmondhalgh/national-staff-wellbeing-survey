@@ -1,3 +1,4 @@
+
 import { supabase } from '../lib/supabase/client';
 import { ActionPlanDescriptor, ActionPlanTemplate, ProgressNote, DescriptorStatus, ACTION_PLAN_SECTIONS } from '../types/actionPlan';
 import { toast } from 'sonner';
@@ -43,6 +44,8 @@ export const initializeActionPlan = async (userId: string) => {
 // Get all descriptors for a user
 export const getActionPlanDescriptors = async (userId: string, section?: string) => {
   try {
+    console.log('Getting descriptors for user:', userId, 'section:', section);
+    
     let query = supabase
       .from('action_plan_descriptors')
       .select(`
@@ -57,9 +60,26 @@ export const getActionPlanDescriptors = async (userId: string, section?: string)
 
     const { data, error } = await query.order('index_number', { ascending: true });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error fetching descriptors:', error);
+      throw error;
+    }
 
-    return { success: true, data: data || [] };
+    // Format the descriptors to ensure progress_notes_count is a number
+    const formattedData = data?.map(descriptor => {
+      // Extract the count from the aggregate
+      const count = descriptor.progress_notes_count || 0;
+      
+      return {
+        ...descriptor,
+        // Ensure progress_notes_count is a number, not an aggregate object
+        progress_notes_count: typeof count === 'number' ? count : 
+                             (count.count !== undefined ? Number(count.count) : 0)
+      };
+    });
+
+    console.log('Formatted descriptors with note counts:', formattedData);
+    return { success: true, data: formattedData || [] };
   } catch (error: any) {
     console.error('Error fetching descriptors:', error);
     return { success: false, error: error.message, data: [] };

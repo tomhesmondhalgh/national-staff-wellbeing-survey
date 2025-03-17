@@ -45,8 +45,7 @@ const ProgressNotesList: React.FC<ProgressNotesListProps> = ({
     try {
       console.log('Calling getProgressNotes for descriptor:', descriptorId);
       const result = await getProgressNotes(descriptorId);
-      setIsLoading(false);
-
+      
       if (result.success && result.data) {
         console.log('Fetched notes successfully:', result.data);
         setNotes(result.data);
@@ -56,8 +55,9 @@ const ProgressNotesList: React.FC<ProgressNotesListProps> = ({
       }
     } catch (error) {
       console.error('Exception fetching notes:', error);
-      setIsLoading(false);
       toast.error('An error occurred while loading notes');
+    } finally {
+      setIsLoading(false);
     }
   };
 
