@@ -23,18 +23,22 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
   const [viewNotesId, setViewNotesId] = useState<string | null>(null);
   const { editingCell, editValue, setEditValue, handleEditStart, setEditingCell } = useEditableCell();
 
+  // Fetch descriptors on mount and when section/userId changes
   useEffect(() => {
-    fetchDescriptors();
+    if (userId && section) {
+      fetchDescriptors();
+    }
   }, [userId, section]);
 
   const fetchDescriptors = async () => {
     setIsLoading(true);
     try {
+      console.log('Fetching descriptors for user:', userId, 'section:', section);
       const result = await getActionPlanDescriptors(userId, section);
       setIsLoading(false);
 
       if (result.success && result.data) {
-        console.log('Fetched descriptors:', result.data);
+        console.log('Fetched descriptors successfully:', result.data);
         const sortedDescriptors = result.data.sort((a, b) => {
           if (!a.index_number) return 1;
           if (!b.index_number) return -1;
@@ -115,6 +119,7 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
   };
 
   const handleProgressNoteAdded = async () => {
+    console.log('Progress note added, refreshing data');
     await fetchDescriptors();
     onRefreshSummary();
   };

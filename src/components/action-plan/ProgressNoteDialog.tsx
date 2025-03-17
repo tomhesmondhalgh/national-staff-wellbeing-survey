@@ -37,10 +37,12 @@ const ProgressNoteDialog: React.FC<ProgressNoteDialogProps> = ({
 
     setIsSubmitting(true);
     try {
+      console.log('Adding progress note for descriptor:', descriptorId);
       const result = await addProgressNote(descriptorId, noteText);
       setIsSubmitting(false);
 
       if (result.success) {
+        console.log('Note added successfully');
         toast.success('Progress note added');
         setNoteText('');
         onSuccess();
@@ -55,6 +57,13 @@ const ProgressNoteDialog: React.FC<ProgressNoteDialogProps> = ({
       toast.error('An error occurred while saving the note');
     }
   };
+
+  // Reset the note text when the dialog opens/closes
+  React.useEffect(() => {
+    if (!isOpen) {
+      setNoteText('');
+    }
+  }, [isOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
