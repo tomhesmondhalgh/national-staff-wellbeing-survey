@@ -1,10 +1,38 @@
+
 import { createClient } from "@supabase/supabase-js";
 
-// Check if environment variables exist, otherwise use placeholders for development
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://bagaaqkmewkuwtudwnqw.supabase.co";
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhZ2FhcWttZXdrdXd0dWR3bnF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA2NjQwMzIsImV4cCI6MjA1NjI0MDAzMn0.Eu_xDUDDk188oE0dB7W7KJ4oWjB6nQNuUBBnZUMrsvE";
+// Environment specific configuration
+const environment = import.meta.env.VITE_ENV || "production";
 
-console.log(`Initializing Supabase client with URL: ${supabaseUrl.substring(0, 15)}...`);
+// Check if environment variables exist, otherwise use the appropriate defaults based on environment
+const getSupabaseConfig = () => {
+  // Production environment uses the standard environment variables
+  if (environment === "production") {
+    return {
+      url: import.meta.env.VITE_SUPABASE_URL || "https://bagaaqkmewkuwtudwnqw.supabase.co",
+      key: import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhZ2FhcWttZXdrdXd0dWR3bnF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA2NjQwMzIsImV4cCI6MjA1NjI0MDAzMn0.Eu_xDUDDk188oE0dB7W7KJ4oWjB6nQNuUBBnZUMrsvE"
+    };
+  }
+  
+  // Staging environment configuration
+  if (environment === "staging") {
+    return {
+      url: import.meta.env.VITE_STAGING_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL || "https://bagaaqkmewkuwtudwnqw.supabase.co",
+      key: import.meta.env.VITE_STAGING_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhZ2FhcWttZXdrdXd0dWR3bnF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA2NjQwMzIsImV4cCI6MjA1NjI0MDAzMn0.Eu_xDUDDk188oE0dB7W7KJ4oWjB6nQNuUBBnZUMrsvE"
+    };
+  }
+  
+  // Default fallback configuration
+  return {
+    url: import.meta.env.VITE_SUPABASE_URL || "https://bagaaqkmewkuwtudwnqw.supabase.co",
+    key: import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhZ2FhcWttZXdrdXd0dWR3bnF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA2NjQwMzIsImV4cCI6MjA1NjI0MDAzMn0.Eu_xDUDDk188oE0dB7W7KJ4oWjB6nQNuUBBnZUMrsvE"
+  };
+};
+
+const { url: supabaseUrl, key: supabaseAnonKey } = getSupabaseConfig();
+
+console.log(`Initializing Supabase client for environment: ${environment}`);
+console.log(`Using Supabase URL: ${supabaseUrl.substring(0, 15)}...`);
 
 // Create Supabase client with auto-refresh and automatic retry
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -26,7 +54,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 });
 
 // If you need to log conditionally, use this approach
-console.info("Supabase client initialized");
+console.info(`Supabase client initialized for ${environment} environment`);
 
 // Add a helper method to check if Supabase is configured properly
 export const isSupabaseConfigured = () => {
@@ -38,7 +66,7 @@ export const isSupabaseConfigured = () => {
                      supabaseAnonKey !== "placeholder-key" && 
                      supabaseAnonKey.length > 20;
   
-  console.log(`Supabase configuration check - URL valid: ${isUrlValid}, Key valid: ${isKeyValid}`);
+  console.log(`Supabase configuration check - URL valid: ${isUrlValid}, Key valid: ${isKeyValid}, Environment: ${environment}`);
   
   return isUrlValid && isKeyValid;
 };
@@ -48,19 +76,19 @@ export const isAuthenticated = async () => {
   try {
     const { data, error } = await supabase.auth.getSession();
     if (error) {
-      console.error("Error checking authentication:", error);
+      console.error(`[${environment}] Error checking authentication:`, error);
       return false;
     }
     return !!data.session;
   } catch (error) {
-    console.error("Exception checking authentication:", error);
+    console.error(`[${environment}] Exception checking authentication:`, error);
     return false;
   }
 };
 
 // Add event listener for auth state changes
 supabase.auth.onAuthStateChange((event, session) => {
-  console.log(`Auth state changed: ${event}`, session ? "Session exists" : "No session");
+  console.log(`[${environment}] Auth state changed: ${event}`, session ? "Session exists" : "No session");
 });
 
 // Multi-organization management functions
