@@ -1,6 +1,7 @@
 
 import React from 'react';
 import Navbar from './Navbar';
+import TestingModeIndicator from './TestingModeIndicator';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -18,6 +19,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           <p>© {new Date().getFullYear()} National Staff Wellbeing Survey. All rights reserved.</p>
         </div>
       </footer>
+      <TestingModeIndicator />
       {/* Toaster is now in App.tsx */}
     </div>
   );
