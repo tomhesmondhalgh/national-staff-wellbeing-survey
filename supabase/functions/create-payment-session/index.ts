@@ -113,11 +113,12 @@ serve(async (req: Request) => {
       mode: purchaseType === 'subscription' ? 'subscription' : 'payment',
       priceId: priceId,
       metadata,
-      successUrl: `${new URL(successUrl).origin}/payment-success`,
+      successUrl,
       cancelUrl
     });
 
-    const session = await stripe.checkout.sessions.create({
+    // Fix: Set customer_creation only for 'payment' mode
+    const sessionOptions = {
       mode: purchaseType === 'subscription' ? 'subscription' : 'payment',
       line_items: [
         {
@@ -125,16 +126,23 @@ serve(async (req: Request) => {
           quantity: 1,
         },
       ],
-      success_url: `${new URL(successUrl).origin}/payment-success`,
+      success_url: successUrl,
       cancel_url: cancelUrl,
       metadata,
       client_reference_id: user.id,
-      customer_creation: 'always',
       billing_address_collection: 'required',
       payment_method_types: ['card'],
       locale: 'en-GB',
       allow_promotion_codes: true,
-    });
+    };
+
+    // Only add customer_creation for payment mode
+    if (purchaseType !== 'subscription') {
+      // @ts-ignore - Add customer_creation only for payment mode
+      sessionOptions.customer_creation = 'always';
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionOptions);
 
     await supabase.from('subscriptions').insert({
       user_id: user.id,
