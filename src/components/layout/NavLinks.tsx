@@ -104,14 +104,6 @@ export const NavLinks: React.FC<NavLinksProps> = ({
         Custom Questions
       </NavLink>
       
-      <NavLink 
-        to="/xero" 
-        active={isActive('/xero')} 
-        onClick={handleLinkClick}
-      >
-        Xero
-      </NavLink>
-      
       {isAdmin && (
         <NavLink 
           to="/admin" 
