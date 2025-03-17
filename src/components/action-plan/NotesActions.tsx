@@ -16,32 +16,16 @@ const NotesActions: React.FC<NotesActionsProps> = ({
 }) => {
   // Format note count safely
   const formatNoteCount = (count: number | null | undefined) => {
-    // Handle all possible input types
+    // Handle different possible types safely
     let numCount = 0;
     
     if (typeof count === 'number') {
-      // If it's already a number, use it directly
       numCount = count;
-    } else if (count !== null && count !== undefined) {
-      // For objects or any other non-null type, try to get a numeric value
-      try {
-        if (typeof count === 'object' && count !== null) {
-          // If it has a count property (from aggregate query)
-          if ('count' in count) {
-            numCount = Number((count as any).count) || 0;
-          }
-        } else {
-          // Try to convert to number as last resort
-          numCount = Number(count) || 0;
-        }
-      } catch (error) {
-        console.error('Error formatting note count:', error);
-        numCount = 0;
-      }
+    } else if (count && typeof count === 'object') {
+      // Check if it's an object with a count property
+      // Use optional chaining and type assertion for safety
+      numCount = (count as { count?: number }).count || 0;
     }
-    
-    // Ensure it's a valid number
-    numCount = isNaN(numCount) ? 0 : numCount;
     
     return `${numCount} ${numCount === 1 ? 'Note' : 'Notes'}`;
   };

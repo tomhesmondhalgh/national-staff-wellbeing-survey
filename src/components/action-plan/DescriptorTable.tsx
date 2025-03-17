@@ -38,26 +38,8 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
           return a.index_number.localeCompare(b.index_number, undefined, { numeric: true });
         });
         
-        // Ensure each descriptor has a properly formatted progress_notes_count
-        const processedDescriptors = sortedDescriptors.map(descriptor => {
-          let noteCount = 0;
-          
-          // Handle different possible formats of progress_notes_count
-          if (typeof descriptor.progress_notes_count === 'number') {
-            noteCount = descriptor.progress_notes_count;
-          } else if (descriptor.progress_notes_count && typeof descriptor.progress_notes_count === 'object') {
-            // Extract count from aggregate object if needed
-            noteCount = (descriptor.progress_notes_count as any).count || 0;
-          }
-          
-          return {
-            ...descriptor,
-            progress_notes_count: noteCount
-          };
-        });
-        
         const uniqueDescriptors = Array.from(
-          new Map(processedDescriptors.map(descriptor => 
+          new Map(sortedDescriptors.map(descriptor => 
             [descriptor.index_number + descriptor.reference, descriptor]
           )).values()
         );
@@ -137,11 +119,11 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
     }
   };
 
-  const handleProgressNoteAdded = useCallback(async () => {
+  const handleProgressNoteAdded = async () => {
     console.log('Progress note added, refreshing data');
     await fetchDescriptors();
     onRefreshSummary();
-  }, [fetchDescriptors, onRefreshSummary]);
+  };
 
   const handleViewNotes = (id: string) => {
     console.log('Viewing notes for descriptor:', id);
