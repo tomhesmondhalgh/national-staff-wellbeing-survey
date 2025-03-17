@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
@@ -32,7 +33,7 @@ export function XeroIntegration() {
       }
       
       const { data, error: fnError } = await supabase.functions.invoke('xero-auth', {
-        method: 'GET',
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -81,7 +82,7 @@ export function XeroIntegration() {
       }
       
       const { data, error: fnError } = await supabase.functions.invoke('xero-auth', {
-        method: 'GET',
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -131,7 +132,7 @@ export function XeroIntegration() {
       }
       
       const { data, error: fnError } = await supabase.functions.invoke('xero-auth', {
-        method: 'GET',
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -173,7 +174,7 @@ export function XeroIntegration() {
       }
       
       const { data, error: fnError } = await supabase.functions.invoke('xero-token-refresh', {
-        method: 'GET',
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',

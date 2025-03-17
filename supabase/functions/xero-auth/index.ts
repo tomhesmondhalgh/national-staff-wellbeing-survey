@@ -59,7 +59,7 @@ serve(async (req) => {
       );
     }
 
-    // Parse URL to determine action
+    // Parse URL to determine action from path
     const url = new URL(req.url);
     const pathParts = url.pathname.split('/');
     let action = '';
@@ -73,18 +73,33 @@ serve(async (req) => {
     }
     
     console.log(`Request URL: ${req.url}`);
-    console.log(`Parsed action from URL: ${action}`);
+    console.log(`Parsed action from URL path: ${action}`);
     
-    // If no action found in path, check query params (for backwards compatibility)
+    // If no action found in path, check query params
     if (!action) {
       action = url.searchParams.get('action') || '';
       console.log(`Action from query params: ${action}`);
     }
     
+    // If still no action, check request body
+    if (!action && req.method === 'POST' || req.headers.get('content-type')?.includes('application/json')) {
+      try {
+        const body = await req.json();
+        console.log("Request body:", body);
+        action = body.action || '';
+        console.log(`Action from request body: ${action}`);
+      } catch (error) {
+        console.error("Error parsing request body:", error);
+      }
+    }
+
+    // Log the determined action
+    console.log(`Final determined action: ${action}`);
+    
     if (!action) {
-      console.error('No action specified in URL path or query parameters');
+      console.error('No action specified in URL path, query parameters, or request body');
       return new Response(
-        JSON.stringify({ error: 'Missing action parameter' }),
+        JSON.stringify({ error: 'Missing action parameter', message: 'No action specified in URL path, query parameters, or request body' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
