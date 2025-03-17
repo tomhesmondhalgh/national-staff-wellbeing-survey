@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,8 @@ import {
 } from '@/components/ui/dialog';
 import { getProgressNotes } from '@/utils/actionPlanUtils';
 import { ProgressNote } from '@/types/actionPlan';
+import { toast } from 'sonner';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ProgressNotesListProps {
   descriptorId: string;
@@ -24,19 +26,74 @@ const ProgressNotesList: React.FC<ProgressNotesListProps> = ({
   const [notes, setNotes] = useState<ProgressNote[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Create cache key for this descriptor's notes
+  const cacheKey = `notes_${descriptorId}`;
+
+  // Fetch notes function with caching
+  const fetchNotes = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      console.log('Calling getProgressNotes for descriptor:', descriptorId);
+      const result = await getProgressNotes(descriptorId);
+      
+      if (result.success && result.data) {
+        console.log('Fetched notes successfully, count:', result.data.length, result.data);
+        setNotes(result.data);
+        
+        // Cache the notes for this descriptor
+        sessionStorage.setItem(cacheKey, JSON.stringify(result.data));
+      } else {
+        console.error('Error fetching notes:', result.error);
+        toast.error('Failed to load progress notes');
+      }
+    } catch (error) {
+      console.error('Exception fetching notes:', error);
+      toast.error('An error occurred while loading notes');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [descriptorId, cacheKey]);
+
+  // Check for cached notes first, then fetch if needed
   useEffect(() => {
     if (isOpen && descriptorId) {
-      fetchNotes();
+      console.log(`Dialog open, checking cache for notes: ${cacheKey}`);
+      const cachedNotes = sessionStorage.getItem(cacheKey);
+      
+      if (cachedNotes) {
+        try {
+          console.log('Found cached notes, parsing...');
+          const parsedNotes = JSON.parse(cachedNotes);
+          setNotes(parsedNotes);
+          setIsLoading(false);
+          
+          // Still fetch in the background to ensure up-to-date data
+          console.log('Fetching fresh notes in background...');
+          fetchNotes().catch(console.error);
+        } catch (e) {
+          console.error('Error parsing cached notes:', e);
+          fetchNotes().catch(console.error);
+        }
+      } else {
+        console.log('No cached notes found, fetching from API');
+        fetchNotes().catch(console.error);
+      }
     }
-  }, [isOpen, descriptorId]);
+  }, [isOpen, descriptorId, fetchNotes, cacheKey]);
 
-  const fetchNotes = async () => {
-    setIsLoading(true);
-    const result = await getProgressNotes(descriptorId);
-    setIsLoading(false);
-
-    if (result.success && result.data) {
-      setNotes(result.data);
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return dateString;
     }
   };
 
@@ -50,8 +107,12 @@ const ProgressNotesList: React.FC<ProgressNotesListProps> = ({
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 max-h-[400px] overflow-y-auto">
-          {isLoading ? (
-            <div className="flex justify-center py-6">Loading notes...</div>
+          {isLoading && notes.length === 0 ? (
+            <div className="space-y-4">
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </div>
           ) : notes.length === 0 ? (
             <div className="text-center py-6 text-gray-500">No progress notes yet</div>
           ) : (
@@ -59,7 +120,7 @@ const ProgressNotesList: React.FC<ProgressNotesListProps> = ({
               {notes.map((note) => (
                 <div key={note.id} className="border p-4 rounded-md">
                   <div className="text-sm font-medium text-gray-500 mb-1">
-                    {new Date(note.note_date).toLocaleString()}
+                    {formatDate(note.note_date)}
                   </div>
                   <div className="whitespace-pre-wrap">{note.note_text}</div>
                 </div>

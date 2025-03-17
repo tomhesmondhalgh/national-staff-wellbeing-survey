@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 import { saveAsTemplate } from '@/utils/actionPlanUtils';
 
 interface SaveTemplateDialogProps {
@@ -29,7 +29,11 @@ const SaveTemplateDialog: React.FC<SaveTemplateDialogProps> = ({
 
   const handleSubmit = async () => {
     if (!templateName.trim()) {
-      toast.error('Please enter a template name');
+      toast({
+        title: 'Error',
+        description: 'Please enter a template name',
+        variant: 'destructive'
+      });
       return;
     }
 
@@ -38,7 +42,10 @@ const SaveTemplateDialog: React.FC<SaveTemplateDialogProps> = ({
     setIsSubmitting(false);
 
     if (result.success) {
-      toast.success('Template saved successfully');
+      toast({
+        title: 'Success',
+        description: 'Template saved successfully'
+      });
       setTemplateName('');
       onClose();
     }

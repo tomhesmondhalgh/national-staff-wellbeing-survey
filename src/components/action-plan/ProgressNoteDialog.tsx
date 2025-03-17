@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 import { addProgressNote } from '@/utils/actionPlanUtils';
 
 interface ProgressNoteDialogProps {
@@ -29,23 +29,59 @@ const ProgressNoteDialog: React.FC<ProgressNoteDialogProps> = ({
   const [noteText, setNoteText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    
     if (!noteText.trim()) {
-      toast.error('Please enter a note');
+      toast({
+        title: 'Error',
+        description: 'Please enter a note', 
+        variant: 'destructive'
+      });
       return;
     }
 
     setIsSubmitting(true);
-    const result = await addProgressNote(descriptorId, noteText);
-    setIsSubmitting(false);
-
-    if (result.success) {
-      toast.success('Progress note added');
-      setNoteText('');
-      onSuccess();
-      onClose();
+    try {
+      console.log('Submitting progress note for descriptor:', descriptorId);
+      const result = await addProgressNote(descriptorId, noteText);
+      
+      if (result.success) {
+        console.log('Note added successfully:', result.data);
+        toast({
+          title: 'Success',
+          description: 'Progress note added'
+        });
+        setNoteText('');
+        // Explicitly call onSuccess to refresh data in parent components
+        onSuccess();
+        onClose();
+      } else {
+        console.error('Failed to add note:', result.error);
+        toast({
+          title: 'Error',
+          description: 'Failed to add note',
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      console.error('Exception adding note:', error);
+      toast({
+        title: 'Error',
+        description: 'An error occurred while saving the note',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  // Reset the note text when the dialog opens/closes
+  useEffect(() => {
+    if (!isOpen) {
+      setNoteText('');
+    }
+  }, [isOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -56,23 +92,26 @@ const ProgressNoteDialog: React.FC<ProgressNoteDialogProps> = ({
             Record your progress or updates for this action item.
           </DialogDescription>
         </DialogHeader>
-        <div className="py-4">
-          <Textarea
-            placeholder="Enter details about progress made, challenges encountered, or next steps..."
-            value={noteText}
-            onChange={(e) => setNoteText(e.target.value)}
-            rows={5}
-            className="w-full"
-          />
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? 'Saving...' : 'Save Note'}
-          </Button>
-        </DialogFooter>
+        <form onSubmit={handleSubmit}>
+          <div className="py-4">
+            <Textarea
+              placeholder="Enter details about progress made, challenges encountered, or next steps..."
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              rows={5}
+              className="w-full"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : 'Save Note'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

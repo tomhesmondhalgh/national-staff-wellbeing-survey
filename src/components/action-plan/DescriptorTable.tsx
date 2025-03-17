@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { ActionPlanDescriptor, DescriptorStatus } from '@/types/actionPlan';
 import { updateDescriptor, getActionPlanDescriptors } from '@/utils/actionPlanUtils';
@@ -8,6 +8,7 @@ import ProgressNotesList from './ProgressNotesList';
 import SearchBar from './SearchBar';
 import DescriptorsTable from './DescriptorsTable';
 import { useEditableCell } from '@/hooks/useEditableCell';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface DescriptorTableProps {
   userId: string;
@@ -23,33 +24,70 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
   const [viewNotesId, setViewNotesId] = useState<string | null>(null);
   const { editingCell, editValue, setEditValue, handleEditStart, setEditingCell } = useEditableCell();
 
+  // Create a cache key for this section
+  const cacheKey = `descriptors_${userId}_${section}`;
+
+  // Load any cached data immediately to avoid flicker
   useEffect(() => {
-    fetchDescriptors();
-  }, [userId, section]);
-
-  const fetchDescriptors = async () => {
-    setIsLoading(true);
-    const result = await getActionPlanDescriptors(userId, section);
-    setIsLoading(false);
-
-    if (result.success && result.data) {
-      const sortedDescriptors = result.data.sort((a, b) => {
-        if (!a.index_number) return 1;
-        if (!b.index_number) return -1;
-        return a.index_number.localeCompare(b.index_number, undefined, { numeric: true });
-      });
-      
-      const uniqueDescriptors = Array.from(
-        new Map(sortedDescriptors.map(descriptor => 
-          [descriptor.index_number + descriptor.reference, descriptor]
-        )).values()
-      );
-      
-      setDescriptors(uniqueDescriptors);
-    } else {
-      toast.error('Failed to load data');
+    const cachedData = sessionStorage.getItem(cacheKey);
+    if (cachedData) {
+      try {
+        console.log(`Loading cached descriptors for section ${section} from sessionStorage`);
+        const parsedData = JSON.parse(cachedData);
+        setDescriptors(parsedData);
+        setIsLoading(false);
+      } catch (e) {
+        console.error('Error parsing cached descriptors:', e);
+      }
     }
-  };
+  }, [cacheKey, section]);
+
+  // Memoize fetchDescriptors to prevent unnecessary recreations
+  const fetchDescriptors = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      console.log('Fetching descriptors for user:', userId, 'section:', section);
+      const result = await getActionPlanDescriptors(userId, section);
+      
+      if (result.success && result.data) {
+        console.log('Fetched descriptors successfully, count:', result.data.length);
+        
+        const sortedDescriptors = result.data.sort((a, b) => {
+          if (!a.index_number) return 1;
+          if (!b.index_number) return -1;
+          return a.index_number.localeCompare(b.index_number, undefined, { numeric: true });
+        });
+        
+        const uniqueDescriptors = Array.from(
+          new Map(sortedDescriptors.map(descriptor => 
+            [descriptor.index_number + descriptor.reference, descriptor]
+          )).values()
+        );
+        
+        console.log('Processed descriptors count:', uniqueDescriptors.length);
+        setDescriptors(uniqueDescriptors);
+        
+        // Cache the descriptors for this section
+        sessionStorage.setItem(cacheKey, JSON.stringify(uniqueDescriptors));
+      } else {
+        console.error('Failed to load descriptors:', result.error);
+        toast.error('Failed to load data');
+      }
+    } catch (error) {
+      console.error('Exception fetching descriptors:', error);
+      toast.error('An error occurred while loading data');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [userId, section, cacheKey]);
+
+  // Fetch descriptors when component mounts and when userId/section changes
+  useEffect(() => {
+    if (userId && section) {
+      console.log(`Fetching descriptors for section: ${section}`);
+      fetchDescriptors();
+    }
+  }, [userId, section, fetchDescriptors]);
 
   const filteredDescriptors = descriptors.filter(
     descriptor => 
@@ -61,17 +99,40 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
   );
 
   const handleStatusChange = async (id: string, status: DescriptorStatus) => {
-    const result = await updateDescriptor(id, { status });
-    if (result.success) {
-      setDescriptors(descriptors.map(d => d.id === id ? { ...d, status } : d));
-      onRefreshSummary();
+    try {
+      console.log(`Updating status for descriptor ${id} to ${status}`);
+      const result = await updateDescriptor(id, { status });
+      if (result.success) {
+        setDescriptors(descriptors.map(d => d.id === id ? { ...d, status } : d));
+        
+        // Update cache
+        const updatedDescriptors = descriptors.map(d => d.id === id ? { ...d, status } : d);
+        sessionStorage.setItem(cacheKey, JSON.stringify(updatedDescriptors));
+        
+        onRefreshSummary();
+      } else {
+        console.error('Failed to update status:', result.error);
+      }
+    } catch (error) {
+      console.error('Exception updating status:', error);
     }
   };
 
   const handleDateChange = async (id: string, date: string) => {
-    const result = await updateDescriptor(id, { deadline: date || null });
-    if (result.success) {
-      setDescriptors(descriptors.map(d => d.id === id ? { ...d, deadline: date } : d));
+    try {
+      console.log(`Updating deadline for descriptor ${id} to ${date}`);
+      const result = await updateDescriptor(id, { deadline: date || null });
+      if (result.success) {
+        const updatedDescriptors = descriptors.map(d => d.id === id ? { ...d, deadline: date } : d);
+        setDescriptors(updatedDescriptors);
+        
+        // Update cache
+        sessionStorage.setItem(cacheKey, JSON.stringify(updatedDescriptors));
+      } else {
+        console.error('Failed to update date:', result.error);
+      }
+    } catch (error) {
+      console.error('Exception updating date:', error);
     }
   };
 
@@ -81,16 +142,34 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
     const { id, field } = editingCell;
     const updates: Partial<ActionPlanDescriptor> = { [field]: editValue };
     
-    const result = await updateDescriptor(id, updates);
-    if (result.success) {
-      setDescriptors(descriptors.map(d => d.id === id ? { ...d, [field]: editValue } : d));
-      setEditingCell(null);
+    try {
+      console.log(`Saving edit for descriptor ${id}, field ${field}`);
+      const result = await updateDescriptor(id, updates);
+      if (result.success) {
+        const updatedDescriptors = descriptors.map(d => d.id === id ? { ...d, [field]: editValue } : d);
+        setDescriptors(updatedDescriptors);
+        
+        // Update cache
+        sessionStorage.setItem(cacheKey, JSON.stringify(updatedDescriptors));
+        
+        setEditingCell(null);
+      } else {
+        console.error('Failed to save edit:', result.error);
+      }
+    } catch (error) {
+      console.error('Exception saving edit:', error);
     }
   };
 
   const handleProgressNoteAdded = async () => {
+    console.log('Progress note added, refreshing data');
     await fetchDescriptors();
     onRefreshSummary();
+  };
+
+  const handleViewNotes = (id: string) => {
+    console.log('Viewing notes for descriptor:', id);
+    setViewNotesId(id);
   };
 
   return (
@@ -101,7 +180,10 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
       />
 
       {isLoading ? (
-        <div className="text-center py-12">Loading descriptors...</div>
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
       ) : filteredDescriptors.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
           {searchTerm ? 'No descriptors match your search' : 'No descriptors available for this section'}
@@ -116,7 +198,7 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
           onEditSave={handleEditSave}
           onStatusChange={handleStatusChange}
           onDateChange={handleDateChange}
-          onViewNotes={setViewNotesId}
+          onViewNotes={handleViewNotes}
           onAddNote={setProgressNoteId}
         />
       )}

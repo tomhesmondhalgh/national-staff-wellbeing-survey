@@ -1,19 +1,25 @@
+
 import { supabase } from '../lib/supabase/client';
 import { ActionPlanDescriptor, ActionPlanTemplate, ProgressNote, DescriptorStatus, ACTION_PLAN_SECTIONS } from '../types/actionPlan';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
 // Initialize action plan for a user
 export const initializeActionPlan = async (userId: string) => {
   try {
+    console.log('Initializing action plan for user:', userId);
+    
     // Delete existing descriptors for this user
     const { error: deleteError } = await supabase
       .from('action_plan_descriptors')
       .delete()
       .eq('user_id', userId);
 
-    if (deleteError) throw deleteError;
+    if (deleteError) {
+      console.error('Error deleting existing descriptors:', deleteError);
+      throw deleteError;
+    }
 
     // Create descriptors for all sections
     const descriptorsToInsert = ACTION_PLAN_SECTIONS.flatMap(section => 
@@ -27,12 +33,17 @@ export const initializeActionPlan = async (userId: string) => {
       }))
     );
 
+    console.log(`Inserting ${descriptorsToInsert.length} descriptors`);
     const { error } = await supabase
       .from('action_plan_descriptors')
       .insert(descriptorsToInsert);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error inserting descriptors:', error);
+      throw error;
+    }
 
+    console.log('Action plan initialized successfully');
     return { success: true };
   } catch (error: any) {
     console.error('Error initializing action plan:', error);
@@ -43,6 +54,8 @@ export const initializeActionPlan = async (userId: string) => {
 // Get all descriptors for a user
 export const getActionPlanDescriptors = async (userId: string, section?: string) => {
   try {
+    console.log('Getting descriptors for user:', userId, 'section:', section);
+    
     let query = supabase
       .from('action_plan_descriptors')
       .select(`
@@ -57,29 +70,73 @@ export const getActionPlanDescriptors = async (userId: string, section?: string)
 
     const { data, error } = await query.order('index_number', { ascending: true });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error fetching descriptors:', error);
+      throw error;
+    }
 
-    return { success: true, data: data || [] };
+    // Format the descriptors to ensure progress_notes_count is a number
+    const formattedData = data?.map(descriptor => {
+      // Extract the count from the aggregate
+      let count = 0;
+      
+      if (descriptor.progress_notes_count) {
+        // If it's an array (from count aggregation), get the first element's count
+        if (Array.isArray(descriptor.progress_notes_count) && descriptor.progress_notes_count.length > 0) {
+          count = Number(descriptor.progress_notes_count[0]?.count || 0);
+        } 
+        // If it's an object with count property (typical Postgres aggregation result)
+        else if (typeof descriptor.progress_notes_count === 'object' && descriptor.progress_notes_count !== null) {
+          count = Number(descriptor.progress_notes_count.count || 0);
+        }
+        // If it's already a number
+        else if (typeof descriptor.progress_notes_count === 'number') {
+          count = descriptor.progress_notes_count;
+        }
+      }
+      
+      return {
+        ...descriptor,
+        progress_notes_count: count
+      };
+    });
+
+    console.log('Formatted descriptors with note counts, sample:', 
+      formattedData && formattedData.length > 0 ? 
+        `First item has ${formattedData[0].progress_notes_count} notes` : 
+        'No descriptors found');
+    
+    return { success: true, data: formattedData || [] };
   } catch (error: any) {
     console.error('Error fetching descriptors:', error);
     return { success: false, error: error.message, data: [] };
   }
 };
 
-// Update a descriptor
+// Update descriptor
 export const updateDescriptor = async (descriptorId: string, updates: Partial<ActionPlanDescriptor>) => {
   try {
+    console.log('Updating descriptor:', descriptorId, updates);
+    
     const { error } = await supabase
       .from('action_plan_descriptors')
       .update(updates)
       .eq('id', descriptorId);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error updating descriptor:', error);
+      throw error;
+    }
 
+    console.log('Descriptor updated successfully');
     return { success: true };
   } catch (error: any) {
     console.error('Error updating descriptor:', error);
-    toast.error('Failed to update: ' + error.message);
+    toast({
+      title: 'Failed to update',
+      description: error.message,
+      variant: 'destructive'
+    });
     return { success: false, error: error.message };
   }
 };
@@ -87,14 +144,20 @@ export const updateDescriptor = async (descriptorId: string, updates: Partial<Ac
 // Get progress notes for a descriptor
 export const getProgressNotes = async (descriptorId: string) => {
   try {
+    console.log('Fetching progress notes for descriptor:', descriptorId);
+    
     const { data, error } = await supabase
       .from('action_plan_progress_notes')
       .select('*')
       .eq('descriptor_id', descriptorId)
       .order('note_date', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error fetching progress notes:', error);
+      throw error;
+    }
 
+    console.log(`Fetched ${data?.length || 0} progress notes`);
     return { success: true, data: data || [] };
   } catch (error: any) {
     console.error('Error fetching progress notes:', error);
@@ -105,19 +168,35 @@ export const getProgressNotes = async (descriptorId: string) => {
 // Add a progress note
 export const addProgressNote = async (descriptorId: string, noteText: string) => {
   try {
-    const { error } = await supabase
+    console.log('Adding progress note for descriptor:', descriptorId);
+    
+    const { data, error } = await supabase
       .from('action_plan_progress_notes')
       .insert({
         descriptor_id: descriptorId,
         note_text: noteText
-      });
+      })
+      .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error adding progress note:', error);
+      throw error;
+    }
 
-    return { success: true };
+    console.log('Added progress note successfully:', data);
+    
+    // After adding a note, clear the note cache for this descriptor
+    // This forces a fresh fetch next time
+    sessionStorage.removeItem(`notes_${descriptorId}`);
+    
+    return { success: true, data };
   } catch (error: any) {
     console.error('Error adding progress note:', error);
-    toast.error('Failed to add note: ' + error.message);
+    toast({
+      title: 'Failed to add note',
+      description: error.message,
+      variant: 'destructive'
+    });
     return { success: false, error: error.message };
   }
 };
@@ -149,7 +228,11 @@ export const saveAsTemplate = async (userId: string, templateName: string) => {
     return { success: true, templateId: template.id };
   } catch (error: any) {
     console.error('Error saving template:', error);
-    toast.error('Failed to save template: ' + error.message);
+    toast({
+      title: 'Failed to save template',
+      description: error.message,
+      variant: 'destructive'
+    });
     return { success: false, error: error.message };
   }
 };
@@ -302,7 +385,11 @@ export const generatePDF = async (userId: string) => {
     return { success: true };
   } catch (error: any) {
     console.error('Error generating PDF:', error);
-    toast.error('Failed to generate PDF: ' + error.message);
+    toast({
+      title: 'Failed to generate PDF',
+      description: error.message,
+      variant: 'destructive'
+    });
     return { success: false, error: error.message };
   }
 };

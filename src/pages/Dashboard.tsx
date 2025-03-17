@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import StatsGrid from '../components/dashboard/StatsGrid';
 import RecentSurveysList from '../components/dashboard/RecentSurveysList';
+import GettingStartedGuide from '../components/dashboard/GettingStartedGuide';
 import PageTitle from '../components/ui/PageTitle';
 import { Button } from '../components/ui/button';
 import { Plus } from 'lucide-react';
@@ -81,6 +82,8 @@ const Dashboard = () => {
           benchmarkScore={benchmarkScore}
           isLoading={isLoading}
         />
+
+        <GettingStartedGuide />
 
         <RecentSurveysList surveys={recentSurveys} isLoading={isLoading} />
       </div>
