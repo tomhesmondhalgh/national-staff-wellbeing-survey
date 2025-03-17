@@ -8,6 +8,7 @@ import ProgressNotesList from './ProgressNotesList';
 import SearchBar from './SearchBar';
 import DescriptorsTable from './DescriptorsTable';
 import { useEditableCell } from '@/hooks/useEditableCell';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface DescriptorTableProps {
   userId: string;
@@ -31,6 +32,7 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
     const cachedData = sessionStorage.getItem(cacheKey);
     if (cachedData) {
       try {
+        console.log(`Loading cached descriptors for section ${section} from sessionStorage`);
         const parsedData = JSON.parse(cachedData);
         setDescriptors(parsedData);
         setIsLoading(false);
@@ -38,7 +40,7 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
         console.error('Error parsing cached descriptors:', e);
       }
     }
-  }, [cacheKey]);
+  }, [cacheKey, section]);
 
   // Memoize fetchDescriptors to prevent unnecessary recreations
   const fetchDescriptors = useCallback(async () => {
@@ -48,7 +50,8 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
       const result = await getActionPlanDescriptors(userId, section);
       
       if (result.success && result.data) {
-        console.log('Fetched descriptors successfully:', result.data);
+        console.log('Fetched descriptors successfully, count:', result.data.length);
+        
         const sortedDescriptors = result.data.sort((a, b) => {
           if (!a.index_number) return 1;
           if (!b.index_number) return -1;
@@ -61,6 +64,7 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
           )).values()
         );
         
+        console.log('Processed descriptors count:', uniqueDescriptors.length);
         setDescriptors(uniqueDescriptors);
         
         // Cache the descriptors for this section
@@ -80,6 +84,7 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
   // Fetch descriptors when component mounts and when userId/section changes
   useEffect(() => {
     if (userId && section) {
+      console.log(`Fetching descriptors for section: ${section}`);
       fetchDescriptors();
     }
   }, [userId, section, fetchDescriptors]);
@@ -95,6 +100,7 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
 
   const handleStatusChange = async (id: string, status: DescriptorStatus) => {
     try {
+      console.log(`Updating status for descriptor ${id} to ${status}`);
       const result = await updateDescriptor(id, { status });
       if (result.success) {
         setDescriptors(descriptors.map(d => d.id === id ? { ...d, status } : d));
@@ -114,6 +120,7 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
 
   const handleDateChange = async (id: string, date: string) => {
     try {
+      console.log(`Updating deadline for descriptor ${id} to ${date}`);
       const result = await updateDescriptor(id, { deadline: date || null });
       if (result.success) {
         const updatedDescriptors = descriptors.map(d => d.id === id ? { ...d, deadline: date } : d);
@@ -136,6 +143,7 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
     const updates: Partial<ActionPlanDescriptor> = { [field]: editValue };
     
     try {
+      console.log(`Saving edit for descriptor ${id}, field ${field}`);
       const result = await updateDescriptor(id, updates);
       if (result.success) {
         const updatedDescriptors = descriptors.map(d => d.id === id ? { ...d, [field]: editValue } : d);
@@ -172,7 +180,10 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
       />
 
       {isLoading ? (
-        <div className="text-center py-12">Loading descriptors...</div>
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
       ) : filteredDescriptors.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
           {searchTerm ? 'No descriptors match your search' : 'No descriptors available for this section'}

@@ -8,13 +8,18 @@ import 'jspdf-autotable';
 // Initialize action plan for a user
 export const initializeActionPlan = async (userId: string) => {
   try {
+    console.log('Initializing action plan for user:', userId);
+    
     // Delete existing descriptors for this user
     const { error: deleteError } = await supabase
       .from('action_plan_descriptors')
       .delete()
       .eq('user_id', userId);
 
-    if (deleteError) throw deleteError;
+    if (deleteError) {
+      console.error('Error deleting existing descriptors:', deleteError);
+      throw deleteError;
+    }
 
     // Create descriptors for all sections
     const descriptorsToInsert = ACTION_PLAN_SECTIONS.flatMap(section => 
@@ -28,12 +33,17 @@ export const initializeActionPlan = async (userId: string) => {
       }))
     );
 
+    console.log(`Inserting ${descriptorsToInsert.length} descriptors`);
     const { error } = await supabase
       .from('action_plan_descriptors')
       .insert(descriptorsToInsert);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error inserting descriptors:', error);
+      throw error;
+    }
 
+    console.log('Action plan initialized successfully');
     return { success: true };
   } catch (error: any) {
     console.error('Error initializing action plan:', error);
@@ -91,7 +101,11 @@ export const getActionPlanDescriptors = async (userId: string, section?: string)
       };
     });
 
-    console.log('Formatted descriptors with note counts:', formattedData);
+    console.log('Formatted descriptors with note counts, sample:', 
+      formattedData && formattedData.length > 0 ? 
+        `First item has ${formattedData[0].progress_notes_count} notes` : 
+        'No descriptors found');
+    
     return { success: true, data: formattedData || [] };
   } catch (error: any) {
     console.error('Error fetching descriptors:', error);
@@ -102,13 +116,19 @@ export const getActionPlanDescriptors = async (userId: string, section?: string)
 // Update a descriptor
 export const updateDescriptor = async (descriptorId: string, updates: Partial<ActionPlanDescriptor>) => {
   try {
+    console.log('Updating descriptor:', descriptorId, updates);
+    
     const { error } = await supabase
       .from('action_plan_descriptors')
       .update(updates)
       .eq('id', descriptorId);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error updating descriptor:', error);
+      throw error;
+    }
 
+    console.log('Descriptor updated successfully');
     return { success: true };
   } catch (error: any) {
     console.error('Error updating descriptor:', error);
@@ -133,7 +153,7 @@ export const getProgressNotes = async (descriptorId: string) => {
       throw error;
     }
 
-    console.log('Fetched progress notes:', data);
+    console.log(`Fetched ${data?.length || 0} progress notes`);
     return { success: true, data: data || [] };
   } catch (error: any) {
     console.error('Error fetching progress notes:', error);
@@ -144,7 +164,7 @@ export const getProgressNotes = async (descriptorId: string) => {
 // Add a progress note
 export const addProgressNote = async (descriptorId: string, noteText: string) => {
   try {
-    console.log('Adding progress note for descriptor:', descriptorId, 'with text:', noteText);
+    console.log('Adding progress note for descriptor:', descriptorId);
     
     const { data, error } = await supabase
       .from('action_plan_progress_notes')
@@ -160,6 +180,11 @@ export const addProgressNote = async (descriptorId: string, noteText: string) =>
     }
 
     console.log('Added progress note successfully:', data);
+    
+    // After adding a note, clear the note cache for this descriptor
+    // This forces a fresh fetch next time
+    sessionStorage.removeItem(`notes_${descriptorId}`);
+    
     return { success: true, data };
   } catch (error: any) {
     console.error('Error adding progress note:', error);

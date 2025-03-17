@@ -10,6 +10,7 @@ import {
 import { getProgressNotes } from '@/utils/actionPlanUtils';
 import { ProgressNote } from '@/types/actionPlan';
 import { toast } from 'sonner';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ProgressNotesListProps {
   descriptorId: string;
@@ -36,7 +37,7 @@ const ProgressNotesList: React.FC<ProgressNotesListProps> = ({
       const result = await getProgressNotes(descriptorId);
       
       if (result.success && result.data) {
-        console.log('Fetched notes successfully:', result.data);
+        console.log('Fetched notes successfully, count:', result.data.length, result.data);
         setNotes(result.data);
         
         // Cache the notes for this descriptor
@@ -56,20 +57,25 @@ const ProgressNotesList: React.FC<ProgressNotesListProps> = ({
   // Check for cached notes first, then fetch if needed
   useEffect(() => {
     if (isOpen && descriptorId) {
+      console.log(`Dialog open, checking cache for notes: ${cacheKey}`);
       const cachedNotes = sessionStorage.getItem(cacheKey);
       
       if (cachedNotes) {
         try {
-          setNotes(JSON.parse(cachedNotes));
+          console.log('Found cached notes, parsing...');
+          const parsedNotes = JSON.parse(cachedNotes);
+          setNotes(parsedNotes);
           setIsLoading(false);
           
           // Still fetch in the background to ensure up-to-date data
+          console.log('Fetching fresh notes in background...');
           fetchNotes().catch(console.error);
         } catch (e) {
           console.error('Error parsing cached notes:', e);
           fetchNotes().catch(console.error);
         }
       } else {
+        console.log('No cached notes found, fetching from API');
         fetchNotes().catch(console.error);
       }
     }
@@ -102,7 +108,11 @@ const ProgressNotesList: React.FC<ProgressNotesListProps> = ({
         </DialogHeader>
         <div className="py-4 max-h-[400px] overflow-y-auto">
           {isLoading && notes.length === 0 ? (
-            <div className="flex justify-center py-6">Loading notes...</div>
+            <div className="space-y-4">
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </div>
           ) : notes.length === 0 ? (
             <div className="text-center py-6 text-gray-500">No progress notes yet</div>
           ) : (

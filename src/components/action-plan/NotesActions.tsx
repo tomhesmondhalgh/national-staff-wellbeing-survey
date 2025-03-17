@@ -22,7 +22,10 @@ const NotesActions: React.FC<NotesActionsProps> = ({
   };
 
   // Use memoization to avoid unnecessary re-renders
-  const formattedCount = React.useMemo(() => formatNoteCount(notesCount), [notesCount]);
+  const formattedCount = React.useMemo(() => {
+    console.log(`Formatting note count: ${notesCount}`);
+    return formatNoteCount(notesCount);
+  }, [notesCount]);
 
   return (
     <div className="flex flex-col space-y-1">

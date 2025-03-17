@@ -29,20 +29,29 @@ const Improve = () => {
   const { orientation, isMobile } = useOrientation();
   const { hasAccess, isLoading: isSubscriptionLoading } = useSubscription();
   const [hasFoundationPlan, setHasFoundationPlan] = useState<boolean | null>(null);
+  const [initError, setInitError] = useState<string | null>(null);
 
   // Store the initialization state in sessionStorage to prevent re-initialization on tab changes
   useEffect(() => {
     const initState = sessionStorage.getItem('actionPlanInitialized');
     if (initState === 'true') {
+      console.log('Action plan already initialized according to sessionStorage');
       setHasInitialized(true);
     }
   }, []);
 
   useEffect(() => {
     async function checkAccess() {
-      if (hasAccess) {
-        const canAccess = await hasAccess('foundation');
-        setHasFoundationPlan(canAccess);
+      try {
+        if (hasAccess) {
+          console.log('Checking user access to foundation plan');
+          const canAccess = await hasAccess('foundation');
+          console.log('User access to foundation plan:', canAccess);
+          setHasFoundationPlan(canAccess);
+        }
+      } catch (error) {
+        console.error('Error checking access:', error);
+        setHasFoundationPlan(false);
       }
     }
     if (!isSubscriptionLoading) {
@@ -51,23 +60,39 @@ const Improve = () => {
   }, [hasAccess, isSubscriptionLoading]);
 
   useEffect(() => {
-    if (user && !hasInitialized && hasFoundationPlan) {
+    if (user && !hasInitialized && hasFoundationPlan === true) {
+      console.log('Initializing action plan for user:', user.id);
       initializeActionPlanData();
+    } else if (hasInitialized && hasFoundationPlan === true) {
+      console.log('Action plan already initialized, fetching summary data only');
+      fetchSummaryData();
+      setIsLoading(false);
     }
   }, [user, hasInitialized, hasFoundationPlan]);
 
   const initializeActionPlanData = async () => {
     setIsLoading(true);
+    setInitError(null);
     try {
       if (user?.id) {
-        await initializeActionPlan(user.id);
-        await fetchSummaryData();
-        // Mark as initialized in both state and sessionStorage
-        setHasInitialized(true);
-        sessionStorage.setItem('actionPlanInitialized', 'true');
+        console.log('Starting action plan initialization...');
+        const result = await initializeActionPlan(user.id);
+        
+        if (result.success) {
+          console.log('Action plan initialized successfully');
+          await fetchSummaryData();
+          // Mark as initialized in both state and sessionStorage
+          setHasInitialized(true);
+          sessionStorage.setItem('actionPlanInitialized', 'true');
+        } else {
+          console.error("Failed to initialize action plan:", result.error);
+          setInitError(`Initialization failed: ${result.error}`);
+          toast.error("Failed to initialize action plan");
+        }
       }
     } catch (error) {
       console.error("Error initializing action plan:", error);
+      setInitError(`Initialization error: ${error instanceof Error ? error.message : String(error)}`);
       toast.error("Failed to initialize action plan");
     } finally {
       setIsLoading(false);
@@ -75,21 +100,39 @@ const Improve = () => {
   };
 
   const fetchSummaryData = async () => {
-    if (user?.id) {
-      const result = await getSectionProgressSummary(user.id);
-      if (result.success && result.data) {
-        setSummaryData(result.data);
+    try {
+      if (user?.id) {
+        console.log('Fetching summary data...');
+        const result = await getSectionProgressSummary(user.id);
+        if (result.success && result.data) {
+          console.log('Summary data fetched successfully', result.data);
+          setSummaryData(result.data);
+        } else {
+          console.error('Failed to fetch summary data:', result.error);
+          toast.error('Failed to load summary data');
+        }
       }
+    } catch (error) {
+      console.error('Error fetching summary data:', error);
+      toast.error('Failed to load summary data');
     }
   };
 
   const handleExportPDF = async () => {
     if (!user) return;
     setIsGeneratingPDF(true);
-    const result = await generatePDF(user.id);
-    setIsGeneratingPDF(false);
-    if (result.success) {
-      toast.success('PDF exported successfully');
+    try {
+      const result = await generatePDF(user.id);
+      if (result.success) {
+        toast.success('PDF exported successfully');
+      } else {
+        toast.error(`PDF export failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('PDF export failed');
+    } finally {
+      setIsGeneratingPDF(false);
     }
   };
 
@@ -99,6 +142,13 @@ const Improve = () => {
       top: 0,
       behavior: 'smooth'
     });
+  };
+
+  const handleRetryInitialization = () => {
+    if (user) {
+      setInitError(null);
+      initializeActionPlanData();
+    }
   };
 
   const shouldShowOverlay = isMobile && orientation === 'portrait' && !overlayDismissed;
@@ -153,7 +203,16 @@ const Improve = () => {
           <div className="flex justify-center items-center h-64">
             <div className="text-center">
               <div className="mb-4">Loading action plan...</div>
+              <div className="text-sm text-gray-500">This may take a moment</div>
             </div>
+          </div>
+        ) : initError ? (
+          <div className="mt-8 rounded-lg border border-red-200 bg-red-50 p-8 text-center">
+            <h2 className="text-xl font-semibold mb-4 text-red-700">Error Loading Action Plan</h2>
+            <p className="text-gray-700 mb-6">{initError}</p>
+            <Button onClick={handleRetryInitialization} variant="destructive">
+              Retry
+            </Button>
           </div>
         ) : (
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
