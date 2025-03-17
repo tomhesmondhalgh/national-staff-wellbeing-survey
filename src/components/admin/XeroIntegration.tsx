@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
@@ -32,24 +31,23 @@ export function XeroIntegration() {
         throw new Error('Not authenticated');
       }
       
-      const response = await fetch(`${window.location.origin}/functions/v1/xero-auth/status`, {
+      const { data, error: fnError } = await supabase.functions.invoke('xero-auth', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+        },
+        query: {
+          action: 'status'
         }
       });
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error checking Xero connection:', response.status, errorText);
-        setError(`Failed to check connection: ${response.status} ${errorText}`);
-        setDetailedError(errorText);
+      if (fnError) {
+        console.error('Error checking Xero connection:', fnError);
+        setError(`Failed to check connection: ${fnError.message}`);
+        setDetailedError(JSON.stringify(fnError, null, 2));
         toast.error('Failed to check Xero connection status');
         return;
       }
-      
-      const data = await response.json();
       
       console.log('Xero connection status response:', data);
       setIsConnected(data.connected);
@@ -83,33 +81,24 @@ export function XeroIntegration() {
         throw new Error('Not authenticated');
       }
       
-      const response = await fetch(`${window.location.origin}/functions/v1/xero-auth/authorize`, {
+      const { data, error: fnError } = await supabase.functions.invoke('xero-auth', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+        },
+        query: {
+          action: 'authorize'
         }
       });
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error starting Xero connection:', response.status, errorText);
-        try {
-          // Try to parse as JSON if possible
-          const errorData = JSON.parse(errorText);
-          setError(`Failed to start connection: ${errorData.error || 'Unknown error'}`);
-          setDetailedError(JSON.stringify(errorData, null, 2));
-        } catch (e) {
-          // If not JSON, use text
-          setError(`Failed to start connection: ${response.status} ${errorText}`);
-          setDetailedError(errorText);
-        }
+      if (fnError) {
+        console.error('Error starting Xero connection:', fnError);
+        setError(`Failed to start connection: ${fnError.message}`);
+        setDetailedError(JSON.stringify(fnError, null, 2));
         toast.error('Failed to connect to Xero');
         return;
       }
 
-      const data = await response.json();
-      
       if (!data || !data.url) {
         console.error('Invalid response from Xero auth function:', data);
         setError('Invalid response from server - missing URL');
@@ -119,7 +108,6 @@ export function XeroIntegration() {
       }
 
       console.log('Redirecting to Xero authorization page:', data.url);
-      // Redirect to Xero authorization page
       window.location.href = data.url;
     } catch (error) {
       console.error('Error connecting to Xero:', error);
@@ -144,23 +132,19 @@ export function XeroIntegration() {
         throw new Error('Not authenticated');
       }
       
-      const response = await fetch(`${window.location.origin}/functions/v1/xero-auth/disconnect`, {
+      const { data, error: fnError } = await supabase.functions.invoke('xero-auth', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+        },
+        query: {
+          action: 'disconnect'
         }
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error disconnecting Xero:', response.status, errorText);
-        try {
-          const errorData = JSON.parse(errorText);
-          setError(`Failed to disconnect: ${errorData.error || 'Unknown error'}`);
-        } catch (e) {
-          setError(`Failed to disconnect: ${response.status} ${errorText}`);
-        }
+      if (fnError) {
+        console.error('Error disconnecting Xero:', fnError);
+        setError(`Failed to disconnect: ${fnError.message}`);
         toast.error('Failed to disconnect from Xero');
         return;
       }
@@ -191,29 +175,20 @@ export function XeroIntegration() {
         throw new Error('Not authenticated');
       }
       
-      const response = await fetch(`${window.location.origin}/functions/v1/xero-token-refresh`, {
+      const { data, error: fnError } = await supabase.functions.invoke('xero-token-refresh', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
         }
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error refreshing Xero token:', response.status, errorText);
-        try {
-          const errorData = JSON.parse(errorText);
-          setError(`Failed to refresh token: ${errorData.error || 'Unknown error'}`);
-        } catch (e) {
-          setError(`Failed to refresh token: ${response.status} ${errorText}`);
-        }
+      if (fnError) {
+        console.error('Error refreshing Xero token:', fnError);
+        setError(`Failed to refresh token: ${fnError.message}`);
         toast.error('Failed to refresh Xero token');
         return;
       }
 
-      const data = await response.json();
-      
       if (data.refreshed) {
         toast.success('Successfully refreshed Xero token');
         setExpiresAt(data.expires_at);
