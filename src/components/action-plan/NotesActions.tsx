@@ -16,7 +16,7 @@ const NotesActions: React.FC<NotesActionsProps> = ({
 }) => {
   // Format note count safely
   const formatNoteCount = (count: number | null | undefined) => {
-    // Ensure we have a number
+    // Ensure we're working with a number
     const numCount = typeof count === 'number' ? count : 0;
     return `${numCount} ${numCount === 1 ? 'Note' : 'Notes'}`;
   };

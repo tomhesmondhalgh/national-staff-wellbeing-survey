@@ -25,19 +25,14 @@ const ProgressNotesList: React.FC<ProgressNotesListProps> = ({
   const [notes, setNotes] = useState<ProgressNote[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Reset notes when the modal is closed
-  useEffect(() => {
-    if (!isOpen) {
-      setNotes([]);
-    }
-  }, [isOpen]);
-
   // Fetch notes when the modal opens with a valid descriptor ID
   useEffect(() => {
     if (isOpen && descriptorId) {
       console.log('Fetching notes for descriptor:', descriptorId);
       fetchNotes();
     }
+    
+    // Don't reset notes when closing to avoid flash of empty content
   }, [isOpen, descriptorId]);
 
   const fetchNotes = async () => {

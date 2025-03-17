@@ -68,13 +68,26 @@ export const getActionPlanDescriptors = async (userId: string, section?: string)
     // Format the descriptors to ensure progress_notes_count is a number
     const formattedData = data?.map(descriptor => {
       // Extract the count from the aggregate
-      const count = descriptor.progress_notes_count || 0;
+      let count = 0;
+      
+      if (descriptor.progress_notes_count) {
+        // If it's an array (from count aggregation), get the first element's count
+        if (Array.isArray(descriptor.progress_notes_count) && descriptor.progress_notes_count.length > 0) {
+          count = Number(descriptor.progress_notes_count[0]?.count || 0);
+        } 
+        // If it's an object with count property (typical Postgres aggregation result)
+        else if (typeof descriptor.progress_notes_count === 'object' && descriptor.progress_notes_count !== null) {
+          count = Number(descriptor.progress_notes_count.count || 0);
+        }
+        // If it's already a number
+        else if (typeof descriptor.progress_notes_count === 'number') {
+          count = descriptor.progress_notes_count;
+        }
+      }
       
       return {
         ...descriptor,
-        // Ensure progress_notes_count is a number, not an aggregate object
-        progress_notes_count: typeof count === 'number' ? count : 
-                             (count.count !== undefined ? Number(count.count) : 0)
+        progress_notes_count: count
       };
     });
 

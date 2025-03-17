@@ -30,6 +30,11 @@ const DescriptorRow: React.FC<DescriptorRowProps> = ({
   onViewNotes,
   onAddNote
 }) => {
+  // Ensure notes count is a number
+  const notesCount = typeof descriptor.progress_notes_count === 'number' 
+    ? descriptor.progress_notes_count 
+    : 0;
+
   return (
     <tr className="hover:bg-gray-50">
       <td className="p-2 border border-gray-200 font-medium text-gray-700">
@@ -76,7 +81,7 @@ const DescriptorRow: React.FC<DescriptorRowProps> = ({
       </td>
       <td className="p-2 border border-gray-200">
         <NotesActions
-          notesCount={descriptor.progress_notes_count}
+          notesCount={notesCount}
           onViewNotes={() => onViewNotes(descriptor.id)}
           onAddNote={() => onAddNote(descriptor.id)}
         />

@@ -46,6 +46,7 @@ const ProgressNoteDialog: React.FC<ProgressNoteDialogProps> = ({
         console.log('Note added successfully:', result.data);
         toast.success('Progress note added');
         setNoteText('');
+        // Explicitly call onSuccess to refresh data in parent components
         onSuccess();
         onClose();
       } else {
