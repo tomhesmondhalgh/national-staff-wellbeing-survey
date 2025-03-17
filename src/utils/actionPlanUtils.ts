@@ -1,4 +1,3 @@
-
 import { supabase } from '../lib/supabase/client';
 import { ActionPlanDescriptor, ActionPlanTemplate, ProgressNote, DescriptorStatus, ACTION_PLAN_SECTIONS } from '../types/actionPlan';
 import { toast } from 'sonner';
@@ -65,16 +64,24 @@ export const getActionPlanDescriptors = async (userId: string, section?: string)
       throw error;
     }
 
-    // Format the descriptors to ensure progress_notes_count is a number
+    // Format the descriptors to ensure progress_notes_count is always a number
     const formattedData = data?.map(descriptor => {
-      // Extract the count from the aggregate
-      const count = descriptor.progress_notes_count || 0;
+      let noteCount = 0;
       
+      // Handle the aggregation object returned by Supabase
+      if (descriptor.progress_notes_count !== null && descriptor.progress_notes_count !== undefined) {
+        if (typeof descriptor.progress_notes_count === 'number') {
+          noteCount = descriptor.progress_notes_count;
+        } else if (typeof descriptor.progress_notes_count === 'object') {
+          // Extract count from the aggregate object
+          noteCount = descriptor.progress_notes_count.count || 0;
+        }
+      }
+      
+      // Return descriptor with normalized count
       return {
         ...descriptor,
-        // Ensure progress_notes_count is a number, not an aggregate object
-        progress_notes_count: typeof count === 'number' ? count : 
-                             (count.count !== undefined ? Number(count.count) : 0)
+        progress_notes_count: noteCount
       };
     });
 
