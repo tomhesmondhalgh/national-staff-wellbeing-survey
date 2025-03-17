@@ -41,8 +41,9 @@ serve(async (req) => {
       ? `${creator.firstName} ${creator.lastName}`
       : creator.email.split('@')[0];
     
+    // Updated: Use a consistent verified sender address format
     const response = await resend.emails.send({
-      from: "Wellbeing Surveys <no-reply@humankindaward.com>",
+      from: "Wellbeing Surveys <notifications@creativeeducation.co.uk>",
       to: creator.email,
       subject: `Your survey "${surveyName}" has now closed - see the results...`,
       html: `

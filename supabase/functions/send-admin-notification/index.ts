@@ -34,8 +34,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Preparing to send admin notification about new user: ${email}`);
 
+    // Updated: Use a consistent verified sender address format
     const emailResponse = await resend.emails.send({
-      from: "Wellbeing Surveys <no-reply@creativeeducation.co.uk>",
+      from: "Wellbeing Surveys <notifications@creativeeducation.co.uk>",
       to: ["tom.hesmondhalgh@creativeeducation.co.uk"],
       subject: "New Registration",
       html: `

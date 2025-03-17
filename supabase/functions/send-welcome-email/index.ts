@@ -32,8 +32,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Preparing to send welcome email to ${email}`);
 
+    // Updated: Use a consistent verified sender address format
     const emailResponse = await resend.emails.send({
-      from: "Wellbeing Surveys <no-reply@creativeeducation.co.uk>",
+      from: "Wellbeing Surveys <notifications@creativeeducation.co.uk>",
       to: [email],
       subject: "Welcome to Wellbeing Surveys!",
       html: `
