@@ -19,10 +19,8 @@ const NavLink: React.FC<NavLinkProps> = ({ to, active, onClick, children }) => {
   return (
     <RouterNavLink
       to={to}
-      className={`block py-2 px-4 text-sm text-gray-700 hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-gray-400 md:dark:hover:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent ${
-        active
-          ? 'font-bold text-blue-700 dark:text-white'
-          : ''
+      className={`block py-2 px-4 text-base font-medium text-gray-600 hover:text-brandPurple-600 md:p-0 ${
+        active ? 'text-purple-700' : ''
       }`}
       onClick={onClick}
     >
@@ -54,7 +52,7 @@ export const NavLinks: React.FC<NavLinksProps> = ({
   
   // Only include main navigation items (Dashboard, Survey, Analyse, Improve, Upgrade)
   return (
-    <div className="flex flex-col gap-1 md:flex-row md:items-center">
+    <div className="flex flex-col gap-6 md:flex-row md:items-center">
       <NavLink 
         to="/dashboard" 
         active={isActive('/dashboard')} 

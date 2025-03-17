@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { User, ShieldCheck, LogOut, Users, ClipboardList, Settings, CreditCard } from 'lucide-react';
+import { User, ShieldCheck, LogOut, Users, Settings, CreditCard } from 'lucide-react';
 import { NavLinks } from './NavLinks';
 import OrganizationSwitcher from '../organization/OrganizationSwitcher';
 
@@ -44,19 +44,19 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
               <NavLinks setIsMenuOpen={setIsMenuOpen} />
             </div>
             
-            {/* Settings Section Header - Increased font size */}
+            {/* Settings Section Header */}
             <div className="px-4 pt-2 pb-1 text-base font-semibold text-gray-500">
               Settings
             </div>
             
-            {/* Settings Items - Increased font size */}
+            {/* Settings Items */}
             <Link 
               to="/profile" 
               className="block px-4 py-2 rounded-md font-medium text-base hover:bg-brandPurple-50"
               onClick={() => setIsMenuOpen(false)}
             >
               <span className="flex items-center">
-                <User size={16} className="mr-1" />
+                <User size={16} className="mr-2" />
                 Profile
               </span>
             </Link>
@@ -67,19 +67,8 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
               onClick={() => setIsMenuOpen(false)}
             >
               <span className="flex items-center">
-                <CreditCard size={16} className="mr-1" />
+                <CreditCard size={16} className="mr-2" />
                 My Purchases
-              </span>
-            </Link>
-            
-            <Link 
-              to="/custom-questions" 
-              className="block px-4 py-2 rounded-md font-medium text-base hover:bg-brandPurple-50"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              <span className="flex items-center">
-                <ClipboardList size={16} className="mr-1" />
-                Custom Questions
               </span>
             </Link>
             
@@ -89,7 +78,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
               onClick={() => setIsMenuOpen(false)}
             >
               <span className="flex items-center">
-                <Users size={16} className="mr-1" />
+                <Users size={16} className="mr-2" />
                 Team
               </span>
             </Link>
@@ -100,7 +89,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
               onClick={() => setIsMenuOpen(false)}
             >
               <span className="flex items-center">
-                <Settings size={16} className="mr-1" />
+                <Settings size={16} className="mr-2" />
                 Xero Integration
               </span>
             </Link>
@@ -112,7 +101,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
                 onClick={() => setIsMenuOpen(false)}
               >
                 <span className="flex items-center">
-                  <ShieldCheck size={16} className="mr-1" />
+                  <ShieldCheck size={16} className="mr-2" />
                   Admin
                 </span>
               </Link>
@@ -122,12 +111,12 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
               className="flex items-center w-full text-left px-4 py-2 rounded-md font-medium text-base hover:bg-brandPurple-50"
               onClick={handleSignOut}
             >
-              <LogOut size={16} className="mr-1" />
+              <LogOut size={16} className="mr-2" />
               Sign Out
             </button>
           </>
         ) : (
-          // Only show login/signup options if not on survey response or complete pages - Increased font size
+          // Only show login/signup options if not on survey response or complete pages
           !hideAuthButtons && (
             <>
               <Link 

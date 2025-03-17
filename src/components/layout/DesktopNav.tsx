@@ -1,9 +1,8 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { NavLinks } from './NavLinks';
 import SettingsDropdown from './SettingsDropdown';
-import { usePermissions } from '../../hooks/usePermissions';
 
 interface DesktopNavProps {
   isAuthenticated: boolean;
@@ -20,13 +19,6 @@ const DesktopNav: React.FC<DesktopNavProps> = ({
   isAdmin,
   handleSignOut,
 }) => {
-  // Additional check using the usePermissions hook directly
-  const { userRole } = usePermissions();
-  
-  useEffect(() => {
-    console.log('DesktopNav render - canManageTeam:', canManageTeam, 'userRole:', userRole);
-  }, [canManageTeam, userRole]);
-
   return (
     <nav className="hidden md:flex items-center space-x-8">
       {isAuthenticated ? (
