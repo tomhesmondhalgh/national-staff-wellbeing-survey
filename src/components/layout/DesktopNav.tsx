@@ -1,7 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import NavLinks from './NavLinks';
+import { NavLinks } from './NavLinks';
 import SettingsDropdown from './SettingsDropdown';
 import { usePermissions } from '../../hooks/usePermissions';
 

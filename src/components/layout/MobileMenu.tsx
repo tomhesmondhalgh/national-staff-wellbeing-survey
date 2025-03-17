@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { User, ShieldCheck, LogOut, Users } from 'lucide-react';
-import NavLinks from './NavLinks';
+import { NavLinks } from './NavLinks';
 import OrganizationSwitcher from '../organization/OrganizationSwitcher';
 
 interface MobileMenuProps {

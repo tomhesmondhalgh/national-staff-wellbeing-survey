@@ -198,7 +198,7 @@ const XeroConnector: React.FC = () => {
           Xero Integration
           {status?.connected && (
             <Badge 
-              variant={isTokenExpired ? "destructive" : "success"}
+              variant={isTokenExpired ? "destructive" : "default"}
               className="ml-2"
             >
               {isTokenExpired ? "Token Expired" : "Connected"}
