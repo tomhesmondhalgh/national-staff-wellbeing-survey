@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import PlanCard, { PlanType } from './PlanCard';
 import { useSubscription } from '../../hooks/useSubscription';
@@ -374,7 +373,7 @@ const PricingSection: React.FC = () => {
       </div>
       
       <div className="mt-8 text-center text-sm text-gray-500">
-        <p>Need help choosing the right plan? <a href="mailto:happytohelp@humankindaward.com" className="text-brandPurple-600 underline">Contact our support team</a></p>
+        <p>Need help choosing the right plan? <a href="mailto:contact@humankindaward.com" className="text-brandPurple-600 underline">Contact our support team</a></p>
       </div>
 
       <Dialog open={showInvoiceDialog} onOpenChange={setShowInvoiceDialog}>
