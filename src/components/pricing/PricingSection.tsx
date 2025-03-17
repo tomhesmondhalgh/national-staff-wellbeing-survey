@@ -4,7 +4,6 @@ import { useSubscriptionPlans } from '../../hooks/useSubscriptionPlans';
 import PlanCard from './PlanCard';
 import { useSubscription } from '../../hooks/useSubscription';
 import { Plan } from '../../types/subscription';
-import PageTitle from '../ui/PageTitle';
 
 interface PricingSectionProps {
   showFeatures?: boolean;
@@ -49,7 +48,10 @@ export const PricingSection: React.FC<PricingSectionProps> = ({
   return (
     <div className={`container py-12 ${className}`}>
       <div className="text-center mb-12">
-        <h2 className="text-3xl font-bold mb-3">Choose the Right Plan for Your Organisation</h2>
+        <h2 className="text-3xl font-bold mb-3">Choose Your Plan</h2>
+        <p className="text-xl text-muted-foreground">
+          Select the plan that best suits your school's wellbeing journey
+        </p>
       </div>
 
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
@@ -62,10 +64,6 @@ export const PricingSection: React.FC<PricingSectionProps> = ({
             showCta={showCta}
           />
         ))}
-      </div>
-      
-      <div className="mt-8 text-center text-sm text-gray-500">
-        <p>Need help choosing the right plan? <a href="mailto:happytohelp@humankindaward.com" className="text-brandPurple-600 underline">Contact our support team</a></p>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
-import { Check, Trophy } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { Plan, BillingDetails } from '../../types/subscription';
 import { redirectToCheckout } from '../../utils/paymentUtils';
 import { Badge } from '../ui/badge';
@@ -36,61 +36,33 @@ const PlanCard: React.FC<PlanCardProps> = ({
     redirectToCheckout(plan, billingDetails);
   };
 
-  // Helper function to determine subscription text
-  const getSubscriptionText = () => {
-    if (plan.purchase_type === 'free') {
-      return '';
-    } else if (plan.purchase_type === 'one-time') {
-      return '+ VAT (one-off payment)';
-    } else if (plan.purchase_type === 'subscription' && plan.duration_months) {
-      return `+ VAT (${plan.duration_months / 12}-year subscription)`;
-    }
-    return '';
-  };
-
-  const getDescriptionText = () => {
-    switch(plan.name.toLowerCase()) {
-      case 'free':
-        return 'Establish priority areas';
-      case 'foundation':
-        return 'Plan for improvement';
-      case 'progress':
-        return 'Comprehensive support & accreditation';
-      case 'premium':
-        return 'Maximum support & coaching';
-      default:
-        return plan.description;
-    }
-  };
-
   return (
-    <Card className={`flex flex-col h-full ${plan.is_popular ? 'border-primary shadow-md' : ''} ${className}`}>
+    <Card className={`flex flex-col h-full ${plan.is_popular ? 'border-primary' : ''} ${className}`}>
       <CardHeader className="flex flex-col space-y-1">
         {plan.is_popular && (
-          <Badge className="self-center mb-2">Most Popular</Badge>
+          <Badge className="self-start mb-2">Most Popular</Badge>
         )}
-        <h3 className="text-xl font-bold text-center">{plan.name}</h3>
-        <p className="text-muted-foreground text-center">{getDescriptionText()}</p>
+        <h3 className="text-xl font-bold">{plan.name}</h3>
+        <p className="text-muted-foreground">{plan.description}</p>
       </CardHeader>
       <CardContent className="flex-grow">
-        <div className="mb-4 text-center">
+        <div className="mb-4">
           <span className="text-3xl font-bold">{formatPrice(plan.price)}</span>
-          {plan.purchase_type !== 'free' && (
-            <div className="text-sm text-muted-foreground">
-              {getSubscriptionText()}
-            </div>
+          {plan.purchase_type === 'subscription' && (
+            <span className="text-muted-foreground ml-1">
+              / {plan.duration_months ? `${plan.duration_months} months` : 'month'}
+            </span>
+          )}
+          {plan.purchase_type === 'free' && (
+            <span className="text-muted-foreground ml-1">Free forever</span>
           )}
         </div>
         
         {showFeatures && (
-          <ul className="space-y-3">
+          <ul className="space-y-2">
             {plan.features.map((feature, index) => (
               <li key={index} className="flex items-start">
-                {feature.includes('Gold award') ? (
-                  <Trophy className="h-5 w-5 text-yellow-500 mr-2 flex-shrink-0 mt-0.5" />
-                ) : (
-                  <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                )}
+                <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
                 <span>{feature}</span>
               </li>
             ))}
@@ -102,11 +74,11 @@ const PlanCard: React.FC<PlanCardProps> = ({
         <CardFooter>
           {isCurrentPlan ? (
             <Button className="w-full" variant="outline" disabled>
-              Your Current Plan
+              Current Plan
             </Button>
           ) : plan.purchase_type === 'free' ? (
             <Button className="w-full" variant="outline">
-              Get Started
+              Free Plan
             </Button>
           ) : (
             <Button 
@@ -114,7 +86,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
               onClick={handlePurchase}
               variant={plan.is_popular ? "default" : "outline"}
             >
-              {`Upgrade to ${plan.name}`}
+              {plan.purchase_type === 'subscription' ? 'Subscribe' : 'Purchase'}
             </Button>
           )}
         </CardFooter>

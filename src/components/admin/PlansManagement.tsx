@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase/client';
-import { Plan } from '../../types/subscription';
+import { Plan } from '../../lib/supabase/subscription';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Switch } from '../ui/switch';
@@ -11,24 +11,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { toast } from 'sonner';
 import { Textarea } from '../ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { Check, X, Pencil, Plus, Trash } from 'lucide-react';
-import { useEditableCell } from '../../hooks/useEditableCell';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
 
 export function PlansManagement() {
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-  const queryClient = useQueryClient();
   
-  const { data: plans, isLoading } = useQuery({
+  const { data: plans, isLoading, refetch } = useQuery({
     queryKey: ['admin-plans'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -41,8 +29,8 @@ export function PlansManagement() {
     }
   });
 
-  const updatePlanMutation = useMutation({
-    mutationFn: async (plan: Plan) => {
+  const updatePlan = async (plan: Plan) => {
+    try {
       const { error } = await supabase
         .from('plans')
         .update({
@@ -53,81 +41,23 @@ export function PlansManagement() {
           is_popular: plan.is_popular,
           stripe_price_id: plan.stripe_price_id,
           features: plan.features,
-          purchase_type: plan.purchase_type,
-          duration_months: plan.duration_months,
-          sort_order: plan.sort_order
         })
         .eq('id', plan.id);
         
       if (error) throw error;
-      return plan;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-plans'] });
+      
       toast.success('Plan updated successfully');
+      refetch();
       setIsDialogOpen(false);
-    },
-    onError: (error) => {
+    } catch (error) {
       console.error('Error updating plan:', error);
       toast.error('Failed to update plan');
     }
-  });
-
-  const createPlanMutation = useMutation({
-    mutationFn: async (plan: Omit<Plan, 'id' | 'created_at' | 'updated_at'>) => {
-      const { data, error } = await supabase
-        .from('plans')
-        .insert([plan])
-        .select();
-        
-      if (error) throw error;
-      return data[0];
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-plans'] });
-      toast.success('Plan created successfully');
-      setIsDialogOpen(false);
-      setIsCreating(false);
-    },
-    onError: (error) => {
-      console.error('Error creating plan:', error);
-      toast.error('Failed to create plan');
-    }
-  });
+  };
 
   const handleEditPlan = (plan: Plan) => {
     setEditingPlan(JSON.parse(JSON.stringify(plan)));
-    setIsCreating(false);
     setIsDialogOpen(true);
-  };
-
-  const handleCreatePlan = () => {
-    setEditingPlan({
-      name: '',
-      description: '',
-      price: 0,
-      currency: 'GBP',
-      purchase_type: 'subscription',
-      duration_months: 12,
-      stripe_price_id: null,
-      features: [],
-      is_popular: false,
-      is_active: true,
-      sort_order: plans ? Math.max(...plans.map(p => p.sort_order)) + 10 : 10
-    } as Plan);
-    setIsCreating(true);
-    setIsDialogOpen(true);
-  };
-
-  const handleSavePlan = () => {
-    if (!editingPlan) return;
-    
-    if (isCreating) {
-      const { id, created_at, updated_at, ...newPlan } = editingPlan;
-      createPlanMutation.mutate(newPlan);
-    } else {
-      updatePlanMutation.mutate(editingPlan);
-    }
   };
 
   const handleFeatureChange = (index: number, value: string) => {
@@ -163,98 +93,72 @@ export function PlansManagement() {
     });
   };
 
-  const formatPrice = (price: number): string => {
-    return new Intl.NumberFormat('en-GB', {
-      style: 'currency',
-      currency: 'GBP',
-      minimumFractionDigits: 2
-    }).format(price / 100);
-  };
-
   if (isLoading) {
-    return (
-      <div className="flex justify-center my-8">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-      </div>
-    );
+    return <div className="flex justify-center my-8">Loading plans...</div>;
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Manage Subscription Plans</h2>
-        <Button onClick={handleCreatePlan}>
-          <Plus className="mr-2 h-4 w-4" /> Create New Plan
-        </Button>
-      </div>
+      <h2 className="text-2xl font-bold">Manage Subscription Plans</h2>
       
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Order</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Popular</TableHead>
-              <TableHead>Features</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {plans?.map(plan => (
-              <TableRow key={plan.id} className={!plan.is_active ? "opacity-60" : ""}>
-                <TableCell>{plan.sort_order}</TableCell>
-                <TableCell className="font-medium">{plan.name}</TableCell>
-                <TableCell>{formatPrice(plan.price)}</TableCell>
-                <TableCell>{plan.purchase_type}</TableCell>
-                <TableCell>
-                  {plan.is_active ? 
-                    <div className="flex items-center">
-                      <Check className="h-4 w-4 text-green-500 mr-1" />
-                      <span>Active</span>
-                    </div> : 
-                    <div className="flex items-center">
-                      <X className="h-4 w-4 text-red-500 mr-1" />
-                      <span>Inactive</span>
-                    </div>
-                  }
-                </TableCell>
-                <TableCell>
-                  {plan.is_popular ? 
-                    <Check className="h-4 w-4 text-green-500" /> : 
-                    <X className="h-4 w-4 text-red-500" />
-                  }
-                </TableCell>
-                <TableCell>
-                  <span className="text-muted-foreground">{plan.features.length} items</span>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button 
-                    onClick={() => handleEditPlan(plan)} 
-                    variant="ghost"
-                    size="sm"
-                  >
-                    <Pencil className="h-4 w-4" />
-                    <span className="sr-only">Edit</span>
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {plans?.map(plan => (
+          <Card key={plan.id} className={!plan.is_active ? "opacity-60" : ""}>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>{plan.name}</CardTitle>
+                <span className="text-sm font-normal text-muted-foreground">
+                  {plan.is_active ? "Active" : "Inactive"}
+                </span>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-4">
+                <p className="text-lg font-semibold">
+                  {plan.currency === 'GBP' ? '£' : '$'}
+                  {(plan.price / 100).toFixed(2)}
+                </p>
+                <p className="text-sm text-muted-foreground">{plan.description}</p>
+              </div>
+              
+              <div className="mb-4">
+                <p className="text-xs text-muted-foreground mb-1">Type: {plan.purchase_type}</p>
+                {plan.is_popular && <p className="text-xs font-medium text-green-600">Popular Plan</p>}
+              </div>
+              
+              <div className="mb-4">
+                <p className="text-sm font-medium">Features:</p>
+                <ul className="text-sm list-disc list-inside space-y-1">
+                  {plan.features.slice(0, 3).map((feature, i) => (
+                    <li key={i} className="text-muted-foreground">{feature}</li>
+                  ))}
+                  {plan.features.length > 3 && (
+                    <li className="text-muted-foreground">+{plan.features.length - 3} more</li>
+                  )}
+                </ul>
+              </div>
+              
+              <Button 
+                onClick={() => handleEditPlan(plan)} 
+                className="w-full"
+                variant="outline"
+              >
+                Edit Plan
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
       </div>
       
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{isCreating ? 'Create New Plan' : 'Edit Plan'}</DialogTitle>
+            <DialogTitle>Edit Plan</DialogTitle>
           </DialogHeader>
           
           {editingPlan && (
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="plan-name">Plan Name</Label>
                   <Input 
@@ -284,7 +188,7 @@ export function PlansManagement() {
                 />
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="stripe-id">Stripe Price ID</Label>
                   <Input 
@@ -296,41 +200,10 @@ export function PlansManagement() {
                 
                 <div className="space-y-2">
                   <Label htmlFor="purchase-type">Purchase Type</Label>
-                  <Select 
-                    value={editingPlan.purchase_type}
-                    onValueChange={(value) => setEditingPlan({...editingPlan, purchase_type: value as 'subscription' | 'one-time' | 'free'})}
-                  >
-                    <SelectTrigger id="purchase-type">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="subscription">Subscription</SelectItem>
-                      <SelectItem value="one-time">One-time</SelectItem>
-                      <SelectItem value="free">Free</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="duration-months">Duration (months)</Label>
                   <Input 
-                    id="duration-months"
-                    type="number"
-                    value={editingPlan.duration_months || 0}
-                    onChange={e => setEditingPlan({...editingPlan, duration_months: parseInt(e.target.value) || null})}
-                    disabled={editingPlan.purchase_type === 'free'}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="sort-order">Sort Order</Label>
-                  <Input 
-                    id="sort-order"
-                    type="number"
-                    value={editingPlan.sort_order}
-                    onChange={e => setEditingPlan({...editingPlan, sort_order: parseInt(e.target.value) || 0})}
+                    id="purchase-type"
+                    value={editingPlan.purchase_type || ''}
+                    disabled
                   />
                 </div>
               </div>
@@ -364,7 +237,7 @@ export function PlansManagement() {
                     onClick={addFeature}
                     type="button"
                   >
-                    <Plus className="h-4 w-4 mr-1" /> Add Feature
+                    Add Feature
                   </Button>
                 </div>
                 
@@ -381,7 +254,7 @@ export function PlansManagement() {
                         type="button"
                         onClick={() => removeFeature(index)}
                       >
-                        <Trash className="h-4 w-4 text-destructive" />
+                        ✕
                       </Button>
                     </div>
                   ))}
@@ -389,25 +262,11 @@ export function PlansManagement() {
               </div>
               
               <div className="flex justify-end space-x-2 pt-4">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setIsDialogOpen(false)}
-                  disabled={updatePlanMutation.isPending || createPlanMutation.isPending}
-                >
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button 
-                  onClick={handleSavePlan}
-                  disabled={updatePlanMutation.isPending || createPlanMutation.isPending}
-                >
-                  {updatePlanMutation.isPending || createPlanMutation.isPending ? (
-                    <>
-                      <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2"></div>
-                      Saving...
-                    </>
-                  ) : (
-                    'Save Changes'
-                  )}
+                <Button onClick={() => updatePlan(editingPlan)}>
+                  Save Changes
                 </Button>
               </div>
             </div>
