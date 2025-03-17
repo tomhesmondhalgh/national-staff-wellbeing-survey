@@ -16,17 +16,8 @@ const NotesActions: React.FC<NotesActionsProps> = ({
 }) => {
   // Format note count safely
   const formatNoteCount = (count: number | null | undefined) => {
-    // Handle different possible types safely
-    let numCount = 0;
-    
-    if (typeof count === 'number') {
-      numCount = count;
-    } else if (count && typeof count === 'object') {
-      // Check if it's an object with a count property
-      // Use optional chaining and type assertion for safety
-      numCount = (count as { count?: number }).count || 0;
-    }
-    
+    // Ensure we have a number
+    const numCount = typeof count === 'number' ? count : 0;
     return `${numCount} ${numCount === 1 ? 'Note' : 'Notes'}`;
   };
 

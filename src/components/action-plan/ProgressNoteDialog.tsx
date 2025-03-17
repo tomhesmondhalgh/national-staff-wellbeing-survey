@@ -29,7 +29,9 @@ const ProgressNoteDialog: React.FC<ProgressNoteDialogProps> = ({
   const [noteText, setNoteText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    
     if (!noteText.trim()) {
       toast.error('Please enter a note');
       return;
@@ -37,19 +39,17 @@ const ProgressNoteDialog: React.FC<ProgressNoteDialogProps> = ({
 
     setIsSubmitting(true);
     try {
-      console.log('Adding progress note for descriptor:', descriptorId);
+      console.log('Submitting progress note for descriptor:', descriptorId);
       const result = await addProgressNote(descriptorId, noteText);
       
       if (result.success) {
-        console.log('Note added successfully');
+        console.log('Note added successfully:', result.data);
         toast.success('Progress note added');
         setNoteText('');
-        
-        // Always call onSuccess before closing to ensure data is refreshed
         onSuccess();
         onClose();
       } else {
-        console.error('Error adding note:', result.error);
+        console.error('Failed to add note:', result.error);
         toast.error('Failed to add note');
       }
     } catch (error) {
@@ -76,24 +76,26 @@ const ProgressNoteDialog: React.FC<ProgressNoteDialogProps> = ({
             Record your progress or updates for this action item.
           </DialogDescription>
         </DialogHeader>
-        <div className="py-4">
-          <Textarea
-            placeholder="Enter details about progress made, challenges encountered, or next steps..."
-            value={noteText}
-            onChange={(e) => setNoteText(e.target.value)}
-            rows={5}
-            className="w-full"
-            autoFocus
-          />
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? 'Saving...' : 'Save Note'}
-          </Button>
-        </DialogFooter>
+        <form onSubmit={handleSubmit}>
+          <div className="py-4">
+            <Textarea
+              placeholder="Enter details about progress made, challenges encountered, or next steps..."
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              rows={5}
+              className="w-full"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : 'Save Note'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

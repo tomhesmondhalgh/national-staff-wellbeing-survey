@@ -131,7 +131,7 @@ export const getProgressNotes = async (descriptorId: string) => {
 // Add a progress note
 export const addProgressNote = async (descriptorId: string, noteText: string) => {
   try {
-    console.log('Adding progress note for descriptor:', descriptorId);
+    console.log('Adding progress note for descriptor:', descriptorId, 'with text:', noteText);
     
     const { data, error } = await supabase
       .from('action_plan_progress_notes')
@@ -146,7 +146,7 @@ export const addProgressNote = async (descriptorId: string, noteText: string) =>
       throw error;
     }
 
-    console.log('Added progress note:', data);
+    console.log('Added progress note successfully:', data);
     return { success: true, data };
   } catch (error: any) {
     console.error('Error adding progress note:', error);

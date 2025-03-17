@@ -64,7 +64,13 @@ const ProgressNotesList: React.FC<ProgressNotesListProps> = ({
   // Format date for display
   const formatDate = (dateString: string) => {
     try {
-      return new Date(dateString).toLocaleString();
+      return new Date(dateString).toLocaleString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
     } catch (error) {
       console.error('Error formatting date:', error);
       return dateString;
