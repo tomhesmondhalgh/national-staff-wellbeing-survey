@@ -34,10 +34,10 @@ export const useGroups = () => {
         
         const userGroups: Group[] = (data || []).map(item => ({
           id: item.group_id,
-          name: item.groups?.name || 'Unknown',
-          description: item.groups?.description,
-          created_at: item.groups?.created_at || new Date().toISOString(),
-          updated_at: item.groups?.updated_at || new Date().toISOString()
+          name: item.groups ? item.groups.name || 'Unknown' : 'Unknown',
+          description: item.groups ? item.groups.description : undefined,
+          created_at: item.groups ? item.groups.created_at || new Date().toISOString() : new Date().toISOString(),
+          updated_at: item.groups ? item.groups.updated_at || new Date().toISOString() : new Date().toISOString()
         }));
         
         setGroups(userGroups);
