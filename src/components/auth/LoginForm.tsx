@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
-import SocialLoginButtons from './SocialLoginButtons';
 import ForgotPasswordModal from './ForgotPasswordModal';
 
 interface LoginFormProps {
@@ -32,8 +31,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading = false }) =>
       <h2 className="text-2xl font-bold text-center mb-6">
         Log in to your account
       </h2>
-      
-      <SocialLoginButtons isLoading={isLoading} />
       
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
