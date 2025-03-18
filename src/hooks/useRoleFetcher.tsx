@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTestingMode } from '../contexts/TestingModeContext';
@@ -133,28 +134,32 @@ export function useRoleFetcher() {
               'viewer': 0
             };
             
-            for (const groupRole of groupRoles as unknown as GroupRoleResponse[]) {
-              if (groupRole.groups && Array.isArray(groupRole.groups) && groupRole.groups.length > 0) {
-                for (const group of groupRole.groups) {
-                  if (group && 
-                      typeof group === 'object' && 
-                      'group_organizations' in group && 
-                      Array.isArray(group.group_organizations)) {
+            // Type assertion with explicit mapping to ensure type safety
+            const typedGroupRoles = groupRoles.map(groupRole => {
+              return {
+                role: groupRole.role as UserRoleType,
+                group_id: groupRole.group_id,
+                groups: groupRole.groups
+              };
+            });
+            
+            for (const groupRole of typedGroupRoles) {
+              if (groupRole.groups && 
+                  typeof groupRole.groups === 'object' && 
+                  'group_organizations' in groupRole.groups && 
+                  Array.isArray(groupRole.groups.group_organizations)) {
+                
+                for (const groupOrg of groupRole.groups.group_organizations) {
+                  if (groupOrg && 
+                      typeof groupOrg === 'object' && 
+                      'organization_id' in groupOrg && 
+                      groupOrg.organization_id === currentOrganization.id) {
                     
-                    for (const groupOrg of group.group_organizations) {
-                      if (groupOrg && 
-                          typeof groupOrg === 'object' && 
-                          'organization_id' in groupOrg && 
-                          groupOrg.organization_id === currentOrganization.id) {
-                        
-                        console.log('Found group role for organization:', groupRole.role);
-                        
-                        if (!highestRole || 
-                            (groupRole.role as UserRoleType in roleHierarchy && 
-                             roleHierarchy[groupRole.role as UserRoleType] > roleHierarchy[highestRole])) {
-                          highestRole = groupRole.role as UserRoleType;
-                        }
-                      }
+                    console.log('Found group role for organization:', groupRole.role);
+                    
+                    if (!highestRole || 
+                        roleHierarchy[groupRole.role] > roleHierarchy[highestRole]) {
+                      highestRole = groupRole.role;
                     }
                   }
                 }

@@ -15,7 +15,7 @@ export function useCombinedTeamMembers(
     const items: TeamMember[] = [];
     
     // Add regular members
-    if (members && members.length > 0) {
+    if (members && Array.isArray(members) && members.length > 0) {
       console.log(`Adding ${members.length} regular members to the display list`);
       
       items.push(...members.map(member => ({
@@ -55,7 +55,6 @@ export function useCombinedTeamMembers(
     console.log('Combined team members:', teamMembers.length);
     console.log('Members count:', members?.length || 0);
     console.log('Invitations count:', invitations?.length || 0);
-    console.log('Invitations data:', invitations);
   }, [teamMembers, members, invitations]);
 
   const filteredItems = useMemo(() => {

@@ -51,6 +51,7 @@ export const useSchoolSearch = (
         console.error('Error searching schools:', error);
         toast.error('Error searching for schools');
       } else if (data && data.length > 0) {
+        // Convert URN from number to string and add County property
         const formattedResults = fixSchoolSearchResults(data);
         setSearchResults(formattedResults as SchoolSearchResult[]);
       } else {

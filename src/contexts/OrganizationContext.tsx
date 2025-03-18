@@ -1,26 +1,35 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Organization, getUserOrganizations } from '../lib/supabase/client';
 import { useAuth } from './AuthContext';
-import { toast } from 'sonner';
+import { Organization, getUserOrganizations } from '../lib/supabase/client';
+import { supabase } from '../lib/supabase';
 
 interface OrganizationContextType {
-  currentOrganization: Organization | null;
   organizations: Organization[];
+  currentOrganization: Organization | null;
+  setCurrentOrganization: (org: Organization | null) => void;
   isLoading: boolean;
-  switchOrganization: (orgId: string) => void;
+  error: Error | null;
   refreshOrganizations: () => Promise<void>;
 }
 
-const OrganizationContext = createContext<OrganizationContextType | undefined>(undefined);
+const OrganizationContext = createContext<OrganizationContextType>({
+  organizations: [],
+  currentOrganization: null,
+  setCurrentOrganization: () => {},
+  isLoading: false,
+  error: null,
+  refreshOrganizations: async () => {},
+});
 
 export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [currentOrganization, setCurrentOrganization] = useState<Organization | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const { user } = useAuth();
 
-  const fetchOrganizations = async () => {
+  const loadOrganizations = async () => {
     if (!user) {
       setOrganizations([]);
       setCurrentOrganization(null);
@@ -28,72 +37,61 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       return;
     }
 
+    setIsLoading(true);
+    setError(null);
+    
     try {
-      setIsLoading(true);
-      const orgs = await getUserOrganizations();
-      console.log('Fetched organizations:', orgs);
-      setOrganizations(orgs);
+      const userOrgs = await getUserOrganizations(user.id);
       
-      // If there are organizations, set the first one as current
-      // or keep the current one if it's still in the list
-      if (orgs.length > 0) {
-        if (currentOrganization && orgs.some(org => org.id === currentOrganization.id)) {
-          // Keep current organization, it's still valid
-        } else {
-          // Set first organization as current
-          setCurrentOrganization(orgs[0]);
+      if (userOrgs.length > 0) {
+        // Fetch organization names
+        for (const org of userOrgs) {
+          try {
+            const { data: profile, error: profileError } = await supabase
+              .from('profiles')
+              .select('school_name')
+              .eq('id', org.id)
+              .single();
+            
+            if (profile && profile.school_name) {
+              org.name = profile.school_name;
+            }
+          } catch (err) {
+            console.error('Error fetching org name:', err);
+          }
         }
-      } else {
-        setCurrentOrganization(null);
+        
+        setOrganizations(userOrgs);
+        
+        // Set current organization if none is selected
+        if (!currentOrganization) {
+          setCurrentOrganization(userOrgs[0]);
+        }
       }
-    } catch (error) {
-      console.error('Error fetching organizations:', error);
-      toast.error('Failed to load organizations');
+    } catch (err) {
+      console.error('Error loading organizations:', err);
+      setError(err instanceof Error ? err : new Error('Unknown error'));
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Fetch organizations on initial load and when user changes
-  useEffect(() => {
-    fetchOrganizations();
-  }, [user]);
-
-  const switchOrganization = (orgId: string) => {
-    const org = organizations.find(o => o.id === orgId);
-    if (org) {
-      setCurrentOrganization(org);
-      // Save the selection to localStorage for persistence
-      localStorage.setItem('currentOrganizationId', orgId);
-      toast.success(`Switched to ${org.name}`);
-    }
-  };
-
   const refreshOrganizations = async () => {
-    await fetchOrganizations();
+    await loadOrganizations();
   };
 
-  // On component mount, restore the selected organization from localStorage
   useEffect(() => {
-    if (organizations.length > 0) {
-      const savedOrgId = localStorage.getItem('currentOrganizationId');
-      
-      if (savedOrgId) {
-        const savedOrg = organizations.find(org => org.id === savedOrgId);
-        if (savedOrg) {
-          setCurrentOrganization(savedOrg);
-        }
-      }
-    }
-  }, [organizations]);
+    loadOrganizations();
+  }, [user]);
 
   return (
     <OrganizationContext.Provider
       value={{
-        currentOrganization,
         organizations,
+        currentOrganization,
+        setCurrentOrganization,
         isLoading,
-        switchOrganization,
+        error,
         refreshOrganizations
       }}
     >
@@ -102,10 +100,4 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   );
 };
 
-export const useOrganization = () => {
-  const context = useContext(OrganizationContext);
-  if (context === undefined) {
-    throw new Error('useOrganization must be used within an OrganizationProvider');
-  }
-  return context;
-};
+export const useOrganization = () => useContext(OrganizationContext);

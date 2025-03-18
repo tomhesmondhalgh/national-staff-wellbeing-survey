@@ -11,6 +11,7 @@ export const countSurveyResponses = async (surveyId: string): Promise<number> =>
   try {
     console.log(`Counting responses for survey ${surveyId}`);
     
+    // Use count option directly to avoid type issues
     const { count, error } = await supabase
       .from('survey_responses')
       .select('*', { count: 'exact', head: true })
@@ -39,6 +40,7 @@ export const countEmailResponses = async (surveyId: string): Promise<number> => 
   try {
     console.log(`Counting email responses for survey ${surveyId}`);
     
+    // Use count option directly to avoid type issues
     const { count, error } = await supabase
       .from('survey_responses')
       .select('*', { count: 'exact', head: true })

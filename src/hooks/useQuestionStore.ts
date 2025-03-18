@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { CustomQuestion, convertToCustomQuestion } from '../types/customQuestions';
+import { CustomQuestion, convertToCustomQuestion, convertToCustomQuestions } from '../types/customQuestions';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 import { isValidQuestionType, createDbQuestionPayload } from '../utils/questionTypeUtils';
@@ -27,8 +27,8 @@ export function useQuestionStore() {
         return [];
       }
 
-      // Process the data with our utility function
-      const processedData = fixCustomQuestionTypes(data || []);
+      // Process the data with our utility function to ensure type safety
+      const processedData = convertToCustomQuestions(data || []);
       
       console.log('Fetched questions after processing:', processedData);
       setQuestions(processedData);

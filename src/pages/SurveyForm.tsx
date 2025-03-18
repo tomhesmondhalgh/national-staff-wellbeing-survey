@@ -95,7 +95,7 @@ const SurveyForm = () => {
             console.error('Error fetching custom questions:', questionsError);
           } else {
             console.log('Fetched custom questions:', questions);
-            setCustomQuestions(questions || []);
+            setCustomQuestions(convertToCustomQuestions(questions || []));
           }
         }
       } catch (err) {
