@@ -94,6 +94,8 @@ const EditSurvey = () => {
       const updateCloseDate = data.closeDate ? new Date(data.closeDate) : null;
       
       console.log('Updating survey with status:', data.status || 'Saved');
+      console.log('Distribution method:', data.distributionMethod);
+      console.log('Email recipients:', data.distributionMethod === 'email' ? data.recipients : 'None (using link)');
       
       const { error } = await supabase
         .from('survey_templates')

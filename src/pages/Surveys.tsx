@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -9,6 +10,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { useMediaQuery } from '../hooks/use-media-query';
+import { sendSurveyReminder } from '../utils/survey/sendReminder';
 
 const SURVEYS_PER_PAGE = 10;
 
@@ -90,26 +92,26 @@ const Surveys = () => {
           return {
             id: template.id,
             name: template.name,
-            date: new Date(template.date).toLocaleDateString('en-US', { 
+            date: new Date(template.date).toLocaleDateString('en-GB', { 
               year: 'numeric', 
               month: 'long', 
               day: 'numeric' 
             }),
             status,
             responseCount: template.survey_responses.length > 0 ? template.survey_responses[0].count : 0,
-            closeDate: template.close_date ? new Date(template.close_date).toLocaleDateString('en-US', { 
+            closeDate: template.close_date ? new Date(template.close_date).toLocaleDateString('en-GB', { 
               year: 'numeric', 
               month: 'long', 
               day: 'numeric' 
             }) : undefined,
             url: `${window.location.origin}/survey?id=${template.id}`,
-            formattedDate: new Date(template.date).toLocaleDateString('en-US', {
+            formattedDate: new Date(template.date).toLocaleDateString('en-GB', {
               month: 'long',
               day: 'numeric',
               year: 'numeric'
             }),
             closeDisplayDate: template.close_date ? 
-              `Closes: ${new Date(template.close_date).toLocaleDateString('en-US', {
+              `Closes: ${new Date(template.close_date).toLocaleDateString('en-GB', {
                 month: 'long',
                 day: 'numeric',
                 year: 'numeric'
@@ -133,12 +135,16 @@ const Surveys = () => {
     fetchSurveys();
   }, [user, currentPage]);
 
-  const handleSendReminder = (id: string) => {
+  const handleSendReminder = async (id: string) => {
     console.log(`Sending reminder for survey ${id}`);
     
-    toast.success("Reminder sent successfully!", {
-      description: "Your staff will receive an email reminder shortly."
-    });
+    const success = await sendSurveyReminder(id);
+    
+    if (success) {
+      toast.success("Reminder sent successfully!", {
+        description: "Your staff will receive an email reminder shortly."
+      });
+    }
   };
 
   const handlePageChange = (page: number) => {
