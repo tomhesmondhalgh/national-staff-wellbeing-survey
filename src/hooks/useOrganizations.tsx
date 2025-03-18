@@ -6,6 +6,7 @@ import { Organization, UserRoleType } from '../lib/supabase/client';
 
 export interface OrganizationWithRole extends Organization {
   role: UserRoleType;
+  id: string; // Adding id to the interface to fix the error
 }
 
 export const useOrganizations = () => {

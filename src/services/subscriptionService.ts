@@ -168,7 +168,8 @@ export async function checkPlanAccess(userId: string, requiredPlan: PlanType): P
       free: 0,
       foundation: 1,
       progress: 2,
-      premium: 3
+      premium: 3,
+      enterprise: 4
     };
     
     const userPlanLevel = subscription.isActive ? planLevels[subscription.plan] : 0;

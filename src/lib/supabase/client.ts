@@ -9,6 +9,46 @@ export type PaymentMethod = 'stripe' | 'manual' | 'invoice' | 'transfer';
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 export type SurveyStatus = 'Draft' | 'Saved' | 'Open' | 'Closed' | 'Archived';
 export type DescriptorStatus = 'Not Started' | 'In Progress' | 'Complete';
+export type PurchaseType = 'subscription' | 'one-time';
+
+// Interface definitions for database entities
+export interface Organization {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  description?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface OrganizationMember {
+  id: string;
+  user_id: string;
+  organization_id: string;
+  role: UserRoleType;
+  is_primary: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Invitation {
+  id: string;
+  email: string;
+  organization_id: string;
+  role: UserRoleType;
+  token: string;
+  invited_by: string;
+  created_at: string;
+  expires_at: string;
+  accepted_at?: string;
+  group_id?: string;
+}
 
 // Create the Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
