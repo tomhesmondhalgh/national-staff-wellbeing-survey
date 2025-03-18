@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase/client';
 import { useAuth } from '../contexts/AuthContext';
 import { Group } from '../lib/supabase/client';
 

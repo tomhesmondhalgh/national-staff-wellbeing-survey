@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase/client';
 import { Organization, UserRoleType } from '../lib/supabase/client';
 
 export interface OrganizationWithRole extends Organization {

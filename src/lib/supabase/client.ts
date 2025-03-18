@@ -50,13 +50,12 @@ export interface Invitation {
   group_id?: string;
 }
 
-// Create the Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+// Create the Supabase client with fallbacks for development
+// This ensures the app doesn't crash without environment variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://bagaaqkmewkuwtudwnqw.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhZ2FhcWttZXdrdXd0dWR3bnF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA2NjQwMzIsImV4cCI6MjA1NjI0MDAzMn0.Eu_xDUDDk188oE0dB7W7KJ4oWjB6nQNuUBBnZUMrsvE';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Supabase URL or Anonymous Key is missing in environment variables');
-}
+console.log('Initializing Supabase client with URL:', supabaseUrl);
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
