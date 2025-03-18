@@ -126,8 +126,9 @@ export function useRoleFetcher() {
           };
           
           for (const groupRole of groupRoles) {
+            // Fix the type issue - accessing the groups property
             if (groupRole.groups && 
-                groupRole.groups.group_organizations && 
+                'group_organizations' in groupRole.groups && 
                 Array.isArray(groupRole.groups.group_organizations)) {
               
               for (const groupOrg of groupRole.groups.group_organizations) {
