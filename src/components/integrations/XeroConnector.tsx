@@ -41,9 +41,15 @@ const XeroConnector: React.FC = () => {
     
     try {
       console.log('Checking Xero connection status...');
+      
+      // Ensure we're explicitly sending the authorization header
       const { data, error } = await supabase.functions.invoke('xero-auth', {
         body: { action: 'status' },
         method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session?.access_token || ''}`,
+          'Content-Type': 'application/json'
+        }
       });
       
       if (error) {
@@ -80,12 +86,17 @@ const XeroConnector: React.FC = () => {
       // Calculate dynamic redirect URI based on current URL
       const redirectUri = `${window.location.origin}/api/rest/xero-auth?action=callback`;
       
+      // Ensure proper headers and format for the request
       const { data, error } = await supabase.functions.invoke('xero-auth', {
         body: { 
           action: 'authorize',
           redirectUri
         },
         method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
       });
       
       if (error) {
@@ -123,6 +134,10 @@ const XeroConnector: React.FC = () => {
       const { data, error } = await supabase.functions.invoke('xero-auth', {
         body: { action: 'disconnect' },
         method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
       });
       
       if (error) {

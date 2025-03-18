@@ -24,6 +24,7 @@ type XeroTokenResponse = {
 
 serve(async (req) => {
   console.log(`[xero-auth] Request received: ${req.method} ${req.url}`)
+  console.log(`[xero-auth] Authorization header: ${req.headers.has('Authorization') ? 'Present' : 'Missing'}`)
   
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -39,7 +40,11 @@ serve(async (req) => {
     let requestData = {}
     if (req.method === 'POST') {
       try {
-        const body = await req.text()
+        // Make a copy of the request to read its body
+        const clonedReq = req.clone()
+        const body = await clonedReq.text()
+        console.log(`[xero-auth] Request body: ${body}`)
+        
         if (body) {
           requestData = JSON.parse(body)
         }
@@ -68,12 +73,18 @@ serve(async (req) => {
     }
     
     console.log('[xero-auth] Creating Supabase client')
+    
+    // Extract the JWT token from the Authorization header
+    const authHeader = req.headers.get('Authorization') || ''
+    console.log(`[xero-auth] Auth header format: ${authHeader.substring(0, 15)}...`)
+    
+    // Create a Supabase client with the authorization header
     const supabaseClient = createClient(
       supabaseUrl,
       supabaseKey,
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization') || '' },
+          headers: { Authorization: authHeader },
         },
         auth: {
           persistSession: false,
