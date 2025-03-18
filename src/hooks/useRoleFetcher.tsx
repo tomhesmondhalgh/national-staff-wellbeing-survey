@@ -6,19 +6,21 @@ import { useOrganization } from '../contexts/OrganizationContext';
 import { UserRoleType, supabase } from '../lib/supabase/client';
 import { toast } from 'sonner';
 
-// Define proper types for the group data structure
+// Define proper types for the data structure returned by Supabase
+interface GroupOrganization {
+  organization_id: string;
+}
+
 interface GroupData {
   id: string;
   name: string;
-  group_organizations?: Array<{
-    organization_id: string;
-  }>;
+  group_organizations?: GroupOrganization[];
 }
 
-interface GroupRoleData {
+interface GroupRoleResponse {
   role: string;
   group_id: string;
-  groups: GroupData | null;
+  groups: GroupData[] | null; // Groups is an array in the response
 }
 
 export function useRoleFetcher() {
@@ -140,28 +142,31 @@ export function useRoleFetcher() {
             'viewer': 0
           };
           
-          // Safely iterate through roles, handling the complex nested structure
-          for (const groupRole of groupRoles) {
-            // Extract groups data - it's an array with one object in Supabase's nested format
-            if (groupRole.groups && 
-                Array.isArray(groupRole.groups) && 
-                groupRole.groups.length > 0) {
-              
-              const groupData = groupRole.groups[0];
-              
-              // Verify the group data has the group_organizations property and it's an array
-              if (groupData && 
-                  typeof groupData === 'object' && 
-                  'group_organizations' in groupData && 
-                  Array.isArray(groupData.group_organizations)) {
-                
-                for (const groupOrg of groupData.group_organizations) {
-                  if (groupOrg.organization_id === currentOrganization.id) {
-                    console.log('Found group role for organization:', groupRole.role);
-                    
-                    // If this role is higher in hierarchy than current highest, update it
-                    if (!highestRole || roleHierarchy[groupRole.role as UserRoleType] > roleHierarchy[highestRole]) {
-                      highestRole = groupRole.role as UserRoleType;
+          // Type-safe iteration through the response
+          for (const groupRole of groupRoles as GroupRoleResponse[]) {
+            if (groupRole.groups && Array.isArray(groupRole.groups) && groupRole.groups.length > 0) {
+              // Process each group in the groups array
+              for (const group of groupRole.groups) {
+                if (group && 
+                    typeof group === 'object' && 
+                    'group_organizations' in group && 
+                    Array.isArray(group.group_organizations)) {
+                  
+                  // Process each organization in the group_organizations array
+                  for (const groupOrg of group.group_organizations) {
+                    if (groupOrg && 
+                        typeof groupOrg === 'object' && 
+                        'organization_id' in groupOrg && 
+                        groupOrg.organization_id === currentOrganization.id) {
+                      
+                      console.log('Found group role for organization:', groupRole.role);
+                      
+                      // If this role is higher in hierarchy than current highest, update it
+                      if (!highestRole || 
+                          (groupRole.role as UserRoleType in roleHierarchy && 
+                           roleHierarchy[groupRole.role as UserRoleType] > roleHierarchy[highestRole])) {
+                        highestRole = groupRole.role as UserRoleType;
+                      }
                     }
                   }
                 }
