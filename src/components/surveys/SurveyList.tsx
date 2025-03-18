@@ -195,7 +195,7 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
             </div>
             
             <div className="col-span-4 flex justify-end space-x-4">
-              {survey.status === 'Sent' && canEditSurveys && (
+              {survey.status === 'Sent' && canEditSurveys && survey.emails && survey.emails.trim() !== '' && (
                 <button 
                   onClick={() => handleSendReminder(survey)}
                   className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors whitespace-nowrap"
