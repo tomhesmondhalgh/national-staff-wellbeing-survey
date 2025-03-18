@@ -4,7 +4,7 @@
   command = "npm run build"
   publish = "dist"
   # Add legacy-peer-deps flag to resolve package conflicts
-  environment = { NPM_FLAGS = "--legacy-peer-deps" }
+  environment = { NPM_FLAGS = "--legacy-peer-deps", NETLIFY_EXPERIMENTAL_BUILD_CLEAR_CACHE = "true" }
 
 # Handle client-side routing
 [[redirects]]
@@ -15,7 +15,3 @@
 # Configure functions directory for Supabase functions
 [functions]
   directory = "supabase/functions"
-
-# Clear cache on deploy to ensure latest version is deployed
-[build.environment]
-  NETLIFY_EXPERIMENTAL_BUILD_CLEAR_CACHE = "true"
