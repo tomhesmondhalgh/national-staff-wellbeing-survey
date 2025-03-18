@@ -190,6 +190,27 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_scripts: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          script_content: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          script_content: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          script_content?: string
+        }
+        Relationships: []
+      }
       group_members: {
         Row: {
           created_at: string

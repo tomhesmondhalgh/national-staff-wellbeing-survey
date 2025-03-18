@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Textarea } from '../ui/textarea';
 import { Button } from '../ui/button';
@@ -23,6 +24,7 @@ const CustomScriptsManagement = () => {
         const { data, error } = await supabase
           .from('custom_scripts')
           .select('*')
+          .eq('is_active', true)
           .order('created_at', { ascending: false })
           .limit(1)
           .single();
@@ -50,7 +52,17 @@ const CustomScriptsManagement = () => {
       setSaveSuccess(false);
       setError(null);
       
-      // Insert new script record (we're keeping a history by always creating new records)
+      // First, deactivate any existing active scripts
+      const { error: updateError } = await supabase
+        .from('custom_scripts')
+        .update({ is_active: false })
+        .eq('is_active', true);
+
+      if (updateError) {
+        console.error('Error deactivating old scripts:', updateError);
+      }
+      
+      // Insert new script record
       const { error } = await supabase
         .from('custom_scripts')
         .insert({
