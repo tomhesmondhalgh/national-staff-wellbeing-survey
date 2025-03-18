@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import SurveyForm, { SurveyFormData } from '../pages/SurveyForm';
 import { supabase } from '../lib/supabase';
@@ -9,14 +9,31 @@ const PublicSurveyForm: React.FC = () => {
   const [searchParams] = useSearchParams();
   const surveyId = searchParams.get('id');
   const isPreview = searchParams.get('preview') === 'true';
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const handleSubmit = async (data: SurveyFormData, selectedQuestionIds: string[]) => {
     try {
+      setIsSubmitting(true);
       // Logic for submitting the survey response
+      const { error } = await supabase
+        .from('survey_responses')
+        .insert({
+          survey_template_id: surveyId,
+          response_data: data,
+          response_type: 'public',
+          created_at: new Date().toISOString()
+        });
+        
+      if (error) {
+        throw error;
+      }
+        
       toast.success('Survey submitted successfully');
     } catch (error) {
       console.error('Error submitting survey:', error);
       toast.error('Failed to submit survey');
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
@@ -29,7 +46,7 @@ const PublicSurveyForm: React.FC = () => {
         submitButtonText="Submit Survey"
         isEdit={false}
         surveyId={surveyId || undefined}
-        isSubmitting={false}
+        isSubmitting={isSubmitting}
       />
     </div>
   );

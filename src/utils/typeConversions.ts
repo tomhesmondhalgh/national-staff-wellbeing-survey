@@ -44,3 +44,31 @@ export const fixSchoolSearchResults = (schools: any[]) => {
     County: school["County (name)"] || ''
   }));
 };
+
+// Convert ActionPlanDescriptor from database to application type
+export const convertActionPlanDescriptors = (descriptors: any[]) => {
+  return descriptors.map(descriptor => ({
+    ...descriptor,
+    progress_notes_count: Number(descriptor.progress_notes_count) || 0,
+    index_number: descriptor.index_number || '',
+    status: descriptor.status || 'Not Started'
+  }));
+};
+
+// Convert ProgressNote from database to application type
+export const convertProgressNotes = (notes: any[]) => {
+  return notes.map(note => ({
+    ...note,
+    note_date: note.note_date || new Date().toISOString(),
+    created_at: note.created_at || new Date().toISOString()
+  }));
+};
+
+// Convert SurveyWithResponses from database to application type
+export const convertSurveyWithResponses = (surveys: any[]) => {
+  return surveys.map(survey => ({
+    ...survey,
+    responses: Number(survey.responses) || 0,
+    status: survey.status || 'Saved'
+  }));
+};

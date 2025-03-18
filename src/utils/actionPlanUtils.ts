@@ -1,51 +1,13 @@
 
 import { supabase } from "../lib/supabase";
-
-// Define enum for descriptor status to avoid type comparison errors
-export enum DescriptorStatus {
-  COMPLETED = "Completed",
-  IN_PROGRESS = "In Progress",
-  NOT_STARTED = "Not Started",
-  BLOCKED = "Blocked",
-  NOT_APPLICABLE = "Not Applicable"
-}
-
-// Define ActionPlanDescriptor interface
-export interface ActionPlanDescriptor {
-  id: string;
-  user_id: string;
-  section: string;
-  reference: string;
-  descriptor_text: string;
-  status: DescriptorStatus;
-  key_actions?: string;
-  deadline?: string;
-  assigned_to?: string;
-  created_at: string;
-  last_updated?: string;
-}
-
-// Define ProgressNote interface
-export interface ProgressNote {
-  id: string;
-  descriptor_id: string;
-  note_text: string;
-  note_date: string;
-  created_at: string;
-}
-
-// Define SectionSummary interface
-export interface SectionSummary {
-  key: string;
-  title: string;
-  totalCount: number;
-  completedCount: number;
-  inProgressCount: number;
-  notStartedCount: number;
-  blockedCount: number;
-  notApplicableCount: number;
-  percentComplete: number;
-}
+import { 
+  ActionPlanDescriptor, 
+  DescriptorStatus, 
+  ProgressNote,
+  ActionPlanTemplate,
+  ActionPlanSection
+} from "../types/actionPlan";
+import { ACTION_PLAN_SECTIONS } from "../types/actionPlan";
 
 /**
  * Initialize the action plan for a user
@@ -132,7 +94,7 @@ export const getActionPlanDescriptors = async (
     }
     
     // Cast the data to ActionPlanDescriptor[] to avoid type instantiation issues
-    const descriptors = data as ActionPlanDescriptor[];
+    const descriptors = data as unknown as ActionPlanDescriptor[];
     
     return { success: true, data: descriptors };
   } catch (error) {
@@ -201,7 +163,7 @@ export const getProgressNotes = async (
     }
     
     // Cast the data to ProgressNote[] to avoid type instantiation issues
-    const notes = data as ProgressNote[];
+    const notes = data as unknown as ProgressNote[];
     
     return { success: true, data: notes };
   } catch (error) {
@@ -259,6 +221,18 @@ export const saveAsTemplate = async (
 /**
  * Get section progress summary
  */
+export interface SectionSummary {
+  key: string;
+  title: string;
+  totalCount: number;
+  completedCount: number;
+  inProgressCount: number;
+  notStartedCount: number;
+  blockedCount: number;
+  notApplicableCount: number;
+  percentComplete: number;
+}
+
 export const getSectionProgressSummary = async (
   userId: string
 ): Promise<{ success: boolean, data?: SectionSummary[], error?: string }> => {
@@ -297,15 +271,15 @@ export const getSectionProgressSummary = async (
       
       sections[section].totalCount++;
       
-      if (descriptor.status === DescriptorStatus.COMPLETED) {
+      if (descriptor.status === 'Completed') {
         sections[section].completedCount++;
-      } else if (descriptor.status === DescriptorStatus.IN_PROGRESS) {
+      } else if (descriptor.status === 'In Progress') {
         sections[section].inProgressCount++;
-      } else if (descriptor.status === DescriptorStatus.NOT_STARTED) {
+      } else if (descriptor.status === 'Not Started') {
         sections[section].notStartedCount++;
-      } else if (descriptor.status === DescriptorStatus.BLOCKED) {
+      } else if (descriptor.status === 'Blocked') {
         sections[section].blockedCount++;
-      } else if (descriptor.status === DescriptorStatus.NOT_APPLICABLE) {
+      } else if (descriptor.status === 'Not Applicable') {
         sections[section].notApplicableCount++;
       }
     });
