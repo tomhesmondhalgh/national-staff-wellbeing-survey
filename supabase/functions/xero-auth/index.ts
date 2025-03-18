@@ -35,28 +35,56 @@ serve(async (req) => {
   }
 
   try {
+    // Parse request body if it exists
+    let requestData = {}
+    if (req.method === 'POST') {
+      try {
+        const body = await req.text()
+        if (body) {
+          requestData = JSON.parse(body)
+        }
+      } catch (err) {
+        console.error('[xero-auth] Error parsing request body:', err)
+      }
+    }
+    console.log('[xero-auth] Request data:', requestData)
+    
     // Get URL and parameters
     const url = new URL(req.url)
-    const action = url.searchParams.get('action')
+    const action = url.searchParams.get('action') || (requestData as any).action
+    
+    console.log('[xero-auth] Action:', action)
     
     // Create Supabase client using env vars
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
+    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') || ''
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('[xero-auth] Missing Supabase environment variables')
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    
+    console.log('[xero-auth] Creating Supabase client')
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      supabaseUrl,
+      supabaseKey,
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization') ?? '' },
+          headers: { Authorization: req.headers.get('Authorization') || '' },
         },
+        auth: {
+          persistSession: false,
+        }
       }
     )
     
     // Get authentication status and user
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabaseClient.auth.getSession()
+    const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession()
 
-    if (sessionError || !session) {
+    if (sessionError) {
       console.error('[xero-auth] Authentication error:', sessionError)
       return new Response(
         JSON.stringify({ error: 'Not authenticated', details: sessionError }),
@@ -64,6 +92,16 @@ serve(async (req) => {
       )
     }
 
+    if (!session) {
+      console.error('[xero-auth] No session found')
+      return new Response(
+        JSON.stringify({ error: 'Not authenticated', details: 'No session found' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    
+    console.log('[xero-auth] Authenticated user:', session.user.id)
+    
     // Get Xero credentials
     const clientId = Deno.env.get('XERO_CLIENT_ID')
     const clientSecret = Deno.env.get('XERO_CLIENT_SECRET')
@@ -81,8 +119,8 @@ serve(async (req) => {
       case 'authorize': {
         console.log('[xero-auth] Processing authorize request')
         
-        // Get redirect URI from params or set default
-        const redirectUri = url.searchParams.get('redirectUri') || 
+        // Get redirect URI from request data or set default
+        const redirectUri = (requestData as any).redirectUri || 
           `${url.origin}/api/rest/xero-auth?action=callback`
         
         // Create state parameter for security (preventing CSRF)
