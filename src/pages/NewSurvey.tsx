@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -68,7 +69,7 @@ const NewSurvey = () => {
           close_date: closeDate ? closeDate.toISOString() : null,
           creator_id: user.id,
           emails: data.recipients,
-          status: 'Saved'
+          status: data.status || 'Saved'
         })
         .select()
         .single();
@@ -155,7 +156,9 @@ const NewSurvey = () => {
         description: "The survey will be saved first, then opened in preview mode."
       });
       
-      (document.querySelector('form button[type="submit"]') as HTMLButtonElement)?.click();
+      // Click the save button to trigger form submission
+      const saveButton = document.querySelector('form button[type="submit"]') as HTMLButtonElement;
+      if (saveButton) saveButton.click();
     }
   };
 
@@ -167,7 +170,9 @@ const NewSurvey = () => {
         description: "The survey will be saved first, then you'll be able to send it."
       });
       
-      (document.querySelector('form button[type="submit"]') as HTMLButtonElement)?.click();
+      // Click the save button to trigger form submission
+      const saveButton = document.querySelector('form button[type="submit"]') as HTMLButtonElement;
+      if (saveButton) saveButton.click();
     }
   };
   

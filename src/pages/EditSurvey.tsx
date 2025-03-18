@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -45,7 +46,8 @@ const EditSurvey = () => {
           name: data.name,
           date: new Date(data.date),
           closeDate: data.close_date ? new Date(data.close_date) : undefined,
-          recipients: data.emails || ''
+          recipients: data.emails || '',
+          status: data.status || 'Saved'
         });
         
         const { data: linkData, error: linkError } = await supabase
@@ -86,6 +88,7 @@ const EditSurvey = () => {
           date: updateDate.toISOString(),
           close_date: updateCloseDate ? updateCloseDate.toISOString() : null,
           emails: data.recipients,
+          status: data.status || 'Saved',
           updated_at: new Date().toISOString()
         })
         .eq('id', id);
@@ -194,6 +197,12 @@ const EditSurvey = () => {
       if (emailError) {
         throw emailError;
       }
+      
+      // Update survey status to 'Sent'
+      await supabase
+        .from('survey_templates')
+        .update({ status: 'Sent' })
+        .eq('id', id);
       
       toast.success("Survey invitations sent", {
         description: `Invitations sent to ${emails.length} recipients.`

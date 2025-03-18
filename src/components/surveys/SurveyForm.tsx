@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,7 +24,8 @@ const surveyFormSchema = z.object({
     required_error: 'Survey date is required',
   }),
   closeDate: z.date().optional(),
-  recipients: z.string().optional()
+  recipients: z.string().optional(),
+  status: z.enum(['Saved', 'Scheduled', 'Sent', 'Completed']).optional()
 });
 
 export type SurveyFormData = z.infer<typeof surveyFormSchema>;
@@ -62,7 +64,8 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
       name: initialData?.name || '',
       date: initialData?.date ? new Date(initialData.date) : new Date(),
       closeDate: initialData?.closeDate ? new Date(initialData.closeDate) : undefined,
-      recipients: initialData?.recipients || ''
+      recipients: initialData?.recipients || '',
+      status: initialData?.status || 'Saved'
     }
   });
   
