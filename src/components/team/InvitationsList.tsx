@@ -94,10 +94,18 @@ const InvitationsList = () => {
         throw updateError;
       }
       
+      const { data: orgData, error: orgError } = await supabase
+        .from('profiles')
+        .select('school_name')
+        .eq('id', invitation.organization_id)
+        .single();
+      
+      const organizationName = orgData?.school_name || 'your organization';
+      
       const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
         body: {
           email: invitation.email,
-          organizationName: (await supabase.from('profiles').select('name').eq('id', invitation.organization_id).single()).data?.name,
+          organizationName: organizationName,
           role: invitation.role,
           invitedBy: (await supabase.auth.getUser()).data.user?.email,
         }
