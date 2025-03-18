@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthState } from '../hooks/useAuthState';
 import { 
   signInWithEmail, 
