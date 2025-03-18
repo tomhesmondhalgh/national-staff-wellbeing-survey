@@ -30,35 +30,70 @@ export async function checkUserRole(userId: string, role: UserRoleType): Promise
   
   // Cache miss or expired cache, fetch from database
   try {
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .eq('role', role)
-      .maybeSingle();
+    // For the administrator role, we need to check the user_roles table
+    if (role === 'administrator') {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('role', 'administrator')
+        .maybeSingle();
+        
+      if (error) {
+        console.error('Error checking administrator role:', error);
+        return false;
+      }
+      
+      const hasRole = !!data;
+      
+      // Initialize or update cache
+      if (!roleCache[userId]) {
+        roleCache[userId] = {
+          roles: {},
+          timestamp: now,
+          expiresAt: now + CACHE_EXPIRY
+        };
+      }
+      
+      // Update role in cache
+      roleCache[userId].roles[role] = hasRole;
+      roleCache[userId].timestamp = now;
+      roleCache[userId].expiresAt = now + CACHE_EXPIRY;
+      
+      return hasRole;
+    } 
+    // For organization roles, we query the organization_members or group_members tables
+    else {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('role', role)
+        .maybeSingle();
     
-    if (error) {
-      console.error('Error checking user role:', error);
-      return false;
+      if (error) {
+        console.error('Error checking user role:', error);
+        return false;
+      }
+      
+      const hasRole = !!data;
+      
+      // Initialize or update cache
+      if (!roleCache[userId]) {
+        roleCache[userId] = {
+          roles: {},
+          timestamp: now,
+          expiresAt: now + CACHE_EXPIRY
+        };
+      }
+      
+      // Update role in cache
+      roleCache[userId].roles[role] = hasRole;
+      roleCache[userId].timestamp = now;
+      roleCache[userId].expiresAt = now + CACHE_EXPIRY;
+      
+      return hasRole;
     }
-    
-    const hasRole = !!data;
-    
-    // Initialize or update cache
-    if (!roleCache[userId]) {
-      roleCache[userId] = {
-        roles: {},
-        timestamp: now,
-        expiresAt: now + CACHE_EXPIRY
-      };
-    }
-    
-    // Update role in cache
-    roleCache[userId].roles[role] = hasRole;
-    roleCache[userId].timestamp = now;
-    roleCache[userId].expiresAt = now + CACHE_EXPIRY;
-    
-    return hasRole;
   } catch (error) {
     console.error('Unexpected error in role check:', error);
     return false;
