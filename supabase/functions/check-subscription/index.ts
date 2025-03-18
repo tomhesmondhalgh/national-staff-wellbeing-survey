@@ -43,7 +43,49 @@ serve(async (req: Request) => {
       );
     }
 
-    // Check the database for the user's subscription status
+    // Check if this is a batch request
+    const url = new URL(req.url);
+    const userIds = url.searchParams.get('userIds');
+    
+    if (userIds) {
+      // Handle batch request
+      const userIdArray = userIds.split(',');
+      
+      // Only allow admins to make batch requests
+      const { data: adminCheck } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'administrator')
+        .maybeSingle();
+      
+      if (!adminCheck) {
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized: Only administrators can make batch requests' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // Process batch request
+      const results: Record<string, any> = {};
+      
+      await Promise.all(userIdArray.map(async (userId) => {
+        const { data: subscriptionData } = await supabase
+          .rpc('get_user_subscription', { user_uuid: userId });
+          
+        results[userId] = {
+          hasActiveSubscription: subscriptionData && subscriptionData.length > 0 ? subscriptionData[0].is_active : false,
+          plan: subscriptionData && subscriptionData.length > 0 ? subscriptionData[0].plan : 'free',
+        };
+      }));
+      
+      return new Response(
+        JSON.stringify(results),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Handle single user request
     const { data: subscriptionData, error: subscriptionError } = await supabase
       .rpc('get_user_subscription', { user_uuid: user.id });
 
