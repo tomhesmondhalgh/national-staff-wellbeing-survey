@@ -62,6 +62,26 @@ export function useRoleFetcher() {
         
         console.log('Checking organization role for organization:', currentOrganization.name);
         
+        // Check direct organization membership
+        const { data: orgMember, error: orgError } = await supabase
+          .from('organization_members')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('organization_id', currentOrganization.id)
+          .maybeSingle();
+          
+        if (orgError) {
+          console.error('Error checking organization membership:', orgError);
+          setQueryError("Error checking organization membership");
+        }
+        
+        if (orgMember) {
+          console.log('User has organization role:', orgMember.role);
+          setUserRole(orgMember.role as UserRoleType);
+          setIsLoading(false);
+          return;
+        }
+        
         // DIRECT APPROACH: Check if the user is the profile owner of the organization
         // This handles the case where the organization ID is actually the user's profile ID
         if (currentOrganization.id === user.id) {
