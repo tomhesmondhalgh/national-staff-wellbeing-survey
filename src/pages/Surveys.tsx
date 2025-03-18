@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -9,6 +8,7 @@ import { toast } from "sonner";
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
+import { useMediaQuery } from '../hooks/use-media-query';
 
 const SURVEYS_PER_PAGE = 10;
 
@@ -21,6 +21,7 @@ const Surveys = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [canCreateSurveys, setCanCreateSurveys] = useState(false);
   const permissions = usePermissions();
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
     const checkCreatePermission = async () => {
@@ -33,7 +34,6 @@ const Surveys = () => {
     checkCreatePermission();
   }, [permissions]);
 
-  // Fetch surveys from Supabase
   useEffect(() => {
     const fetchSurveys = async () => {
       if (!user) {
@@ -44,7 +44,6 @@ const Surveys = () => {
       try {
         setLoading(true);
         
-        // Get total count for pagination
         const { count, error: countError } = await supabase
           .from('survey_templates')
           .select('*', { count: 'exact', head: true })
@@ -56,11 +55,9 @@ const Surveys = () => {
         
         setTotalSurveys(count || 0);
         
-        // Calculate pagination range
         const from = (currentPage - 1) * SURVEYS_PER_PAGE;
         const to = from + SURVEYS_PER_PAGE - 1;
         
-        // Fetch survey templates created by the current user with pagination
         const { data: surveyTemplates, error } = await supabase
           .from('survey_templates')
           .select(`
@@ -80,13 +77,11 @@ const Surveys = () => {
           throw error;
         }
         
-        // Transform the data for the SurveyList component
         const formattedSurveys = surveyTemplates.map(template => {
           const now = new Date();
           const surveyDate = new Date(template.date);
           const closeDate = template.close_date ? new Date(template.close_date) : null;
           
-          // Determine survey status
           let status: 'Scheduled' | 'Sent' | 'Completed' = 'Scheduled';
           if (surveyDate <= now) {
             status = closeDate && closeDate < now ? 'Completed' : 'Sent';
@@ -148,7 +143,6 @@ const Surveys = () => {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    // Scroll to top for better UX
     window.scrollTo(0, 0);
   };
 
@@ -157,16 +151,16 @@ const Surveys = () => {
   return (
     <MainLayout>
       <div className="page-container bg-white">
-        <div className="flex justify-between items-center mb-8">
+        <div className={`flex ${isMobile ? 'flex-col gap-4' : 'justify-between items-center'} mb-8`}>
           <PageTitle 
             title="Surveys" 
             subtitle="Manage all your wellbeing surveys in one place"
-            className="mb-0 text-left"
+            className={`mb-0 ${isMobile ? 'text-center' : 'text-left'}`}
           />
           {canCreateSurveys && (
             <Link 
               to="/new-survey"
-              className="btn-primary"
+              className={`btn-primary ${isMobile ? 'w-full text-center py-3' : ''}`}
             >
               New Survey
             </Link>

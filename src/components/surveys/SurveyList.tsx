@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermissions } from '../../hooks/usePermissions';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 interface Survey {
   id: string;
@@ -32,6 +34,7 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const permissions = usePermissions();
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
     const checkEditPermission = async () => {
@@ -62,7 +65,6 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
       return;
     }
     
-    // Log before navigation to help debug
     console.log(`Navigating to edit survey: ${id}`);
     navigate(`/surveys/${id}/edit`);
   };
@@ -142,98 +144,187 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
     );
   }
 
-  return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">      
-      <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-100 text-sm font-medium text-gray-500 uppercase">
-        <div className="col-span-3">Survey</div>
-        <div className="col-span-2">Date</div>
-        <div className="col-span-2">Status</div>
-        <div className="col-span-1">Responses</div>
-        <div className="col-span-4 text-right">Actions</div>
-      </div>
-      
-      <div className="divide-y divide-gray-100">
-        {surveys.map((survey) => (
-          <div key={survey.id} className="grid grid-cols-12 gap-4 px-6 py-5 items-center hover:bg-gray-50 transition-colors">
-            <div className="col-span-3">
-              <div>
-                <h3 className="text-gray-900 font-medium">
-                  {canEditSurveys ? (
-                    <button 
-                      onClick={() => handleEditClick(survey.id)}
-                      className="hover:text-brandPurple-600 transition-colors text-left"
-                    >
-                      {survey.name}
-                    </button>
-                  ) : (
-                    <span>{survey.name}</span>
+  // Desktop view with table
+  if (!isMobile) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">      
+        <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-100 text-sm font-medium text-gray-500 uppercase">
+          <div className="col-span-3">Survey</div>
+          <div className="col-span-2">Date</div>
+          <div className="col-span-2">Status</div>
+          <div className="col-span-1">Responses</div>
+          <div className="col-span-4 text-right">Actions</div>
+        </div>
+        
+        <div className="divide-y divide-gray-100">
+          {surveys.map((survey) => (
+            <div key={survey.id} className="grid grid-cols-12 gap-4 px-6 py-5 items-center hover:bg-gray-50 transition-colors">
+              <div className="col-span-3">
+                <div>
+                  <h3 className="text-gray-900 font-medium">
+                    {canEditSurveys ? (
+                      <button 
+                        onClick={() => handleEditClick(survey.id)}
+                        className="hover:text-brandPurple-600 transition-colors text-left"
+                      >
+                        {survey.name}
+                      </button>
+                    ) : (
+                      <span>{survey.name}</span>
+                    )}
+                  </h3>
+                  {survey.closeDisplayDate && (
+                    <p className="text-xs text-gray-500 mt-1">{survey.closeDisplayDate}</p>
                   )}
-                </h3>
-                {survey.closeDisplayDate && (
-                  <p className="text-xs text-gray-500 mt-1">{survey.closeDisplayDate}</p>
+                </div>
+              </div>
+              
+              <div className="col-span-2 text-gray-700">
+                {survey.formattedDate}
+              </div>
+              
+              <div className="col-span-2">
+                <span className={`
+                  inline-flex px-2.5 py-1 rounded-full text-xs font-medium
+                  ${survey.status === 'Scheduled' ? 'bg-yellow-100 text-yellow-800' : 
+                    survey.status === 'Sent' ? 'bg-blue-100 text-blue-800' : 
+                    'bg-purple-100 text-purple-800'}
+                `}>
+                  {survey.status}
+                </span>
+              </div>
+              
+              <div className="col-span-1 text-gray-700">
+                {survey.responseCount}
+              </div>
+              
+              <div className="col-span-4 flex justify-end space-x-4">
+                {survey.status === 'Sent' && canEditSurveys && survey.emails && survey.emails.trim() !== '' && (
+                  <button 
+                    onClick={() => handleSendReminder(survey)}
+                    className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors whitespace-nowrap"
+                    title="Send reminder to participants"
+                    disabled={sendingReminder === survey.id}
+                  >
+                    <Send size={16} className="mr-1" />
+                    <span>
+                      {sendingReminder === survey.id ? 'Sending...' : 'Remind'}
+                    </span>
+                  </button>
+                )}
+                
+                {survey.url && (
+                  <button 
+                    onClick={() => copyToClipboard(survey.id, survey.url!)}
+                    className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors whitespace-nowrap"
+                    title="Copy survey link to clipboard"
+                  >
+                    <Copy size={16} className="mr-1" />
+                    <span>{copiedId === survey.id ? 'Copied!' : 'Copy Link'}</span>
+                  </button>
+                )}
+                
+                {canEditSurveys && (
+                  <button 
+                    onClick={() => handleEditClick(survey.id)}
+                    className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors whitespace-nowrap"
+                    title="Edit survey details"
+                  >
+                    <Edit size={16} className="mr-1" />
+                    <span>Edit</span>
+                  </button>
                 )}
               </div>
             </div>
-            
-            <div className="col-span-2 text-gray-700">
-              {survey.formattedDate}
-            </div>
-            
-            <div className="col-span-2">
-              <span className={`
-                inline-flex px-2.5 py-1 rounded-full text-xs font-medium
-                ${survey.status === 'Scheduled' ? 'bg-yellow-100 text-yellow-800' : 
-                  survey.status === 'Sent' ? 'bg-blue-100 text-blue-800' : 
-                  'bg-purple-100 text-purple-800'}
-              `}>
-                {survey.status}
-              </span>
-            </div>
-            
-            <div className="col-span-1 text-gray-700">
-              {survey.responseCount}
-            </div>
-            
-            <div className="col-span-4 flex justify-end space-x-4">
-              {survey.status === 'Sent' && canEditSurveys && survey.emails && survey.emails.trim() !== '' && (
-                <button 
-                  onClick={() => handleSendReminder(survey)}
-                  className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors whitespace-nowrap"
-                  title="Send reminder to participants"
-                  disabled={sendingReminder === survey.id}
-                >
-                  <Send size={16} className="mr-1" />
-                  <span>
-                    {sendingReminder === survey.id ? 'Sending...' : 'Remind'}
-                  </span>
-                </button>
-              )}
-              
-              {survey.url && (
-                <button 
-                  onClick={() => copyToClipboard(survey.id, survey.url!)}
-                  className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors whitespace-nowrap"
-                  title="Copy survey link to clipboard"
-                >
-                  <Copy size={16} className="mr-1" />
-                  <span>{copiedId === survey.id ? 'Copied!' : 'Copy Link'}</span>
-                </button>
-              )}
-              
-              {canEditSurveys && (
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Mobile view with cards
+  return (
+    <div className="space-y-4">
+      {surveys.map((survey) => (
+        <div key={survey.id} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+          <div className="flex justify-between items-start mb-2">
+            <h3 className="text-gray-900 font-medium">
+              {canEditSurveys ? (
                 <button 
                   onClick={() => handleEditClick(survey.id)}
-                  className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors whitespace-nowrap"
-                  title="Edit survey details"
+                  className="hover:text-brandPurple-600 transition-colors text-left"
                 >
-                  <Edit size={16} className="mr-1" />
-                  <span>Edit</span>
+                  {survey.name}
                 </button>
+              ) : (
+                <span>{survey.name}</span>
               )}
-            </div>
+            </h3>
+            <span className={`
+              inline-flex px-2.5 py-1 rounded-full text-xs font-medium
+              ${survey.status === 'Scheduled' ? 'bg-yellow-100 text-yellow-800' : 
+                survey.status === 'Sent' ? 'bg-blue-100 text-blue-800' : 
+                'bg-purple-100 text-purple-800'}
+            `}>
+              {survey.status}
+            </span>
           </div>
-        ))}
-      </div>
+          
+          <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+            <div>
+              <span className="text-gray-500">Date:</span>
+              <div className="text-gray-700">{survey.formattedDate}</div>
+            </div>
+            
+            <div>
+              <span className="text-gray-500">Responses:</span>
+              <div className="text-gray-700">{survey.responseCount}</div>
+            </div>
+            
+            {survey.closeDisplayDate && (
+              <div className="col-span-2">
+                <span className="text-gray-500">Closes:</span>
+                <div className="text-gray-700">{survey.closeDisplayDate.replace('Closes: ', '')}</div>
+              </div>
+            )}
+          </div>
+          
+          <div className="border-t border-gray-100 pt-3 flex flex-wrap gap-3">
+            {survey.status === 'Sent' && canEditSurveys && survey.emails && survey.emails.trim() !== '' && (
+              <button 
+                onClick={() => handleSendReminder(survey)}
+                className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors"
+                disabled={sendingReminder === survey.id}
+              >
+                <Send size={16} className="mr-1" />
+                <span>
+                  {sendingReminder === survey.id ? 'Sending...' : 'Remind'}
+                </span>
+              </button>
+            )}
+            
+            {survey.url && (
+              <button 
+                onClick={() => copyToClipboard(survey.id, survey.url!)}
+                className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors"
+              >
+                <Copy size={16} className="mr-1" />
+                <span>{copiedId === survey.id ? 'Copied!' : 'Copy Link'}</span>
+              </button>
+            )}
+            
+            {canEditSurveys && (
+              <button 
+                onClick={() => handleEditClick(survey.id)}
+                className="flex items-center text-sm text-gray-500 hover:text-brandPurple-600 transition-colors"
+              >
+                <Edit size={16} className="mr-1" />
+                <span>Edit</span>
+              </button>
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   );
 };
