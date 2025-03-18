@@ -16,6 +16,7 @@ import {
 } from "../ui/tooltip";
 import CustomQuestionsSelect from './CustomQuestionsSelect';
 import { useNavigate } from 'react-router-dom';
+import { SurveyStatus } from '@/utils/types/survey';
 
 // Form schema
 const surveyFormSchema = z.object({
@@ -25,7 +26,7 @@ const surveyFormSchema = z.object({
   }),
   closeDate: z.date().optional(),
   recipients: z.string().optional(),
-  status: z.enum(['Saved', 'Scheduled', 'Sent', 'Completed']).optional(),
+  status: z.enum(['Saved', 'Scheduled', 'Sent', 'Completed', 'Archived']).optional(),
   distributionMethod: z.enum(['link', 'email']).default('link')
 });
 
