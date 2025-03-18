@@ -1,17 +1,25 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, User, ShieldCheck, LogOut, Users, ChevronDown, CreditCard } from 'lucide-react';
+import { Settings, User, ShieldCheck, LogOut, Users, ChevronDown, CreditCard, SwitchCamera } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal
 } from '../ui/dropdown-menu';
 import { Button } from '../ui/button';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdminRole } from '../../hooks/useAdminRole';
+import { usePermissions } from '../../hooks/usePermissions';
 import { useLocation } from 'react-router-dom';
+import { Badge } from '../ui/badge';
+import { useToast } from '../ui/use-toast';
 
 interface SettingsDropdownProps {
   isAdmin: boolean;
@@ -22,8 +30,11 @@ interface SettingsDropdownProps {
 const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ isAdmin, canManageTeam, handleSignOut }) => {
   const { user } = useAuth();
   const location = useLocation();
-  // Get access to the current admin status from our optimized hook
-  const { isAdmin: isAdminFromHook } = useAdminRole();
+  const { toast } = useToast();
+  
+  // Get access to the current admin status from our hooks
+  const { isAdmin: isAdminFromHook, isUsingNewRoleSystem: adminUsingNewSystem } = useAdminRole();
+  const { isUsingNewRoleSystem, enableNewRoleSystem, disableNewRoleSystem } = usePermissions();
 
   const navLinkClass = "text-base font-medium text-gray-600 hover:text-brandPurple-600 transition-colors flex items-center";
   const activeNavLinkClass = "text-purple-700";
@@ -36,8 +47,16 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ isAdmin, canManageT
                           location.pathname === '/custom-questions';
 
   // Use either the admin status passed as prop or from the hook
-  // This ensures we'll show the Admin link correctly in both normal and testing mode
   const showAdminLink = isAdmin || isAdminFromHook;
+  
+  // Handler to toggle role system
+  const handleToggleRoleSystem = () => {
+    if (isUsingNewRoleSystem) {
+      disableNewRoleSystem();
+    } else {
+      enableNewRoleSystem();
+    }
+  };
 
   return (
     <DropdownMenu>
@@ -78,6 +97,37 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ isAdmin, canManageT
             </Link>
           </DropdownMenuItem>
         )}
+        
+        {/* Role System Toggle (only visible for admins) */}
+        {showAdminLink && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger className="flex items-center py-2">
+                <SwitchCamera size={16} className="mr-2" />
+                Role System
+                {isUsingNewRoleSystem && (
+                  <Badge variant="outline" className="ml-2 text-xs bg-green-50 border-green-200 text-green-700">New</Badge>
+                )}
+              </DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuSubContent className="min-w-[200px]">
+                  <DropdownMenuItem onClick={handleToggleRoleSystem}>
+                    {isUsingNewRoleSystem 
+                      ? "Switch to Classic System" 
+                      : "Switch to New System"}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                    Currently using: {isUsingNewRoleSystem ? "New" : "Classic"} system
+                  </div>
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
+          </>
+        )}
+        
+        <DropdownMenuSeparator />
         
         <DropdownMenuItem onClick={handleSignOut} className="flex items-center py-2">
           <LogOut size={16} className="mr-2" />

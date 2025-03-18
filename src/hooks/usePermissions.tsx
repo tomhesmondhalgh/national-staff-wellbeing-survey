@@ -5,6 +5,7 @@ import { useRoleChecks } from './useRoleChecks';
 import { usePermissionActions } from './usePermissionActions';
 import { useRoleManagement } from './useRoleManagement';
 import { UserRoleType } from '../lib/supabase/client';
+import { toast } from 'sonner';
 
 export function usePermissions() {
   // The classic implementation (for backward compatibility)
@@ -30,14 +31,32 @@ export function usePermissions() {
   const [useNewRoleSystem, setUseNewRoleSystem] = useState(false);
   
   useEffect(() => {
-    // You could read this from environment variables, localStorage, or a feature flag service
-    // For now, we'll default to false to maintain backward compatibility
+    // Check if new role system is enabled
     const shouldUseNewSystem = localStorage.getItem('useNewRoleSystem') === 'true';
     setUseNewRoleSystem(shouldUseNewSystem);
     
-    // Log which system is being used
+    // Log which system is being used for monitoring
     console.log(`Using ${shouldUseNewSystem ? 'new' : 'classic'} role system`);
+    
+    // Add telemetry to track adoption if needed
+    if (shouldUseNewSystem) {
+      // This could be replaced with a proper analytics call
+      console.log('Role system telemetry: Using new system');
+    }
   }, []);
+
+  // Validate that roles are consistent between old and new systems
+  useEffect(() => {
+    // Only run in development to help catch discrepancies during transition
+    if (process.env.NODE_ENV === 'development' && !oldIsLoading && !newIsLoading) {
+      if (userRole !== currentRole) {
+        console.warn('Role inconsistency detected:', {
+          oldSystem: userRole,
+          newSystem: currentRole
+        });
+      }
+    }
+  }, [userRole, currentRole, oldIsLoading, newIsLoading]);
 
   return {
     // Return the appropriate implementation based on the feature flag
@@ -51,10 +70,26 @@ export function usePermissions() {
     isAdmin: useNewRoleSystem ? newIsAdmin : oldIsAdmin,
     error: useNewRoleSystem ? newError : queryError,
     
-    // Add a method to explicitly enable the new role system
+    // Methods to control the role system
     enableNewRoleSystem: () => {
       localStorage.setItem('useNewRoleSystem', 'true');
       setUseNewRoleSystem(true);
-    }
+      toast.success('New role system enabled. Page will refresh for changes to take effect.', {
+        duration: 5000,
+        onAutoClose: () => window.location.reload()
+      });
+    },
+    
+    disableNewRoleSystem: () => {
+      localStorage.setItem('useNewRoleSystem', 'false');
+      setUseNewRoleSystem(false);
+      toast.info('Reverted to classic role system. Page will refresh for changes to take effect.', {
+        duration: 5000,
+        onAutoClose: () => window.location.reload()
+      });
+    },
+    
+    // Expose the current system being used
+    isUsingNewRoleSystem: useNewRoleSystem
   };
 }

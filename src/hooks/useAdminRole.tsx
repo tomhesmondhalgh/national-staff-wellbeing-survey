@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useAdminRoleOptimized } from './useAdminRoleOptimized';
 import { useRoleManagement } from './useRoleManagement';
+import { toast } from 'sonner';
 
 export function useAdminRole() {
   // The optimized version with caching
@@ -28,8 +29,31 @@ export function useAdminRole() {
       };
       
       checkAdminStatus();
+      
+      // Log for monitoring
+      console.log('Admin role check using new role system');
     }
   }, [newIsAdmin]);
+  
+  // Helper function to validate consistency between systems
+  useEffect(() => {
+    // Only run in development to help catch discrepancies during transition
+    if (process.env.NODE_ENV === 'development' && !optimizedHook.isLoading && !newIsLoading) {
+      const checkRoleConsistency = async () => {
+        const isAdminOld = optimizedHook.isAdmin;
+        const isAdminNew = await newIsAdmin();
+        
+        if (isAdminOld !== isAdminNew) {
+          console.warn('Admin role inconsistency detected:', {
+            oldSystem: isAdminOld,
+            newSystem: isAdminNew
+          });
+        }
+      };
+      
+      checkRoleConsistency();
+    }
+  }, [optimizedHook.isAdmin, optimizedHook.isLoading, newIsAdmin, newIsLoading]);
   
   // Return appropriate implementation based on feature flag
   return useNewRoleSystem ? 
@@ -39,7 +63,11 @@ export function useAdminRole() {
       refreshAdminStatus: async () => {
         const isUserAdmin = await newIsAdmin();
         setIsAdminFromNew(isUserAdmin);
-      }
+      },
+      isUsingNewRoleSystem: true
     } : 
-    optimizedHook;
+    {
+      ...optimizedHook,
+      isUsingNewRoleSystem: false
+    };
 }
