@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { User, ShieldCheck, LogOut, Users, Settings, CreditCard } from 'lucide-react';
+import { User, ShieldCheck, LogOut, Users, CreditCard } from 'lucide-react';
 import { NavLinks } from './NavLinks';
 import OrganizationSwitcher from '../organization/OrganizationSwitcher';
 import { useAdminRole } from '../../hooks/useAdminRole';
@@ -85,17 +85,6 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
               <span className="flex items-center">
                 <Users size={16} className="mr-2" />
                 Team
-              </span>
-            </Link>
-
-            <Link 
-              to="/xero" 
-              className="block px-4 py-2 rounded-md font-medium text-base hover:bg-brandPurple-50"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              <span className="flex items-center">
-                <Settings size={16} className="mr-2" />
-                Xero Integration
               </span>
             </Link>
             

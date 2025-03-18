@@ -33,8 +33,7 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ isAdmin, canManageT
                           location.pathname === '/team' || 
                           location.pathname === '/admin' ||
                           location.pathname === '/purchases' ||
-                          location.pathname === '/custom-questions' ||
-                          location.pathname === '/xero';
+                          location.pathname === '/custom-questions';
 
   // Use either the admin status passed as prop or from the hook
   // This ensures we'll show the Admin link correctly in both normal and testing mode
@@ -67,13 +66,6 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ isAdmin, canManageT
           <Link to="/team" className="flex items-center w-full py-2">
             <Users size={16} className="mr-2" />
             Team
-          </Link>
-        </DropdownMenuItem>
-
-        <DropdownMenuItem asChild>
-          <Link to="/xero" className="flex items-center w-full py-2">
-            <Settings size={16} className="mr-2" />
-            Xero Integration
           </Link>
         </DropdownMenuItem>
         
