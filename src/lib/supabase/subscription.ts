@@ -1,9 +1,9 @@
-import { supabase } from './client';
 
-export type PlanType = 'free' | 'foundation' | 'progress' | 'premium';
-export type SubscriptionStatus = 'active' | 'canceled' | 'expired' | 'pending';
-export type PaymentMethod = 'stripe' | 'invoice' | 'manual';
-export type PurchaseType = 'subscription' | 'one-time';
+import { supabase } from './client';
+import type { Json } from '../../integrations/supabase/types';
+import { PlanType, SubscriptionStatus, PaymentMethod, PurchaseType } from './client';
+
+export { PlanType, SubscriptionStatus, PaymentMethod, PurchaseType };
 
 export interface Subscription {
   id: string;
@@ -114,7 +114,11 @@ export async function getSubscriptionHistory(userId: string): Promise<Subscripti
       return [];
     }
 
-    return data || [];
+    // Cast data with proper purchase_type type 
+    return (data || []).map(sub => ({
+      ...sub,
+      purchase_type: (sub.purchase_type as PurchaseType) || 'subscription'
+    })) as Subscription[];
   } catch (error) {
     console.error('Error in getSubscriptionHistory:', error);
     return [];
@@ -256,7 +260,12 @@ export async function getPlans(): Promise<Plan[]> {
       return [];
     }
     
-    return data || [];
+    // Cast the purchase_type to ensure it matches Plan interface
+    return (data || []).map(plan => ({
+      ...plan,
+      features: Array.isArray(plan.features) ? plan.features : [],
+      purchase_type: (plan.purchase_type as 'subscription' | 'one-time' | null)
+    })) as Plan[];
   } catch (error) {
     console.error('Error in getPlans:', error);
     return [];
@@ -277,7 +286,14 @@ export async function getPlanById(planId: string): Promise<Plan | null> {
       return null;
     }
     
-    return data;
+    if (!data) return null;
+    
+    // Cast the purchase_type to ensure it matches Plan interface
+    return {
+      ...data,
+      features: Array.isArray(data.features) ? data.features : [],
+      purchase_type: (data.purchase_type as 'subscription' | 'one-time' | null)
+    } as Plan;
   } catch (error) {
     console.error('Error in getPlanById:', error);
     return null;
@@ -298,7 +314,14 @@ export async function getPlanByStripeId(stripePriceId: string): Promise<Plan | n
       return null;
     }
     
-    return data;
+    if (!data) return null;
+    
+    // Cast the purchase_type to ensure it matches Plan interface
+    return {
+      ...data,
+      features: Array.isArray(data.features) ? data.features : [],
+      purchase_type: (data.purchase_type as 'subscription' | 'one-time' | null)
+    } as Plan;
   } catch (error) {
     console.error('Error in getPlanByStripeId:', error);
     return null;
