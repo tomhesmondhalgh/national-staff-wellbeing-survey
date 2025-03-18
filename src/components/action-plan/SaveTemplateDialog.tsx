@@ -17,12 +17,14 @@ interface SaveTemplateDialogProps {
   userId: string;
   isOpen: boolean;
   onClose: () => void;
+  section?: string; // Add section parameter
 }
 
 const SaveTemplateDialog: React.FC<SaveTemplateDialogProps> = ({
   userId,
   isOpen,
-  onClose
+  onClose,
+  section = 'General' // Default section if not provided
 }) => {
   const [templateName, setTemplateName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,7 +40,7 @@ const SaveTemplateDialog: React.FC<SaveTemplateDialogProps> = ({
     }
 
     setIsSubmitting(true);
-    const result = await saveAsTemplate(userId, templateName);
+    const result = await saveAsTemplate(userId, section, templateName);
     setIsSubmitting(false);
 
     if (result.success) {

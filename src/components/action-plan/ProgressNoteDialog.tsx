@@ -47,7 +47,7 @@ const ProgressNoteDialog: React.FC<ProgressNoteDialogProps> = ({
       const result = await addProgressNote(descriptorId, noteText);
       
       if (result.success) {
-        console.log('Note added successfully:', result.data);
+        console.log('Note added successfully');
         toast({
           title: 'Success',
           description: 'Progress note added'
