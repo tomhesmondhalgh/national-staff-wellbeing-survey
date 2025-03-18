@@ -2,6 +2,7 @@
 import React from 'react';
 import Navbar from './Navbar';
 import TestingModeIndicator from './TestingModeIndicator';
+import CustomScriptsLoader from './CustomScriptsLoader';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -20,6 +21,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         </div>
       </footer>
       <TestingModeIndicator />
+      <CustomScriptsLoader />
       {/* Toaster is now in App.tsx */}
     </div>
   );

@@ -56,17 +56,27 @@ export function useTeamMembers(organizationId: string | undefined) {
           }));
         }
         
+        // Use RPC function to safely get organization members without recursion
         const { data, error } = await supabase
-          .from('organization_members')
-          .select('*')
-          .eq('organization_id', organizationId);
+          .rpc('get_organization_members', { org_id: organizationId });
           
         if (error) {
+          console.error('Error in RPC get_organization_members:', error);
+          
+          // If RPC function doesn't exist yet or there's another error, try the direct query as a fallback
+          if (error.code === '42883') { // Function doesn't exist
+            console.log('RPC function not found, falling back to direct query');
+            setUseDirectQuery(true);
+            throw new Error(`RPC function not available: ${error.message}. Retrying with direct query.`);
+          }
+          
+          // For recursion errors, fall back to direct query too
           if (error.code === '42P17') {
             console.log('Detected recursion error, switching to direct query mode');
             setUseDirectQuery(true);
             throw new Error(`Recursion error detected: ${error.message}. Retrying with direct query.`);
           }
+          
           throw error;
         }
         

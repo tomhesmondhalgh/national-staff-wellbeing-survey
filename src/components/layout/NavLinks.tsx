@@ -1,76 +1,97 @@
 
-import React, { useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { useSubscription } from '../../hooks/useSubscription';
-import { usePermissions } from '../../hooks/usePermissions';
+import React from 'react';
+import { NavLink as RouterNavLink, useLocation } from 'react-router-dom';
 
 interface NavLinksProps {
-  canManageTeam: boolean;
+  closeMobileMenu?: () => void;
+  canManageTeam?: boolean;
   setIsMenuOpen?: (isOpen: boolean) => void;
 }
 
-const NavLinks: React.FC<NavLinksProps> = ({ canManageTeam, setIsMenuOpen }) => {
+interface NavLinkProps {
+  to: string;
+  active: boolean;
+  onClick?: () => void;
+  children: React.ReactNode;
+}
+
+const NavLink: React.FC<NavLinkProps> = ({ to, active, onClick, children }) => {
+  return (
+    <RouterNavLink
+      to={to}
+      className={`block py-2 px-4 text-base font-medium text-gray-600 hover:text-brandPurple-600 md:p-0 ${
+        active ? 'text-purple-700' : ''
+      }`}
+      onClick={onClick}
+    >
+      {children}
+    </RouterNavLink>
+  );
+};
+
+export const NavLinks: React.FC<NavLinksProps> = ({ 
+  closeMobileMenu,
+  setIsMenuOpen
+}) => {
   const location = useLocation();
-  const { userRole } = usePermissions();
-  const { isPremium, isLoading } = useSubscription();
   
-  useEffect(() => {
-    console.log('NavLinks component - canManageTeam:', canManageTeam, 'userRole:', userRole);
-  }, [canManageTeam, userRole]);
+  // Helper to check if a route is active
+  const isActive = (path: string) => {
+    return location.pathname === path;
+  };
   
-  const handleClick = () => {
+  // Helper to close mobile menu when a link is clicked
+  const handleLinkClick = () => {
+    if (closeMobileMenu) {
+      closeMobileMenu();
+    }
     if (setIsMenuOpen) {
       setIsMenuOpen(false);
     }
   };
-
-  // Updated font size from text-sm to text-base for navigation links
-  const navLinkClass = "nav-link font-medium text-base transition-colors";
-  const activeNavLinkClass = "text-brandPurple-600";
-  const inactiveNavLinkClass = "text-gray-700 hover:text-brandPurple-500";
-
+  
+  // Only include main navigation items (Dashboard, Survey, Analyse, Improve, Upgrade)
   return (
-    <>
-      <Link 
+    <div className="flex flex-col gap-6 md:flex-row md:items-center">
+      <NavLink 
         to="/dashboard" 
-        className={`${navLinkClass} ${location.pathname === '/dashboard' ? activeNavLinkClass : inactiveNavLinkClass}`}
-        onClick={handleClick}
+        active={isActive('/dashboard')} 
+        onClick={handleLinkClick}
       >
         Dashboard
-      </Link>
-      <Link 
+      </NavLink>
+      
+      <NavLink 
         to="/surveys" 
-        className={`${navLinkClass} ${location.pathname.startsWith('/survey') ? activeNavLinkClass : inactiveNavLinkClass}`}
-        onClick={handleClick}
+        active={isActive('/surveys')} 
+        onClick={handleLinkClick}
       >
         Survey
-      </Link>
-      <Link 
+      </NavLink>
+      
+      <NavLink 
         to="/analysis" 
-        className={`${navLinkClass} ${location.pathname === '/analysis' ? activeNavLinkClass : inactiveNavLinkClass}`}
-        onClick={handleClick}
+        active={isActive('/analysis')} 
+        onClick={handleLinkClick}
       >
         Analyse
-      </Link>
-      <Link 
+      </NavLink>
+      
+      <NavLink 
         to="/improve" 
-        className={`${navLinkClass} ${location.pathname === '/improve' ? activeNavLinkClass : inactiveNavLinkClass}`}
-        onClick={handleClick}
+        active={isActive('/improve')} 
+        onClick={handleLinkClick}
       >
         Improve
-      </Link>
+      </NavLink>
       
-      {!isPremium && !isLoading && (
-        <Link 
-          to="/upgrade" 
-          className={`${navLinkClass} ${location.pathname === '/upgrade' ? activeNavLinkClass : inactiveNavLinkClass}`}
-          onClick={handleClick}
-        >
-          Upgrade
-        </Link>
-      )}
-    </>
+      <NavLink 
+        to="/upgrade" 
+        active={isActive('/upgrade')} 
+        onClick={handleLinkClick}
+      >
+        Upgrade
+      </NavLink>
+    </div>
   );
 };
-
-export default NavLinks;

@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { User, ShieldCheck, LogOut, Users } from 'lucide-react';
-import NavLinks from './NavLinks';
+import { User, ShieldCheck, LogOut, Users, CreditCard } from 'lucide-react';
+import { NavLinks } from './NavLinks';
 import OrganizationSwitcher from '../organization/OrganizationSwitcher';
+import { useAdminRole } from '../../hooks/useAdminRole';
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -26,7 +27,11 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  console.log('MobileMenu render - canManageTeam:', canManageTeam);
+  // Get access to the current admin status from our optimized hook
+  const { isAdmin: isAdminFromHook } = useAdminRole();
+  
+  // Use either the admin status passed as prop or from the hook
+  const showAdminLink = isAdmin || isAdminFromHook;
 
   return (
     <div className="md:hidden bg-white shadow-lg animate-slide-down">
@@ -41,46 +46,57 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
         {isAuthenticated ? (
           <>
             <div className="flex flex-col space-y-1">
-              <NavLinks canManageTeam={canManageTeam} setIsMenuOpen={setIsMenuOpen} />
+              <NavLinks setIsMenuOpen={setIsMenuOpen} />
             </div>
             
-            {/* Settings Section Header - Increased font size */}
+            {/* Settings Section Header */}
             <div className="px-4 pt-2 pb-1 text-base font-semibold text-gray-500">
               Settings
             </div>
             
-            {/* Settings Items - Increased font size */}
+            {/* Settings Items */}
             <Link 
               to="/profile" 
               className="block px-4 py-2 rounded-md font-medium text-base hover:bg-brandPurple-50"
               onClick={() => setIsMenuOpen(false)}
             >
               <span className="flex items-center">
-                <User size={16} className="mr-1" />
+                <User size={16} className="mr-2" />
                 Profile
               </span>
             </Link>
+
+            <Link 
+              to="/purchases" 
+              className="block px-4 py-2 rounded-md font-medium text-base hover:bg-brandPurple-50"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <span className="flex items-center">
+                <CreditCard size={16} className="mr-2" />
+                My Purchases
+              </span>
+            </Link>
             
-            {/* Always show Team link in settings for debugging - Increased font size */}
             <Link 
               to="/team" 
               className="block px-4 py-2 rounded-md font-medium text-base hover:bg-brandPurple-50"
               onClick={() => setIsMenuOpen(false)}
             >
               <span className="flex items-center">
-                <Users size={16} className="mr-1" />
+                <Users size={16} className="mr-2" />
                 Team
               </span>
             </Link>
             
-            {isAdmin && (
+            {/* Show Admin link if user has admin access */}
+            {showAdminLink && (
               <Link 
                 to="/admin" 
                 className="block px-4 py-2 rounded-md font-medium text-base hover:bg-brandPurple-50"
                 onClick={() => setIsMenuOpen(false)}
               >
                 <span className="flex items-center">
-                  <ShieldCheck size={16} className="mr-1" />
+                  <ShieldCheck size={16} className="mr-2" />
                   Admin
                 </span>
               </Link>
@@ -90,12 +106,12 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
               className="flex items-center w-full text-left px-4 py-2 rounded-md font-medium text-base hover:bg-brandPurple-50"
               onClick={handleSignOut}
             >
-              <LogOut size={16} className="mr-1" />
+              <LogOut size={16} className="mr-2" />
               Sign Out
             </button>
           </>
         ) : (
-          // Only show login/signup options if not on survey response or complete pages - Increased font size
+          // Only show login/signup options if not on survey response or complete pages
           !hideAuthButtons && (
             <>
               <Link 

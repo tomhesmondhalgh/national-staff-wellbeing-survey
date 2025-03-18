@@ -10,7 +10,7 @@ import {
 } from '../ui/dropdown-menu';
 import { Button } from '../ui/button';
 import { useAuth } from '../../contexts/AuthContext';
-import { supabase } from '../../lib/supabase';
+import { useAdminRole } from '../../hooks/useAdminRole';
 import { useLocation } from 'react-router-dom';
 
 interface SettingsDropdownProps {
@@ -21,90 +21,65 @@ interface SettingsDropdownProps {
 
 const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ isAdmin, canManageTeam, handleSignOut }) => {
   const { user } = useAuth();
-  const [isRealAdmin, setIsRealAdmin] = React.useState(false);
   const location = useLocation();
+  // Get access to the current admin status from our optimized hook
+  const { isAdmin: isAdminFromHook } = useAdminRole();
 
-  // Updated font size from text-sm to text-base for consistent sizing with NavLinks
-  const navLinkClass = "font-medium text-base transition-colors flex items-center";
-  const activeNavLinkClass = "text-brandPurple-600";
-  const inactiveNavLinkClass = "text-gray-700 hover:text-brandPurple-500";
+  const navLinkClass = "text-base font-medium text-gray-600 hover:text-brandPurple-600 transition-colors flex items-center";
+  const activeNavLinkClass = "text-purple-700";
   
   // Active state for settings
   const isSettingsActive = location.pathname === '/profile' || 
                           location.pathname === '/team' || 
                           location.pathname === '/admin' ||
-                          location.pathname === '/purchases';
+                          location.pathname === '/purchases' ||
+                          location.pathname === '/custom-questions';
 
-  // Check if user is a real admin (not just in testing mode)
-  React.useEffect(() => {
-    const checkRealAdmin = async () => {
-      if (!user) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('role', 'administrator')
-          .maybeSingle();
-          
-        if (error) {
-          console.error('Error checking real admin status:', error);
-          return;
-        }
-        
-        setIsRealAdmin(!!data);
-      } catch (error) {
-        console.error('Error in admin check:', error);
-      }
-    };
-    
-    checkRealAdmin();
-  }, [user]);
+  // Use either the admin status passed as prop or from the hook
+  // This ensures we'll show the Admin link correctly in both normal and testing mode
+  const showAdminLink = isAdmin || isAdminFromHook;
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className={`${navLinkClass} ${isSettingsActive ? activeNavLinkClass : inactiveNavLinkClass}`}>
+        <Button variant="ghost" className={`${navLinkClass} ${isSettingsActive ? activeNavLinkClass : ""}`}>
           Settings
           <ChevronDown size={16} className="ml-1" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48 mt-1">
+      <DropdownMenuContent align="end" className="w-48 mt-1 p-1">
         <DropdownMenuItem asChild>
-          <Link to="/profile" className="flex items-center w-full">
+          <Link to="/profile" className="flex items-center w-full py-2">
             <User size={16} className="mr-2" />
             Profile
           </Link>
         </DropdownMenuItem>
         
         <DropdownMenuItem asChild>
-          <Link to="/purchases" className="flex items-center w-full">
+          <Link to="/purchases" className="flex items-center w-full py-2">
             <CreditCard size={16} className="mr-2" />
             My Purchases
           </Link>
         </DropdownMenuItem>
         
-        {canManageTeam && (
-          <DropdownMenuItem asChild>
-            <Link to="/team" className="flex items-center w-full">
-              <Users size={16} className="mr-2" />
-              Team
-            </Link>
-          </DropdownMenuItem>
-        )}
+        <DropdownMenuItem asChild>
+          <Link to="/team" className="flex items-center w-full py-2">
+            <Users size={16} className="mr-2" />
+            Team
+          </Link>
+        </DropdownMenuItem>
         
-        {/* Show Admin link if user is either in testing mode as admin OR a real admin */}
-        {(isAdmin || isRealAdmin) && (
+        {/* Show Admin link if user has admin access */}
+        {showAdminLink && (
           <DropdownMenuItem asChild>
-            <Link to="/admin" className="flex items-center w-full">
+            <Link to="/admin" className="flex items-center w-full py-2">
               <ShieldCheck size={16} className="mr-2" />
               Admin
             </Link>
           </DropdownMenuItem>
         )}
         
-        <DropdownMenuItem onClick={handleSignOut} className="flex items-center">
+        <DropdownMenuItem onClick={handleSignOut} className="flex items-center py-2">
           <LogOut size={16} className="mr-2" />
           Sign Out
         </DropdownMenuItem>
