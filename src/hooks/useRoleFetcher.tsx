@@ -140,20 +140,29 @@ export function useRoleFetcher() {
             'viewer': 0
           };
           
-          for (const groupRole of groupRoles as GroupRoleData[]) {
-            // Ensure groups is an object and has the group_organizations property
+          // Safely iterate through roles, handling the complex nested structure
+          for (const groupRole of groupRoles) {
+            // Extract groups data - it's an array with one object in Supabase's nested format
             if (groupRole.groups && 
-                typeof groupRole.groups === 'object' && 
-                'group_organizations' in groupRole.groups && 
-                Array.isArray(groupRole.groups.group_organizations)) {
+                Array.isArray(groupRole.groups) && 
+                groupRole.groups.length > 0) {
               
-              for (const groupOrg of groupRole.groups.group_organizations) {
-                if (groupOrg.organization_id === currentOrganization.id) {
-                  console.log('Found group role for organization:', groupRole.role);
-                  
-                  // If this role is higher in hierarchy than current highest, update it
-                  if (!highestRole || roleHierarchy[groupRole.role as UserRoleType] > roleHierarchy[highestRole]) {
-                    highestRole = groupRole.role as UserRoleType;
+              const groupData = groupRole.groups[0];
+              
+              // Verify the group data has the group_organizations property and it's an array
+              if (groupData && 
+                  typeof groupData === 'object' && 
+                  'group_organizations' in groupData && 
+                  Array.isArray(groupData.group_organizations)) {
+                
+                for (const groupOrg of groupData.group_organizations) {
+                  if (groupOrg.organization_id === currentOrganization.id) {
+                    console.log('Found group role for organization:', groupRole.role);
+                    
+                    // If this role is higher in hierarchy than current highest, update it
+                    if (!highestRole || roleHierarchy[groupRole.role as UserRoleType] > roleHierarchy[highestRole]) {
+                      highestRole = groupRole.role as UserRoleType;
+                    }
                   }
                 }
               }
