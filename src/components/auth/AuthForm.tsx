@@ -8,9 +8,17 @@ interface AuthFormProps {
   mode: 'login' | 'signup';
   onSubmit: (data: any) => void;
   isLoading?: boolean;
+  invitationData?: any; // Add support for invitation data
 }
 
-const AuthForm: React.FC<AuthFormProps> = ({ mode, onSubmit, isLoading = false }) => {
+const AuthForm: React.FC<AuthFormProps> = ({ 
+  mode, 
+  onSubmit, 
+  isLoading = false,
+  invitationData
+}) => {
+  console.log('AuthForm rendering with mode:', mode); // Add debugging
+  
   // Make sure we're correctly rendering the SignUpForm when in signup mode
   if (mode === 'login') {
     return <LoginForm onSubmit={onSubmit} isLoading={isLoading} />;
@@ -18,8 +26,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onSubmit, isLoading = false }
   
   return (
     <SignUpForm 
-      onSubmit={(data: SignUpFormData) => onSubmit(data)} 
-      isLoading={isLoading} 
+      onSubmit={(data: SignUpFormData) => {
+        console.log('SignUpForm submitted with data:', data);
+        onSubmit(data);
+      }} 
+      isLoading={isLoading}
     />
   );
 };
