@@ -62,8 +62,9 @@ export async function checkUserRole(userId: string, role: UserRoleType): Promise
       
       return hasRole;
     } 
-    // For organization roles, we query the organization_members or group_members tables
+    // For other roles, we need to query the appropriate tables
     else {
+      // Check user_roles table for the specific role
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
@@ -72,7 +73,7 @@ export async function checkUserRole(userId: string, role: UserRoleType): Promise
         .maybeSingle();
     
       if (error) {
-        console.error('Error checking user role:', error);
+        console.error(`Error checking user role ${role}:`, error);
         return false;
       }
       
