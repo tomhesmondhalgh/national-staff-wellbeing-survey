@@ -7,8 +7,7 @@ export const getActionPlanNoteCount = async (descriptorId: string) => {
   try {
     const { count, error } = await supabase
       .from('action_plan_progress_notes')
-      .select('*', { count: 'exact', head: true })
-      .eq('descriptor_id', descriptorId);
+      .select('*', { count: 'exact', head: true } as { count: 'exact', head: true });
     
     if (error) {
       console.error('Error fetching note count:', error);
@@ -109,6 +108,12 @@ export const getProgressNotes = async (descriptorId: string) => {
   }
 };
 
+interface TemplateData {
+  name: string;
+  user_id: string;
+  descriptors: any;
+}
+
 export const saveAsTemplate = async (userId: string, templateName: string) => {
   try {
     // First get the user's current action plan descriptors
@@ -126,23 +131,24 @@ export const saveAsTemplate = async (userId: string, templateName: string) => {
       return { success: false, error: 'No descriptors found to save as template' };
     }
     
+    // Create a properly typed template object
+    const templateData: TemplateData = {
+      name: templateName,
+      user_id: userId,
+      descriptors: descriptors
+    };
+    
     // Save the template
-    const { data: template, error: templateError } = await supabase
+    const { error: templateError } = await supabase
       .from('action_plan_templates')
-      .insert({
-        name: templateName,
-        creator_id: userId,
-        descriptors: descriptors
-      })
-      .select()
-      .single();
+      .insert(templateData);
       
     if (templateError) {
       console.error('Error saving template:', templateError);
       return { success: false, error: templateError.message };
     }
     
-    return { success: true, data: template };
+    return { success: true };
   } catch (error) {
     console.error('Error in saveAsTemplate:', error);
     return { success: false, error: 'Unexpected error saving template' };
@@ -154,7 +160,7 @@ export const initializeActionPlan = async (userId: string) => {
     // Check if the user already has action plan descriptors
     const { count, error: countError } = await supabase
       .from('action_plan_descriptors')
-      .select('*', { count: 'exact', head: true })
+      .select('*', { count: 'exact', head: true } as { count: 'exact', head: true })
       .eq('user_id', userId);
       
     if (countError) {
@@ -168,9 +174,10 @@ export const initializeActionPlan = async (userId: string) => {
     }
     
     // Get default template
+    // Assuming the is_default column exists and the descriptors are stored as JSON
     const { data: template, error: templateError } = await supabase
       .from('action_plan_templates')
-      .select('descriptors')
+      .select('*')
       .eq('is_default', true)
       .single();
       
@@ -179,30 +186,35 @@ export const initializeActionPlan = async (userId: string) => {
       return { success: false, error: templateError.message };
     }
     
-    if (!template || !template.descriptors) {
+    if (!template) {
       return { success: false, error: 'Default template not found' };
     }
     
+    // Fetch the descriptors from the template
+    const templateDescriptors = template.descriptors || [];
+    
     // Create descriptors for the user based on the template
-    const descriptorsToInsert = template.descriptors.map((descriptor: any) => ({
+    const descriptorsToInsert = templateDescriptors.map((descriptor: any) => ({
       user_id: userId,
-      section: descriptor.section,
-      reference: descriptor.reference,
-      index_number: descriptor.index_number,
-      descriptor_text: descriptor.descriptor_text,
+      section: descriptor.section || '',
+      reference: descriptor.reference || '',
+      index_number: descriptor.index_number || 0,
+      descriptor_text: descriptor.descriptor_text || '',
       status: 'not_started' as DescriptorStatus,
       deadline: null,
       assigned_to: '',
       key_actions: ''
     }));
     
-    const { error: insertError } = await supabase
-      .from('action_plan_descriptors')
-      .insert(descriptorsToInsert);
-      
-    if (insertError) {
-      console.error('Error initializing action plan:', insertError);
-      return { success: false, error: insertError.message };
+    if (descriptorsToInsert.length > 0) {
+      const { error: insertError } = await supabase
+        .from('action_plan_descriptors')
+        .insert(descriptorsToInsert);
+          
+      if (insertError) {
+        console.error('Error initializing action plan:', insertError);
+        return { success: false, error: insertError.message };
+      }
     }
     
     return { success: true };
@@ -245,6 +257,7 @@ export const getSectionProgressSummary = async (userId: string) => {
       const sectionStats = sectionMap.get(descriptor.section);
       sectionStats.totalCount += 1;
       
+      // Use the correct enum values from DescriptorStatus
       switch (descriptor.status) {
         case 'completed':
           sectionStats.completedCount += 1;

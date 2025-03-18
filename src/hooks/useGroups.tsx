@@ -25,8 +25,7 @@ export const useGroups = () => {
         // Direct query instead of function call
         const { data, error: groupError } = await supabase
           .from('group_members')
-          .select('group_id, groups(*)')
-          .eq('user_id', user.id);
+          .select('group_id, groups(*)');
           
         if (groupError) {
           throw groupError;

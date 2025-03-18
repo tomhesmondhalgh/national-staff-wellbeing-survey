@@ -29,8 +29,7 @@ export const useOrganizations = () => {
         // Direct query instead of function call
         const { data: orgMembers, error: orgError } = await supabase
           .from('organization_members')
-          .select('organization_id, role')
-          .eq('user_id', user.id);
+          .select('organization_id, role');
           
         if (orgError) {
           throw orgError;

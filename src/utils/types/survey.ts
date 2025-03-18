@@ -1,3 +1,4 @@
+
 // Define the SurveyTemplate interface
 export interface SurveyTemplate {
   id: string;
@@ -6,7 +7,7 @@ export interface SurveyTemplate {
   close_date?: string | null;
   creator_id?: string;
   emails?: string;
-  status?: 'Saved' | 'Scheduled' | 'Sent' | 'Completed' | 'Archived';
+  status?: SurveyStatus;
   created_at?: string;
 }
 
