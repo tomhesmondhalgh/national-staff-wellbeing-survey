@@ -541,6 +541,39 @@ export type Database = {
         }
         Relationships: []
       }
+      roles: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_name: string
+          hierarchy_order: number
+          id: string
+          level: Database["public"]["Enums"]["role_hierarchy_level"]
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_name: string
+          hierarchy_order: number
+          id?: string
+          level: Database["public"]["Enums"]["role_hierarchy_level"]
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          hierarchy_order?: number
+          id?: string
+          level?: Database["public"]["Enums"]["role_hierarchy_level"]
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       schools: {
         Row: {
           AccreditationExpiryDate: string | null
@@ -1344,6 +1377,19 @@ export type Database = {
           token: string
         }[]
       }
+      get_organization_role: {
+        Args: {
+          user_uuid: string
+          org_id: string
+        }
+        Returns: string
+      }
+      get_user_highest_role: {
+        Args: {
+          user_uuid: string
+        }
+        Returns: string
+      }
       get_user_organizations: {
         Args: {
           user_uuid: string
@@ -1367,6 +1413,13 @@ export type Database = {
           plan: Database["public"]["Enums"]["plan_type"]
           is_active: boolean
         }[]
+      }
+      role_has_permission: {
+        Args: {
+          user_role: string
+          required_role: string
+        }
+        Returns: boolean
       }
       user_can_edit_survey: {
         Args: {
@@ -1397,6 +1450,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      user_has_organization_role_v2: {
+        Args: {
+          user_uuid: string
+          org_id: string
+          required_role: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "administrator" | "user"
@@ -1414,6 +1475,7 @@ export type Database = {
         | "cancelled"
         | "refunded"
       plan_type: "free" | "foundation" | "progress" | "premium"
+      role_hierarchy_level: "system" | "group" | "organization" | "standard"
       subscription_status: "active" | "canceled" | "expired" | "pending"
       user_role_type:
         | "administrator"
