@@ -53,7 +53,7 @@ const OrganizationSwitcher: React.FC = () => {
   }
 
   // Don't show switcher if there's only one organisation
-  if (organizations.length <= 1) {
+  if (!organizations || organizations.length <= 1) {
     return (
       <div className="flex items-center space-x-2 px-3 py-2 text-sm">
         <Building size={16} />
@@ -95,4 +95,3 @@ const OrganizationSwitcher: React.FC = () => {
 };
 
 export default OrganizationSwitcher;
-

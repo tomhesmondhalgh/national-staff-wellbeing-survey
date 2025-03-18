@@ -25,3 +25,22 @@ export const fixCustomQuestionTypes = (questions: any[]) => {
     archived: Boolean(question.archived)
   }));
 };
+
+// Convert organization members to application type
+export const convertOrganizationMembers = (members: any[]) => {
+  return members.map(member => ({
+    ...member,
+    is_primary: Boolean(member.is_primary),
+    created_at: member.created_at || new Date().toISOString(),
+    updated_at: member.updated_at || new Date().toISOString()
+  }));
+};
+
+// Fix school search results type conversion
+export const fixSchoolSearchResults = (schools: any[]) => {
+  return schools.map(school => ({
+    ...school,
+    URN: String(school.URN),
+    County: school["County (name)"] || ''
+  }));
+};
