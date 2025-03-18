@@ -1,3 +1,3 @@
 
-// Re-export the client module only
+// Re-export the client module
 export * from './client';
