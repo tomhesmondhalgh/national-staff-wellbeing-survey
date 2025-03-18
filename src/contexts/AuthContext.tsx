@@ -1,13 +1,12 @@
 
 import React, { createContext, useContext } from 'react';
-import { User, Session, Provider } from '@supabase/supabase-js';
+import { User, Session } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
 import { useAuthState } from '../hooks/useAuthState';
 import { 
   signInWithEmail, 
   signUpWithEmail, 
   signOutUser, 
-  signInWithSocialProvider,
   completeUserProfile
 } from '../utils/authUtils';
 
