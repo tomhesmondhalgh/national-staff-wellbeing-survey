@@ -3,7 +3,7 @@
 [build]
   command = "npm run build"
   publish = "dist"
-  # Add legacy-peer-deps flag to resolve package conflicts
+  # Add legacy-peer-deps flag to resolve package conflicts and clear cache
   environment = { NPM_FLAGS = "--legacy-peer-deps", NETLIFY_EXPERIMENTAL_BUILD_CLEAR_CACHE = "true" }
 
 # Handle client-side routing
@@ -12,6 +12,12 @@
   to = "/index.html"
   status = 200
 
+# Add cache control headers to prevent browser caching
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    
 # Configure functions directory for Supabase functions
 [functions]
   directory = "supabase/functions"

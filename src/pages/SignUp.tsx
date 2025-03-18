@@ -26,7 +26,10 @@ const SignUp = () => {
       setInvitationToken(token);
       fetchInvitationDetails(token);
     }
-  }, [location.search]);
+    
+    // Add debug logging to verify the component is mounting properly
+    console.log('SignUp component mounted, pathname:', location.pathname);
+  }, [location.search, location.pathname]);
 
   const fetchInvitationDetails = async (token: string) => {
     try {
@@ -126,7 +129,8 @@ const SignUp = () => {
         <AuthForm 
           mode="signup" 
           onSubmit={handleSubmit} 
-          isLoading={isLoading} 
+          isLoading={isLoading}
+          invitationData={invitation}
         />
       </div>
     </MainLayout>
