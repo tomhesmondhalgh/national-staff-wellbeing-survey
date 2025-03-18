@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -25,8 +24,7 @@ const NewSurvey = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [savedSurveyId, setSavedSurveyId] = useState<string | null>(null);
   
-  // Known Hubspot ID for this user (in case of previous 409 errors)
-  const knownHubspotId = "31923701"; // Adding the known ID from your error message
+  const knownHubspotId = "31923701";
 
   useEffect(() => {
     if (!user) {
@@ -39,17 +37,17 @@ const NewSurvey = () => {
           navigate('/login');
         }
         setIsLoading(false);
-      }, 1000); // Give auth some time to load
+      }, 1000);
 
       return () => clearTimeout(checkUser);
     }
   }, [user, navigate]);
 
-  const handleSubmit = async (data: SurveyFormData, customQuestionIds: string[]) => {
+  const handleSubmit = async (data: SurveyFormData, selectedCustomQuestionIds: string[]) => {
     try {
       setIsSubmitting(true);
       console.log('Survey data to be saved:', data);
-      console.log('Custom question IDs:', customQuestionIds);
+      console.log('Custom question IDs:', selectedCustomQuestionIds);
       
       if (!user) {
         toast.error("Authentication required", {
@@ -62,7 +60,8 @@ const NewSurvey = () => {
       const surveyDate = new Date(data.date);
       const closeDate = data.closeDate ? new Date(data.closeDate) : null;
       
-      // Save the survey
+      console.log('Creating survey with status:', data.status || 'Saved');
+      
       const { data: savedSurvey, error } = await supabase
         .from('survey_templates')
         .insert({
@@ -70,12 +69,17 @@ const NewSurvey = () => {
           date: surveyDate.toISOString(),
           close_date: closeDate ? closeDate.toISOString() : null,
           creator_id: user.id,
-          emails: data.recipients
+          emails: data.distributionMethod === 'email' ? data.recipients : '',
+          status: data.status || 'Saved'
         })
         .select()
         .single();
       
       if (error) {
+        console.error('Supabase error saving survey:', error);
+        if (error.message.includes('connection')) {
+          throw new Error('Failed to connect to the server. Please check your connection and try again.');
+        }
         throw error;
       }
       
@@ -83,9 +87,8 @@ const NewSurvey = () => {
       
       setSavedSurveyId(savedSurvey.id);
 
-      // Link custom questions if any
-      if (customQuestionIds && customQuestionIds.length > 0) {
-        const surveyQuestionLinks = customQuestionIds.map(questionId => ({
+      if (selectedCustomQuestionIds && selectedCustomQuestionIds.length > 0) {
+        const surveyQuestionLinks = selectedCustomQuestionIds.map(questionId => ({
           survey_id: savedSurvey.id,
           question_id: questionId
         }));
@@ -99,7 +102,6 @@ const NewSurvey = () => {
         }
       }
       
-      // Get user profile data to send to Hubspot
       console.log('Fetching user profile data for Hubspot integration...');
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -107,7 +109,6 @@ const NewSurvey = () => {
         .eq('id', user.id)
         .single();
       
-      // Log profile retrieval result
       if (profileError) {
         console.error('Error fetching profile data:', profileError);
       } else {
@@ -117,10 +118,8 @@ const NewSurvey = () => {
       if (!profileError && profileData && user.email) {
         console.log('Attempting to send user data to Hubspot list 5418...');
         try {
-          // Send user to Hubspot with list ID 5418, using email from auth user
-          // Pass the known Hubspot ID to avoid 409 errors
           const response = await sendUserToHubspot({
-            email: user.email, // Use email from the authenticated user object
+            email: user.email,
             firstName: profileData.first_name,
             lastName: profileData.last_name,
             jobTitle: profileData.job_title,
@@ -132,7 +131,6 @@ const NewSurvey = () => {
           console.log('User successfully added to Hubspot list 5418 after creating survey');
         } catch (hubspotError) {
           console.error('Failed to add user to Hubspot list:', hubspotError);
-          // Don't fail the survey creation if Hubspot integration fails
         }
       } else {
         console.log('No complete profile data or email available to send to Hubspot');
@@ -142,34 +140,135 @@ const NewSurvey = () => {
         description: "Your survey has been saved. You can now preview or send it."
       });
       
-      // Navigate after everything is done
       console.log('Navigating to edit page for survey:', savedSurvey.id);
       navigate(`/surveys/${savedSurvey.id}/edit`);
       
     } catch (error) {
       console.error('Error creating survey:', error);
+      const errorMessage = error instanceof Error ? error.message : "Please check your connection and try again.";
       toast.error("Failed to create survey", {
-        description: "Please check your connection and try again."
+        description: errorMessage
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handlePreviewSurvey = () => {
+  const handlePreviewSurvey = async () => {
     if (savedSurveyId) {
       window.open(`/survey?id=${savedSurveyId}&preview=true`, '_blank');
     } else {
-      toast.error("Save the survey first", {
-        description: "You need to save the survey before previewing it."
+      toast.info("Saving survey before preview", {
+        description: "The survey will be saved first, then opened in preview mode."
       });
+      
+      // Click the save button to trigger form submission
+      const saveButton = document.querySelector('form button[type="submit"]') as HTMLButtonElement;
+      if (saveButton) saveButton.click();
     }
   };
 
-  const handleSendSurvey = () => {
-    toast.info("Navigate to the survey's edit page to send it", {
-      description: "After saving, you'll be redirected to the edit page where you can send the survey."
-    });
+  const handleSendSurvey = async () => {
+    if (savedSurveyId) {
+      await sendSurvey(savedSurveyId);
+    } else {
+      toast.info("Saving survey before sending", {
+        description: "The survey will be saved first, then you'll be able to send it."
+      });
+      
+      // Click the save button to trigger form submission
+      const saveButton = document.querySelector('form button[type="submit"]') as HTMLButtonElement;
+      if (saveButton) saveButton.click();
+    }
+  };
+  
+  const sendSurvey = async (id: string) => {
+    try {
+      setIsSubmitting(true);
+      
+      const { data: survey, error: surveyError } = await supabase
+        .from('survey_templates')
+        .select('*')
+        .eq('id', id)
+        .single();
+        
+      if (surveyError) {
+        throw surveyError;
+      }
+      
+      const baseUrl = window.location.origin;
+      const surveyUrl = `${baseUrl}/survey?id=${id}`;
+      
+      // If using link distribution method, just update status and show the link
+      if (!survey.emails || survey.emails.trim() === '') {
+        await supabase
+          .from('survey_templates')
+          .update({ status: 'Sent' })
+          .eq('id', id);
+        
+        toast.success("Survey ready to share", {
+          description: "Use the survey link to share with participants."
+        });
+        
+        // Navigate back to surveys page after successful send operation
+        navigate('/surveys');
+        return;
+      }
+      
+      const emailList = survey.emails
+        .split(',')
+        .map((email: string) => email.trim())
+        .filter((email: string) => email !== '');
+        
+      if (emailList.length === 0) {
+        toast.info("No valid email recipients found", {
+          description: "Use the survey link to share with participants."
+        });
+        
+        await supabase
+          .from('survey_templates')
+          .update({ status: 'Sent' })
+          .eq('id', id);
+          
+        navigate('/surveys');
+        return;
+      }
+      
+      const { data, error } = await supabase.functions.invoke('send-survey-email', {
+        body: { 
+          surveyId: id,
+          surveyName: survey.name,
+          emails: emailList,
+          surveyUrl: surveyUrl,
+          isReminder: false
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      await supabase
+        .from('survey_templates')
+        .update({ status: 'Sent' })
+        .eq('id', id);
+      
+      console.log('Email sending results:', data);
+      
+      toast.success("Survey sent successfully!", {
+        description: `Sent to ${data.count} recipients.`
+      });
+      
+      // Navigate back to surveys page after successful send operation
+      navigate('/surveys');
+    } catch (error) {
+      console.error('Error sending survey:', error);
+      toast.error("Failed to send survey", {
+        description: "Please check your connection and try again."
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isLoading) {
@@ -200,7 +299,7 @@ const NewSurvey = () => {
         
         <SurveyForm 
           onSubmit={handleSubmit} 
-          submitButtonText="Create Survey"
+          submitButtonText="Save"
           isEdit={false}
           isSubmitting={isSubmitting}
           initialCustomQuestionIds={[]}

@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
+import { useMediaQuery } from '../hooks/use-media-query';
+import { sendSurveyReminder } from '../utils/survey/sendReminder';
 
 const SURVEYS_PER_PAGE = 10;
 
@@ -21,6 +23,7 @@ const Surveys = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [canCreateSurveys, setCanCreateSurveys] = useState(false);
   const permissions = usePermissions();
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
     const checkCreatePermission = async () => {
@@ -33,7 +36,6 @@ const Surveys = () => {
     checkCreatePermission();
   }, [permissions]);
 
-  // Fetch surveys from Supabase
   useEffect(() => {
     const fetchSurveys = async () => {
       if (!user) {
@@ -44,11 +46,12 @@ const Surveys = () => {
       try {
         setLoading(true);
         
-        // Get total count for pagination
+        // Count surveys excluding Archived ones
         const { count, error: countError } = await supabase
           .from('survey_templates')
           .select('*', { count: 'exact', head: true })
-          .eq('creator_id', user.id);
+          .eq('creator_id', user.id)
+          .neq('status', 'Archived');
           
         if (countError) {
           throw countError;
@@ -56,11 +59,10 @@ const Surveys = () => {
         
         setTotalSurveys(count || 0);
         
-        // Calculate pagination range
         const from = (currentPage - 1) * SURVEYS_PER_PAGE;
         const to = from + SURVEYS_PER_PAGE - 1;
         
-        // Fetch survey templates created by the current user with pagination
+        // Fetch surveys excluding Archived ones
         const { data: surveyTemplates, error } = await supabase
           .from('survey_templates')
           .select(`
@@ -70,9 +72,11 @@ const Surveys = () => {
             close_date,
             created_at,
             emails,
+            status,
             survey_responses(count)
           `)
           .eq('creator_id', user.id)
+          .neq('status', 'Archived')
           .order('created_at', { ascending: false })
           .range(from, to);
           
@@ -80,41 +84,41 @@ const Surveys = () => {
           throw error;
         }
         
-        // Transform the data for the SurveyList component
         const formattedSurveys = surveyTemplates.map(template => {
           const now = new Date();
           const surveyDate = new Date(template.date);
           const closeDate = template.close_date ? new Date(template.close_date) : null;
           
-          // Determine survey status
           let status: 'Scheduled' | 'Sent' | 'Completed' = 'Scheduled';
-          if (surveyDate <= now) {
+          if (template.status) {
+            status = template.status as any;
+          } else if (surveyDate <= now) {
             status = closeDate && closeDate < now ? 'Completed' : 'Sent';
           }
           
           return {
             id: template.id,
             name: template.name,
-            date: new Date(template.date).toLocaleDateString('en-US', { 
+            date: new Date(template.date).toLocaleDateString('en-GB', { 
               year: 'numeric', 
               month: 'long', 
               day: 'numeric' 
             }),
             status,
             responseCount: template.survey_responses.length > 0 ? template.survey_responses[0].count : 0,
-            closeDate: template.close_date ? new Date(template.close_date).toLocaleDateString('en-US', { 
+            closeDate: template.close_date ? new Date(template.close_date).toLocaleDateString('en-GB', { 
               year: 'numeric', 
               month: 'long', 
               day: 'numeric' 
             }) : undefined,
             url: `${window.location.origin}/survey?id=${template.id}`,
-            formattedDate: new Date(template.date).toLocaleDateString('en-US', {
+            formattedDate: new Date(template.date).toLocaleDateString('en-GB', {
               month: 'long',
               day: 'numeric',
               year: 'numeric'
             }),
             closeDisplayDate: template.close_date ? 
-              `Closes: ${new Date(template.close_date).toLocaleDateString('en-US', {
+              `Closes: ${new Date(template.close_date).toLocaleDateString('en-GB', {
                 month: 'long',
                 day: 'numeric',
                 year: 'numeric'
@@ -138,17 +142,20 @@ const Surveys = () => {
     fetchSurveys();
   }, [user, currentPage]);
 
-  const handleSendReminder = (id: string) => {
+  const handleSendReminder = async (id: string) => {
     console.log(`Sending reminder for survey ${id}`);
     
-    toast.success("Reminder sent successfully!", {
-      description: "Your staff will receive an email reminder shortly."
-    });
+    const success = await sendSurveyReminder(id);
+    
+    if (success) {
+      toast.success("Reminder sent successfully!", {
+        description: "Your staff will receive an email reminder shortly."
+      });
+    }
   };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    // Scroll to top for better UX
     window.scrollTo(0, 0);
   };
 
@@ -157,16 +164,16 @@ const Surveys = () => {
   return (
     <MainLayout>
       <div className="page-container bg-white">
-        <div className="flex justify-between items-center mb-8">
+        <div className={`flex ${isMobile ? 'flex-col gap-4' : 'justify-between items-center'} mb-8`}>
           <PageTitle 
             title="Surveys" 
             subtitle="Manage all your wellbeing surveys in one place"
-            className="mb-0 text-left"
+            className={`mb-0 ${isMobile ? 'text-center' : 'text-left'}`}
           />
           {canCreateSurveys && (
             <Link 
               to="/new-survey"
-              className="btn-primary"
+              className={`btn-primary ${isMobile ? 'w-full text-center py-3' : ''}`}
             >
               New Survey
             </Link>

@@ -2,20 +2,49 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
-import SocialLoginButtons from './SocialLoginButtons';
+import PersonalDetailsForm from './PersonalDetailsForm';
+import ProfessionalDetailsForm from './ProfessionalDetailsForm';
+import { useSchoolSearch } from '../../hooks/useSchoolSearch';
+import { SignUpFormData } from '../../types/auth';
 
 interface SignUpFormProps {
-  onSubmit: (data: any) => void;
+  onSubmit: (data: SignUpFormData) => void;
   isLoading?: boolean;
 }
 
 const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading = false }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<SignUpFormData>({
     firstName: '',
     lastName: '',
     email: '',
     password: '',
+    jobTitle: '',
+    schoolName: '',
+    schoolAddress: '',
+    customStreetAddress: '',
+    customStreetAddress2: '',
+    customCity: '',
+    customCounty: '',
+    customPostalCode: '',
+    customCountry: 'United Kingdom',
   });
+  
+  const {
+    searchQuery,
+    setSearchQuery,
+    searchResults,
+    searching,
+    useCustomSchool,
+    setUseCustomSchool,
+    currentPage,
+    totalResults,
+    resultsPerPage,
+    handleSearchSchool,
+    handlePageChange,
+    selectSchool,
+    resetSelectedSchool,
+    compileCustomAddress
+  } = useSchoolSearch(formData, setFormData);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -24,98 +53,69 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading = false }) 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    
+    if (useCustomSchool) {
+      const schoolAddress = compileCustomAddress();
+      const updatedFormData = {
+        ...formData,
+        schoolAddress
+      };
+      onSubmit(updatedFormData);
+    } else {
+      onSubmit(formData);
+    }
   };
 
   return (
-    <div className="max-w-md w-full mx-auto glass-card rounded-2xl p-8 animate-slide-up">
+    <div className="max-w-2xl w-full mx-auto glass-card rounded-2xl p-8 animate-slide-up">
       <h2 className="text-2xl font-bold text-center mb-6">
         Create your account
       </h2>
       
-      <SocialLoginButtons isLoading={isLoading} />
-      
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-              First name
-            </label>
-            <input
-              id="firstName"
-              name="firstName"
-              type="text"
-              required
-              className="form-input w-full"
-              value={formData.firstName}
-              onChange={handleChange}
-              disabled={isLoading}
-            />
-          </div>
-          <div>
-            <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-              Last name
-            </label>
-            <input
-              id="lastName"
-              name="lastName"
-              type="text"
-              required
-              className="form-input w-full"
-              value={formData.lastName}
-              onChange={handleChange}
-              disabled={isLoading}
-            />
-          </div>
-        </div>
+        <PersonalDetailsForm
+          firstName={formData.firstName}
+          lastName={formData.lastName}
+          email={formData.email}
+          password={formData.password}
+          onChange={handleChange}
+          isLoading={isLoading}
+        />
         
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-            Email address
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            className="form-input w-full"
-            value={formData.email}
+        <div className="border-t border-gray-200 pt-4 mt-4">
+          <ProfessionalDetailsForm
+            formData={formData}
             onChange={handleChange}
-            disabled={isLoading}
-          />
-        </div>
-        
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-            Password
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            required
-            className="form-input w-full"
-            value={formData.password}
-            onChange={handleChange}
-            disabled={isLoading}
+            isLoading={isLoading}
+            useCustomSchool={useCustomSchool}
+            setUseCustomSchool={setUseCustomSchool}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            searchResults={searchResults}
+            searching={searching}
+            currentPage={currentPage}
+            totalResults={totalResults}
+            resultsPerPage={resultsPerPage}
+            handleSearchSchool={handleSearchSchool}
+            handlePageChange={handlePageChange}
+            selectSchool={selectSchool}
+            resetSelectedSchool={resetSelectedSchool}
           />
         </div>
         
         <div>
           <button 
             type="submit" 
-            className="btn-primary w-full mt-2 flex justify-center items-center" 
+            className="btn-primary w-full mt-4 flex justify-center items-center" 
             disabled={isLoading}
           >
             {isLoading ? (
               <>
                 <Loader2 size={18} className="mr-2 animate-spin" />
-                Continuing...
+                Creating account...
               </>
             ) : (
-              <>Continue</>
+              <>Create Account</>
             )}
           </button>
         </div>

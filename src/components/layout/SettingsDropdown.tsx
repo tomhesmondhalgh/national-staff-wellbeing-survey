@@ -7,6 +7,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from '../ui/dropdown-menu';
 import { Button } from '../ui/button';
 import { useAuth } from '../../contexts/AuthContext';
@@ -22,7 +23,8 @@ interface SettingsDropdownProps {
 const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ isAdmin, canManageTeam, handleSignOut }) => {
   const { user } = useAuth();
   const location = useLocation();
-  // Get access to the current admin status from our optimized hook
+  
+  // Get access to the current admin status from our hook
   const { isAdmin: isAdminFromHook } = useAdminRole();
 
   const navLinkClass = "text-base font-medium text-gray-600 hover:text-brandPurple-600 transition-colors flex items-center";
@@ -36,7 +38,6 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ isAdmin, canManageT
                           location.pathname === '/custom-questions';
 
   // Use either the admin status passed as prop or from the hook
-  // This ensures we'll show the Admin link correctly in both normal and testing mode
   const showAdminLink = isAdmin || isAdminFromHook;
 
   return (
@@ -78,6 +79,8 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ isAdmin, canManageT
             </Link>
           </DropdownMenuItem>
         )}
+        
+        <DropdownMenuSeparator />
         
         <DropdownMenuItem onClick={handleSignOut} className="flex items-center py-2">
           <LogOut size={16} className="mr-2" />

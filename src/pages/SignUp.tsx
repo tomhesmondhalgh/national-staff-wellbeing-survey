@@ -11,7 +11,7 @@ import { supabase } from '../lib/supabase/client';
 const SignUp = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signUp } = useAuth();
+  const { signUp, completeUserProfile } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [invitationToken, setInvitationToken] = useState<string | null>(null);
   const [invitation, setInvitation] = useState<any>(null);
@@ -39,7 +39,6 @@ const SignUp = () => {
       if (data) setInvitation(data);
     } catch (err) {
       console.error('Error fetching invitation:', err);
-      // Don't show error toast here as it's not critical for signup
     }
   };
 
@@ -47,44 +46,64 @@ const SignUp = () => {
     setIsLoading(true);
     
     try {
-      // Only pass the basic information for the first step
-      const { error, success, user } = await signUp(data.email, data.password, {
+      // First step: create the user account
+      const { error: signUpError, success: signUpSuccess, user } = await signUp(data.email, data.password, {
         firstName: data.firstName,
         lastName: data.lastName,
       });
       
-      if (success && user) {
-        // Store user info in session storage temporarily to use in onboarding
-        sessionStorage.setItem('tempUser', JSON.stringify({
-          id: user.id,
-          email: data.email,
-          firstName: data.firstName,
-          lastName: data.lastName,
-        }));
-        
-        // If this was an invitation signup, navigate back to the invitation accept page
-        if (invitationToken) {
-          navigate(`/invitation/accept?token=${invitationToken}`);
-        } else {
-          // Regular signup flow - navigate to email confirmation page
-          navigate('/email-confirmation', { 
-            state: { email: data.email } 
-          });
-        }
-      } else if (error) {
-        console.error('Detailed signup error:', error);
-        toast.error('Failed to create account', {
-          description: error.message || 'Please check your information and try again.'
+      if (!signUpSuccess || !user) {
+        throw signUpError || new Error('Failed to create account');
+      }
+      
+      // Second step: complete the user profile with the form data
+      const userData = {
+        jobTitle: data.jobTitle,
+        schoolName: data.schoolName,
+        schoolAddress: data.schoolAddress || compileCustomAddress(data),
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+      };
+
+      const { error: profileError, success: profileSuccess } = await completeUserProfile(user.id, userData);
+      
+      if (!profileSuccess) {
+        throw profileError || new Error('Failed to complete profile');
+      }
+      
+      // If this was an invitation signup, navigate back to the invitation accept page
+      if (invitationToken) {
+        navigate(`/invitation/accept?token=${invitationToken}`);
+      } else {
+        // Direct signup flow - navigate to dashboard
+        toast.success('Account created successfully!', {
+          description: 'Welcome to the platform. You can now log in.'
         });
+        navigate('/dashboard');
       }
     } catch (err: any) {
       console.error('Signup error details:', err);
-      toast.error('Connection error', {
-        description: 'Unable to connect to authentication service. Please try again later.'
+      toast.error('Failed to create account', {
+        description: err.message || 'Please check your information and try again.'
       });
     } finally {
       setIsLoading(false);
     }
+  };
+  
+  // Helper function to compile the address for custom school entries
+  const compileCustomAddress = (data: any) => {
+    const addressParts = [
+      data.customStreetAddress,
+      data.customStreetAddress2,
+      data.customCity,
+      data.customCounty,
+      data.customPostalCode,
+      data.customCountry,
+    ].filter(Boolean);
+    
+    return addressParts.join(', ');
   };
 
   return (
@@ -94,17 +113,12 @@ const SignUp = () => {
           title={invitation ? `Join ${invitation.organizations.school_name}` : "Create your account"} 
           subtitle={invitation 
             ? `Complete your account to accept the invitation as ${invitation.role.replace('_', ' ')}`
-            : "Sign up to start creating wellbeing surveys for your staff"
+            : "Sign up to create wellbeing surveys for your staff"
           }
         />
         {invitation && (
           <div className="mb-4 text-sm text-brandPurple-100 rounded-lg p-3 bg-brandPurple-50 border border-brandPurple-100">
             <p>You've been invited to join an organization. Create your account to continue.</p>
-          </div>
-        )}
-        {!invitation && (
-          <div className="mb-4 text-sm text-gray-600 rounded-lg p-2 bg-blue-50 border border-blue-100">
-            <p>Please make sure you have internet connectivity to create an account.</p>
           </div>
         )}
         <AuthForm mode="signup" onSubmit={handleSubmit} isLoading={isLoading} />

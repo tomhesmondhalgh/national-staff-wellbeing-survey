@@ -1,4 +1,3 @@
 
-// Re-export everything to maintain backward compatibility
+// Re-export the client module only
 export * from './client';
-export * from './mockData';

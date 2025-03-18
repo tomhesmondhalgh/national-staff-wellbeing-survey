@@ -24,7 +24,9 @@ const surveyFormSchema = z.object({
     required_error: 'Survey date is required',
   }),
   closeDate: z.date().optional(),
-  recipients: z.string().optional()
+  recipients: z.string().optional(),
+  status: z.enum(['Saved', 'Scheduled', 'Sent', 'Completed']).optional(),
+  distributionMethod: z.enum(['link', 'email']).default('link')
 });
 
 export type SurveyFormData = z.infer<typeof surveyFormSchema>;
@@ -63,11 +65,12 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
       name: initialData?.name || '',
       date: initialData?.date ? new Date(initialData.date) : new Date(),
       closeDate: initialData?.closeDate ? new Date(initialData.closeDate) : undefined,
-      recipients: initialData?.recipients || ''
+      recipients: initialData?.recipients || '',
+      status: initialData?.status || 'Saved',
+      distributionMethod: initialData?.distributionMethod || 'link'
     }
   });
   
-  // If we're showing the survey link, generate the link when needed
   React.useEffect(() => {
     if (showSurveyLink && surveyId) {
       const baseUrl = window.location.origin;
@@ -95,9 +98,6 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
     }
   };
 
-  // Check if survey has been saved (has an ID)
-  const canPreview = !!surveyId;
-
   return (
     <div className="space-y-8">
       <Form {...form}>
@@ -110,64 +110,35 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
             onChange={setSelectedCustomQuestionIds}
           />
           
-          <div className="mt-8 flex flex-wrap gap-4 justify-center sm:justify-between">
+          <div className="mt-8 flex flex-wrap gap-4 justify-end">
             <Button 
               type="submit" 
+              variant="outline"
               className="px-8" 
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Saving...' : submitButtonText}
             </Button>
             
-            <div className="flex gap-4">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        className="px-6" 
-                        onClick={handlePreviewClick}
-                        disabled={!canPreview}
-                      >
-                        Preview
-                      </Button>
-                    </div>
-                  </TooltipTrigger>
-                  {!canPreview && (
-                    <TooltipContent>
-                      <p>Save the survey first to enable preview</p>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
-              
-              {isEdit && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div>
-                        <Button 
-                          type="button" 
-                          variant="secondary" 
-                          className="px-6" 
-                          onClick={handleSendSurvey}
-                          disabled={!canPreview}
-                        >
-                          Send
-                        </Button>
-                      </div>
-                    </TooltipTrigger>
-                    {!canPreview && (
-                      <TooltipContent>
-                        <p>Save the survey first to enable sending</p>
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </div>
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="px-6" 
+              onClick={handlePreviewClick}
+              disabled={isSubmitting}
+            >
+              Save and Preview
+            </Button>
+            
+            <Button 
+              type="button" 
+              variant="default" 
+              className="px-6" 
+              onClick={handleSendSurvey}
+              disabled={isSubmitting}
+            >
+              Save and Send
+            </Button>
           </div>
         </form>
       </Form>

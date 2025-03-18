@@ -2,10 +2,10 @@
 import React from 'react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
-import { OnboardingFormData } from '../../hooks/useOnboardingForm';
+import { SignUpFormData } from '../../types/auth';
 
 interface CustomSchoolFormProps {
-  formData: OnboardingFormData;
+  formData: SignUpFormData;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onToggleCustomSchool: () => void;
   isLoading: boolean;

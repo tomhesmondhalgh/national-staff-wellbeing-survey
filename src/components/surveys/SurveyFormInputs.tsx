@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Calendar as CalendarIcon, Mail } from 'lucide-react';
+import { Calendar as CalendarIcon, Mail, Link } from 'lucide-react';
 import { UseFormReturn } from 'react-hook-form';
 import { SurveyFormData } from './SurveyForm';
 import { FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from '../ui/form';
@@ -11,6 +11,7 @@ import { Button } from '../ui/button';
 import { Calendar as CalendarComponent } from '../ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '../../lib/utils';
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 
 interface SurveyFormInputsProps {
   form: UseFormReturn<SurveyFormData>;
@@ -133,30 +134,69 @@ const SurveyFormInputs: React.FC<SurveyFormInputsProps> = ({ form }) => {
       
       <FormField
         control={form.control}
-        name="recipients"
+        name="distributionMethod"
         render={({ field }) => (
-          <FormItem>
-            <FormLabel>Send to Specific Email Addresses</FormLabel>
+          <FormItem className="space-y-3">
+            <FormLabel>Distribution Method*</FormLabel>
             <FormControl>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail size={16} className="text-gray-400" />
+              <RadioGroup
+                onValueChange={field.onChange}
+                defaultValue={field.value || "link"}
+                value={field.value || "link"}
+                className="flex flex-col space-y-1"
+              >
+                <div className="flex items-center space-x-2 rounded-md border p-3">
+                  <RadioGroupItem value="link" id="distribution-link" />
+                  <label htmlFor="distribution-link" className="flex items-center cursor-pointer">
+                    <Link className="h-5 w-5 mr-2 text-gray-500" />
+                    Use a Survey Link
+                  </label>
                 </div>
-                <Textarea
-                  placeholder="Enter email addresses, separated by commas"
-                  className="pl-10"
-                  rows={4}
-                  {...field}
-                />
-              </div>
+                <div className="flex items-center space-x-2 rounded-md border p-3">
+                  <RadioGroupItem value="email" id="distribution-email" />
+                  <label htmlFor="distribution-email" className="flex items-center cursor-pointer">
+                    <Mail className="h-5 w-5 mr-2 text-gray-500" />
+                    Send to Specific Email Addresses
+                  </label>
+                </div>
+              </RadioGroup>
             </FormControl>
             <FormDescription>
-              Enter staff email addresses, separated by commas. Leave blank to use the survey link instead.
+              Choose how you want to distribute your survey
             </FormDescription>
             <FormMessage />
           </FormItem>
         )}
       />
+      
+      {form.watch("distributionMethod") === "email" && (
+        <FormField
+          control={form.control}
+          name="recipients"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email Recipients</FormLabel>
+              <FormControl>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail size={16} className="text-gray-400" />
+                  </div>
+                  <Textarea
+                    placeholder="Enter email addresses, separated by commas"
+                    className="pl-10"
+                    rows={4}
+                    {...field}
+                  />
+                </div>
+              </FormControl>
+              <FormDescription>
+                Enter staff email addresses, separated by commas
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
     </>
   );
 };

@@ -4,7 +4,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Loader2, Search } from 'lucide-react';
 import Pagination from '../surveys/Pagination';
-import { SchoolSearchResult } from '../../hooks/useOnboardingForm';
+import { SchoolSearchResult } from '../../types/auth';
 
 interface SchoolSearchProps {
   searchQuery: string;

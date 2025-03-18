@@ -13,7 +13,6 @@ import Index from './pages/Index';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
 import EmailConfirmation from './pages/EmailConfirmation';
-import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
 import Surveys from './pages/Surveys';
 import NewSurvey from './pages/NewSurvey';
@@ -68,11 +67,6 @@ function App() {
                   <Route path="/payment-success" element={<PaymentSuccess />} />
                   
                   {/* Protected routes */}
-                  <Route path="/onboarding" element={
-                    <ProtectedRoute>
-                      <Onboarding />
-                    </ProtectedRoute>
-                  } />
                   <Route path="/dashboard" element={
                     <ProtectedRoute>
                       <Dashboard />

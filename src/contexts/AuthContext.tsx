@@ -1,13 +1,12 @@
 
 import React, { createContext, useContext } from 'react';
-import { User, Session, Provider } from '@supabase/supabase-js';
+import { User, Session } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
 import { useAuthState } from '../hooks/useAuthState';
 import { 
   signInWithEmail, 
   signUpWithEmail, 
   signOutUser, 
-  signInWithSocialProvider,
   completeUserProfile
 } from '../utils/authUtils';
 
@@ -25,10 +24,6 @@ interface AuthContextType {
     user?: User | null;
   }>;
   signOut: () => Promise<void>;
-  signInWithSocialProvider: (provider: Provider) => Promise<{
-    error: Error | null;
-    success: boolean;
-  }>;
   completeUserProfile: (userId: string, userData: any) => Promise<{
     error: Error | null;
     success: boolean;
@@ -56,10 +51,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const handleSignInWithSocialProvider = async (provider: Provider) => {
-    return signInWithSocialProvider(provider);
-  };
-
   const handleCompleteUserProfile = async (userId: string, userData: any) => {
     return completeUserProfile(userId, userData);
   };
@@ -73,7 +64,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signIn,
         signUp,
         signOut,
-        signInWithSocialProvider: handleSignInWithSocialProvider,
         completeUserProfile: handleCompleteUserProfile,
       }}
     >
