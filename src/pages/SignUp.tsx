@@ -7,6 +7,7 @@ import PageTitle from '../components/ui/PageTitle';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase/client';
+import { SignUpFormData } from '../types/auth';
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -42,8 +43,9 @@ const SignUp = () => {
     }
   };
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: SignUpFormData) => {
     setIsLoading(true);
+    console.log('Form submitted with data:', data);
     
     try {
       // First step: create the user account
@@ -93,7 +95,7 @@ const SignUp = () => {
   };
   
   // Helper function to compile the address for custom school entries
-  const compileCustomAddress = (data: any) => {
+  const compileCustomAddress = (data: SignUpFormData) => {
     const addressParts = [
       data.customStreetAddress,
       data.customStreetAddress2,
@@ -121,7 +123,11 @@ const SignUp = () => {
             <p>You've been invited to join an organization. Create your account to continue.</p>
           </div>
         )}
-        <AuthForm mode="signup" onSubmit={handleSubmit} isLoading={isLoading} />
+        <AuthForm 
+          mode="signup" 
+          onSubmit={handleSubmit} 
+          isLoading={isLoading} 
+        />
       </div>
     </MainLayout>
   );

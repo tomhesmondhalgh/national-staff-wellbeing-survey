@@ -2,6 +2,7 @@
 import React from 'react';
 import LoginForm from './LoginForm';
 import SignUpForm from './SignUpForm';
+import { SignUpFormData } from '../../types/auth';
 
 interface AuthFormProps {
   mode: 'login' | 'signup';
@@ -10,10 +11,16 @@ interface AuthFormProps {
 }
 
 const AuthForm: React.FC<AuthFormProps> = ({ mode, onSubmit, isLoading = false }) => {
-  return mode === 'login' ? (
-    <LoginForm onSubmit={onSubmit} isLoading={isLoading} />
-  ) : (
-    <SignUpForm onSubmit={onSubmit} isLoading={isLoading} />
+  // Make sure we're correctly rendering the SignUpForm when in signup mode
+  if (mode === 'login') {
+    return <LoginForm onSubmit={onSubmit} isLoading={isLoading} />;
+  }
+  
+  return (
+    <SignUpForm 
+      onSubmit={(data: SignUpFormData) => onSubmit(data)} 
+      isLoading={isLoading} 
+    />
   );
 };
 

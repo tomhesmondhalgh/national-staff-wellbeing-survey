@@ -15,3 +15,7 @@
 # Configure functions directory for Supabase functions
 [functions]
   directory = "supabase/functions"
+
+# Clear cache on deploy to ensure latest version is deployed
+[build.environment]
+  NETLIFY_EXPERIMENTAL_BUILD_CLEAR_CACHE = "true"
