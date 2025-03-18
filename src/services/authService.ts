@@ -62,23 +62,22 @@ export async function checkUserRole(userId: string, role: UserRoleType): Promise
       
       return hasRole;
     } 
-    // For other organizational roles, try to use the RPC function
+    // For other organizational roles, check appropriate tables
     else if (['organization_admin', 'group_admin', 'editor', 'viewer'].includes(role)) {
-      // First try the organization_members table via RPC to avoid recursion
+      // First try the user_has_organization_role function if available
       try {
-        const { data: orgRoleData, error: orgRoleError } = await supabase
-          .rpc('check_user_has_role', { 
-            user_uuid: userId,
-            role_name: role
-          });
-      
-        if (orgRoleError) {
-          console.error('Error in RPC role check:', orgRoleError);
-          // Continue to fallback method
-        } else {
-          const hasRole = !!orgRoleData;
+        // Check if the user has the role through direct organization membership
+        const { data: directMembership, error: membershipError } = await supabase
+          .from('organization_members')
+          .select('role')
+          .eq('user_id', userId)
+          .eq('role', role)
+          .maybeSingle();
           
-          // Update cache
+        if (membershipError) {
+          console.error('Error checking organization membership:', membershipError);
+        } else if (directMembership) {
+          // User has direct role, update cache and return true
           if (!roleCache[userId]) {
             roleCache[userId] = {
               roles: {},
@@ -87,46 +86,55 @@ export async function checkUserRole(userId: string, role: UserRoleType): Promise
             };
           }
           
-          roleCache[userId].roles[role] = hasRole;
+          roleCache[userId].roles[role] = true;
           roleCache[userId].timestamp = now;
           roleCache[userId].expiresAt = now + CACHE_EXPIRY;
-          
-          return hasRole;
+          return true;
         }
-      } catch (rpcError) {
-        console.error('Exception in RPC role check:', rpcError);
-        // Continue to fallback
-      }
-      
-      // Fallback to simplified role check through user_roles if RPC fails
-      const { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .eq('role', role)
-        .maybeSingle();
         
-      if (roleError) {
-        console.error('Error in fallback role check:', roleError);
+        // Check if user has the role through a group
+        const { data: groupMembership, error: groupError } = await supabase
+          .from('group_members')
+          .select('role')
+          .eq('user_id', userId)
+          .eq('role', role)
+          .maybeSingle();
+          
+        if (groupError) {
+          console.error('Error checking group membership:', groupError);
+        } else if (groupMembership) {
+          // User has group role, update cache and return true
+          if (!roleCache[userId]) {
+            roleCache[userId] = {
+              roles: {},
+              timestamp: now,
+              expiresAt: now + CACHE_EXPIRY
+            };
+          }
+          
+          roleCache[userId].roles[role] = true;
+          roleCache[userId].timestamp = now;
+          roleCache[userId].expiresAt = now + CACHE_EXPIRY;
+          return true;
+        }
+        
+        // Neither direct nor group role found
+        if (!roleCache[userId]) {
+          roleCache[userId] = {
+            roles: {},
+            timestamp: now,
+            expiresAt: now + CACHE_EXPIRY
+          };
+        }
+        
+        roleCache[userId].roles[role] = false;
+        roleCache[userId].timestamp = now;
+        roleCache[userId].expiresAt = now + CACHE_EXPIRY;
+        return false;
+      } catch (error) {
+        console.error('Error in role check:', error);
         return false;
       }
-      
-      const hasRole = !!roleData;
-      
-      // Update cache
-      if (!roleCache[userId]) {
-        roleCache[userId] = {
-          roles: {},
-          timestamp: now,
-          expiresAt: now + CACHE_EXPIRY
-        };
-      }
-      
-      roleCache[userId].roles[role] = hasRole;
-      roleCache[userId].timestamp = now;
-      roleCache[userId].expiresAt = now + CACHE_EXPIRY;
-      
-      return hasRole;
     }
     
     // Default fallback for unknown roles
