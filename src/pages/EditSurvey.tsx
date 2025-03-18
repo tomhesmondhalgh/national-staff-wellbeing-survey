@@ -29,18 +29,26 @@ const EditSurvey = () => {
       try {
         if (!id) return;
         
+        console.log('Fetching survey with ID:', id);
+        
         const { data, error } = await supabase
           .from('survey_templates')
           .select('*')
           .eq('id', id)
           .single();
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching survey:', error);
+          throw error;
+        }
+        
         if (!data) {
           toast.error("Survey not found");
           navigate('/surveys');
           return;
         }
+        
+        console.log('Fetched survey data:', data);
         
         setSurveyData({
           name: data.name,
@@ -81,6 +89,8 @@ const EditSurvey = () => {
       const updateDate = new Date(data.date);
       const updateCloseDate = data.closeDate ? new Date(data.closeDate) : null;
       
+      console.log('Updating survey with status:', data.status || 'Saved');
+      
       const { error } = await supabase
         .from('survey_templates')
         .update({
@@ -93,7 +103,13 @@ const EditSurvey = () => {
         })
         .eq('id', id);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating survey:', error);
+        if (error.message.includes('connection')) {
+          throw new Error('Failed to connect to the server. Please check your connection and try again.');
+        }
+        throw error;
+      }
       
       const { error: deleteError } = await supabase
         .from('survey_questions')
@@ -125,8 +141,9 @@ const EditSurvey = () => {
       
     } catch (error) {
       console.error('Error updating survey:', error);
+      const errorMessage = error instanceof Error ? error.message : "There was a problem saving your changes.";
       toast.error("Failed to update survey", {
-        description: "There was a problem saving your changes."
+        description: errorMessage
       });
     } finally {
       setIsSubmitting(false);

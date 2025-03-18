@@ -1146,6 +1146,7 @@ export type Database = {
           emails: string | null
           id: string
           name: string
+          status: Database["public"]["Enums"]["survey_status"] | null
           updated_at: string
         }
         Insert: {
@@ -1156,6 +1157,7 @@ export type Database = {
           emails?: string | null
           id?: string
           name: string
+          status?: Database["public"]["Enums"]["survey_status"] | null
           updated_at?: string
         }
         Update: {
@@ -1166,6 +1168,7 @@ export type Database = {
           emails?: string | null
           id?: string
           name?: string
+          status?: Database["public"]["Enums"]["survey_status"] | null
           updated_at?: string
         }
         Relationships: []
@@ -1477,6 +1480,7 @@ export type Database = {
       plan_type: "free" | "foundation" | "progress" | "premium"
       role_hierarchy_level: "system" | "group" | "organization" | "standard"
       subscription_status: "active" | "canceled" | "expired" | "pending"
+      survey_status: "Saved" | "Scheduled" | "Sent" | "Completed"
       user_role_type:
         | "administrator"
         | "group_admin"

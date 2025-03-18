@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -61,6 +60,8 @@ const NewSurvey = () => {
       const surveyDate = new Date(data.date);
       const closeDate = data.closeDate ? new Date(data.closeDate) : null;
       
+      console.log('Creating survey with status:', data.status || 'Saved');
+      
       const { data: savedSurvey, error } = await supabase
         .from('survey_templates')
         .insert({
@@ -75,6 +76,10 @@ const NewSurvey = () => {
         .single();
       
       if (error) {
+        console.error('Supabase error saving survey:', error);
+        if (error.message.includes('connection')) {
+          throw new Error('Failed to connect to the server. Please check your connection and try again.');
+        }
         throw error;
       }
       
@@ -140,8 +145,9 @@ const NewSurvey = () => {
       
     } catch (error) {
       console.error('Error creating survey:', error);
+      const errorMessage = error instanceof Error ? error.message : "Please check your connection and try again.";
       toast.error("Failed to create survey", {
-        description: "Please check your connection and try again."
+        description: errorMessage
       });
     } finally {
       setIsSubmitting(false);
