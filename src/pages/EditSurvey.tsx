@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -49,13 +50,16 @@ const EditSurvey = () => {
         
         console.log('Fetched survey data:', data);
         
+        // Determine distribution method based on whether emails is set
+        const hasEmails = data.emails && data.emails.trim() !== '';
+        
         setSurveyData({
           name: data.name,
           date: new Date(data.date),
           closeDate: data.close_date ? new Date(data.close_date) : undefined,
           recipients: data.emails || '',
           status: data.status || 'Saved',
-          distributionMethod: data.emails && data.emails.trim() !== '' ? 'email' : 'link'
+          distributionMethod: hasEmails ? 'email' : 'link'
         });
         
         const { data: linkData, error: linkError } = await supabase
@@ -315,4 +319,3 @@ const EditSurvey = () => {
 };
 
 export default EditSurvey;
-
