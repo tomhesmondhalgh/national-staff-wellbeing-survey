@@ -55,7 +55,7 @@ export const countEmailResponses = async (surveyId: string): Promise<number> => 
     
     const count = data?.length || 0;
     console.log(`Email responses for survey ${surveyId}:`, count);
-    return count;
+    return 0;
   } catch (error) {
     console.error(`Unexpected error counting email responses for survey ${surveyId}:`, error);
     return 0;
