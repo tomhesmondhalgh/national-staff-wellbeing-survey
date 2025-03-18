@@ -1336,6 +1336,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      count_email_responses: {
+        Args: {
+          survey_id: string
+        }
+        Returns: number
+      }
+      count_survey_responses: {
+        Args: {
+          survey_id: string
+        }
+        Returns: number
+      }
       create_invitation_with_role: {
         Args: {
           user_email: string

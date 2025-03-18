@@ -1,79 +1,80 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { 
-  getUserOrganizations, 
-  getUserRoleForOrganization,
-  Organization,
-  UserRoleType
-} from '../lib/supabase/client';
+import { supabase } from '../lib/supabase';
+import { Organization, UserRoleType } from '../lib/supabase/client';
 
 export interface OrganizationWithRole extends Organization {
-  role: UserRoleType | null;
+  role: UserRoleType;
 }
 
-export function useOrganizations() {
-  const [organizations, setOrganizations] = useState<OrganizationWithRole[]>([]);
-  const [currentOrganization, setCurrentOrganization] = useState<OrganizationWithRole | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export const useOrganizations = () => {
   const { user } = useAuth();
+  const [organizations, setOrganizations] = useState<OrganizationWithRole[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
-  // Function to fetch organizations and roles
-  const fetchOrganizations = async () => {
+  useEffect(() => {
     if (!user) {
       setOrganizations([]);
-      setCurrentOrganization(null);
       setIsLoading(false);
       return;
     }
 
-    try {
+    const fetchOrganizations = async () => {
       setIsLoading(true);
-      const orgs = await getUserOrganizations();
-      
-      // Get roles for each organization
-      const orgsWithRoles = await Promise.all(
-        orgs.map(async (org) => {
-          const role = await getUserRoleForOrganization(org.id);
-          return { ...org, role };
-        })
-      );
-      
-      setOrganizations(orgsWithRoles);
-      
-      // Set current organization from localStorage or use the first one
-      const savedOrgId = localStorage.getItem('currentOrganizationId');
-      const savedOrg = savedOrgId 
-        ? orgsWithRoles.find(org => org.id === savedOrgId) 
-        : null;
+      setError(null);
+
+      try {
+        // Direct query instead of function call
+        const { data: orgMembers, error: orgError } = await supabase
+          .from('organization_members')
+          .select('organization_id, role')
+          .eq('user_id', user.id);
+          
+        if (orgError) {
+          throw orgError;
+        }
         
-      setCurrentOrganization(savedOrg || (orgsWithRoles.length > 0 ? orgsWithRoles[0] : null));
-    } catch (error) {
-      console.error('Error fetching organizations:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        const orgsWithRoles: OrganizationWithRole[] = [];
 
-  // Switch to a different organization
-  const switchOrganization = (organizationId: string) => {
-    const org = organizations.find(o => o.id === organizationId);
-    if (org) {
-      setCurrentOrganization(org);
-      localStorage.setItem('currentOrganizationId', organizationId);
-    }
-  };
+        for (const org of orgMembers || []) {
+          // Fetch organization name
+          try {
+            const { data: profile, error: profileError } = await supabase
+              .from('profiles')
+              .select('school_name')
+              .eq('id', org.organization_id);
 
-  // Effect to fetch organizations when the user changes
-  useEffect(() => {
+            if (profileError) {
+              console.error('Error fetching org profile:', profileError);
+              continue;
+            }
+
+            const orgName = profile && profile[0]?.school_name ? profile[0].school_name : 'Unknown Organization';
+            
+            orgsWithRoles.push({
+              id: org.organization_id,
+              name: orgName,
+              created_at: new Date().toISOString(),
+              role: org.role
+            });
+          } catch (err) {
+            console.error('Error fetching org details:', err);
+          }
+        }
+
+        setOrganizations(orgsWithRoles);
+      } catch (err) {
+        console.error('Error fetching organizations:', err);
+        setError(err instanceof Error ? err : new Error('Unknown error loading organizations'));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     fetchOrganizations();
   }, [user]);
 
-  return {
-    organizations,
-    currentOrganization,
-    isLoading,
-    switchOrganization,
-    refreshOrganizations: fetchOrganizations
-  };
-}
+  return { organizations, isLoading, error };
+};

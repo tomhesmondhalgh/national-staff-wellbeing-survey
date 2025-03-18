@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
 import { Button } from '../ui/button';
@@ -11,6 +10,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
+import { v4 as uuidv4 } from 'uuid';
 
 interface CreateOrganizationDialogProps {
   isOpen: boolean;
@@ -34,7 +34,6 @@ const CreateOrganizationDialog: React.FC<CreateOrganizationDialogProps> = ({
   const [userGroups, setUserGroups] = useState<{ id: string; name: string }[]>([]);
   const [isLoadingGroups, setIsLoadingGroups] = useState(true);
   
-  // Fetch groups where user is admin
   React.useEffect(() => {
     const fetchGroups = async () => {
       try {
@@ -92,10 +91,12 @@ const CreateOrganizationDialog: React.FC<CreateOrganizationDialogProps> = ({
     setIsSubmitting(true);
     
     try {
-      // Create the organisation in profiles table
+      const orgId = uuidv4();
+      
       const { data: orgData, error: orgError } = await supabase
         .from('profiles')
         .insert({
+          id: orgId,
           school_name: values.name,
         })
         .select('id')
@@ -105,7 +106,6 @@ const CreateOrganizationDialog: React.FC<CreateOrganizationDialogProps> = ({
         throw orgError;
       }
       
-      // Add the organisation to the group
       const { error: groupOrgError } = await supabase
         .from('group_organizations')
         .insert({

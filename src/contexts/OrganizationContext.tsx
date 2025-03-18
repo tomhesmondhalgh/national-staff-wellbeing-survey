@@ -1,111 +1,185 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Organization, getUserOrganizations } from '../lib/supabase/client';
+import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
-import { toast } from 'sonner';
+import { Organization } from '../lib/supabase/client';
 
-interface OrganizationContextType {
+export interface OrganizationContextType {
   currentOrganization: Organization | null;
-  organizations: Organization[];
+  setCurrentOrganization: (org: Organization | null) => void;
   isLoading: boolean;
-  switchOrganization: (orgId: string) => void;
+  switchOrganization: (orgId: string) => Promise<boolean>;
+  organizations: Organization[];
   refreshOrganizations: () => Promise<void>;
 }
 
-const OrganizationContext = createContext<OrganizationContextType | undefined>(undefined);
+const OrganizationContext = createContext<OrganizationContextType>({
+  currentOrganization: null,
+  setCurrentOrganization: () => {},
+  isLoading: true,
+  switchOrganization: async () => false,
+  organizations: [],
+  refreshOrganizations: async () => {}
+});
+
+export const useOrganization = () => useContext(OrganizationContext);
 
 export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [currentOrganization, setCurrentOrganization] = useState<Organization | null>(null);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
 
   const fetchOrganizations = async () => {
-    if (!user) {
-      setOrganizations([]);
-      setCurrentOrganization(null);
-      setIsLoading(false);
-      return;
-    }
-
+    if (!user) return [];
     try {
-      setIsLoading(true);
-      const orgs = await getUserOrganizations();
-      console.log('Fetched organizations:', orgs);
-      setOrganizations(orgs);
-      
-      // If there are organizations, set the first one as current
-      // or keep the current one if it's still in the list
-      if (orgs.length > 0) {
-        if (currentOrganization && orgs.some(org => org.id === currentOrganization.id)) {
-          // Keep current organization, it's still valid
-        } else {
-          // Set first organization as current
-          setCurrentOrganization(orgs[0]);
-        }
-      } else {
-        setCurrentOrganization(null);
+      const { data: orgMembers, error: orgError } = await supabase
+        .from('organization_members')
+        .select('organization_id, role')
+        .eq('user_id', user.id);
+        
+      if (orgError) {
+        console.error('Error fetching organization members:', orgError);
+        return [];
       }
+      
+      const orgs: Organization[] = [];
+      
+      for (const org of orgMembers || []) {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, school_name, created_at, updated_at')
+          .eq('id', org.organization_id)
+          .single();
+          
+        if (profileError) {
+          console.error('Error fetching org profile:', profileError);
+          continue;
+        }
+        
+        if (profile) {
+          orgs.push({
+            id: profile.id,
+            name: profile.school_name,
+            created_at: profile.created_at || new Date().toISOString(),
+            updated_at: profile.updated_at || new Date().toISOString()
+          });
+        }
+      }
+      
+      return orgs;
     } catch (error) {
       console.error('Error fetching organizations:', error);
-      toast.error('Failed to load organizations');
+      return [];
+    }
+  };
+
+  const refreshOrganizations = async () => {
+    if (!user) return;
+    const orgs = await fetchOrganizations();
+    setOrganizations(orgs);
+  };
+
+  useEffect(() => {
+    const fetchOrganization = async () => {
+      setIsLoading(true);
+      try {
+        if (user) {
+          const { data: orgMembers, error: orgError } = await supabase
+            .from('organization_members')
+            .select('organization_id')
+            .eq('user_id', user.id)
+            .limit(1)
+            .single();
+
+          if (orgError) {
+            console.error('Error fetching organization:', orgError);
+            setIsLoading(false);
+            return;
+          }
+
+          if (orgMembers) {
+            const { data: organization, error: profileError } = await supabase
+              .from('profiles')
+              .select('id, school_name, created_at, updated_at')
+              .eq('id', orgMembers.organization_id)
+              .single();
+
+            if (profileError) {
+              console.error('Error fetching organization profile:', profileError);
+              setIsLoading(false);
+              return;
+            }
+
+            if (organization) {
+              setCurrentOrganization({
+                id: organization.id,
+                name: organization.school_name,
+                created_at: organization.created_at || new Date().toISOString(),
+                updated_at: organization.updated_at || new Date().toISOString()
+              });
+            }
+          }
+          
+          // Fetch all organizations for the user
+          const orgs = await fetchOrganizations();
+          setOrganizations(orgs);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchOrganization();
+  }, [user]);
+
+  const switchOrganization = async (orgId: string): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      // Fetch organization details
+      const { data: organization, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, school_name, created_at, updated_at')
+        .eq('id', orgId)
+        .single();
+
+      if (profileError) {
+        console.error('Error fetching organization profile:', profileError);
+        setIsLoading(false);
+        return false;
+      }
+
+      if (!organization) {
+        console.error('Organization not found');
+        setIsLoading(false);
+        return false;
+      }
+
+      setCurrentOrganization({
+        id: organization.id,
+        name: organization.school_name,
+        created_at: organization.created_at || new Date().toISOString(),
+        updated_at: organization.updated_at || new Date().toISOString()
+      });
+      return true;
+    } catch (error) {
+      console.error('Error switching organization:', error);
+      return false;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Fetch organizations on initial load and when user changes
-  useEffect(() => {
-    fetchOrganizations();
-  }, [user]);
-
-  const switchOrganization = (orgId: string) => {
-    const org = organizations.find(o => o.id === orgId);
-    if (org) {
-      setCurrentOrganization(org);
-      // Save the selection to localStorage for persistence
-      localStorage.setItem('currentOrganizationId', orgId);
-      toast.success(`Switched to ${org.name}`);
-    }
-  };
-
-  const refreshOrganizations = async () => {
-    await fetchOrganizations();
-  };
-
-  // On component mount, restore the selected organization from localStorage
-  useEffect(() => {
-    if (organizations.length > 0) {
-      const savedOrgId = localStorage.getItem('currentOrganizationId');
-      
-      if (savedOrgId) {
-        const savedOrg = organizations.find(org => org.id === savedOrgId);
-        if (savedOrg) {
-          setCurrentOrganization(savedOrg);
-        }
-      }
-    }
-  }, [organizations]);
-
   return (
-    <OrganizationContext.Provider
-      value={{
-        currentOrganization,
-        organizations,
-        isLoading,
-        switchOrganization,
-        refreshOrganizations
-      }}
-    >
+    <OrganizationContext.Provider value={{ 
+      currentOrganization, 
+      setCurrentOrganization, 
+      isLoading, 
+      switchOrganization,
+      organizations,
+      refreshOrganizations
+    }}>
       {children}
     </OrganizationContext.Provider>
   );
-};
-
-export const useOrganization = () => {
-  const context = useContext(OrganizationContext);
-  if (context === undefined) {
-    throw new Error('useOrganization must be used within an OrganizationProvider');
-  }
-  return context;
 };

@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase/client';
 import { useLocation } from 'react-router-dom';
 
 export function useAuthState() {

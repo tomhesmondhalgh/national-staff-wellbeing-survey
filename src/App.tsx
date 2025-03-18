@@ -18,6 +18,7 @@ import Surveys from './pages/Surveys';
 import NewSurvey from './pages/NewSurvey';
 import EditSurvey from './pages/EditSurvey';
 import SurveyForm from './pages/SurveyForm';
+import PublicSurveyForm from './pages/PublicSurveyForm';
 import SurveyComplete from './pages/SurveyComplete';
 import SurveyClosed from './pages/SurveyClosed';
 import Analysis from './pages/Analysis';
@@ -60,7 +61,7 @@ function App() {
                   <Route path="/signup" element={<SignUp />} />
                   <Route path="/email-confirmation" element={<EmailConfirmation />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
-                  <Route path="/survey" element={<SurveyForm />} />
+                  <Route path="/survey" element={<PublicSurveyForm />} />
                   <Route path="/survey-complete" element={<SurveyComplete />} />
                   <Route path="/survey-closed" element={<SurveyClosed />} />
                   <Route path="/invitation/accept" element={<InvitationAccept />} />

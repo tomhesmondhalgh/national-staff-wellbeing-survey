@@ -7,7 +7,7 @@ export interface SurveyTemplate {
   close_date?: string | null;
   creator_id?: string;
   emails?: string;
-  status?: 'Saved' | 'Scheduled' | 'Sent' | 'Completed' | 'Archived';
+  status?: SurveyStatus;
   created_at?: string;
 }
 
@@ -15,3 +15,6 @@ export interface SurveyTemplate {
 export interface SurveyWithResponses extends SurveyTemplate {
   responses: number;
 }
+
+// Add any missing types here or update existing ones
+export type SurveyStatus = 'Completed' | 'Saved' | 'Scheduled' | 'Sent' | 'Archived';

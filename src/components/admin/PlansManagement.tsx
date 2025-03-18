@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Plan, getPlans } from '../../lib/supabase/subscription';
 import { supabase } from '../../lib/supabase';
 import { Pencil, Trash, Plus, Save, X } from 'lucide-react';
+import { fixPlanTypes } from '../../utils/typeConversions';
 
 const PlansManagement: React.FC = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -59,7 +60,9 @@ const PlansManagement: React.FC = () => {
       if (error) {
         console.error('Error fetching inactive plans:', error);
       } else if (inactivePlans) {
-        setPlans([...fetchedPlans, ...inactivePlans]);
+        // Use our utility function to fix plan types
+        const typedInactivePlans = fixPlanTypes(inactivePlans);
+        setPlans([...fetchedPlans, ...typedInactivePlans]);
       } else {
         setPlans(fetchedPlans);
       }
@@ -111,9 +114,12 @@ const PlansManagement: React.FC = () => {
         .filter(line => line.length > 0);
       
       if (editingPlan) {
-        // Update existing plan
+        // Update existing plan - ensure required properties
         const updatedPlan = {
           ...editingPlan,
+          name: editingPlan.name || '',
+          description: editingPlan.description || '',
+          sort_order: editingPlan.sort_order || 0,
           features: featuresArray,
           updated_at: new Date().toISOString()
         };
@@ -132,9 +138,12 @@ const PlansManagement: React.FC = () => {
           description: `Plan "${editingPlan.name}" has been updated.`
         });
       } else {
-        // Create new plan
+        // Create new plan - ensure required properties
         const planToCreate = {
           ...newPlan,
+          name: newPlan.name || '',
+          description: newPlan.description || '',
+          sort_order: newPlan.sort_order || 0,
           features: featuresArray,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
