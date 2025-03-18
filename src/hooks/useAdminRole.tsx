@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRoleManagement } from './useRoleManagement';
-import { toast } from 'sonner';
 
 export function useAdminRole() {
   // Use the new implementation directly
@@ -18,7 +17,7 @@ export function useAdminRole() {
     };
     
     checkAdminStatus();
-    console.log('Admin role check using new role system');
+    console.log('Admin role check using new role system exclusively');
   }, [isAdmin]);
   
   // Return simplified implementation
@@ -28,7 +27,6 @@ export function useAdminRole() {
     refreshAdminStatus: async () => {
       const isUserAdmin = await isAdmin();
       setIsAdminStatus(isUserAdmin);
-    },
-    isUsingNewRoleSystem: true
+    }
   };
 }

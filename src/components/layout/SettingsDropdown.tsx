@@ -13,7 +13,6 @@ import { Button } from '../ui/button';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdminRole } from '../../hooks/useAdminRole';
 import { useLocation } from 'react-router-dom';
-import { useToast } from '../ui/use-toast';
 
 interface SettingsDropdownProps {
   isAdmin: boolean;
@@ -24,7 +23,6 @@ interface SettingsDropdownProps {
 const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ isAdmin, canManageTeam, handleSignOut }) => {
   const { user } = useAuth();
   const location = useLocation();
-  const { toast } = useToast();
   
   // Get access to the current admin status from our hook
   const { isAdmin: isAdminFromHook } = useAdminRole();

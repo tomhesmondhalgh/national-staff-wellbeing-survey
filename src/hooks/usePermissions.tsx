@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+
+import { useEffect } from 'react';
 import { useRoleManagement } from './useRoleManagement';
 import { UserRoleType } from '../lib/supabase/client';
-import { toast } from 'sonner';
 
 export function usePermissions() {
   // We'll just use the new implementation directly
@@ -19,10 +19,7 @@ export function usePermissions() {
   
   // For analytics/monitoring purposes
   useEffect(() => {
-    console.log('Using new role system by default');
-    
-    // This could be replaced with a proper analytics call if needed
-    console.log('Role system telemetry: Using new system exclusively');
+    console.log('Using new role system exclusively');
   }, []);
 
   return {
@@ -35,18 +32,6 @@ export function usePermissions() {
     canManageTeam, 
     canManageGroups,
     isAdmin,
-    error,
-    
-    // Keep these methods for API compatibility, but simplify their implementation
-    enableNewRoleSystem: () => {
-      toast.success('New role system is already enabled by default.');
-    },
-    
-    disableNewRoleSystem: () => {
-      toast.info('The application now exclusively uses the new role system.');
-    },
-    
-    // Always true since we're only using the new system
-    isUsingNewRoleSystem: true
+    error
   };
 }
