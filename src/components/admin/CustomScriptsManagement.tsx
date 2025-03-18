@@ -7,6 +7,12 @@ import { AlertCircle, Save, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
+// Cache for script content management
+const adminScriptCache = {
+  content: null as string | null,
+  timestamp: 0
+};
+
 const CustomScriptsManagement = () => {
   const [scriptContent, setScriptContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -21,6 +27,16 @@ const CustomScriptsManagement = () => {
         setIsLoading(true);
         setError(null);
         
+        // Check if we have a recent cache (last 30 seconds)
+        const now = Date.now();
+        if (adminScriptCache.content !== null && (now - adminScriptCache.timestamp) < 30000) {
+          console.log('Using cached script content for admin panel');
+          setScriptContent(adminScriptCache.content || '');
+          setIsLoading(false);
+          return;
+        }
+        
+        console.log('Fetching script content for admin panel');
         const { data, error } = await supabase
           .from('custom_scripts')
           .select('*')
@@ -34,6 +50,10 @@ const CustomScriptsManagement = () => {
           setError('Failed to load existing scripts. Please try again.');
         } else if (data) {
           setScriptContent(data.script_content || '');
+          
+          // Update cache
+          adminScriptCache.content = data.script_content || '';
+          adminScriptCache.timestamp = now;
         }
       } catch (err) {
         console.error('Unexpected error:', err);
@@ -76,6 +96,10 @@ const CustomScriptsManagement = () => {
         toast.error('Failed to save custom scripts');
         return;
       }
+      
+      // Update cache
+      adminScriptCache.content = scriptContent;
+      adminScriptCache.timestamp = Date.now();
       
       setSaveSuccess(true);
       toast.success('Custom scripts saved successfully');

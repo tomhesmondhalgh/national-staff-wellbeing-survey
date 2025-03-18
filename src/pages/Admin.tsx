@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import PurchasesManagement from '../components/admin/PurchasesManagement';
@@ -12,7 +12,8 @@ import { Navigate } from 'react-router-dom';
 const Admin = () => {
   const { isAdmin, isLoading } = useAdminRole();
   const [activeTab, setActiveTab] = useState('purchases');
-
+  
+  // Loading state
   if (isLoading) {
     return (
       <MainLayout>
@@ -23,6 +24,7 @@ const Admin = () => {
     );
   }
 
+  // Not an admin - redirect to dashboard
   if (!isAdmin) {
     return <Navigate to="/dashboard" replace />;
   }
