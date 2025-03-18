@@ -58,8 +58,8 @@ export async function getUserSubscription(userId: string): Promise<SubscriptionA
 }
 
 /**
- * Batch fetch subscriptions for multiple users
- * This is more efficient when needing data for multiple users at once
+ * Optimized batch fetch for multiple user subscriptions
+ * Uses the Edge Function for better performance with large batches
  */
 export async function batchGetUserSubscriptions(userIds: string[]): Promise<Record<string, SubscriptionAccess | null>> {
   if (!userIds.length) return {};
@@ -69,11 +69,11 @@ export async function batchGetUserSubscriptions(userIds: string[]): Promise<Reco
   const idsToFetch: string[] = [];
   
   // First check cache for each user ID
-  userIds.forEach(userI => {
-    if (subscriptionCache[userI] && now < subscriptionCache[userI].expiresAt) {
-      result[userI] = subscriptionCache[userI].subscription;
+  userIds.forEach(userId => {
+    if (subscriptionCache[userId] && now < subscriptionCache[userId].expiresAt) {
+      result[userId] = subscriptionCache[userId].subscription;
     } else {
-      idsToFetch.push(userI);
+      idsToFetch.push(userId);
     }
   });
   
@@ -82,22 +82,72 @@ export async function batchGetUserSubscriptions(userIds: string[]): Promise<Reco
     return result;
   }
   
-  // Fetch subscriptions for users not in cache
   try {
-    // We'll need a custom RPC function to handle this efficiently
-    // For now, we fetch them individually
-    await Promise.all(idsToFetch.map(async (id) => {
-      const sub = await getUserSubscription(id);
-      result[id] = sub;
-    }));
+    if (idsToFetch.length === 1) {
+      // For single ID, use regular function
+      const subscription = await getUserSubscription(idsToFetch[0]);
+      result[idsToFetch[0]] = subscription;
+      return result;
+    }
+    
+    // For multiple IDs, use the Edge Function which supports batching
+    const { data: response, error } = await supabase.functions.invoke('check-subscription', {
+      body: { userIds: idsToFetch.join(',') }
+    });
+    
+    if (error) {
+      console.error('Error in batch subscription check:', error);
+      // Fall back to individual requests
+      await Promise.all(idsToFetch.map(async (id) => {
+        const sub = await getUserSubscription(id);
+        result[id] = sub;
+      }));
+      return result;
+    }
+    
+    // Process the response and update cache
+    for (const userId in response) {
+      const subData = response[userId];
+      const subscription: SubscriptionAccess = {
+        plan: subData.plan as PlanType,
+        isActive: subData.hasActiveSubscription
+      };
+      
+      // Update cache
+      subscriptionCache[userId] = {
+        subscription,
+        timestamp: now,
+        expiresAt: now + CACHE_EXPIRY
+      };
+      
+      result[userId] = subscription;
+    }
+    
+    // For any IDs not in the response, set as free
+    idsToFetch.forEach(id => {
+      if (!result[id]) {
+        const defaultSub = { plan: 'free' as PlanType, isActive: false };
+        result[id] = defaultSub;
+        
+        // Cache this result too
+        subscriptionCache[id] = {
+          subscription: defaultSub,
+          timestamp: now,
+          expiresAt: now + CACHE_EXPIRY
+        };
+      }
+    });
     
     return result;
   } catch (error) {
     console.error('Error in batchGetUserSubscriptions:', error);
-    // Return what we have plus nulls for failures
-    idsToFetch.forEach(id => {
-      if (!result[id]) result[id] = null;
-    });
+    
+    // Fall back to individual requests for any IDs that failed
+    await Promise.all(idsToFetch.filter(id => !result[id]).map(async (id) => {
+      const sub = await getUserSubscription(id);
+      result[id] = sub;
+    }));
+    
     return result;
   }
 }

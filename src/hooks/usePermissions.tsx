@@ -87,44 +87,23 @@ export function usePermissions() {
         }
         
         try {
-          // Check if user is organization admin for current organization
-          const { data: orgMember, error: orgError } = await supabase
-            .from('organization_members')
-            .select('role')
-            .eq('user_id', user.id)
-            .eq('organization_id', currentOrganization.id)
-            .maybeSingle();
+          // Use RPC function to avoid recursion issues when checking organization membership
+          const { data: orgRole, error: orgRpcError } = await supabase
+            .rpc('get_user_organization_role', {
+              user_uuid: user.id,
+              org_id: currentOrganization.id
+            });
             
-          if (orgError) {
-            console.error('Error fetching organization role:', orgError);
+          if (orgRpcError) {
+            console.error('Error fetching organization role via RPC:', orgRpcError);
             setQueryError("Error checking organization role");
-            
-            // If we get a recursion error, let's try a more direct SQL query using a function
-            if (orgError.message.includes("infinite recursion")) {
-              // FALLBACK: Handle RLS recursion by checking manually
-              console.log('Detected recursion error, checking profile owner');
-              
-              // If the user is found in profiles with matching email and school_name
-              const { data: profileMatch, error: profileError } = await supabase
-                .from('profiles')
-                .select('id, school_name')
-                .eq('id', user.id)
-                .maybeSingle();
-                
-              if (!profileError && profileMatch && 
-                  profileMatch.school_name && 
-                  currentOrganization.name === profileMatch.school_name) {
-                console.log('User is the profile owner of this organization (via profile check)');
-                setUserRole('organization_admin');
-                setIsLoading(false);
-                return;
-              }
-            }
-          } else if (orgMember && orgMember.role) {
-            console.log('User has organization role:', orgMember.role, 'for organization:', currentOrganization.name);
-            setUserRole(orgMember.role as UserRoleType);
+          } else if (orgRole) {
+            console.log('User has organization role:', orgRole, 'for organization:', currentOrganization.name);
+            setUserRole(orgRole as UserRoleType);
             setIsLoading(false);
             return;
+          } else {
+            console.log('No direct organization role found, checking group-based access');
           }
         } catch (err) {
           console.error('Exception in organization membership check:', err);
@@ -202,7 +181,7 @@ export function usePermissions() {
               
               // Notify user of pending invitation
               toast.info(
-                "You have a pending invitation to this organization. Your temporary role has been applied.",
+                "You have a pending invitation to this organisation. Your temporary role has been applied.",
                 { duration: 5000 }
               );
               return;

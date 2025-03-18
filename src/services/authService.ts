@@ -62,14 +62,58 @@ export async function checkUserRole(userId: string, role: UserRoleType): Promise
       
       return hasRole;
     } 
-    // For other organizational roles
+    // For other organizational roles, try to use the RPC function
     else if (['organization_admin', 'group_admin', 'editor', 'viewer'].includes(role)) {
-      // For these roles, we need to check the organization_members or group_members
-      // This would require a more complex query with joins
-      // This is a simplified implementation
-      const hasRole = false; // Implement actual check based on application needs
+      // First try the organization_members table via RPC to avoid recursion
+      try {
+        const { data: orgRoleData, error: orgRoleError } = await supabase
+          .rpc('check_user_has_role', { 
+            user_uuid: userId,
+            role_name: role
+          });
       
-      // Initialize or update cache
+        if (orgRoleError) {
+          console.error('Error in RPC role check:', orgRoleError);
+          // Continue to fallback method
+        } else {
+          const hasRole = !!orgRoleData;
+          
+          // Update cache
+          if (!roleCache[userId]) {
+            roleCache[userId] = {
+              roles: {},
+              timestamp: now,
+              expiresAt: now + CACHE_EXPIRY
+            };
+          }
+          
+          roleCache[userId].roles[role] = hasRole;
+          roleCache[userId].timestamp = now;
+          roleCache[userId].expiresAt = now + CACHE_EXPIRY;
+          
+          return hasRole;
+        }
+      } catch (rpcError) {
+        console.error('Exception in RPC role check:', rpcError);
+        // Continue to fallback
+      }
+      
+      // Fallback to simplified role check through user_roles if RPC fails
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('role', role)
+        .maybeSingle();
+        
+      if (roleError) {
+        console.error('Error in fallback role check:', roleError);
+        return false;
+      }
+      
+      const hasRole = !!roleData;
+      
+      // Update cache
       if (!roleCache[userId]) {
         roleCache[userId] = {
           roles: {},
@@ -78,7 +122,6 @@ export async function checkUserRole(userId: string, role: UserRoleType): Promise
         };
       }
       
-      // Update role in cache
       roleCache[userId].roles[role] = hasRole;
       roleCache[userId].timestamp = now;
       roleCache[userId].expiresAt = now + CACHE_EXPIRY;
