@@ -16,6 +16,7 @@ import { CustomQuestion } from '../types/customQuestions';
 import CustomTextQuestion from '../components/survey-form/CustomTextQuestion';
 import { useOrientation } from '../hooks/useOrientation';
 import ScreenOrientationOverlay from '../components/ui/ScreenOrientationOverlay';
+import { fixCustomQuestionTypes } from '../utils/typeConversions';
 
 interface PreviewData extends SurveyFormData {
   customQuestionIds?: string[];
@@ -95,7 +96,7 @@ const SurveyForm = () => {
             console.error('Error fetching custom questions:', questionsError);
           } else {
             console.log('Fetched custom questions:', questions);
-            setCustomQuestions(convertToCustomQuestions(questions || []));
+            setCustomQuestions(fixCustomQuestionTypes(questions || []));
           }
         }
       } catch (err) {

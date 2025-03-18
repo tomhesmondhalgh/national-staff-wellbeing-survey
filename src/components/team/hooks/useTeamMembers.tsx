@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
@@ -57,7 +56,7 @@ export function useTeamMembers(organizationId: string | undefined) {
           })));
         }
         
-        // Use direct query instead of RPC function to avoid issues
+        // Use direct query instead of RPC function
         const { data, error } = await supabase
           .from('organization_members')
           .select('*')

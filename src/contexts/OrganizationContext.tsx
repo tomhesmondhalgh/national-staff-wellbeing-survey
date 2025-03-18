@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { Organization, getUserOrganizations } from '../lib/supabase/client';
@@ -11,6 +10,7 @@ interface OrganizationContextType {
   isLoading: boolean;
   error: Error | null;
   refreshOrganizations: () => Promise<void>;
+  switchOrganization: (orgId: string) => void;
 }
 
 const OrganizationContext = createContext<OrganizationContextType>({
@@ -20,6 +20,7 @@ const OrganizationContext = createContext<OrganizationContextType>({
   isLoading: false,
   error: null,
   refreshOrganizations: async () => {},
+  switchOrganization: (orgId: string) => {},
 });
 
 export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -80,6 +81,13 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     await loadOrganizations();
   };
 
+  const switchOrganization = (orgId: string) => {
+    const org = organizations.find(org => org.id === orgId);
+    if (org) {
+      setCurrentOrganization(org);
+    }
+  };
+
   useEffect(() => {
     loadOrganizations();
   }, [user]);
@@ -92,7 +100,8 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         setCurrentOrganization,
         isLoading,
         error,
-        refreshOrganizations
+        refreshOrganizations,
+        switchOrganization
       }}
     >
       {children}

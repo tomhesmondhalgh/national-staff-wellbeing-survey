@@ -2,9 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { getUserGroups } from '../lib/supabase/client';
-import { Group } from '../lib/supabase/client';
-import { UserRoleType } from '../lib/supabase/client';
+import { Group, UserRoleType } from '../lib/supabase/client';
 
 export const useGroups = () => {
   const { user } = useAuth();
@@ -24,7 +22,24 @@ export const useGroups = () => {
       setError(null);
 
       try {
-        const userGroups = await getUserGroups(user.id);
+        // Direct query instead of function call
+        const { data, error: groupError } = await supabase
+          .from('group_members')
+          .select('group_id, groups(*)')
+          .eq('user_id', user.id);
+          
+        if (groupError) {
+          throw groupError;
+        }
+        
+        const userGroups: Group[] = (data || []).map(item => ({
+          id: item.group_id,
+          name: item.groups?.name || 'Unknown',
+          description: item.groups?.description,
+          created_at: item.groups?.created_at || new Date().toISOString(),
+          updated_at: item.groups?.updated_at || new Date().toISOString()
+        }));
+        
         setGroups(userGroups);
       } catch (err) {
         console.error('Error fetching groups:', err);

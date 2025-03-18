@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { ActionPlanDescriptor, DescriptorStatus } from '@/types/actionPlan';
@@ -65,7 +64,7 @@ const DescriptorTable: React.FC<DescriptorTableProps> = ({ userId, section, onRe
         );
         
         console.log('Processed descriptors count:', uniqueDescriptors.length);
-        setDescriptors(uniqueDescriptors);
+        setDescriptors(uniqueDescriptors as ActionPlanDescriptor[]);
         
         // Cache the descriptors for this section
         sessionStorage.setItem(cacheKey, JSON.stringify(uniqueDescriptors));

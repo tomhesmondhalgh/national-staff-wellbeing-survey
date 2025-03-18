@@ -2,12 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import {
-  getUserOrganizations,
-  getUserRoleForOrganization,
-  Organization,
-  UserRoleType
-} from '../lib/supabase/client';
+import { Organization, UserRoleType } from '../lib/supabase/client';
 
 export interface OrganizationWithRole extends Organization {
   role: UserRoleType;
@@ -31,26 +26,34 @@ export const useOrganizations = () => {
       setError(null);
 
       try {
-        const userOrgs = await getUserOrganizations(user.id);
+        // Direct query instead of function call
+        const { data: orgMembers, error: orgError } = await supabase
+          .from('organization_members')
+          .select('organization_id, role')
+          .eq('user_id', user.id);
+          
+        if (orgError) {
+          throw orgError;
+        }
+        
         const orgsWithRoles: OrganizationWithRole[] = [];
 
-        for (const org of userOrgs) {
+        for (const org of orgMembers || []) {
           // Fetch organization name
           try {
             const { data: profile, error: profileError } = await supabase
               .from('profiles')
               .select('school_name')
-              .eq('id', org.id)
+              .eq('id', org.organization_id)
               .single();
 
-            if (profile && profile.school_name) {
-              org.name = profile.school_name;
-            }
-
-            const role = await getUserRoleForOrganization(user.id, org.id);
+            const orgName = profile && profile.school_name ? profile.school_name : 'Unknown Organization';
+            
             orgsWithRoles.push({
-              ...org,
-              role: role || 'viewer'
+              id: org.organization_id,
+              name: orgName,
+              created_at: new Date().toISOString(),
+              role: org.role
             });
           } catch (err) {
             console.error('Error fetching org details:', err);

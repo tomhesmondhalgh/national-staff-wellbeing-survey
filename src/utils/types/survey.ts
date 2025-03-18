@@ -1,4 +1,3 @@
-
 // Define the SurveyTemplate interface
 export interface SurveyTemplate {
   id: string;
@@ -15,3 +14,6 @@ export interface SurveyTemplate {
 export interface SurveyWithResponses extends SurveyTemplate {
   responses: number;
 }
+
+// Add any missing types here or update existing ones
+export type SurveyStatus = 'Completed' | 'Saved' | 'Scheduled' | 'Sent' | 'Archived';
