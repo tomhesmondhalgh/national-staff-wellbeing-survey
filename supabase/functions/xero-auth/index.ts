@@ -12,6 +12,8 @@ const corsHeaders = {
 // Xero OAuth endpoints
 const XERO_AUTHORIZATION_URL = 'https://login.xero.com/identity/connect/authorize'
 const XERO_TOKEN_URL = 'https://identity.xero.com/connect/token'
+const XERO_CONNECTIONS_URL = 'https://api.xero.com/connections'
+const XERO_REVOCATION_URL = 'https://identity.xero.com/connect/revocation'
 
 type XeroTokenResponse = {
   id_token: string
@@ -20,6 +22,16 @@ type XeroTokenResponse = {
   token_type: string
   refresh_token: string
   scope: string
+}
+
+type XeroConnection = {
+  id: string
+  authEventId: string
+  tenantId: string
+  tenantType: string
+  tenantName: string | null
+  createdDateUtc: string
+  updatedDateUtc: string
 }
 
 serve(async (req) => {
@@ -130,12 +142,17 @@ serve(async (req) => {
       case 'authorize': {
         console.log('[xero-auth] Processing authorize request')
         
-        // Get redirect URI from request data or set default
-        const redirectUri = (requestData as any).redirectUri || 
-          `${url.origin}/api/rest/xero-auth?action=callback`
+        // Get redirect URI from request data
+        const redirectUri = (requestData as any).redirectUri
+        if (!redirectUri) {
+          return new Response(
+            JSON.stringify({ error: 'Missing redirectUri parameter' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
         
-        // Create state parameter for security (preventing CSRF)
-        const state = crypto.randomUUID()
+        // Get state from request or generate one
+        const state = (requestData as any).state || crypto.randomUUID()
         
         // Create random code verifier for PKCE
         const codeVerifier = crypto.randomUUID() + crypto.randomUUID()
@@ -182,20 +199,14 @@ serve(async (req) => {
       case 'callback': {
         console.log('[xero-auth] Processing OAuth callback')
         
-        // Get authorization code and state from URL params
-        const code = url.searchParams.get('code')
-        const returnedState = url.searchParams.get('state')
+        // Get authorization code and state from request body
+        const code = (requestData as any).code
+        const state = (requestData as any).state
+        const redirectUri = (requestData as any).redirectUri
         
-        if (!code) {
-          const error = url.searchParams.get('error')
-          const errorDescription = url.searchParams.get('error_description')
-          console.error(`[xero-auth] Authorization error: ${error} - ${errorDescription}`)
-          
+        if (!code || !state || !redirectUri) {
           return new Response(
-            JSON.stringify({ 
-              error: 'Authorization failed', 
-              details: { error, description: errorDescription } 
-            }),
+            JSON.stringify({ error: 'Missing required parameters' }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
@@ -216,7 +227,7 @@ serve(async (req) => {
         }
         
         // Verify state to prevent CSRF
-        if (returnedState !== profile.xero_auth_state) {
+        if (state !== profile.xero_auth_state) {
           console.error('[xero-auth] State mismatch - potential CSRF attack')
           return new Response(
             JSON.stringify({ error: 'State verification failed' }),
@@ -232,11 +243,13 @@ serve(async (req) => {
           const params = new URLSearchParams()
           params.append('grant_type', 'authorization_code')
           params.append('code', code)
-          params.append('redirect_uri', profile.xero_redirect_uri)
+          params.append('redirect_uri', redirectUri)
           params.append('code_verifier', profile.xero_code_verifier)
           
           // Create Basic auth header for client authentication
-          const authHeader = 'Basic ' + btoa(`${clientId}:${clientSecret}`)
+          const authString = `${clientId}:${clientSecret}`
+          const base64Auth = btoa(authString)
+          const tokenAuthHeader = `Basic ${base64Auth}`
           
           console.log('[xero-auth] Exchanging code for tokens')
           
@@ -244,7 +257,7 @@ serve(async (req) => {
           const tokenResponse = await fetch(XERO_TOKEN_URL, {
             method: 'POST',
             headers: {
-              'Authorization': authHeader,
+              'Authorization': tokenAuthHeader,
               'Content-Type': 'application/x-www-form-urlencoded'
             },
             body: params.toString()
@@ -272,6 +285,22 @@ serve(async (req) => {
           // Calculate token expiry time
           const expiresAt = Math.floor(Date.now() / 1000) + tokenData.expires_in
           
+          // Get connected tenants using the new access token
+          const connectionsResponse = await fetch(XERO_CONNECTIONS_URL, {
+            headers: {
+              'Authorization': `Bearer ${tokenData.access_token}`,
+              'Content-Type': 'application/json'
+            }
+          })
+          
+          let connections: XeroConnection[] = []
+          if (connectionsResponse.ok) {
+            connections = await connectionsResponse.json()
+            console.log('[xero-auth] Retrieved Xero connections:', connections)
+          } else {
+            console.error('[xero-auth] Failed to retrieve connections:', await connectionsResponse.text())
+          }
+          
           // Store tokens in user's profile
           await supabaseClient
             .from('profiles')
@@ -280,17 +309,19 @@ serve(async (req) => {
               xero_refresh_token: tokenData.refresh_token,
               xero_token_expires_at: expiresAt,
               xero_connected: true,
-              xero_connected_at: new Date().toISOString()
+              xero_connected_at: new Date().toISOString(),
+              xero_tenant_id: connections.length > 0 ? connections[0].tenantId : null
             })
             .eq('id', session.user.id)
           
           console.log('[xero-auth] Tokens stored successfully')
           
-          // Return success response with redirection URL
+          // Return success response
           return new Response(
             JSON.stringify({ 
               success: true,
-              message: 'Xero connected successfully'
+              message: 'Xero connected successfully',
+              tenants: connections
             }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
@@ -309,7 +340,7 @@ serve(async (req) => {
         // Retrieve user's Xero connection status
         const { data: profile, error: profileError } = await supabaseClient
           .from('profiles')
-          .select('xero_connected, xero_connected_at, xero_token_expires_at')
+          .select('xero_connected, xero_connected_at, xero_token_expires_at, xero_refresh_token')
           .eq('id', session.user.id)
           .single()
         
@@ -319,6 +350,60 @@ serve(async (req) => {
             JSON.stringify({ error: 'Failed to retrieve connection status', details: profileError }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
+        }
+        
+        // If token is expired but we have a refresh token, try to refresh it
+        const currentTime = Math.floor(Date.now() / 1000)
+        let isExpired = profile?.xero_token_expires_at ? profile.xero_token_expires_at < currentTime : true
+        
+        if (isExpired && profile?.xero_refresh_token && profile?.xero_connected) {
+          try {
+            console.log('[xero-auth] Token expired, attempting to refresh')
+            
+            // Prepare refresh token request
+            const params = new URLSearchParams()
+            params.append('grant_type', 'refresh_token')
+            params.append('refresh_token', profile.xero_refresh_token)
+            
+            // Create Basic auth header
+            const authString = `${clientId}:${clientSecret}`
+            const base64Auth = btoa(authString)
+            const tokenAuthHeader = `Basic ${base64Auth}`
+            
+            // Make refresh token request
+            const refreshResponse = await fetch(XERO_TOKEN_URL, {
+              method: 'POST',
+              headers: {
+                'Authorization': tokenAuthHeader,
+                'Content-Type': 'application/x-www-form-urlencoded'
+              },
+              body: params.toString()
+            })
+            
+            if (refreshResponse.ok) {
+              const refreshData = await refreshResponse.json() as XeroTokenResponse
+              console.log('[xero-auth] Successfully refreshed tokens')
+              
+              // Calculate new expiry time
+              const newExpiresAt = Math.floor(Date.now() / 1000) + refreshData.expires_in
+              
+              // Update tokens in database
+              await supabaseClient
+                .from('profiles')
+                .update({
+                  xero_access_token: refreshData.access_token,
+                  xero_refresh_token: refreshData.refresh_token,
+                  xero_token_expires_at: newExpiresAt,
+                })
+                .eq('id', session.user.id)
+              
+              isExpired = false
+            } else {
+              console.error('[xero-auth] Failed to refresh token:', await refreshResponse.text())
+            }
+          } catch (error) {
+            console.error('[xero-auth] Error refreshing token:', error)
+          }
         }
         
         return new Response(
@@ -335,6 +420,46 @@ serve(async (req) => {
       case 'disconnect': {
         console.log('[xero-auth] Disconnecting from Xero')
         
+        // Get the refresh token to revoke
+        const { data: profile, error: profileError } = await supabaseClient
+          .from('profiles')
+          .select('xero_refresh_token')
+          .eq('id', session.user.id)
+          .single()
+        
+        if (profileError) {
+          console.error('[xero-auth] Failed to retrieve refresh token:', profileError)
+        } else if (profile?.xero_refresh_token) {
+          try {
+            // Revoke the refresh token with Xero
+            const params = new URLSearchParams()
+            params.append('token', profile.xero_refresh_token)
+            
+            // Create Basic auth header
+            const authString = `${clientId}:${clientSecret}`
+            const base64Auth = btoa(authString)
+            const tokenAuthHeader = `Basic ${base64Auth}`
+            
+            // Make revocation request
+            const revokeResponse = await fetch(XERO_REVOCATION_URL, {
+              method: 'POST',
+              headers: {
+                'Authorization': tokenAuthHeader,
+                'Content-Type': 'application/x-www-form-urlencoded'
+              },
+              body: params.toString()
+            })
+            
+            if (revokeResponse.ok) {
+              console.log('[xero-auth] Successfully revoked refresh token')
+            } else {
+              console.error('[xero-auth] Failed to revoke token:', await revokeResponse.text())
+            }
+          } catch (error) {
+            console.error('[xero-auth] Error revoking token:', error)
+          }
+        }
+        
         // Clear Xero connection data
         await supabaseClient
           .from('profiles')
@@ -346,7 +471,8 @@ serve(async (req) => {
             xero_connected_at: null,
             xero_auth_state: null,
             xero_code_verifier: null,
-            xero_redirect_uri: null
+            xero_redirect_uri: null,
+            xero_tenant_id: null
           })
           .eq('id', session.user.id)
         
@@ -369,7 +495,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('[xero-auth] Unexpected error:', error)
     return new Response(
-      JSON.stringify({ error: 'Unexpected error', details: error }),
+      JSON.stringify({ error: 'Unexpected error', details: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

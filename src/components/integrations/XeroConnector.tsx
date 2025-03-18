@@ -42,12 +42,12 @@ const XeroConnector: React.FC = () => {
     try {
       console.log('Checking Xero connection status...');
       
-      // Ensure we're explicitly sending the authorization header
+      // Ensure we're using the correct authorization format
       const { data, error } = await supabase.functions.invoke('xero-auth', {
         body: { action: 'status' },
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${session?.access_token || ''}`,
+          Authorization: session?.access_token ? `Bearer ${session.access_token}` : '',
           'Content-Type': 'application/json'
         }
       });
@@ -83,14 +83,17 @@ const XeroConnector: React.FC = () => {
     
     try {
       console.log('Initiating Xero connection...');
-      // Calculate dynamic redirect URI based on current URL
-      const redirectUri = `${window.location.origin}/api/rest/xero-auth?action=callback`;
       
-      // Ensure proper headers and format for the request
+      // Calculate dynamic redirect URI based on current URL
+      // Use a path that our edge function can handle
+      const redirectUri = `${window.location.origin}/xero-callback`;
+      const state = crypto.randomUUID(); // Generate a unique state for security
+      
       const { data, error } = await supabase.functions.invoke('xero-auth', {
         body: { 
           action: 'authorize',
-          redirectUri
+          redirectUri,
+          state
         },
         method: 'POST',
         headers: {
@@ -107,7 +110,9 @@ const XeroConnector: React.FC = () => {
         });
       } else if (data?.url) {
         console.log('Redirecting to Xero authorization URL:', data.url);
-        // Open Xero authorization in new window
+        // Store state in localStorage for verification when the user returns
+        localStorage.setItem('xero_auth_state', state);
+        // Open Xero authorization in same window
         window.location.href = data.url;
       }
     } catch (err) {
@@ -166,29 +171,68 @@ const XeroConnector: React.FC = () => {
     const url = new URL(window.location.href);
     const code = url.searchParams.get('code');
     const state = url.searchParams.get('state');
+    const storedState = localStorage.getItem('xero_auth_state');
     
     // If code and state are present, this is a callback from Xero
     if (code && state) {
       console.log('Detected Xero callback with authorization code');
       
-      // Remove the query parameters from the URL to prevent issues on page refresh
-      window.history.replaceState({}, document.title, window.location.pathname);
+      // Verify state to prevent CSRF attacks
+      if (state !== storedState) {
+        console.error('State verification failed - potential CSRF attack');
+        toast.error('Security verification failed', {
+          description: 'Authentication attempt could not be verified.'
+        });
+        return;
+      }
       
-      toast.success('Successfully connected to Xero', {
-        description: 'Your Xero account has been linked to your profile.',
-      });
-      
-      // Check status to update UI
-      checkStatus();
-    }
-  }, []);
-
-  // Check initial status on component mount
-  useEffect(() => {
-    if (session) {
-      checkStatus();
+      // Process the callback by exchanging the code for tokens
+      if (session) {
+        (async () => {
+          setLoading(true);
+          try {
+            const { data, error } = await supabase.functions.invoke('xero-auth', {
+              body: { 
+                action: 'callback',
+                code,
+                state,
+                redirectUri: `${window.location.origin}/xero-callback`
+              },
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${session.access_token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (error) {
+              console.error('Error processing Xero callback:', error);
+              toast.error('Failed to complete Xero connection');
+            } else {
+              console.log('Successfully connected to Xero:', data);
+              toast.success('Successfully connected to Xero', {
+                description: 'Your Xero account has been linked to your profile.'
+              });
+              // Clear the state from localStorage
+              localStorage.removeItem('xero_auth_state');
+            }
+          } catch (err) {
+            console.error('Exception processing Xero callback:', err);
+            toast.error('Error connecting to Xero');
+          } finally {
+            setLoading(false);
+            // Check status to update UI
+            checkStatus();
+            // Remove the query parameters from the URL to prevent issues on page refresh
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        })();
+      }
     } else {
-      setLoading(false);
+      // Normal load, just check the status
+      if (session) {
+        checkStatus();
+      }
     }
   }, [session]);
 
