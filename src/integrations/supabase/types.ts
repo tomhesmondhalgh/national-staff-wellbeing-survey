@@ -1480,7 +1480,7 @@ export type Database = {
       plan_type: "free" | "foundation" | "progress" | "premium"
       role_hierarchy_level: "system" | "group" | "organization" | "standard"
       subscription_status: "active" | "canceled" | "expired" | "pending"
-      survey_status: "Saved" | "Scheduled" | "Sent" | "Completed"
+      survey_status: "Saved" | "Scheduled" | "Sent" | "Completed" | "Archived"
       user_role_type:
         | "administrator"
         | "group_admin"

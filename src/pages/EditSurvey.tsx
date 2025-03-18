@@ -14,6 +14,7 @@ import {
   BreadcrumbPage, 
   BreadcrumbSeparator 
 } from "@/components/ui/breadcrumb";
+import ArchiveSurveyDialog from '../components/surveys/ArchiveSurveyDialog';
 
 const EditSurvey = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +24,7 @@ const EditSurvey = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchSurvey = async () => {
@@ -298,6 +300,36 @@ const EditSurvey = () => {
     }
   };
 
+  const handleArchiveSurvey = async () => {
+    if (!id || !surveyData) return;
+    
+    try {
+      const { error } = await supabase
+        .from('survey_templates')
+        .update({
+          status: 'Archived',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+      
+      if (error) {
+        console.error('Error archiving survey:', error);
+        throw error;
+      }
+      
+      toast.success("Survey archived successfully", {
+        description: "The survey has been moved to the archive."
+      });
+      
+      navigate('/surveys');
+    } catch (error) {
+      console.error('Error archiving survey:', error);
+      toast.error("Failed to archive survey", {
+        description: "There was a problem archiving the survey. Please try again."
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <MainLayout>
@@ -360,6 +392,22 @@ const EditSurvey = () => {
           initialCustomQuestionIds={customQuestionIds}
           onPreviewSurvey={handlePreviewSurvey}
           onSendSurvey={handleSendSurvey}
+        />
+
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <button
+            onClick={() => setIsArchiveDialogOpen(true)}
+            className="text-red-600 hover:text-red-800 text-sm font-medium"
+          >
+            Archive Survey
+          </button>
+        </div>
+
+        <ArchiveSurveyDialog
+          isOpen={isArchiveDialogOpen}
+          onClose={() => setIsArchiveDialogOpen(false)}
+          onConfirm={handleArchiveSurvey}
+          surveyName={surveyData.name}
         />
       </div>
     </MainLayout>

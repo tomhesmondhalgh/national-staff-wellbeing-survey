@@ -46,10 +46,12 @@ const Surveys = () => {
       try {
         setLoading(true);
         
+        // Count surveys excluding Archived ones
         const { count, error: countError } = await supabase
           .from('survey_templates')
           .select('*', { count: 'exact', head: true })
-          .eq('creator_id', user.id);
+          .eq('creator_id', user.id)
+          .neq('status', 'Archived');
           
         if (countError) {
           throw countError;
@@ -60,6 +62,7 @@ const Surveys = () => {
         const from = (currentPage - 1) * SURVEYS_PER_PAGE;
         const to = from + SURVEYS_PER_PAGE - 1;
         
+        // Fetch surveys excluding Archived ones
         const { data: surveyTemplates, error } = await supabase
           .from('survey_templates')
           .select(`
@@ -69,9 +72,11 @@ const Surveys = () => {
             close_date,
             created_at,
             emails,
+            status,
             survey_responses(count)
           `)
           .eq('creator_id', user.id)
+          .neq('status', 'Archived')
           .order('created_at', { ascending: false })
           .range(from, to);
           
@@ -85,7 +90,9 @@ const Surveys = () => {
           const closeDate = template.close_date ? new Date(template.close_date) : null;
           
           let status: 'Scheduled' | 'Sent' | 'Completed' = 'Scheduled';
-          if (surveyDate <= now) {
+          if (template.status) {
+            status = template.status as any;
+          } else if (surveyDate <= now) {
             status = closeDate && closeDate < now ? 'Completed' : 'Sent';
           }
           
