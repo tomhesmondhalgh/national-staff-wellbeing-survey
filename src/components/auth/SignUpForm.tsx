@@ -1,8 +1,12 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { Input } from '../ui/input';
+import SchoolSearch from '../onboarding/SchoolSearch';
+import CustomSchoolForm from '../onboarding/CustomSchoolForm';
+import { SchoolSearchResult } from '../../hooks/useOnboardingForm';
+import { supabase } from '../../lib/supabase';
+import { toast } from 'sonner';
 
 interface SignUpFormData {
   firstName: string;
@@ -17,6 +21,7 @@ interface SignUpFormData {
   customCounty: string;
   customPostalCode: string;
   customCountry: string;
+  schoolAddress: string;
 }
 
 interface SignUpFormProps {
@@ -32,6 +37,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading = false }) 
     password: '',
     jobTitle: '',
     schoolName: '',
+    schoolAddress: '',
     customStreetAddress: '',
     customStreetAddress2: '',
     customCity: '',
@@ -39,6 +45,14 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading = false }) 
     customPostalCode: '',
     customCountry: 'United Kingdom',
   });
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SchoolSearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [useCustomSchool, setUseCustomSchool] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+  const resultsPerPage = 5;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -47,7 +61,140 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading = false }) 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    
+    if (useCustomSchool) {
+      const schoolAddress = compileCustomAddress();
+      const updatedFormData = {
+        ...formData,
+        schoolAddress
+      };
+      onSubmit(updatedFormData);
+    } else {
+      onSubmit(formData);
+    }
+  };
+  
+  const handleSearchSchool = async (page = 1) => {
+    if (!searchQuery.trim()) return;
+    
+    setSearching(true);
+    setSearchResults([]);
+    setCurrentPage(page);
+    
+    try {
+      console.log('Searching for schools with query:', searchQuery);
+      
+      const countQuery = await supabase
+        .from('schools')
+        .select('URN', { count: 'exact', head: true })
+        .or(`EstablishmentName.ilike.%${searchQuery.trim()}%,Postcode.ilike.%${searchQuery.trim()}%`);
+      
+      const totalCount = countQuery.count || 0;
+      setTotalResults(totalCount);
+      
+      const from = (page - 1) * resultsPerPage;
+      const to = from + resultsPerPage - 1;
+      
+      const { data, error } = await supabase
+        .from('schools')
+        .select('URN, EstablishmentName, Postcode, Street, Town, "County (name)"')
+        .or(`EstablishmentName.ilike.%${searchQuery.trim()}%,Postcode.ilike.%${searchQuery.trim()}%`)
+        .range(from, to);
+      
+      console.log('Search results:', data);
+      console.log('Total results:', totalCount);
+      
+      if (error) {
+        console.error('Error searching schools:', error);
+        toast.error('Error searching for schools');
+      } else if (data && data.length > 0) {
+        const formattedResults = data.map(school => ({
+          URN: school.URN,
+          EstablishmentName: school.EstablishmentName,
+          Postcode: school.Postcode,
+          Street: school.Street || '',
+          Town: school.Town || '',
+          County: school["County (name)"] || '',
+        }));
+        setSearchResults(formattedResults);
+      } else {
+        toast.info('No schools found matching your search term');
+        console.log('No schools found matching:', searchQuery);
+      }
+    } catch (err) {
+      console.error('Search error:', err);
+      toast.error('Failed to search for schools');
+    } finally {
+      setSearching(false);
+    }
+  };
+  
+  const handlePageChange = (page: number) => {
+    handleSearchSchool(page);
+  };
+  
+  const selectSchool = (school: SchoolSearchResult) => {
+    const address = [
+      school.Street,
+      school.Town,
+      school.County,
+      school.Postcode
+    ].filter(Boolean).join(', ');
+    
+    setFormData({
+      ...formData,
+      schoolName: school.EstablishmentName,
+      schoolAddress: address,
+    });
+    
+    setSearchResults([]);
+    setSearchQuery('');
+  };
+  
+  const toggleCustomSchool = () => {
+    setUseCustomSchool(!useCustomSchool);
+    if (!useCustomSchool) {
+      setFormData(prev => ({
+        ...prev,
+        schoolName: '',
+        schoolAddress: ''
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        customStreetAddress: '',
+        customStreetAddress2: '',
+        customCity: '',
+        customCounty: '',
+        customPostalCode: '',
+        customCountry: 'United Kingdom',
+      }));
+    }
+  };
+  
+  const compileCustomAddress = () => {
+    const addressParts = [
+      formData.customStreetAddress,
+      formData.customStreetAddress2,
+      formData.customCity,
+      formData.customCounty,
+      formData.customPostalCode,
+      formData.customCountry,
+    ].filter(Boolean);
+    
+    return addressParts.join(', ');
+  };
+  
+  const selectedSchool = formData.schoolName && formData.schoolAddress 
+    ? { name: formData.schoolName, address: formData.schoolAddress } 
+    : null;
+    
+  const resetSelectedSchool = () => {
+    setFormData(prev => ({
+      ...prev,
+      schoolName: '',
+      schoolAddress: ''
+    }));
   };
 
   return (
@@ -146,119 +293,30 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading = false }) 
           <div className="mt-4">
             <h4 className="text-sm font-medium text-gray-700 mb-3">School/College details</h4>
             
-            <div>
-              <label htmlFor="schoolName" className="block text-sm font-medium text-gray-700 mb-1">
-                School/College name
-              </label>
-              <Input
-                id="schoolName"
-                name="schoolName"
-                type="text"
-                required
-                className="form-input w-full"
-                value={formData.schoolName}
-                onChange={handleChange}
-                disabled={isLoading}
+            {!useCustomSchool ? (
+              <SchoolSearch 
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                searching={searching}
+                searchResults={searchResults}
+                currentPage={currentPage}
+                totalResults={totalResults}
+                resultsPerPage={resultsPerPage}
+                handleSearchSchool={handleSearchSchool}
+                handlePageChange={handlePageChange}
+                selectSchool={selectSchool}
+                toggleCustomSchool={toggleCustomSchool}
+                selectedSchool={selectedSchool}
+                onChangeSchool={resetSelectedSchool}
               />
-            </div>
-            
-            <div className="mt-2">
-              <label htmlFor="customStreetAddress" className="block text-sm font-medium text-gray-700 mb-1">
-                Street address
-              </label>
-              <Input
-                id="customStreetAddress"
-                name="customStreetAddress"
-                type="text"
-                required
-                className="form-input w-full"
-                value={formData.customStreetAddress}
+            ) : (
+              <CustomSchoolForm 
+                formData={formData}
                 onChange={handleChange}
-                disabled={isLoading}
+                onToggleCustomSchool={toggleCustomSchool}
+                isLoading={isLoading}
               />
-            </div>
-            
-            <div className="mt-2">
-              <label htmlFor="customStreetAddress2" className="block text-sm font-medium text-gray-700 mb-1">
-                Street address 2 (optional)
-              </label>
-              <Input
-                id="customStreetAddress2"
-                name="customStreetAddress2"
-                type="text"
-                className="form-input w-full"
-                value={formData.customStreetAddress2}
-                onChange={handleChange}
-                disabled={isLoading}
-              />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-              <div>
-                <label htmlFor="customCity" className="block text-sm font-medium text-gray-700 mb-1">
-                  City
-                </label>
-                <Input
-                  id="customCity"
-                  name="customCity"
-                  type="text"
-                  required
-                  className="form-input w-full"
-                  value={formData.customCity}
-                  onChange={handleChange}
-                  disabled={isLoading}
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="customCounty" className="block text-sm font-medium text-gray-700 mb-1">
-                  County (optional)
-                </label>
-                <Input
-                  id="customCounty"
-                  name="customCounty"
-                  type="text"
-                  className="form-input w-full"
-                  value={formData.customCounty}
-                  onChange={handleChange}
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-              <div>
-                <label htmlFor="customPostalCode" className="block text-sm font-medium text-gray-700 mb-1">
-                  Postal code
-                </label>
-                <Input
-                  id="customPostalCode"
-                  name="customPostalCode"
-                  type="text"
-                  required
-                  className="form-input w-full"
-                  value={formData.customPostalCode}
-                  onChange={handleChange}
-                  disabled={isLoading}
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="customCountry" className="block text-sm font-medium text-gray-700 mb-1">
-                  Country
-                </label>
-                <Input
-                  id="customCountry"
-                  name="customCountry"
-                  type="text"
-                  required
-                  className="form-input w-full"
-                  value={formData.customCountry}
-                  onChange={handleChange}
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
+            )}
           </div>
         </div>
         

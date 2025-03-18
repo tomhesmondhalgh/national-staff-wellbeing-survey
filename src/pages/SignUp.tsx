@@ -56,13 +56,11 @@ const SignUp = () => {
         throw signUpError || new Error('Failed to create account');
       }
       
-      // Second step: complete the user profile with the onboarding data
-      const schoolAddress = compileCustomAddress(data);
-      
+      // Second step: complete the user profile with the form data
       const userData = {
         jobTitle: data.jobTitle,
         schoolName: data.schoolName,
-        schoolAddress: schoolAddress,
+        schoolAddress: data.schoolAddress || compileCustomAddress(data),
         email: data.email,
         firstName: data.firstName,
         lastName: data.lastName,
@@ -94,7 +92,7 @@ const SignUp = () => {
     }
   };
   
-  // Helper function to compile the address
+  // Helper function to compile the address for custom school entries
   const compileCustomAddress = (data: any) => {
     const addressParts = [
       data.customStreetAddress,
