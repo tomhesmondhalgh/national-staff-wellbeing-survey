@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -25,8 +24,7 @@ const NewSurvey = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [savedSurveyId, setSavedSurveyId] = useState<string | null>(null);
   
-  // Known Hubspot ID for this user (in case of previous 409 errors)
-  const knownHubspotId = "31923701"; // Adding the known ID from your error message
+  const knownHubspotId = "31923701";
 
   useEffect(() => {
     if (!user) {
@@ -39,7 +37,7 @@ const NewSurvey = () => {
           navigate('/login');
         }
         setIsLoading(false);
-      }, 1000); // Give auth some time to load
+      }, 1000);
 
       return () => clearTimeout(checkUser);
     }
@@ -62,7 +60,6 @@ const NewSurvey = () => {
       const surveyDate = new Date(data.date);
       const closeDate = data.closeDate ? new Date(data.closeDate) : null;
       
-      // Save the survey with status "Saved"
       const { data: savedSurvey, error } = await supabase
         .from('survey_templates')
         .insert({
@@ -71,7 +68,7 @@ const NewSurvey = () => {
           close_date: closeDate ? closeDate.toISOString() : null,
           creator_id: user.id,
           emails: data.recipients,
-          status: 'Saved' // Add the new status
+          status: 'Saved'
         })
         .select()
         .single();
@@ -84,7 +81,6 @@ const NewSurvey = () => {
       
       setSavedSurveyId(savedSurvey.id);
 
-      // Link custom questions if any
       if (customQuestionIds && customQuestionIds.length > 0) {
         const surveyQuestionLinks = customQuestionIds.map(questionId => ({
           survey_id: savedSurvey.id,
@@ -100,7 +96,6 @@ const NewSurvey = () => {
         }
       }
       
-      // Get user profile data to send to Hubspot
       console.log('Fetching user profile data for Hubspot integration...');
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -108,7 +103,6 @@ const NewSurvey = () => {
         .eq('id', user.id)
         .single();
       
-      // Log profile retrieval result
       if (profileError) {
         console.error('Error fetching profile data:', profileError);
       } else {
@@ -118,10 +112,8 @@ const NewSurvey = () => {
       if (!profileError && profileData && user.email) {
         console.log('Attempting to send user data to Hubspot list 5418...');
         try {
-          // Send user to Hubspot with list ID 5418, using email from auth user
-          // Pass the known Hubspot ID to avoid 409 errors
           const response = await sendUserToHubspot({
-            email: user.email, // Use email from the authenticated user object
+            email: user.email,
             firstName: profileData.first_name,
             lastName: profileData.last_name,
             jobTitle: profileData.job_title,
@@ -133,7 +125,6 @@ const NewSurvey = () => {
           console.log('User successfully added to Hubspot list 5418 after creating survey');
         } catch (hubspotError) {
           console.error('Failed to add user to Hubspot list:', hubspotError);
-          // Don't fail the survey creation if Hubspot integration fails
         }
       } else {
         console.log('No complete profile data or email available to send to Hubspot');
@@ -143,7 +134,6 @@ const NewSurvey = () => {
         description: "Your survey has been saved. You can now preview or send it."
       });
       
-      // Navigate after everything is done
       console.log('Navigating to edit page for survey:', savedSurvey.id);
       navigate(`/surveys/${savedSurvey.id}/edit`);
       
@@ -165,8 +155,7 @@ const NewSurvey = () => {
         description: "The survey will be saved first, then opened in preview mode."
       });
       
-      // Form will trigger save first, then preview will happen after we have an ID
-      document.querySelector('form button[type="submit"]')?.click();
+      (document.querySelector('form button[type="submit"]') as HTMLButtonElement)?.click();
     }
   };
 
@@ -178,8 +167,7 @@ const NewSurvey = () => {
         description: "The survey will be saved first, then you'll be able to send it."
       });
       
-      // Form will trigger save first, then send will happen after we have an ID
-      document.querySelector('form button[type="submit"]')?.click();
+      (document.querySelector('form button[type="submit"]') as HTMLButtonElement)?.click();
     }
   };
   
@@ -187,7 +175,6 @@ const NewSurvey = () => {
     try {
       setIsSubmitting(true);
       
-      // Get survey data including email recipients
       const { data: survey, error: surveyError } = await supabase
         .from('survey_templates')
         .select('*')
@@ -199,7 +186,6 @@ const NewSurvey = () => {
       }
       
       if (!survey.emails || survey.emails.trim() === '') {
-        // No email recipients, show the survey link
         toast.info("No email recipients specified", {
           description: "Use the survey link below to share with participants."
         });
@@ -207,7 +193,6 @@ const NewSurvey = () => {
         const baseUrl = window.location.origin;
         const surveyUrl = `${baseUrl}/survey?id=${id}`;
         
-        // Update status to Sent
         await supabase
           .from('survey_templates')
           .update({ status: 'Sent' })
@@ -217,7 +202,6 @@ const NewSurvey = () => {
         return;
       }
       
-      // Has email recipients, send the survey
       const emailList = survey.emails
         .split(',')
         .map((email: string) => email.trim())
@@ -228,7 +212,6 @@ const NewSurvey = () => {
           description: "Use the survey link to share with participants."
         });
         
-        // Update status to Sent
         await supabase
           .from('survey_templates')
           .update({ status: 'Sent' })
@@ -238,7 +221,6 @@ const NewSurvey = () => {
         return;
       }
       
-      // Call the edge function to send emails
       const surveyUrl = `${window.location.origin}/survey?id=${id}`;
       const { data, error } = await supabase.functions.invoke('send-survey-email', {
         body: { 
@@ -254,7 +236,6 @@ const NewSurvey = () => {
         throw error;
       }
       
-      // Update status to Sent
       await supabase
         .from('survey_templates')
         .update({ status: 'Sent' })
@@ -305,7 +286,7 @@ const NewSurvey = () => {
         
         <SurveyForm 
           onSubmit={handleSubmit} 
-          submitButtonText="Save Survey"
+          submitButtonText="Save"
           isEdit={false}
           isSubmitting={isSubmitting}
           initialCustomQuestionIds={[]}

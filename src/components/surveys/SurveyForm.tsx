@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -67,7 +66,6 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
     }
   });
   
-  // If we're showing the survey link, generate the link when needed
   React.useEffect(() => {
     if (showSurveyLink && surveyId) {
       const baseUrl = window.location.origin;
@@ -107,42 +105,35 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
             onChange={setSelectedCustomQuestionIds}
           />
           
-          <div className="mt-8 flex flex-wrap gap-4 justify-between">
+          <div className="mt-8 flex flex-wrap gap-4 justify-end">
             <Button 
               type="submit" 
+              variant="outline"
               className="px-8" 
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Saving...' : submitButtonText}
             </Button>
             
-            <div className="flex gap-4">
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="px-6" 
-                onClick={handlePreviewClick}
-                disabled={isSubmitting}
-              >
-                Preview
-                <span className="text-xs ml-1 hidden sm:inline">
-                  (Saves first)
-                </span>
-              </Button>
-              
-              <Button 
-                type="button" 
-                variant="default" 
-                className="px-6" 
-                onClick={handleSendSurvey}
-                disabled={isSubmitting}
-              >
-                Send
-                <span className="text-xs ml-1 hidden sm:inline">
-                  (Saves first)
-                </span>
-              </Button>
-            </div>
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="px-6" 
+              onClick={handlePreviewClick}
+              disabled={isSubmitting}
+            >
+              Save and Preview
+            </Button>
+            
+            <Button 
+              type="button" 
+              variant="default" 
+              className="px-6" 
+              onClick={handleSendSurvey}
+              disabled={isSubmitting}
+            >
+              Save and Send
+            </Button>
           </div>
         </form>
       </Form>
