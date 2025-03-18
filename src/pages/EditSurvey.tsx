@@ -187,13 +187,46 @@ const EditSurvey = () => {
     setIsSending(true);
     
     try {
+      // First save any pending changes to the survey
+      if (surveyData) {
+        const updateDate = new Date(surveyData.date);
+        const updateCloseDate = surveyData.closeDate ? new Date(surveyData.closeDate) : null;
+        
+        console.log('Saving survey before sending...');
+        console.log('Distribution method:', surveyData.distributionMethod);
+        
+        // Determine the emails value based on the distribution method
+        const emailsValue = surveyData.distributionMethod === 'email' ? surveyData.recipients : '';
+        
+        const { error: saveError } = await supabase
+          .from('survey_templates')
+          .update({
+            name: surveyData.name,
+            date: updateDate.toISOString(),
+            close_date: updateCloseDate ? updateCloseDate.toISOString() : null,
+            emails: emailsValue,
+            status: 'Sent', // Set status to Sent immediately
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', id);
+        
+        if (saveError) {
+          console.error('Error saving survey before sending:', saveError);
+          throw saveError;
+        }
+      }
+      
+      // Get latest survey data after save
       const { data: survey, error: surveyError } = await supabase
         .from('survey_templates')
         .select('*')
         .eq('id', id)
         .single();
       
-      if (surveyError) throw surveyError;
+      if (surveyError) {
+        console.error('Error retrieving saved survey:', surveyError);
+        throw surveyError;
+      }
       
       if (!survey) {
         toast.error("Survey not found");
@@ -205,11 +238,7 @@ const EditSurvey = () => {
       
       // Handle link distribution
       if (surveyData.distributionMethod === 'link' || !survey.emails || survey.emails.trim() === '') {
-        await supabase
-          .from('survey_templates')
-          .update({ status: 'Sent' })
-          .eq('id', id);
-        
+        console.log('Using link distribution method');
         toast.success("Survey ready to share", {
           description: "Use the survey link to share with participants."
         });
@@ -219,6 +248,7 @@ const EditSurvey = () => {
       }
       
       // Handle email distribution
+      console.log('Using email distribution method');
       const emails = survey.emails
         .split(',')
         .map(email => email.trim())
@@ -228,8 +258,11 @@ const EditSurvey = () => {
         toast.error("No valid email addresses found", {
           description: "Please check the email addresses you've entered."
         });
+        setIsSending(false);
         return;
       }
+      
+      console.log(`Sending survey to ${emails.length} recipients`);
       
       const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-survey-email', {
         body: {
@@ -242,19 +275,17 @@ const EditSurvey = () => {
       });
       
       if (emailError) {
+        console.error('Error sending survey emails:', emailError);
         throw emailError;
       }
       
-      // Update survey status to 'Sent'
-      await supabase
-        .from('survey_templates')
-        .update({ status: 'Sent' })
-        .eq('id', id);
+      console.log('Email sending result:', emailResult);
       
       toast.success("Survey invitations sent", {
         description: `Invitations sent to ${emails.length} recipients.`
       });
       
+      // Always navigate back to the surveys list
       navigate('/surveys');
       
     } catch (error) {
