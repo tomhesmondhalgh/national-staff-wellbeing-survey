@@ -69,7 +69,7 @@ const NewSurvey = () => {
           date: surveyDate.toISOString(),
           close_date: closeDate ? closeDate.toISOString() : null,
           creator_id: user.id,
-          emails: data.recipients,
+          emails: data.distributionMethod === 'email' ? data.recipients : '',
           status: data.status || 'Saved'
         })
         .select()
@@ -196,20 +196,21 @@ const NewSurvey = () => {
         throw surveyError;
       }
       
+      const baseUrl = window.location.origin;
+      const surveyUrl = `${baseUrl}/survey?id=${id}`;
+      
+      // If using link distribution method, just update status and show the link
       if (!survey.emails || survey.emails.trim() === '') {
-        toast.info("No email recipients specified", {
-          description: "Use the survey link below to share with participants."
-        });
-        
-        const baseUrl = window.location.origin;
-        const surveyUrl = `${baseUrl}/survey?id=${id}`;
-        
         await supabase
           .from('survey_templates')
           .update({ status: 'Sent' })
           .eq('id', id);
         
         navigate(`/surveys/${id}/edit`, { state: { showLink: true } });
+        
+        toast.success("Survey ready to share", {
+          description: "Use the survey link to share with participants."
+        });
         return;
       }
       
@@ -232,7 +233,6 @@ const NewSurvey = () => {
         return;
       }
       
-      const surveyUrl = `${window.location.origin}/survey?id=${id}`;
       const { data, error } = await supabase.functions.invoke('send-survey-email', {
         body: { 
           surveyId: id,

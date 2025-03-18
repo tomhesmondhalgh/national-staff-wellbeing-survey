@@ -25,7 +25,8 @@ const surveyFormSchema = z.object({
   }),
   closeDate: z.date().optional(),
   recipients: z.string().optional(),
-  status: z.enum(['Saved', 'Scheduled', 'Sent', 'Completed']).optional()
+  status: z.enum(['Saved', 'Scheduled', 'Sent', 'Completed']).optional(),
+  distributionMethod: z.enum(['link', 'email']).default('link')
 });
 
 export type SurveyFormData = z.infer<typeof surveyFormSchema>;
@@ -65,7 +66,8 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
       date: initialData?.date ? new Date(initialData.date) : new Date(),
       closeDate: initialData?.closeDate ? new Date(initialData.closeDate) : undefined,
       recipients: initialData?.recipients || '',
-      status: initialData?.status || 'Saved'
+      status: initialData?.status || 'Saved',
+      distributionMethod: initialData?.distributionMethod || 'link'
     }
   });
   

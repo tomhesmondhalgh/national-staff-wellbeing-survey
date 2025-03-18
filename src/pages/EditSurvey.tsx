@@ -55,7 +55,8 @@ const EditSurvey = () => {
           date: new Date(data.date),
           closeDate: data.close_date ? new Date(data.close_date) : undefined,
           recipients: data.emails || '',
-          status: data.status || 'Saved'
+          status: data.status || 'Saved',
+          distributionMethod: data.emails && data.emails.trim() !== '' ? 'email' : 'link'
         });
         
         const { data: linkData, error: linkError } = await supabase
@@ -97,7 +98,7 @@ const EditSurvey = () => {
           name: data.name,
           date: updateDate.toISOString(),
           close_date: updateCloseDate ? updateCloseDate.toISOString() : null,
-          emails: data.recipients,
+          emails: data.distributionMethod === 'email' ? data.recipients : '',
           status: data.status || 'Saved',
           updated_at: new Date().toISOString()
         })
@@ -179,16 +180,23 @@ const EditSurvey = () => {
         return;
       }
       
-      if (!survey.emails || survey.emails.trim() === '') {
-        toast.error("No recipients specified", {
-          description: "Please add email recipients before sending the survey."
+      const baseUrl = window.location.origin;
+      const surveyUrl = `${baseUrl}/survey?id=${id}`;
+      
+      // Handle link distribution
+      if (surveyData.distributionMethod === 'link' || !survey.emails || survey.emails.trim() === '') {
+        await supabase
+          .from('survey_templates')
+          .update({ status: 'Sent' })
+          .eq('id', id);
+        
+        toast.success("Survey ready to share", {
+          description: "Use the survey link to share with participants."
         });
         return;
       }
       
-      const baseUrl = window.location.origin;
-      const surveyUrl = `${baseUrl}/survey?id=${id}`;
-      
+      // Handle email distribution
       const emails = survey.emails
         .split(',')
         .map(email => email.trim())
