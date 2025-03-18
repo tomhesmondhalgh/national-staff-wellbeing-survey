@@ -6,6 +6,21 @@ import { useOrganization } from '../contexts/OrganizationContext';
 import { UserRoleType, supabase } from '../lib/supabase/client';
 import { toast } from 'sonner';
 
+// Define proper types for the group data structure
+interface GroupData {
+  id: string;
+  name: string;
+  group_organizations?: Array<{
+    organization_id: string;
+  }>;
+}
+
+interface GroupRoleData {
+  role: string;
+  group_id: string;
+  groups: GroupData | null;
+}
+
 export function useRoleFetcher() {
   const { user } = useAuth();
   const { currentOrganization } = useOrganization();
@@ -125,9 +140,10 @@ export function useRoleFetcher() {
             'viewer': 0
           };
           
-          for (const groupRole of groupRoles) {
-            // Fix the type issue - accessing the groups property
+          for (const groupRole of groupRoles as GroupRoleData[]) {
+            // Ensure groups is an object and has the group_organizations property
             if (groupRole.groups && 
+                typeof groupRole.groups === 'object' && 
                 'group_organizations' in groupRole.groups && 
                 Array.isArray(groupRole.groups.group_organizations)) {
               
