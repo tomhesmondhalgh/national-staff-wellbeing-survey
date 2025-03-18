@@ -1,8 +1,8 @@
-
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 import { SchoolSearchResult, SignUpFormData } from '../types/auth';
+import { fixSchoolSearchResults } from '../utils/typeConversions';
 
 export const useSchoolSearch = (
   formData: SignUpFormData,
@@ -50,15 +50,8 @@ export const useSchoolSearch = (
         console.error('Error searching schools:', error);
         toast.error('Error searching for schools');
       } else if (data && data.length > 0) {
-        const formattedResults = data.map(school => ({
-          URN: school.URN,
-          EstablishmentName: school.EstablishmentName,
-          Postcode: school.Postcode,
-          Street: school.Street || '',
-          Town: school.Town || '',
-          County: school["County (name)"] || '',
-        }));
-        setSearchResults(formattedResults);
+        const formattedResults = fixSchoolSearchResults(data);
+        setSearchResults(formattedResults as SchoolSearchResult[]);
       } else {
         toast.info('No schools found matching your search term');
         console.log('No schools found matching:', searchQuery);

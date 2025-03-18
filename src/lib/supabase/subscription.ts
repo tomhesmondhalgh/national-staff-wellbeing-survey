@@ -1,9 +1,8 @@
-
 import { supabase } from './client';
 import type { Json } from '../../integrations/supabase/types';
 import { PlanType, SubscriptionStatus, PaymentMethod, PurchaseType } from './client';
 
-export { PlanType, SubscriptionStatus, PaymentMethod, PurchaseType };
+export type { PlanType, SubscriptionStatus, PaymentMethod, PurchaseType };
 
 export interface Subscription {
   id: string;
@@ -54,7 +53,6 @@ export interface Plan {
   updated_at: string;
 }
 
-// Fetch user's current subscription
 export async function getUserSubscription(userId: string): Promise<SubscriptionAccess | null> {
   try {
     const { data, error } = await supabase
@@ -79,7 +77,6 @@ export async function getUserSubscription(userId: string): Promise<SubscriptionA
   }
 }
 
-// Check if user has access to a specific plan level
 export async function checkPlanAccess(userId: string, requiredPlan: PlanType): Promise<boolean> {
   try {
     const { data, error } = await supabase
@@ -100,7 +97,6 @@ export async function checkPlanAccess(userId: string, requiredPlan: PlanType): P
   }
 }
 
-// Get user's subscription history
 export async function getSubscriptionHistory(userId: string): Promise<Subscription[]> {
   try {
     const { data, error } = await supabase
@@ -114,18 +110,18 @@ export async function getSubscriptionHistory(userId: string): Promise<Subscripti
       return [];
     }
 
-    // Cast data with proper purchase_type type 
-    return (data || []).map(sub => ({
+    return data ? data.map(sub => ({
       ...sub,
-      purchase_type: (sub.purchase_type as PurchaseType) || 'subscription'
-    })) as Subscription[];
+      purchase_type: (sub.purchase_type === 'subscription' || sub.purchase_type === 'one-time') 
+        ? sub.purchase_type as PurchaseType 
+        : 'subscription'
+    })) as Subscription[] : [];
   } catch (error) {
     console.error('Error in getSubscriptionHistory:', error);
     return [];
   }
 }
 
-// Get user's payment history
 export async function getPaymentHistory(userId: string): Promise<PaymentHistory[]> {
   try {
     const { data: subscriptions, error: subError } = await supabase
@@ -158,7 +154,6 @@ export async function getPaymentHistory(userId: string): Promise<PaymentHistory[
   }
 }
 
-// Manual function to check for a specific Stripe payment and create subscription if needed
 export async function checkAndCreateSubscription(
   userId: string, 
   planType: PlanType, 
@@ -168,7 +163,6 @@ export async function checkAndCreateSubscription(
   try {
     console.log(`Manually checking payment ${stripePaymentId} for user ${userId}`);
     
-    // First check if payment record exists
     const { data: paymentHistory } = await supabase
       .from('payment_history')
       .select('id, subscription_id')
@@ -180,7 +174,6 @@ export async function checkAndCreateSubscription(
       return true;
     }
     
-    // Check if subscription exists
     const { data: subscriptions } = await supabase
       .from('subscriptions')
       .select('*')
@@ -190,7 +183,6 @@ export async function checkAndCreateSubscription(
       
     let subscriptionId;
     
-    // If no active subscription, create one
     if (!subscriptions || subscriptions.length === 0) {
       const { data: newSub, error: createError } = await supabase
         .from('subscriptions')
@@ -220,12 +212,11 @@ export async function checkAndCreateSubscription(
       console.log('Found existing subscription:', subscriptionId);
     }
     
-    // Create payment record
     const { error: paymentError } = await supabase
       .from('payment_history')
       .insert({
         subscription_id: subscriptionId,
-        amount: 0, // We don't know the amount, so set to 0
+        amount: 0,
         currency: 'GBP',
         payment_method: 'stripe',
         stripe_payment_id: stripePaymentId,
@@ -246,7 +237,6 @@ export async function checkAndCreateSubscription(
   }
 }
 
-// Get all active plans ordered by sort_order
 export async function getPlans(): Promise<Plan[]> {
   try {
     const { data, error } = await supabase
@@ -260,11 +250,12 @@ export async function getPlans(): Promise<Plan[]> {
       return [];
     }
     
-    // Cast the purchase_type to ensure it matches Plan interface
     return (data || []).map(plan => ({
       ...plan,
       features: Array.isArray(plan.features) ? plan.features : [],
-      purchase_type: (plan.purchase_type as 'subscription' | 'one-time' | null)
+      purchase_type: (plan.purchase_type === 'subscription' || plan.purchase_type === 'one-time') 
+        ? plan.purchase_type as 'subscription' | 'one-time'
+        : null
     })) as Plan[];
   } catch (error) {
     console.error('Error in getPlans:', error);
@@ -272,7 +263,6 @@ export async function getPlans(): Promise<Plan[]> {
   }
 }
 
-// Get a single plan by ID
 export async function getPlanById(planId: string): Promise<Plan | null> {
   try {
     const { data, error } = await supabase
@@ -288,11 +278,12 @@ export async function getPlanById(planId: string): Promise<Plan | null> {
     
     if (!data) return null;
     
-    // Cast the purchase_type to ensure it matches Plan interface
     return {
       ...data,
       features: Array.isArray(data.features) ? data.features : [],
-      purchase_type: (data.purchase_type as 'subscription' | 'one-time' | null)
+      purchase_type: (data.purchase_type === 'subscription' || data.purchase_type === 'one-time') 
+        ? data.purchase_type as 'subscription' | 'one-time'
+        : null
     } as Plan;
   } catch (error) {
     console.error('Error in getPlanById:', error);
@@ -300,7 +291,6 @@ export async function getPlanById(planId: string): Promise<Plan | null> {
   }
 }
 
-// Get a plan by its Stripe price ID
 export async function getPlanByStripeId(stripePriceId: string): Promise<Plan | null> {
   try {
     const { data, error } = await supabase
@@ -316,11 +306,12 @@ export async function getPlanByStripeId(stripePriceId: string): Promise<Plan | n
     
     if (!data) return null;
     
-    // Cast the purchase_type to ensure it matches Plan interface
     return {
       ...data,
       features: Array.isArray(data.features) ? data.features : [],
-      purchase_type: (data.purchase_type as 'subscription' | 'one-time' | null)
+      purchase_type: (data.purchase_type === 'subscription' || data.purchase_type === 'one-time') 
+        ? data.purchase_type as 'subscription' | 'one-time'
+        : null
     } as Plan;
   } catch (error) {
     console.error('Error in getPlanByStripeId:', error);

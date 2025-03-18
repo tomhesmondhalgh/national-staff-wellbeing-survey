@@ -23,5 +23,6 @@ export function convertToCustomQuestion(dbQuestion: any): CustomQuestion {
 }
 
 export function convertToCustomQuestions(dbQuestions: any[]): CustomQuestion[] {
+  if (!Array.isArray(dbQuestions)) return [];
   return dbQuestions.map(convertToCustomQuestion);
 }

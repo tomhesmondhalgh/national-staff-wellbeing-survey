@@ -1,9 +1,10 @@
 
 import { useState } from 'react';
-import { CustomQuestion } from '../types/customQuestions';
+import { CustomQuestion, convertToCustomQuestion } from '../types/customQuestions';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 import { isValidQuestionType, createDbQuestionPayload } from '../utils/questionTypeUtils';
+import { fixCustomQuestionTypes } from '../utils/typeConversions';
 
 export function useQuestionStore() {
   const [questions, setQuestions] = useState<CustomQuestion[]>([]);
@@ -26,13 +27,8 @@ export function useQuestionStore() {
         return [];
       }
 
-      const processedData = (data || []).map((question: CustomQuestion) => {
-        if (!isValidQuestionType(question.type)) {
-          console.warn(`Question ${question.id} has invalid type: ${question.type}. Converting to 'text'`);
-          question.type = 'text';
-        }
-        return question;
-      });
+      // Process the data with our utility function
+      const processedData = fixCustomQuestionTypes(data || []);
       
       console.log('Fetched questions after processing:', processedData);
       setQuestions(processedData);
@@ -75,9 +71,11 @@ export function useQuestionStore() {
       }
 
       console.log('New question created:', data);
-      setQuestions(prev => [data, ...prev]);
+      // Convert to our type before adding to state
+      const newQuestion = convertToCustomQuestion(data);
+      setQuestions(prev => [newQuestion, ...prev]);
       toast.success('Question created successfully');
-      return data;
+      return newQuestion;
     } catch (error) {
       console.error('Error creating question:', error);
       toast.error('Failed to create question');
@@ -104,6 +102,7 @@ export function useQuestionStore() {
 
       if (error) throw error;
       
+      // Update state with converted types
       setQuestions(prev => prev.map(q => {
         if (q.id === id) {
           return { ...q, ...updateData };

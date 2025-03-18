@@ -22,7 +22,9 @@ export function fixPlanTypes(plans: any[]): Plan[] {
   return plans.map(plan => ({
     ...plan,
     features: Array.isArray(plan.features) ? plan.features : [],
-    purchase_type: (plan.purchase_type as 'subscription' | 'one-time' | null)
+    purchase_type: (plan.purchase_type === 'subscription' || plan.purchase_type === 'one-time') 
+      ? plan.purchase_type 
+      : null
   })) as Plan[];
 }
 
