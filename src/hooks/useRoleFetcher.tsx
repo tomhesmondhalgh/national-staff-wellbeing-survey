@@ -33,7 +33,7 @@ export function useRoleFetcher() {
       try {
         console.log('Fetching role for user:', user.email);
         
-        // Check if user is system administrator
+        // Check if user is system administrator - this takes precedence over other roles
         const { data: adminRole, error: adminError } = await supabase
           .from('user_roles')
           .select('role')
@@ -91,84 +91,64 @@ export function useRoleFetcher() {
           return;
         }
         
-        try {
-          // Use RPC function to avoid recursion issues when checking organization membership
-          const { data: orgRole, error: orgRpcError } = await supabase
-            .rpc('get_user_organization_role', {
-              user_uuid: user.id,
-              org_id: currentOrganization.id
-            });
-            
-          if (orgRpcError) {
-            console.error('Error fetching organization role via RPC:', orgRpcError);
-            setQueryError("Error checking organization role");
-          } else if (orgRole) {
-            console.log('User has organization role:', orgRole, 'for organization:', currentOrganization.name);
-            setUserRole(orgRole as UserRoleType);
-            setIsLoading(false);
-            return;
-          } else {
-            console.log('No direct organization role found, checking group-based access');
-          }
-        } catch (err) {
-          console.error('Exception in organization membership check:', err);
+        // AVOID RECURSION: Use a direct query instead of the RPC function
+        console.log('Checking group-based access directly');
+        
+        // Check group-based access with a direct query
+        const { data: groupRoles, error: groupError } = await supabase
+          .from('group_members')
+          .select(`
+            role,
+            group_id,
+            groups(
+              id,
+              name,
+              group_organizations(organization_id)
+            )
+          `)
+          .eq('user_id', user.id);
+          
+        if (groupError) {
+          console.error('Error fetching group roles:', groupError);
+          setQueryError("Error checking group permissions");
         }
         
-        console.log('Checking group-based access');
-        
-        // Check group-based access
-        try {
-          const { data: groupRoles, error: groupError } = await supabase
-            .from('group_members')
-            .select(`
-              role,
-              group_id,
-              groups(
-                group_organizations(organization_id)
-              )
-            `)
-            .eq('user_id', user.id);
-            
-          if (groupError) {
-            console.error('Error fetching group roles:', groupError);
-            setQueryError("Error checking group permissions");
-          }
+        if (groupRoles && groupRoles.length > 0) {
+          console.log('Group roles found:', groupRoles.length);
           
-          console.log('Group roles data:', groupRoles);
+          let highestRole: UserRoleType | null = null;
+          const roleHierarchy: Record<UserRoleType, number> = {
+            'administrator': 4,
+            'group_admin': 3,
+            'organization_admin': 2,
+            'editor': 1,
+            'viewer': 0
+          };
           
-          if (groupRoles && groupRoles.length > 0) {
-            let foundRole = false;
-            
-            // First cast the data to unknown, then to our interface type to satisfy TypeScript
-            const typedGroupRoles = groupRoles as unknown as {
-              role: UserRoleType;
-              group_id: string;
-              groups: {
-                group_organizations: { organization_id: string }[];
-              };
-            }[];
-            
-            for (const groupRole of typedGroupRoles) {
-              if (groupRole.groups && groupRole.groups.group_organizations) {
-                for (const groupOrg of groupRole.groups.group_organizations) {
-                  if (groupOrg.organization_id === currentOrganization.id) {
-                    console.log('User has group role:', groupRole.role, 'for organization:', currentOrganization.name);
-                    setUserRole(groupRole.role as UserRoleType);
-                    foundRole = true;
-                    break;
+          for (const groupRole of groupRoles) {
+            if (groupRole.groups && 
+                groupRole.groups.group_organizations && 
+                Array.isArray(groupRole.groups.group_organizations)) {
+              
+              for (const groupOrg of groupRole.groups.group_organizations) {
+                if (groupOrg.organization_id === currentOrganization.id) {
+                  console.log('Found group role for organization:', groupRole.role);
+                  
+                  // If this role is higher in hierarchy than current highest, update it
+                  if (!highestRole || roleHierarchy[groupRole.role as UserRoleType] > roleHierarchy[highestRole]) {
+                    highestRole = groupRole.role as UserRoleType;
                   }
                 }
-                if (foundRole) break;
               }
             }
-            
-            if (foundRole) {
-              setIsLoading(false);
-              return;
-            }
           }
-        } catch (error) {
-          console.error('Error in group membership check:', error);
+          
+          if (highestRole) {
+            console.log('Using highest group role:', highestRole);
+            setUserRole(highestRole);
+            setIsLoading(false);
+            return;
+          }
         }
         
         // ADDITIONAL FALLBACK: Check if the user's email matches a pending invitation
@@ -187,7 +167,6 @@ export function useRoleFetcher() {
               // User has a pending invitation for this organization
               console.log('User has pending invitation with role:', invitations[0].role);
               setUserRole(invitations[0].role as UserRoleType);
-              // Optionally auto-accept invitation here
               setIsLoading(false);
               
               // Notify user of pending invitation

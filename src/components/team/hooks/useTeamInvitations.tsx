@@ -14,9 +14,13 @@ export function useTeamInvitations(organizationId: string | undefined) {
       if (!organizationId) return [];
       
       try {
-        const { data, error } = await supabase.rpc('get_organization_invitations', { 
-          org_id: organizationId 
-        });
+        // Use direct query instead of RPC function to avoid recursion
+        const { data, error } = await supabase
+          .from('invitations')
+          .select('*')
+          .eq('organization_id', organizationId)
+          .is('accepted_at', null)
+          .gt('expires_at', new Date().toISOString());
           
         if (error) {
           console.error('Error fetching invitations:', error);
