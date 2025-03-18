@@ -7,7 +7,7 @@ export interface SurveyTemplate {
   close_date?: string | null;
   creator_id?: string;
   emails?: string;
-  status?: 'Scheduled' | 'Sent' | 'Completed';
+  status?: 'Saved' | 'Scheduled' | 'Sent' | 'Completed';
   created_at?: string;
 }
 

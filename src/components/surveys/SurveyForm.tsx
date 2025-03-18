@@ -95,9 +95,6 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
     }
   };
 
-  // Check if survey has been saved (has an ID)
-  const canPreview = !!surveyId;
-
   return (
     <div className="space-y-8">
       <Form {...form}>
@@ -110,7 +107,7 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
             onChange={setSelectedCustomQuestionIds}
           />
           
-          <div className="mt-8 flex flex-wrap gap-4 justify-center sm:justify-between">
+          <div className="mt-8 flex flex-wrap gap-4 justify-between">
             <Button 
               type="submit" 
               className="px-8" 
@@ -120,53 +117,31 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
             </Button>
             
             <div className="flex gap-4">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        className="px-6" 
-                        onClick={handlePreviewClick}
-                        disabled={!canPreview}
-                      >
-                        Preview
-                      </Button>
-                    </div>
-                  </TooltipTrigger>
-                  {!canPreview && (
-                    <TooltipContent>
-                      <p>Save the survey first to enable preview</p>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="px-6" 
+                onClick={handlePreviewClick}
+                disabled={isSubmitting}
+              >
+                Preview
+                <span className="text-xs ml-1 hidden sm:inline">
+                  (Saves first)
+                </span>
+              </Button>
               
-              {isEdit && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div>
-                        <Button 
-                          type="button" 
-                          variant="secondary" 
-                          className="px-6" 
-                          onClick={handleSendSurvey}
-                          disabled={!canPreview}
-                        >
-                          Send
-                        </Button>
-                      </div>
-                    </TooltipTrigger>
-                    {!canPreview && (
-                      <TooltipContent>
-                        <p>Save the survey first to enable sending</p>
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
-                </TooltipProvider>
-              )}
+              <Button 
+                type="button" 
+                variant="default" 
+                className="px-6" 
+                onClick={handleSendSurvey}
+                disabled={isSubmitting}
+              >
+                Send
+                <span className="text-xs ml-1 hidden sm:inline">
+                  (Saves first)
+                </span>
+              </Button>
             </div>
           </div>
         </form>

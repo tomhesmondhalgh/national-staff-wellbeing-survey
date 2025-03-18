@@ -17,9 +17,19 @@ export const isSurveyClosed = (survey: SurveyTemplate): boolean => {
  * 
  * @param dateStr - The survey date
  * @param closeDateStr - The survey close date (optional)
+ * @param statusOverride - The status explicitly set on the survey (optional)
  * @returns The status of the survey
  */
-export const getSurveyStatus = (dateStr: string, closeDateStr?: string | null): 'Scheduled' | 'Sent' | 'Completed' => {
+export const getSurveyStatus = (
+  dateStr: string, 
+  closeDateStr?: string | null, 
+  statusOverride?: 'Saved' | 'Scheduled' | 'Sent' | 'Completed'
+): 'Saved' | 'Scheduled' | 'Sent' | 'Completed' => {
+  // If status is explicitly set, use that
+  if (statusOverride) {
+    return statusOverride;
+  }
+  
   const now = new Date();
   const surveyDate = new Date(dateStr);
   const closeDate = closeDateStr ? new Date(closeDateStr) : null;

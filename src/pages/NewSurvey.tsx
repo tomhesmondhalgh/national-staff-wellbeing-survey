@@ -62,7 +62,7 @@ const NewSurvey = () => {
       const surveyDate = new Date(data.date);
       const closeDate = data.closeDate ? new Date(data.closeDate) : null;
       
-      // Save the survey
+      // Save the survey with status "Saved"
       const { data: savedSurvey, error } = await supabase
         .from('survey_templates')
         .insert({
@@ -70,7 +70,8 @@ const NewSurvey = () => {
           date: surveyDate.toISOString(),
           close_date: closeDate ? closeDate.toISOString() : null,
           creator_id: user.id,
-          emails: data.recipients
+          emails: data.recipients,
+          status: 'Saved' // Add the new status
         })
         .select()
         .single();
@@ -156,20 +157,124 @@ const NewSurvey = () => {
     }
   };
 
-  const handlePreviewSurvey = () => {
+  const handlePreviewSurvey = async () => {
     if (savedSurveyId) {
       window.open(`/survey?id=${savedSurveyId}&preview=true`, '_blank');
     } else {
-      toast.error("Save the survey first", {
-        description: "You need to save the survey before previewing it."
+      toast.info("Saving survey before preview", {
+        description: "The survey will be saved first, then opened in preview mode."
       });
+      
+      // Form will trigger save first, then preview will happen after we have an ID
+      document.querySelector('form button[type="submit"]')?.click();
     }
   };
 
-  const handleSendSurvey = () => {
-    toast.info("Navigate to the survey's edit page to send it", {
-      description: "After saving, you'll be redirected to the edit page where you can send the survey."
-    });
+  const handleSendSurvey = async () => {
+    if (savedSurveyId) {
+      await sendSurvey(savedSurveyId);
+    } else {
+      toast.info("Saving survey before sending", {
+        description: "The survey will be saved first, then you'll be able to send it."
+      });
+      
+      // Form will trigger save first, then send will happen after we have an ID
+      document.querySelector('form button[type="submit"]')?.click();
+    }
+  };
+  
+  const sendSurvey = async (id: string) => {
+    try {
+      setIsSubmitting(true);
+      
+      // Get survey data including email recipients
+      const { data: survey, error: surveyError } = await supabase
+        .from('survey_templates')
+        .select('*')
+        .eq('id', id)
+        .single();
+        
+      if (surveyError) {
+        throw surveyError;
+      }
+      
+      if (!survey.emails || survey.emails.trim() === '') {
+        // No email recipients, show the survey link
+        toast.info("No email recipients specified", {
+          description: "Use the survey link below to share with participants."
+        });
+        
+        const baseUrl = window.location.origin;
+        const surveyUrl = `${baseUrl}/survey?id=${id}`;
+        
+        // Update status to Sent
+        await supabase
+          .from('survey_templates')
+          .update({ status: 'Sent' })
+          .eq('id', id);
+        
+        navigate(`/surveys/${id}/edit`, { state: { showLink: true } });
+        return;
+      }
+      
+      // Has email recipients, send the survey
+      const emailList = survey.emails
+        .split(',')
+        .map((email: string) => email.trim())
+        .filter((email: string) => email !== '');
+        
+      if (emailList.length === 0) {
+        toast.info("No valid email recipients found", {
+          description: "Use the survey link to share with participants."
+        });
+        
+        // Update status to Sent
+        await supabase
+          .from('survey_templates')
+          .update({ status: 'Sent' })
+          .eq('id', id);
+          
+        navigate(`/surveys/${id}/edit`, { state: { showLink: true } });
+        return;
+      }
+      
+      // Call the edge function to send emails
+      const surveyUrl = `${window.location.origin}/survey?id=${id}`;
+      const { data, error } = await supabase.functions.invoke('send-survey-email', {
+        body: { 
+          surveyId: id,
+          surveyName: survey.name,
+          emails: emailList,
+          surveyUrl: surveyUrl,
+          isReminder: false
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Update status to Sent
+      await supabase
+        .from('survey_templates')
+        .update({ status: 'Sent' })
+        .eq('id', id);
+      
+      console.log('Email sending results:', data);
+      
+      toast.success("Survey sent successfully!", {
+        description: `Sent to ${data.count} recipients.`
+      });
+      
+      navigate(`/surveys/${id}/edit`);
+    } catch (error) {
+      console.error('Error sending survey:', error);
+      toast.error("Failed to send survey", {
+        description: "Please check your connection and try again."
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isLoading) {
@@ -200,7 +305,7 @@ const NewSurvey = () => {
         
         <SurveyForm 
           onSubmit={handleSubmit} 
-          submitButtonText="Create Survey"
+          submitButtonText="Save Survey"
           isEdit={false}
           isSubmitting={isSubmitting}
           initialCustomQuestionIds={[]}
