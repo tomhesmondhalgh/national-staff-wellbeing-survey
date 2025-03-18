@@ -32,21 +32,43 @@ export const useGroups = () => {
           throw groupError;
         }
         
+        // Debug the structure to better understand what we're working with
+        if (data && data.length > 0) {
+          console.log('Sample group item structure:', data[0]);
+        }
+        
         const userGroups: Group[] = (data || []).map(item => {
-          // Debug the structure to better understand what we're working with
-          console.log('Group item structure:', item);
-          
-          // Ensure we handle the case where groups might be null or not in expected format
+          // Get the group data from the groups property
           const groupData = item.groups || {};
           
+          // Explicitly cast each property to the required type with fallbacks
+          const name: string = 
+            typeof groupData === 'object' && 'name' in groupData && typeof groupData.name === 'string' 
+              ? groupData.name 
+              : 'Unknown';
+              
+          const description: string | undefined = 
+            typeof groupData === 'object' && 'description' in groupData && typeof groupData.description === 'string'
+              ? groupData.description 
+              : undefined;
+              
+          const created_at: string = 
+            typeof groupData === 'object' && 'created_at' in groupData && typeof groupData.created_at === 'string'
+              ? groupData.created_at 
+              : new Date().toISOString();
+              
+          const updated_at: string | undefined = 
+            typeof groupData === 'object' && 'updated_at' in groupData && typeof groupData.updated_at === 'string'
+              ? groupData.updated_at 
+              : undefined;
+          
+          // Return a properly typed Group object
           return {
             id: item.group_id,
-            name: typeof groupData === 'object' && 'name' in groupData ? groupData.name || 'Unknown' : 'Unknown',
-            description: typeof groupData === 'object' && 'description' in groupData ? groupData.description : undefined,
-            created_at: typeof groupData === 'object' && 'created_at' in groupData ? 
-              groupData.created_at || new Date().toISOString() : new Date().toISOString(),
-            updated_at: typeof groupData === 'object' && 'updated_at' in groupData ? 
-              groupData.updated_at || new Date().toISOString() : new Date().toISOString()
+            name,
+            description,
+            created_at,
+            updated_at
           };
         });
         
