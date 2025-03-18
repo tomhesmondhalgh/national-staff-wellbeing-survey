@@ -11,10 +11,10 @@ export const countSurveyResponses = async (surveyId: string): Promise<number> =>
   try {
     console.log(`Counting responses for survey ${surveyId}`);
     
-    // Query for counting only
-    const { count, error } = await supabase
+    // Using a more specific query to address type instantiation issues
+    const { error, count } = await supabase
       .from('survey_responses')
-      .select('id', { count: 'exact', head: true })
+      .select('*', { count: 'exact' })
       .eq('survey_template_id', surveyId);
     
     if (error) {
@@ -40,10 +40,10 @@ export const countEmailResponses = async (surveyId: string): Promise<number> => 
   try {
     console.log(`Counting email responses for survey ${surveyId}`);
     
-    // Query for counting only
-    const { count, error } = await supabase
+    // Using a more specific query to address type instantiation issues
+    const { error, count } = await supabase
       .from('survey_responses')
-      .select('id', { count: 'exact', head: true })
+      .select('*', { count: 'exact' })
       .eq('survey_template_id', surveyId)
       .eq('response_type', 'email');
     
