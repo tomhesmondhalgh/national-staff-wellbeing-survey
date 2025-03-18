@@ -2,12 +2,13 @@
 import { supabase } from "../lib/supabase";
 import { ActionPlanDescriptor, DescriptorStatus, ProgressNote } from '../types/actionPlan';
 
-// In utils/actionPlanUtils.ts, let's fix the count property issue and add the missing functions
+// Fix the getActionPlanNoteCount function to avoid infinite type instantiation
 export const getActionPlanNoteCount = async (descriptorId: string) => {
   try {
-    const { count, error } = await supabase
+    const { data, error } = await supabase
       .from('action_plan_progress_notes')
-      .select('*', { count: 'exact', head: true } as { count: 'exact', head: true });
+      .select('id')
+      .eq('descriptor_id', descriptorId);
     
     if (error) {
       console.error('Error fetching note count:', error);
@@ -15,14 +16,14 @@ export const getActionPlanNoteCount = async (descriptorId: string) => {
     }
     
     // Return count from the query
-    return count || 0;
+    return data?.length || 0;
   } catch (error) {
     console.error('Error in getActionPlanNoteCount:', error);
     return 0;
   }
 };
 
-// Add the missing functions
+// Fix the updateDescriptor function
 export const updateDescriptor = async (id: string, updates: Partial<ActionPlanDescriptor>) => {
   try {
     const { data, error } = await supabase
@@ -111,7 +112,7 @@ export const getProgressNotes = async (descriptorId: string) => {
 interface TemplateData {
   name: string;
   user_id: string;
-  descriptors: any;
+  descriptors: any[];
 }
 
 export const saveAsTemplate = async (userId: string, templateName: string) => {
@@ -141,7 +142,10 @@ export const saveAsTemplate = async (userId: string, templateName: string) => {
     // Save the template
     const { error: templateError } = await supabase
       .from('action_plan_templates')
-      .insert(templateData);
+      .insert([{
+        name: templateName,
+        user_id: userId
+      }]);
       
     if (templateError) {
       console.error('Error saving template:', templateError);
@@ -158,9 +162,9 @@ export const saveAsTemplate = async (userId: string, templateName: string) => {
 export const initializeActionPlan = async (userId: string) => {
   try {
     // Check if the user already has action plan descriptors
-    const { count, error: countError } = await supabase
+    const { data, error: countError } = await supabase
       .from('action_plan_descriptors')
-      .select('*', { count: 'exact', head: true } as { count: 'exact', head: true })
+      .select('id')
       .eq('user_id', userId);
       
     if (countError) {
@@ -169,12 +173,11 @@ export const initializeActionPlan = async (userId: string) => {
     }
     
     // If the user already has descriptors, return success without doing anything
-    if (count && count > 0) {
+    if (data && data.length > 0) {
       return { success: true, message: 'Action plan already initialized' };
     }
     
     // Get default template
-    // Assuming the is_default column exists and the descriptors are stored as JSON
     const { data: template, error: templateError } = await supabase
       .from('action_plan_templates')
       .select('*')
@@ -190,17 +193,25 @@ export const initializeActionPlan = async (userId: string) => {
       return { success: false, error: 'Default template not found' };
     }
     
-    // Fetch the descriptors from the template
-    const templateDescriptors = template.descriptors || [];
+    // Get the descriptors for the template
+    const { data: templateDescriptors, error: descriptorsError } = await supabase
+      .from('action_plan_descriptors')
+      .select('*')
+      .eq('template_id', template.id);
+      
+    if (descriptorsError) {
+      console.error('Error fetching template descriptors:', descriptorsError);
+      return { success: false, error: descriptorsError.message };
+    }
     
     // Create descriptors for the user based on the template
-    const descriptorsToInsert = templateDescriptors.map((descriptor: any) => ({
+    const descriptorsToInsert = (templateDescriptors || []).map((descriptor: any) => ({
       user_id: userId,
       section: descriptor.section || '',
       reference: descriptor.reference || '',
       index_number: descriptor.index_number || 0,
       descriptor_text: descriptor.descriptor_text || '',
-      status: 'not_started' as DescriptorStatus,
+      status: 'Not Started' as DescriptorStatus,
       deadline: null,
       assigned_to: '',
       key_actions: ''
@@ -259,19 +270,19 @@ export const getSectionProgressSummary = async (userId: string) => {
       
       // Use the correct enum values from DescriptorStatus
       switch (descriptor.status) {
-        case 'completed':
+        case "Completed":
           sectionStats.completedCount += 1;
           break;
-        case 'in_progress':
+        case "In Progress":
           sectionStats.inProgressCount += 1;
           break;
-        case 'not_started':
+        case "Not Started":
           sectionStats.notStartedCount += 1;
           break;
-        case 'blocked':
+        case "Blocked":
           sectionStats.blockedCount += 1;
           break;
-        case 'not_applicable':
+        case "Not Applicable":
           sectionStats.notApplicableCount += 1;
           break;
       }

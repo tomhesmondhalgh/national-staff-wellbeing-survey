@@ -29,7 +29,8 @@ export const useOrganizations = () => {
         // Direct query instead of function call
         const { data: orgMembers, error: orgError } = await supabase
           .from('organization_members')
-          .select('organization_id, role');
+          .select('organization_id, role')
+          .eq('user_id', user.id);
           
         if (orgError) {
           throw orgError;
@@ -43,10 +44,14 @@ export const useOrganizations = () => {
             const { data: profile, error: profileError } = await supabase
               .from('profiles')
               .select('school_name')
-              .eq('id', org.organization_id)
-              .single();
+              .eq('id', org.organization_id);
 
-            const orgName = profile && profile.school_name ? profile.school_name : 'Unknown Organization';
+            if (profileError) {
+              console.error('Error fetching org profile:', profileError);
+              continue;
+            }
+
+            const orgName = profile && profile[0]?.school_name ? profile[0].school_name : 'Unknown Organization';
             
             orgsWithRoles.push({
               id: org.organization_id,

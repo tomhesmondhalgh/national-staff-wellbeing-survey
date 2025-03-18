@@ -1,344 +1,323 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { SurveyFormData } from '../components/surveys/SurveyForm';
-import MainLayout from '../components/layout/MainLayout';
-import SurveyIntro from '../components/survey-form/SurveyIntro';
-import SurveyNotFound from '../components/survey-form/SurveyNotFound';
-import RoleSelect from '../components/survey-form/RoleSelect';
-import RadioQuestion from '../components/survey-form/RadioQuestion';
-import RatingQuestion from '../components/survey-form/RatingQuestion';
-import TextQuestion from '../components/survey-form/TextQuestion';
-import SubmitButton from '../components/survey-form/SubmitButton';
-import { roleOptions, agreementOptions, frequencyOptions } from '../components/survey-form/constants';
-import { SurveyTemplate, getSurveyById } from '../utils/surveyUtils';
+import { useNavigate } from 'react-router-dom';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from "zod";
+import { toast } from "sonner";
+import { Calendar } from "@/components/ui/calendar"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { CalendarIcon } from "@radix-ui/react-icons"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Badge } from "@/components/ui/badge"
 import { supabase } from '../lib/supabase';
-import { CustomQuestion } from '../types/customQuestions';
-import CustomTextQuestion from '../components/survey-form/CustomTextQuestion';
-import { useOrientation } from '../hooks/useOrientation';
-import ScreenOrientationOverlay from '../components/ui/ScreenOrientationOverlay';
+import { useAuth } from '../contexts/AuthContext';
 import { fixCustomQuestionTypes } from '../utils/typeConversions';
 
-interface PreviewData extends SurveyFormData {
-  customQuestionIds?: string[];
+const FormSchema = z.object({
+  name: z.string().min(2, {
+    message: "Survey name must be at least 2 characters.",
+  }),
+  date: z.date(),
+  closeDate: z.date().optional(),
+  recipients: z.string().optional(),
+  status: z.enum(['Saved', 'Scheduled', 'Sent', 'Completed', 'Archived']).optional(),
+  distributionMethod: z.enum(['link', 'email']),
+})
+
+export interface SurveyFormData {
+  name: string;
+  date: Date;
+  closeDate?: Date;
+  recipients?: string;
+  status?: 'Saved' | 'Scheduled' | 'Sent' | 'Completed' | 'Archived';
+  distributionMethod: 'link' | 'email';
 }
 
-const SurveyForm = () => {
-  const [surveyData, setSurveyData] = useState<SurveyTemplate | null>(null);
-  const [customQuestions, setCustomQuestions] = useState<CustomQuestion[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const { orientation, isMobile } = useOrientation();
-  const location = useLocation();
+interface SurveyFormProps {
+  initialData?: SurveyFormData | null;
+  onSubmit: (data: SurveyFormData, selectedCustomQuestionIds: string[]) => Promise<void>;
+  submitButtonText: string;
+  isEdit?: boolean;
+  surveyId?: string;
+  isSubmitting?: boolean;
+  initialCustomQuestionIds?: string[];
+  onPreviewSurvey?: () => void;
+  onSendSurvey?: () => void;
+}
+
+const SurveyForm: React.FC<SurveyFormProps> = ({ 
+  initialData, 
+  onSubmit, 
+  submitButtonText, 
+  isEdit = false, 
+  surveyId, 
+  isSubmitting = false,
+  initialCustomQuestionIds = [],
+  onPreviewSurvey,
+  onSendSurvey
+}) => {
+  const { user } = useAuth();
+  const [customQuestions, setCustomQuestions] = useState<any[]>([]);
+  const [selectedCustomQuestionIds, setSelectedCustomQuestionIds] = useState<string[]>(initialCustomQuestionIds);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
   const navigate = useNavigate();
-  
-  const queryParams = new URLSearchParams(location.search);
-  const surveyId = queryParams.get('id');
-  const isPreview = queryParams.get('preview') === 'true';
-  
-  const [formState, setFormState] = useState({
-    role: '',
-    leadershipPrioritize: '',
-    manageableWorkload: '',
-    workLifeBalance: '',
-    healthState: '',
-    valuedMember: '',
-    supportAccess: '',
-    confidenceInRole: '',
-    orgPride: '',
-    recommendationScore: '5',
-    leavingContemplation: '',
-    doingWell: '',
-    improvements: '',
-    customAnswers: {} as Record<string, string>,
-  });
+
+  const form = useForm<SurveyFormData>({
+    resolver: zodResolver(FormSchema),
+    defaultValues: {
+      name: initialData?.name || "",
+      date: initialData?.date || new Date(),
+      closeDate: initialData?.closeDate,
+      recipients: initialData?.recipients || "",
+      status: initialData?.status || 'Saved',
+      distributionMethod: initialData?.distributionMethod || 'link',
+    },
+    mode: "onChange"
+  })
+
+  const { control, handleSubmit, watch, formState: { isValid } } = form;
+  const distributionMethod = watch("distributionMethod");
 
   useEffect(() => {
-    const loadSurveyData = async () => {
-      setIsLoading(true);
-      
+    const fetchCustomQuestions = async () => {
       try {
-        if (!surveyId) {
-          setError('Survey ID is missing');
-          setIsLoading(false);
-          return;
+        setIsLoadingQuestions(true);
+        
+        const { data, error } = await supabase
+          .from('custom_questions')
+          .select('*')
+          .eq('creator_id', user?.id || '')
+          .eq('archived', false)
+          .order('created_at', { ascending: false });
+      
+        if (error) {
+          throw error;
         }
         
-        const survey = await getSurveyById(surveyId);
+        // Convert types properly
+        setCustomQuestions(fixCustomQuestionTypes(data || []));
         
-        if (!survey) {
-          setError('Survey not found');
-          setIsLoading(false);
-          return;
-        }
-        
-        setSurveyData(survey);
-        
-        const { data: questionLinks, error: linksError } = await supabase
-          .from('survey_questions')
-          .select('question_id')
-          .eq('survey_id', surveyId);
-          
-        if (linksError) {
-          console.error('Error fetching question links:', linksError);
-        } else if (questionLinks && questionLinks.length > 0) {
-          const questionIds = questionLinks.map(link => link.question_id);
-          
-          console.log('Found question IDs:', questionIds);
-          
-          const { data: questions, error: questionsError } = await supabase
-            .from('custom_questions')
-            .select('*')
-            .in('id', questionIds)
-            .eq('archived', false);
-            
-          if (questionsError) {
-            console.error('Error fetching custom questions:', questionsError);
-          } else {
-            console.log('Fetched custom questions:', questions);
-            setCustomQuestions(fixCustomQuestionTypes(questions || []));
-          }
-        }
-      } catch (err) {
-        console.error('Error loading survey:', err);
-        setError('Error loading survey');
+      } catch (error) {
+        console.error('Error fetching custom questions:', error);
+        toast.error('Failed to load custom questions');
       } finally {
-        setIsLoading(false);
+        setIsLoadingQuestions(false);
       }
     };
-    
-    loadSurveyData();
-  }, [surveyId]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    
-    if (name.startsWith('custom_')) {
-      setFormState(prev => ({ 
-        ...prev, 
-        customAnswers: { 
-          ...prev.customAnswers, 
-          [name]: value 
-        } 
-      }));
-    } else {
-      setFormState(prev => ({ ...prev, [name]: value }));
-    }
+    fetchCustomQuestions();
+  }, [user?.id]);
+
+  const handleCheckboxChange = (questionId: string) => {
+    setSelectedCustomQuestionIds(prevIds => {
+      if (prevIds.includes(questionId)) {
+        return prevIds.filter(id => id !== questionId);
+      } else {
+        return [...prevIds, questionId];
+      }
+    });
   };
 
-  const handleRatingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = e.target;
-    setFormState(prev => ({ ...prev, recommendationScore: value }));
+  const onSubmitHandler = async (data: SurveyFormData) => {
+    await onSubmit(data, selectedCustomQuestionIds);
   };
-  
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (isPreview) {
-      alert('This is a preview. In the actual survey, responses would be recorded.');
-      return;
-    }
-    
-    setIsSubmitting(true);
-    
-    try {
-      navigate('/survey-complete');
-    } catch (err) {
-      console.error('Error submitting survey:', err);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <MainLayout>
-        <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl mx-auto bg-white shadow-sm rounded-lg p-6 sm:p-10">
-            <div className="flex justify-center">
-              <p>Loading survey...</p>
-            </div>
-          </div>
-        </div>
-      </MainLayout>
-    );
-  }
-
-  if (error || !surveyData) {
-    return (
-      <MainLayout>
-        <SurveyNotFound />
-      </MainLayout>
-    );
-  }
-
-  console.log('Rendering with custom questions:', customQuestions);
 
   return (
-    <MainLayout>
-      {isMobile && orientation === 'portrait' && (
-        <ScreenOrientationOverlay />
-      )}
-      
-      <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
-          {isPreview && (
-            <div className="bg-brandPurple-50 p-4 rounded-lg mb-6 text-center border border-brandPurple-200">
-              <div className="inline-block p-2 bg-brandPurple-100 rounded-full mb-2">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#6C47FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M12 16V12" stroke="#6C47FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M12 8H12.01" stroke="#6C47FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <h2 className="text-xl font-bold text-gray-900">PREVIEW MODE</h2>
-              <p className="text-gray-600">This is a preview of how your survey will appear to respondents</p>
-            </div>
-          )}
-
-          <div className="page-container max-w-4xl mx-auto px-4 py-8">
-            <SurveyIntro surveyTemplate={surveyData} />
-            
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <form onSubmit={handleSubmit}>
-                <RoleSelect 
-                  value={formState.role}
-                  onChange={handleChange}
-                  options={roleOptions}
-                />
-                
-                <RadioQuestion 
-                  label="Leadership prioritise staff wellbeing in our organisation" 
-                  name="leadershipPrioritize" 
-                  options={agreementOptions}
-                  value={formState.leadershipPrioritize}
-                  onChange={handleChange}
-                />
-                
-                <RadioQuestion 
-                  label="I have a manageable workload" 
-                  name="manageableWorkload" 
-                  options={agreementOptions}
-                  value={formState.manageableWorkload}
-                  onChange={handleChange}
-                />
-                
-                <RadioQuestion 
-                  label="I have a good work-life balance" 
-                  name="workLifeBalance" 
-                  options={agreementOptions}
-                  value={formState.workLifeBalance}
-                  onChange={handleChange}
-                />
-                
-                <RadioQuestion 
-                  label="I am in good physical and mental health" 
-                  name="healthState" 
-                  options={agreementOptions}
-                  value={formState.healthState}
-                  onChange={handleChange}
-                />
-                
-                <RadioQuestion 
-                  label="I feel a valued member of the team" 
-                  name="valuedMember" 
-                  options={agreementOptions}
-                  value={formState.valuedMember}
-                  onChange={handleChange}
-                />
-                
-                <RadioQuestion 
-                  label="I know where to get support when needed and feel confident to do so" 
-                  name="supportAccess" 
-                  options={agreementOptions}
-                  value={formState.supportAccess}
-                  onChange={handleChange}
-                />
-                
-                <RadioQuestion 
-                  label="I feel confident performing my role and am given opportunities to grow" 
-                  name="confidenceInRole" 
-                  options={agreementOptions}
-                  value={formState.confidenceInRole}
-                  onChange={handleChange}
-                />
-                
-                <RadioQuestion 
-                  label="I am proud to be part of this organisation" 
-                  name="orgPride" 
-                  options={agreementOptions}
-                  value={formState.orgPride}
-                  onChange={handleChange}
-                />
-                
-                <RatingQuestion 
-                  label="On a Scale of 1-10 How Likely Are You to Recommend This Organisation to Others as a Great Place to Work?" 
-                  name="recommendationScore" 
-                  min={1} 
-                  max={10}
-                  value={formState.recommendationScore}
-                  onChange={handleRatingChange}
-                />
-                
-                <RadioQuestion 
-                  label="In the last 6 months I have contemplated leaving my role" 
-                  name="leavingContemplation" 
-                  options={frequencyOptions}
-                  value={formState.leavingContemplation}
-                  onChange={handleChange}
-                />
-                
-                <TextQuestion 
-                  label="Thinking about staff wellbeing, what does your organisation do well?" 
-                  name="doingWell"
-                  value={formState.doingWell}
-                  onChange={handleChange}
-                  subtitle="This is an anonymous survey, please do not include any personal identifiable data." 
-                />
-                
-                <TextQuestion 
-                  label="Thinking about staff wellbeing, what could your organisation do better?" 
-                  name="improvements"
-                  value={formState.improvements}
-                  onChange={handleChange}
-                  subtitle="This is an anonymous survey, please do not include any personal identifiable data." 
-                />
-                
-                {customQuestions.length > 0 && (
-                  <div className="mt-8 mb-4">
-                    <h3 className="text-lg font-semibold mb-6">Additional Questions</h3>
-                    
-                    {customQuestions.map((question) => (
-                      <React.Fragment key={question.id}>
-                        {question.type === 'text' ? (
-                          <CustomTextQuestion
-                            label={question.text}
-                            name={`custom_${question.id}`}
-                            value={formState.customAnswers[`custom_${question.id}`] || ''}
-                            onChange={handleChange}
-                            maxLength={1000}
-                          />
-                        ) : (
-                          <CustomTextQuestion
-                            label={question.text}
-                            name={`custom_${question.id}`}
-                            value={formState.customAnswers[`custom_${question.id}`] || ''}
-                            onChange={handleChange}
-                            maxLength={1000}
-                          />
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </div>
-                )}
-                
-                <SubmitButton isSubmitting={isSubmitting} />
-              </form>
-            </div>
+    <form onSubmit={handleSubmit(onSubmitHandler)} className="space-y-4">
+      <div>
+        <Label htmlFor="name">Survey Name</Label>
+        <Input id="name" placeholder="Survey Name" {...form.register("name")} />
+        {form.formState.errors.name && (
+          <p className="text-red-500 text-sm mt-1">{form.formState.errors.name.message}</p>
+        )}
+      </div>
+      <div>
+        <Label>Distribution Method</Label>
+        <div className="flex items-center space-x-4 mt-2">
+          <div className="flex items-center space-x-2">
+            <Controller
+              control={control}
+              name="distributionMethod"
+              render={({ field }) => (
+                <Button
+                  variant={field.value === "link" ? "default" : "outline"}
+                  onClick={() => field.onChange("link")}
+                  type="button"
+                >
+                  Link
+                </Button>
+              )}
+            />
+            <span>Shareable Link</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Controller
+              control={control}
+              name="distributionMethod"
+              render={({ field }) => (
+                <Button
+                  variant={field.value === "email" ? "default" : "outline"}
+                  onClick={() => field.onChange("email")}
+                  type="button"
+                >
+                  Email
+                </Button>
+              )}
+            />
+            <span>Email to Recipients</span>
           </div>
         </div>
       </div>
-    </MainLayout>
+      {distributionMethod === "email" && (
+        <div>
+          <Label htmlFor="recipients">Recipient Email Addresses (comma-separated)</Label>
+          <Input 
+            id="recipients" 
+            placeholder="email1@example.com, email2@example.com" 
+            {...form.register("recipients")} 
+          />
+        </div>
+      )}
+      <div>
+        <Label htmlFor="date">Start Date</Label>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-[240px] justify-start text-left font-normal",
+                !form.getValues("date") && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {form.getValues("date") ? (
+                new Date(form.getValues("date")).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })
+              ) : (
+                <span>Pick a date</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={form.getValues("date")}
+              onSelect={(date) => form.setValue("date", date || new Date())}
+              disabled={(date) =>
+                date < new Date()
+              }
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+      <div>
+        <Label htmlFor="closeDate">Close Date (Optional)</Label>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-[240px] justify-start text-left font-normal",
+                !form.getValues("closeDate") && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {form.getValues("closeDate") ? (
+                new Date(form.getValues("closeDate")).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })
+              ) : (
+                <span>Pick a date</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={form.getValues("closeDate")}
+              onSelect={(date) => form.setValue("closeDate", date)}
+              disabled={(date) =>
+                date < new Date()
+              }
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+      {isEdit && (
+        <div>
+          <Label htmlFor="status">Status</Label>
+          <Select defaultValue={initialData?.status || 'Saved'} onValueChange={(value) => form.setValue("status", value as any)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Saved">Saved</SelectItem>
+              <SelectItem value="Scheduled">Scheduled</SelectItem>
+              <SelectItem value="Sent">Sent</SelectItem>
+              <SelectItem value="Completed">Completed</SelectItem>
+              <SelectItem value="Archived">Archived</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+      <div>
+        <Label>Custom Questions</Label>
+        {isLoadingQuestions ? (
+          <p>Loading custom questions...</p>
+        ) : (
+          <ScrollArea className="rounded-md border p-4 h-[200px] w-full">
+            <div className="space-y-2">
+              {customQuestions.map((question) => (
+                <div key={question.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`question-${question.id}`}
+                    checked={selectedCustomQuestionIds.includes(question.id)}
+                    onCheckedChange={() => handleCheckboxChange(question.id)}
+                  />
+                  <Label htmlFor={`question-${question.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed">
+                    {question.question_text}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        )}
+      </div>
+      <div className="flex justify-between items-center">
+        <div>
+          {isEdit && onPreviewSurvey && (
+            <Button type="button" variant="secondary" onClick={onPreviewSurvey}>
+              Preview Survey
+            </Button>
+          )}
+          {isEdit && onSendSurvey && (
+            <Button type="button" variant="destructive" onClick={onSendSurvey} disabled={isSubmitting}>
+              {isSubmitting ? 'Sending...' : 'Send Survey'}
+            </Button>
+          )}
+        </div>
+        <Button type="submit" disabled={!isValid || isSubmitting}>
+          {isSubmitting ? 'Saving...' : submitButtonText}
+        </Button>
+      </div>
+    </form>
   );
 };
 

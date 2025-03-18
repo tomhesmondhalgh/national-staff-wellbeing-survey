@@ -1,112 +1,116 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from './AuthContext';
-import { Organization, getUserOrganizations } from '../lib/supabase/client';
 import { supabase } from '../lib/supabase';
+import { useAuth } from './AuthContext';
+import { Organization } from '../lib/supabase/client';
 
-interface OrganizationContextType {
-  organizations: Organization[];
+export interface OrganizationContextType {
   currentOrganization: Organization | null;
   setCurrentOrganization: (org: Organization | null) => void;
   isLoading: boolean;
-  error: Error | null;
-  refreshOrganizations: () => Promise<void>;
-  switchOrganization: (orgId: string) => void;
+  switchOrganization: (orgId: string) => Promise<boolean>;
 }
 
 const OrganizationContext = createContext<OrganizationContextType>({
-  organizations: [],
   currentOrganization: null,
   setCurrentOrganization: () => {},
-  isLoading: false,
-  error: null,
-  refreshOrganizations: async () => {},
-  switchOrganization: (orgId: string) => {},
+  isLoading: true,
+  switchOrganization: async () => false
 });
 
+export const useOrganization = () => useContext(OrganizationContext);
+
 export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [currentOrganization, setCurrentOrganization] = useState<Organization | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
   const { user } = useAuth();
 
-  const loadOrganizations = async () => {
-    if (!user) {
-      setOrganizations([]);
-      setCurrentOrganization(null);
-      setIsLoading(false);
-      return;
-    }
+  useEffect(() => {
+    const fetchOrganization = async () => {
+      setIsLoading(true);
+      try {
+        if (user) {
+          const { data: orgMembers, error: orgError } = await supabase
+            .from('organization_members')
+            .select('organization_id')
+            .eq('user_id', user.id)
+            .limit(1)
+            .single();
 
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const userOrgs = await getUserOrganizations(user.id);
-      
-      if (userOrgs.length > 0) {
-        // Fetch organization names
-        for (const org of userOrgs) {
-          try {
-            const { data: profile, error: profileError } = await supabase
+          if (orgError) {
+            console.error('Error fetching organization:', orgError);
+            setIsLoading(false);
+            return;
+          }
+
+          if (orgMembers) {
+            const { data: organization, error: profileError } = await supabase
               .from('profiles')
-              .select('school_name')
-              .eq('id', org.id)
+              .select('id, school_name as name, created_at, updated_at')
+              .eq('id', orgMembers.organization_id)
               .single();
-            
-            if (profile && profile.school_name) {
-              org.name = profile.school_name;
+
+            if (profileError) {
+              console.error('Error fetching organization profile:', profileError);
+              setIsLoading(false);
+              return;
             }
-          } catch (err) {
-            console.error('Error fetching org name:', err);
+
+            setCurrentOrganization({
+              id: organization?.id || '',
+              name: organization?.name || 'Unknown Organization',
+              created_at: organization?.created_at || new Date().toISOString(),
+              updated_at: organization?.updated_at || new Date().toISOString()
+            });
           }
         }
-        
-        setOrganizations(userOrgs);
-        
-        // Set current organization if none is selected
-        if (!currentOrganization) {
-          setCurrentOrganization(userOrgs[0]);
-        }
+      } finally {
+        setIsLoading(false);
       }
-    } catch (err) {
-      console.error('Error loading organizations:', err);
-      setError(err instanceof Error ? err : new Error('Unknown error'));
+    };
+
+    fetchOrganization();
+  }, [user]);
+
+  const switchOrganization = async (orgId: string): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      // Fetch organization details
+      const { data: organization, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, school_name as name, created_at, updated_at')
+        .eq('id', orgId)
+        .single();
+
+      if (profileError) {
+        console.error('Error fetching organization profile:', profileError);
+        setIsLoading(false);
+        return false;
+      }
+
+      if (!organization) {
+        console.error('Organization not found');
+        setIsLoading(false);
+        return false;
+      }
+
+      setCurrentOrganization({
+        id: organization.id,
+        name: organization.name,
+        created_at: organization.created_at,
+        updated_at: organization.updated_at
+      });
+      return true;
+    } catch (error) {
+      console.error('Error switching organization:', error);
+      return false;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const refreshOrganizations = async () => {
-    await loadOrganizations();
-  };
-
-  const switchOrganization = (orgId: string) => {
-    const org = organizations.find(org => org.id === orgId);
-    if (org) {
-      setCurrentOrganization(org);
-    }
-  };
-
-  useEffect(() => {
-    loadOrganizations();
-  }, [user]);
-
   return (
-    <OrganizationContext.Provider
-      value={{
-        organizations,
-        currentOrganization,
-        setCurrentOrganization,
-        isLoading,
-        error,
-        refreshOrganizations,
-        switchOrganization
-      }}
-    >
+    <OrganizationContext.Provider value={{ currentOrganization, setCurrentOrganization, isLoading, switchOrganization }}>
       {children}
     </OrganizationContext.Provider>
   );
 };
-
-export const useOrganization = () => useContext(OrganizationContext);

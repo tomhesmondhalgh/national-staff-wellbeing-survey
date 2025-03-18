@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Group, UserRoleType } from '../lib/supabase/client';
+import { Group } from '../lib/supabase/client';
 
 export const useGroups = () => {
   const { user } = useAuth();
@@ -25,7 +25,8 @@ export const useGroups = () => {
         // Direct query instead of function call
         const { data, error: groupError } = await supabase
           .from('group_members')
-          .select('group_id, groups(*)');
+          .select('group_id, groups(*)')
+          .eq('user_id', user.id);
           
         if (groupError) {
           throw groupError;

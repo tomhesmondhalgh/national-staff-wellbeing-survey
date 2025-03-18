@@ -11,18 +11,20 @@ export const countSurveyResponses = async (surveyId: string): Promise<number> =>
   try {
     console.log(`Counting responses for survey ${surveyId}`);
     
-    // Use count option with explicit type annotation to avoid infinite type instantiation
-    const { count, error } = await supabase
+    // Use explicit count() query to avoid infinite type instantiation
+    const { data, error } = await supabase
       .from('survey_responses')
-      .select('*', { count: 'exact', head: true } as { count: 'exact', head: true });
+      .select('id')
+      .eq('survey_template_id', surveyId);
     
     if (error) {
       console.error(`Error counting responses for survey ${surveyId}:`, error);
       return 0;
     }
     
+    const count = data?.length || 0;
     console.log(`Responses for survey ${surveyId}:`, count);
-    return count || 0;
+    return count;
   } catch (error) {
     console.error(`Unexpected error counting responses for survey ${surveyId}:`, error);
     return 0;
@@ -39,11 +41,11 @@ export const countEmailResponses = async (surveyId: string): Promise<number> => 
   try {
     console.log(`Counting email responses for survey ${surveyId}`);
     
-    // Use count option with explicit type annotation to avoid infinite type instantiation
-    const { count, error } = await supabase
+    // Use explicit count() query to avoid infinite type instantiation
+    const { data, error } = await supabase
       .from('survey_responses')
-      .select('*', { count: 'exact', head: true } as { count: 'exact', head: true })
-      .eq('survey_id', surveyId)
+      .select('id')
+      .eq('survey_template_id', surveyId)
       .eq('response_type', 'email');
     
     if (error) {
@@ -51,8 +53,9 @@ export const countEmailResponses = async (surveyId: string): Promise<number> => 
       return 0;
     }
     
+    const count = data?.length || 0;
     console.log(`Email responses for survey ${surveyId}:`, count);
-    return count || 0;
+    return count;
   } catch (error) {
     console.error(`Unexpected error counting email responses for survey ${surveyId}:`, error);
     return 0;
