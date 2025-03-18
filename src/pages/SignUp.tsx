@@ -76,11 +76,11 @@ const SignUp = () => {
       if (invitationToken) {
         navigate(`/invitation/accept?token=${invitationToken}`);
       } else {
-        // Regular signup flow - navigate to dashboard or profile
+        // Direct signup flow - navigate to dashboard
         toast.success('Account created successfully!', {
           description: 'Welcome to the platform. You can now log in.'
         });
-        navigate('/profile');
+        navigate('/dashboard');
       }
     } catch (err: any) {
       console.error('Signup error details:', err);
