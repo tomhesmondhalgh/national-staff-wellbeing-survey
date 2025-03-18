@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { User, ShieldCheck, LogOut, Users, Settings, CreditCard } from 'lucide-react';
 import { NavLinks } from './NavLinks';
 import OrganizationSwitcher from '../organization/OrganizationSwitcher';
+import { useAdminRole } from '../../hooks/useAdminRole';
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -26,7 +27,11 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  console.log('MobileMenu render - canManageTeam:', canManageTeam);
+  // Get access to the current admin status from our optimized hook
+  const { isAdmin: isAdminFromHook } = useAdminRole();
+  
+  // Use either the admin status passed as prop or from the hook
+  const showAdminLink = isAdmin || isAdminFromHook;
 
   return (
     <div className="md:hidden bg-white shadow-lg animate-slide-down">
@@ -94,7 +99,8 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
               </span>
             </Link>
             
-            {isAdmin && (
+            {/* Show Admin link if user has admin access */}
+            {showAdminLink && (
               <Link 
                 to="/admin" 
                 className="block px-4 py-2 rounded-md font-medium text-base hover:bg-brandPurple-50"

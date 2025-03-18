@@ -8,10 +8,15 @@ import TestingMode from '../components/admin/TestingMode';
 import CustomScriptsManagement from '../components/admin/CustomScriptsManagement';
 import { useAdminRole } from '../hooks/useAdminRole';
 import { Navigate } from 'react-router-dom';
+import { useTestingMode } from '../contexts/TestingModeContext';
 
 const Admin = () => {
   const { isAdmin, isLoading } = useAdminRole();
+  const { isTestingMode, testingRole } = useTestingMode();
   const [activeTab, setActiveTab] = useState('purchases');
+  
+  // Determine if user has admin access either through database role or testing mode
+  const hasAdminAccess = isAdmin || (isTestingMode && testingRole === 'administrator');
   
   // Loading state
   if (isLoading) {
@@ -25,7 +30,7 @@ const Admin = () => {
   }
 
   // Not an admin - redirect to dashboard
-  if (!isAdmin) {
+  if (!hasAdminAccess) {
     return <Navigate to="/dashboard" replace />;
   }
 

@@ -37,7 +37,7 @@ export function useAdminRoleOptimized() {
     }
 
     try {
-      // First handle testing mode case - this doesn't require API calls
+      // First check testing mode - this takes precedence over database role
       if (isTestingMode && testingRole) {
         const isAdminInTestMode = testingRole === 'administrator';
         setIsAdmin(isAdminInTestMode);
@@ -45,7 +45,7 @@ export function useAdminRoleOptimized() {
         return;
       }
       
-      // Check cache first
+      // Check cache if not in testing mode
       const now = Date.now();
       const cachedData = adminStatusCache[user.id];
       

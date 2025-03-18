@@ -10,7 +10,7 @@ import {
 } from '../ui/dropdown-menu';
 import { Button } from '../ui/button';
 import { useAuth } from '../../contexts/AuthContext';
-import { supabase } from '../../lib/supabase';
+import { useAdminRole } from '../../hooks/useAdminRole';
 import { useLocation } from 'react-router-dom';
 
 interface SettingsDropdownProps {
@@ -21,8 +21,9 @@ interface SettingsDropdownProps {
 
 const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ isAdmin, canManageTeam, handleSignOut }) => {
   const { user } = useAuth();
-  const [isRealAdmin, setIsRealAdmin] = React.useState(false);
   const location = useLocation();
+  // Get access to the current admin status from our optimized hook
+  const { isAdmin: isAdminFromHook } = useAdminRole();
 
   const navLinkClass = "text-base font-medium text-gray-600 hover:text-brandPurple-600 transition-colors flex items-center";
   const activeNavLinkClass = "text-purple-700";
@@ -35,32 +36,9 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ isAdmin, canManageT
                           location.pathname === '/custom-questions' ||
                           location.pathname === '/xero';
 
-  // Check if user is a real admin (not just in testing mode)
-  React.useEffect(() => {
-    const checkRealAdmin = async () => {
-      if (!user) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('role', 'administrator')
-          .maybeSingle();
-          
-        if (error) {
-          console.error('Error checking real admin status:', error);
-          return;
-        }
-        
-        setIsRealAdmin(!!data);
-      } catch (error) {
-        console.error('Error in admin check:', error);
-      }
-    };
-    
-    checkRealAdmin();
-  }, [user]);
+  // Use either the admin status passed as prop or from the hook
+  // This ensures we'll show the Admin link correctly in both normal and testing mode
+  const showAdminLink = isAdmin || isAdminFromHook;
 
   return (
     <DropdownMenu>
@@ -99,8 +77,8 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ isAdmin, canManageT
           </Link>
         </DropdownMenuItem>
         
-        {/* Show Admin link if user is either in testing mode as admin OR a real admin */}
-        {(isAdmin || isRealAdmin) && (
+        {/* Show Admin link if user has admin access */}
+        {showAdminLink && (
           <DropdownMenuItem asChild>
             <Link to="/admin" className="flex items-center w-full py-2">
               <ShieldCheck size={16} className="mr-2" />
