@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -193,6 +192,8 @@ const EditSurvey = () => {
         toast.success("Survey ready to share", {
           description: "Use the survey link to share with participants."
         });
+        
+        navigate('/surveys');
         return;
       }
       
@@ -232,6 +233,8 @@ const EditSurvey = () => {
       toast.success("Survey invitations sent", {
         description: `Invitations sent to ${emails.length} recipients.`
       });
+      
+      navigate('/surveys');
       
     } catch (error) {
       console.error('Error sending survey invitations:', error);
@@ -312,3 +315,4 @@ const EditSurvey = () => {
 };
 
 export default EditSurvey;
+

@@ -43,11 +43,11 @@ const NewSurvey = () => {
     }
   }, [user, navigate]);
 
-  const handleSubmit = async (data: SurveyFormData, customQuestionIds: string[]) => {
+  const handleSubmit = async (data: SurveyFormData, selectedCustomQuestionIds: string[]) => {
     try {
       setIsSubmitting(true);
       console.log('Survey data to be saved:', data);
-      console.log('Custom question IDs:', customQuestionIds);
+      console.log('Custom question IDs:', selectedCustomQuestionIds);
       
       if (!user) {
         toast.error("Authentication required", {
@@ -87,8 +87,8 @@ const NewSurvey = () => {
       
       setSavedSurveyId(savedSurvey.id);
 
-      if (customQuestionIds && customQuestionIds.length > 0) {
-        const surveyQuestionLinks = customQuestionIds.map(questionId => ({
+      if (selectedCustomQuestionIds && selectedCustomQuestionIds.length > 0) {
+        const surveyQuestionLinks = selectedCustomQuestionIds.map(questionId => ({
           survey_id: savedSurvey.id,
           question_id: questionId
         }));
@@ -206,11 +206,12 @@ const NewSurvey = () => {
           .update({ status: 'Sent' })
           .eq('id', id);
         
-        navigate(`/surveys/${id}/edit`, { state: { showLink: true } });
-        
         toast.success("Survey ready to share", {
           description: "Use the survey link to share with participants."
         });
+        
+        // Navigate back to surveys page after successful send operation
+        navigate('/surveys');
         return;
       }
       
@@ -229,7 +230,7 @@ const NewSurvey = () => {
           .update({ status: 'Sent' })
           .eq('id', id);
           
-        navigate(`/surveys/${id}/edit`, { state: { showLink: true } });
+        navigate('/surveys');
         return;
       }
       
@@ -258,7 +259,8 @@ const NewSurvey = () => {
         description: `Sent to ${data.count} recipients.`
       });
       
-      navigate(`/surveys/${id}/edit`);
+      // Navigate back to surveys page after successful send operation
+      navigate('/surveys');
     } catch (error) {
       console.error('Error sending survey:', error);
       toast.error("Failed to send survey", {
