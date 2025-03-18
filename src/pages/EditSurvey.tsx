@@ -52,6 +52,10 @@ const EditSurvey = () => {
         
         // Determine distribution method based on whether emails is set
         const hasEmails = data.emails && data.emails.trim() !== '';
+        const distributionMethod = hasEmails ? 'email' : 'link';
+        
+        console.log('Distribution method determined:', distributionMethod);
+        console.log('Email data found:', data.emails);
         
         setSurveyData({
           name: data.name,
@@ -59,7 +63,7 @@ const EditSurvey = () => {
           closeDate: data.close_date ? new Date(data.close_date) : undefined,
           recipients: data.emails || '',
           status: data.status || 'Saved',
-          distributionMethod: hasEmails ? 'email' : 'link'
+          distributionMethod: distributionMethod
         });
         
         const { data: linkData, error: linkError } = await supabase
@@ -97,13 +101,18 @@ const EditSurvey = () => {
       console.log('Distribution method:', data.distributionMethod);
       console.log('Email recipients:', data.distributionMethod === 'email' ? data.recipients : 'None (using link)');
       
+      // Determine the emails value based on the distribution method
+      const emailsValue = data.distributionMethod === 'email' ? data.recipients : '';
+      
+      console.log('Saving emails value to database:', emailsValue);
+      
       const { error } = await supabase
         .from('survey_templates')
         .update({
           name: data.name,
           date: updateDate.toISOString(),
           close_date: updateCloseDate ? updateCloseDate.toISOString() : null,
-          emails: data.distributionMethod === 'email' ? data.recipients : '',
+          emails: emailsValue,
           status: data.status || 'Saved',
           updated_at: new Date().toISOString()
         })
@@ -140,6 +149,12 @@ const EditSurvey = () => {
           console.error('Error linking custom questions:', insertError);
         }
       }
+      
+      // After successful save, update the local state to reflect current database values
+      setSurveyData({
+        ...data,
+        recipients: emailsValue
+      });
       
       toast.success("Survey updated successfully", {
         description: "Your changes have been saved."
