@@ -12,9 +12,9 @@ export const countSurveyResponses = async (surveyId: string): Promise<number> =>
     console.log(`Counting responses for survey ${surveyId}`);
     
     // Use a simpler query structure to avoid type instantiation issues
-    const { data, error } = await supabase
+    const { count, error } = await supabase
       .from('survey_responses')
-      .select('id')
+      .select('*', { count: 'exact', head: true })
       .eq('survey_template_id', surveyId);
     
     if (error) {
@@ -22,9 +22,8 @@ export const countSurveyResponses = async (surveyId: string): Promise<number> =>
       return 0;
     }
     
-    const count = data?.length || 0;
     console.log(`Responses for survey ${surveyId}:`, count);
-    return count;
+    return count || 0;
   } catch (error) {
     console.error(`Unexpected error counting responses for survey ${surveyId}:`, error);
     return 0;
@@ -42,9 +41,9 @@ export const countEmailResponses = async (surveyId: string): Promise<number> => 
     console.log(`Counting email responses for survey ${surveyId}`);
     
     // Simplify the query to avoid type instantiation issues
-    const { data, error } = await supabase
+    const { count, error } = await supabase
       .from('survey_responses')
-      .select('id')
+      .select('*', { count: 'exact', head: true })
       .eq('survey_template_id', surveyId)
       .eq('response_type', 'email');
     
@@ -53,9 +52,8 @@ export const countEmailResponses = async (surveyId: string): Promise<number> => 
       return 0;
     }
     
-    const count = data?.length || 0;
     console.log(`Email responses for survey ${surveyId}:`, count);
-    return 0;
+    return count || 0;
   } catch (error) {
     console.error(`Unexpected error counting email responses for survey ${surveyId}:`, error);
     return 0;
