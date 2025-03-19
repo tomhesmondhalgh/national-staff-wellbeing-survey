@@ -143,7 +143,6 @@ const PublicSurveyForm: React.FC = () => {
       });
       
       // Create the basic response payload
-      // Simplified payload to just include the essential survey data
       const responsePayload = {
         survey_template_id: surveyId,
         role: formData.role,
@@ -163,21 +162,7 @@ const PublicSurveyForm: React.FC = () => {
       
       console.log('Submitting response payload:', responsePayload);
       
-      // First, check if the survey_responses table exists
-      const { error: tableCheckError } = await supabase
-        .from('survey_responses')
-        .select('id')
-        .limit(1);
-      
-      if (tableCheckError) {
-        console.error('Error checking survey_responses table:', tableCheckError);
-        console.error('Table check error details:', tableCheckError.details);
-        console.error('Table check error hint:', tableCheckError.hint);
-        console.error('Table check error message:', tableCheckError.message);
-        throw new Error(`Table error: ${tableCheckError.message}`);
-      }
-      
-      // Insert the survey response
+      // Insert the survey response - no need to check for table existence anymore
       const { data: responseData, error: responseError } = await supabase
         .from('survey_responses')
         .insert(responsePayload)
@@ -257,7 +242,7 @@ const PublicSurveyForm: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-b from-white to-purple-50">
       <div className="container mx-auto px-4 py-8 max-w-3xl">
         <div className="bg-white shadow-md rounded-lg p-6 md:p-8 border border-purple-100">
-          {/* Logo and title moved to SurveyIntro component */}
+          {/* SurveyIntro component now handles all header/logo elements */}
           <SurveyIntro surveyTemplate={surveyData} />
           
           <form onSubmit={handleSubmit} className="mt-8 space-y-8">
