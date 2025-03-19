@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { toast } from "sonner";
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
-import { getSurveyOptions, getRecommendationScore, getLeavingContemplation, getDetailedWellbeingResponses, getTextResponses } from '../utils/analysisUtils';
+import { getSurveyOptions, getRecommendationScore, getLeavingContemplation, getDetailedWellbeingResponses, getTextResponses, getCustomQuestionResponses } from '../utils/analysisUtils';
 import { getSurveySummary } from '../utils/summaryUtils';
 import { generatePDF, sendReportByEmail } from '../utils/reportUtils';
 import { useAuth } from '../contexts/AuthContext';
@@ -253,13 +253,19 @@ const WellbeingQuestionChart = ({
 
 const TextResponsesSection = ({
   doingWellResponses,
-  improvementResponses
+  improvementResponses,
+  customQuestionResponses
 }: {
   doingWellResponses: any[];
   improvementResponses: any[];
-}) => <div className="mt-12">
+  customQuestionResponses: any[];
+}) => {
+  const hasCustomResponses = customQuestionResponses && customQuestionResponses.length > 0;
+  
+  return <div className="mt-12">
     <h2 className="text-xl font-semibold mb-6 text-center">Open-ended Feedback</h2>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
       <Card className="p-6">
         <h3 className="text-lg font-medium mb-4">What does your organisation do well?</h3>
         {doingWellResponses.length > 0 ? <ul className="space-y-3">
@@ -278,7 +284,30 @@ const TextResponsesSection = ({
           </ul> : <p className="text-gray-500">No responses found.</p>}
       </Card>
     </div>
+    
+    {hasCustomResponses && (
+      <div className="mt-8">
+        <h3 className="text-lg font-medium mb-6 text-center">Custom Question Responses</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {customQuestionResponses.map((item, index) => (
+            <Card key={index} className="p-6">
+              <h3 className="text-lg font-medium mb-4">{item.question}</h3>
+              {item.responses.length > 0 ? (
+                <ul className="space-y-3">
+                  {item.responses.map((response, responseIndex) => (
+                    <li key={responseIndex} className="text-sm">{response}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-500">No responses found.</p>
+              )}
+            </Card>
+          ))}
+        </div>
+      </div>
+    )}
   </div>;
+};
 
 const Analysis = () => {
   const { user } = useAuth();
@@ -305,6 +334,7 @@ const Analysis = () => {
     doingWell: [],
     improvements: []
   });
+  const [customQuestionResponses, setCustomQuestionResponses] = useState<any[]>([]);
   const [summary, setSummary] = useState<any>({});
   const [noData, setNoData] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
@@ -374,11 +404,20 @@ const Analysis = () => {
             endDate = customDateRange.to.toISOString().split('T')[0];
           }
         }
-        const [recommendationScoreData, leavingContemplationData, detailedResponsesData, textResponsesData] = await Promise.all([getRecommendationScore(selectedSurvey, startDate, endDate), getLeavingContemplation(selectedSurvey, startDate, endDate), getDetailedWellbeingResponses(selectedSurvey, startDate, endDate), getTextResponses(selectedSurvey, startDate, endDate)]);
+        const [recommendationScoreData, leavingContemplationData, detailedResponsesData, textResponsesData, customQuestionResponsesData] = await Promise.all([
+          getRecommendationScore(selectedSurvey, startDate, endDate), 
+          getLeavingContemplation(selectedSurvey, startDate, endDate), 
+          getDetailedWellbeingResponses(selectedSurvey, startDate, endDate), 
+          getTextResponses(selectedSurvey, startDate, endDate),
+          getCustomQuestionResponses(selectedSurvey, startDate, endDate)
+        ]);
+        
         setRecommendationScore(recommendationScoreData);
         setLeavingContemplation(leavingContemplationData);
         setDetailedResponses(detailedResponsesData);
         setTextResponses(textResponsesData);
+        setCustomQuestionResponses(customQuestionResponsesData);
+        
         const summaryData = await getSurveySummary(selectedSurvey, recommendationScoreData, leavingContemplationData, detailedResponsesData, textResponsesData);
         setSummary(summaryData);
       } catch (error) {
@@ -588,7 +627,11 @@ const Analysis = () => {
               </div>
             </div>
 
-            <TextResponsesSection doingWellResponses={textResponses.doingWell} improvementResponses={textResponses.improvements} />
+            <TextResponsesSection 
+              doingWellResponses={textResponses.doingWell} 
+              improvementResponses={textResponses.improvements} 
+              customQuestionResponses={customQuestionResponses}
+            />
           </div>}
       </div>
     </MainLayout>;
