@@ -16,7 +16,7 @@ const CustomQuestionsSection: React.FC<CustomQuestionsSectionProps> = ({
   handleCustomQuestionResponse
 }) => {
   useEffect(() => {
-    // Enhanced debugging for CustomQuestionsSection
+    // Enhanced debugging for CustomQuestionsSection with more details
     console.log('CustomQuestionsSection component mounted/updated');
     console.log('customQuestions prop received:', customQuestions);
     console.log('customQuestions prop type:', typeof customQuestions);
@@ -25,7 +25,11 @@ const CustomQuestionsSection: React.FC<CustomQuestionsSectionProps> = ({
     if (!customQuestions) {
       console.error('customQuestions prop is undefined or null');
     } else if (customQuestions.length === 0) {
-      console.warn('customQuestions array is empty');
+      console.warn('customQuestions array is empty - data flow issue or no questions linked to survey');
+      console.log('Potential causes:');
+      console.log('1. No records in survey_questions table for this survey');
+      console.log('2. Records exist but join query is failing');
+      console.log('3. Data transformation issue after query');
     } else {
       console.log('Number of custom questions:', customQuestions.length);
       customQuestions.forEach((q, i) => {
@@ -45,6 +49,7 @@ const CustomQuestionsSection: React.FC<CustomQuestionsSectionProps> = ({
     
     console.log('Current form data:', formData);
     console.log('Custom responses in form data:', formData?.custom_responses || {});
+    console.log('');
   }, [customQuestions, formData]);
 
   // Debug render count
@@ -53,12 +58,12 @@ const CustomQuestionsSection: React.FC<CustomQuestionsSectionProps> = ({
 
   // Early return if no questions with better logging
   if (!customQuestions) {
-    console.error('customQuestions prop is undefined or null');
+    console.error('customQuestions prop is undefined or null - check data flow from parent component');
     return null;
   }
   
   if (customQuestions.length === 0) {
-    console.log('CustomQuestionsSection: No custom questions available to render');
+    console.log('CustomQuestionsSection: No custom questions available to render - check if questions are linked to this survey');
     return null;
   }
 

@@ -53,7 +53,9 @@ const PublicSurveyForm: React.FC = () => {
           });
         });
       } else {
-        console.error('No custom questions found for the target survey');
+        console.error('No custom questions found for the target survey - checking if any data is missing in the flow');
+        console.log('Survey ID is correctly passed to useSurveyData:', surveyId);
+        console.log('isPreview flag is set correctly:', isPreview);
       }
       console.log('==== END TARGET SURVEY DEBUGGING ====');
     }
