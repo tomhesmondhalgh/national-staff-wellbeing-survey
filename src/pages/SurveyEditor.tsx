@@ -115,18 +115,19 @@ const SurveyEditor = () => {
     }
   };
 
-  const handleSubmit = async (data: SurveyFormData, selectedCustomQuestionIds: string[]) => {
+  const handleSubmit = async (data: SurveyFormData, selectedCustomQuestionIds: string[], action?: 'save' | 'preview' | 'send') => {
     try {
       setIsSubmitting(true);
       console.log('Survey data to be saved:', data);
       console.log('Custom question IDs:', selectedCustomQuestionIds);
+      console.log('Action requested:', action);
       
       if (!user) {
         toast.error("Authentication required", {
           description: "You must be logged in to create a survey."
         });
         navigate('/login');
-        return;
+        return null;
       }
 
       const surveyDate = new Date(data.date);
@@ -135,9 +136,17 @@ const SurveyEditor = () => {
       // Determine the emails value based on the distribution method
       const emailsValue = data.distributionMethod === 'email' ? data.recipients : '';
       
+      // Set status based on action
+      let statusToSave = data.status || 'Saved';
+      if (action === 'send') {
+        statusToSave = 'Sent';
+      }
+      
+      let newSurveyId = savedSurveyId;
+      
       if (isEditMode && savedSurveyId) {
         // Update existing survey
-        console.log('Updating survey with status:', data.status || 'Saved');
+        console.log('Updating survey with status:', statusToSave);
         
         const { error } = await supabase
           .from('survey_templates')
@@ -146,7 +155,7 @@ const SurveyEditor = () => {
             date: surveyDate.toISOString(),
             close_date: closeDate ? closeDate.toISOString() : null,
             emails: emailsValue,
-            status: data.status || 'Saved',
+            status: statusToSave,
             updated_at: new Date().toISOString()
           })
           .eq('id', savedSurveyId);
@@ -169,7 +178,7 @@ const SurveyEditor = () => {
         }
       } else {
         // Create new survey
-        console.log('Creating survey with status:', data.status || 'Saved');
+        console.log('Creating survey with status:', statusToSave);
         
         const { data: savedSurvey, error } = await supabase
           .from('survey_templates')
@@ -179,7 +188,7 @@ const SurveyEditor = () => {
             close_date: closeDate ? closeDate.toISOString() : null,
             creator_id: user.id,
             emails: emailsValue,
-            status: data.status || 'Saved'
+            status: statusToSave
           })
           .select()
           .single();
@@ -193,6 +202,7 @@ const SurveyEditor = () => {
         }
         
         console.log('Saved survey:', savedSurvey);
+        newSurveyId = savedSurvey.id;
         setSavedSurveyId(savedSurvey.id);
         
         // Add to Hubspot list for new surveys
@@ -226,9 +236,9 @@ const SurveyEditor = () => {
       }
       
       // Link custom questions
-      if (selectedCustomQuestionIds.length > 0 && savedSurveyId) {
+      if (selectedCustomQuestionIds.length > 0 && newSurveyId) {
         const surveyQuestionLinks = selectedCustomQuestionIds.map(questionId => ({
-          survey_id: savedSurveyId,
+          survey_id: newSurveyId,
           question_id: questionId
         }));
         
@@ -244,23 +254,33 @@ const SurveyEditor = () => {
       // Update local state with the saved data
       setSurveyData({
         ...data,
-        recipients: emailsValue
+        recipients: emailsValue,
+        status: statusToSave
       });
       
-      // Display success message
-      const successMessage = isEditMode ? "Survey updated successfully" : "Survey created successfully!";
-      const successDescription = isEditMode ? "Your changes have been saved." : "Your survey has been saved. You can now preview or send it.";
-      
-      toast.success(successMessage, {
-        description: successDescription
-      });
-      
-      // Redirect to edit page for new surveys
-      if (!isEditMode && savedSurveyId) {
-        navigate(`/surveys/${savedSurveyId}/edit`);
+      // Based on the action, determine what to do next
+      if (action === 'preview') {
+        window.open(`/survey?id=${newSurveyId}&preview=true`, '_blank');
+      } else if (action === 'send') {
+        await handleSendEmails(newSurveyId!, data.distributionMethod, emailsValue);
+        navigate('/surveys');
+      } else if (action === 'save') {
+        // Display success message
+        toast.success("Survey saved successfully", {
+          description: "Your changes have been saved."
+        });
+        navigate('/surveys');
+      } else {
+        // Default case, just show a success message
+        const successMessage = isEditMode ? "Survey updated successfully" : "Survey created successfully!";
+        const successDescription = isEditMode ? "Your changes have been saved." : "Your survey has been saved. You can now preview or send it.";
+        
+        toast.success(successMessage, {
+          description: successDescription
+        });
       }
       
-      return savedSurveyId;
+      return newSurveyId;
       
     } catch (error) {
       console.error('Error saving survey:', error);
@@ -274,99 +294,30 @@ const SurveyEditor = () => {
     }
   };
 
-  const handlePreviewSurvey = async () => {
-    try {
-      // If survey is already saved, open preview directly
-      if (savedSurveyId) {
-        window.open(`/survey?id=${savedSurveyId}&preview=true`, '_blank');
-        return;
-      }
-      
-      // Need to save the survey first
-      toast.info("Saving survey before preview", {
-        description: "The survey will be saved first, then opened in preview mode."
-      });
-      
-      // Save form and get survey ID
-      const formData = surveyData || {
-        name: '',
-        date: new Date(),
-        distributionMethod: 'link'
-      };
-      
-      const newSurveyId = await handleSubmit(formData, customQuestionIds);
-      
-      // Open preview if save was successful
-      if (newSurveyId) {
-        window.open(`/survey?id=${newSurveyId}&preview=true`, '_blank');
-      }
-    } catch (error) {
-      console.error('Error handling preview:', error);
-      toast.error("Failed to preview survey", {
-        description: "Please try again."
-      });
-    }
+  const handleSaveChanges = async (data: SurveyFormData, selectedCustomQuestionIds: string[]) => {
+    await handleSubmit(data, selectedCustomQuestionIds, 'save');
   };
 
-  const handleSendSurvey = async () => {
+  const handlePreviewSurvey = async (data: SurveyFormData, selectedCustomQuestionIds: string[]) => {
+    await handleSubmit(data, selectedCustomQuestionIds, 'preview');
+  };
+
+  const handleSendSurvey = async (data: SurveyFormData, selectedCustomQuestionIds: string[]) => {
+    await handleSubmit(data, selectedCustomQuestionIds, 'send');
+  };
+  
+  const handleSendEmails = async (surveyId: string, distributionMethod: 'link' | 'email', emails: string) => {
     try {
-      setIsSubmitting(true);
-      
-      // Save the survey first if needed
-      let surveyToSend = savedSurveyId;
-      
-      if (!surveyToSend) {
-        const formData = surveyData || {
-          name: '',
-          date: new Date(),
-          distributionMethod: 'link'
-        };
-        
-        surveyToSend = await handleSubmit(formData, customQuestionIds);
-        
-        if (!surveyToSend) {
-          toast.error("Failed to save survey", {
-            description: "Unable to send the survey. Please try again."
-          });
-          setIsSubmitting(false);
-          return;
-        }
-      }
-      
-      // Get latest survey data
-      const { data: survey, error: surveyError } = await supabase
-        .from('survey_templates')
-        .select('*')
-        .eq('id', surveyToSend)
-        .single();
-      
-      if (surveyError || !survey) {
-        console.error('Error fetching survey for sending:', surveyError);
-        throw surveyError || new Error("Survey not found");
-      }
-      
-      const baseUrl = window.location.origin;
-      const surveyUrl = `${baseUrl}/survey?id=${surveyToSend}`;
-      
-      const currentDistMethod = surveyData?.distributionMethod || 'link';
-      
-      // Handle link distribution
-      if (currentDistMethod === 'link' || !survey.emails || survey.emails.trim() === '') {
-        await supabase
-          .from('survey_templates')
-          .update({ status: 'Sent' })
-          .eq('id', surveyToSend);
-        
+      // For link distribution, we've already marked the survey as sent
+      if (distributionMethod === 'link' || !emails || emails.trim() === '') {
         toast.success("Survey ready to share", {
           description: "Use the survey link to share with participants."
         });
-        
-        navigate('/surveys');
         return;
       }
       
       // Handle email distribution
-      const emailList = survey.emails
+      const emailList = emails
         .split(',')
         .map((email: string) => email.trim())
         .filter((email: string) => email !== '' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
@@ -375,21 +326,17 @@ const SurveyEditor = () => {
         toast.info("No valid email recipients found", {
           description: "Use the survey link to share with participants."
         });
-        
-        await supabase
-          .from('survey_templates')
-          .update({ status: 'Sent' })
-          .eq('id', surveyToSend);
-          
-        navigate('/surveys');
         return;
       }
+      
+      const baseUrl = window.location.origin;
+      const surveyUrl = `${baseUrl}/survey?id=${surveyId}`;
       
       // Send emails
       const { data, error } = await supabase.functions.invoke('send-survey-email', {
         body: { 
-          surveyId: surveyToSend,
-          surveyName: survey.name,
+          surveyId: surveyId,
+          surveyName: surveyData?.name || "Wellbeing Survey",
           emails: emailList,
           surveyUrl: surveyUrl,
           isReminder: false
@@ -400,24 +347,14 @@ const SurveyEditor = () => {
         throw error;
       }
       
-      // Update survey status to sent
-      await supabase
-        .from('survey_templates')
-        .update({ status: 'Sent' })
-        .eq('id', surveyToSend);
-      
       toast.success("Survey sent successfully!", {
         description: `Sent to ${data?.count || emailList.length} recipients.`
       });
-      
-      navigate('/surveys');
     } catch (error) {
-      console.error('Error sending survey:', error);
-      toast.error("Failed to send survey", {
-        description: "Please check your connection and try again."
+      console.error('Error sending survey emails:', error);
+      toast.error("Failed to send survey emails", {
+        description: "The survey has been saved and marked as sent, but there was an issue sending the emails."
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -498,14 +435,14 @@ const SurveyEditor = () => {
         
         <SurveyForm 
           initialData={surveyData || undefined} 
-          onSubmit={handleSubmit} 
+          onSubmit={handleSaveChanges}
+          onPreviewSurvey={handlePreviewSurvey}
+          onSendSurvey={handleSendSurvey}
           submitButtonText={isEditMode ? "Save Changes" : "Save"}
           isEdit={isEditMode}
           surveyId={savedSurveyId}
           isSubmitting={isSubmitting}
           initialCustomQuestionIds={customQuestionIds}
-          onPreviewSurvey={handlePreviewSurvey}
-          onSendSurvey={handleSendSurvey}
         />
 
         {isEditMode && (

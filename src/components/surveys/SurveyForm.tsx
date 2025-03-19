@@ -35,13 +35,13 @@ export type SurveyFormData = z.infer<typeof surveyFormSchema>;
 interface SurveyFormProps {
   initialData?: Partial<SurveyFormData>;
   onSubmit: (data: SurveyFormData, customQuestionIds: string[]) => void;
+  onPreviewSurvey?: (data: SurveyFormData, customQuestionIds: string[]) => void;
+  onSendSurvey?: (data: SurveyFormData, customQuestionIds: string[]) => void;
   submitButtonText?: string;
   isEdit?: boolean;
   surveyId?: string | null;
   isSubmitting?: boolean;
   initialCustomQuestionIds?: string[];
-  onPreviewSurvey?: () => void;
-  onSendSurvey?: () => void;
 }
 
 const SurveyForm: React.FC<SurveyFormProps> = ({ 
@@ -89,12 +89,14 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
 
   const handlePreviewClick = () => {
     if (!onPreviewSurvey) return;
-    onPreviewSurvey();
+    const data = form.getValues();
+    onPreviewSurvey(data, selectedCustomQuestionIds || []);
   };
   
   const handleSendSurvey = () => {
     if (!onSendSurvey) return;
-    onSendSurvey();
+    const data = form.getValues();
+    onSendSurvey(data, selectedCustomQuestionIds || []);
   };
 
   return (
@@ -124,7 +126,7 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">
-                  <p>Save survey without sending it</p>
+                  <p>Save survey and return to surveys list</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -144,7 +146,7 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">
-                  <p>See how the survey will look to recipients</p>
+                  <p>Save and preview how the survey will look to recipients</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -165,8 +167,8 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
                 </TooltipTrigger>
                 <TooltipContent side="bottom">
                   <p>{form.watch("distributionMethod") === "email" ? 
-                    "Send email invitations to recipients" : 
-                    "Generate shareable link and mark as sent"}
+                    "Save, send email invitations and mark as sent" : 
+                    "Save, generate shareable link and mark as sent"}
                   </p>
                 </TooltipContent>
               </Tooltip>
