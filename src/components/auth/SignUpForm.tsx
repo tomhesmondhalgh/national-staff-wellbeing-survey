@@ -10,9 +10,12 @@ import { SignUpFormData } from '../../types/auth';
 interface SignUpFormProps {
   onSubmit: (data: SignUpFormData) => void;
   isLoading?: boolean;
+  invitationData?: any; // Add support for invitation data
 }
 
-const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading = false }) => {
+const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading = false, invitationData }) => {
+  console.log('Rendering SignUpForm with invitation data:', invitationData);
+  
   const [formData, setFormData] = useState<SignUpFormData>({
     firstName: '',
     lastName: '',
@@ -53,6 +56,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading = false }) 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('SignUpForm form submitted');
     
     if (useCustomSchool) {
       const schoolAddress = compileCustomAddress();

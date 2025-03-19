@@ -19,11 +19,13 @@ const AuthForm: React.FC<AuthFormProps> = ({
 }) => {
   console.log('AuthForm rendering with mode:', mode); // Add debugging
   
-  // Make sure we're correctly rendering the SignUpForm when in signup mode
+  // Explicitly check the mode to ensure correct form rendering
   if (mode === 'login') {
+    console.log('Rendering LoginForm component');
     return <LoginForm onSubmit={onSubmit} isLoading={isLoading} />;
   }
   
+  console.log('Rendering SignUpForm component');
   return (
     <SignUpForm 
       onSubmit={(data: SignUpFormData) => {
@@ -31,6 +33,7 @@ const AuthForm: React.FC<AuthFormProps> = ({
         onSubmit(data);
       }} 
       isLoading={isLoading}
+      invitationData={invitationData}
     />
   );
 };
