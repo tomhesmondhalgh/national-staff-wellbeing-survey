@@ -1,39 +1,23 @@
 
 import { useState } from 'react';
-import { OrganizationMember } from '../../lib/supabase/client';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import EditRoleDialog from './EditRoleDialog';
 
 type TeamMemberActionsProps = {
   memberId: string;
   type: 'member' | 'invitation';
   refetchAll: () => void;
-  member?: OrganizationMember;
 };
 
-export default function TeamMemberActions({ memberId, type, refetchAll, member }: TeamMemberActionsProps) {
-  const [selectedMember, setSelectedMember] = useState<OrganizationMember | null>(null);
-  const [isEditRoleDialogOpen, setIsEditRoleDialogOpen] = useState(false);
+export default function TeamMemberActions({ memberId, type, refetchAll }: TeamMemberActionsProps) {
   const [isLoading, setIsLoading] = useState(false);
   
   const handleRemoveMember = async (memberId: string) => {
     if (!confirm("Are you sure you want to remove this member?")) return;
     
     try {
-      if (memberId.startsWith('derived-') || memberId.startsWith('personal-org-')) {
-        toast.error('Cannot remove organization owner');
-        return;
-      }
-      
-      const { error } = await supabase
-        .from('organization_members')
-        .delete()
-        .eq('id', memberId);
-        
-      if (error) throw error;
-      
-      toast.success('Member removed successfully');
+      toast.error('This functionality has been simplified and removing members is currently disabled');
+      // We've removed organization_members table in the simplification
       refetchAll();
     } catch (error) {
       console.error('Error removing member:', error);
@@ -46,17 +30,8 @@ export default function TeamMemberActions({ memberId, type, refetchAll, member }
     
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('cancel-invitation', {
-        body: { invitationId }
-      });
-      
-      if (error) throw error;
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Unknown error occurred');
-      }
-      
-      toast.success('Invitation cancelled successfully');
+      toast.error('This functionality has been simplified and cancelling invitations is currently disabled');
+      // We've removed invitations table in the simplification
       refetchAll();
     } catch (error) {
       console.error('Error cancelling invitation:', error);
@@ -65,37 +40,16 @@ export default function TeamMemberActions({ memberId, type, refetchAll, member }
       setIsLoading(false);
     }
   };
-
-  const handleEditRole = (member: OrganizationMember) => {
-    if (member.id.startsWith('derived-') || member.id.startsWith('personal-org-')) {
-      toast.error('Cannot change organization owner role');
-      return;
-    }
-    
-    setSelectedMember(member);
-    setIsEditRoleDialogOpen(true);
-  };
-
-  const handleRoleUpdated = () => {
-    refetchAll();
-    setIsEditRoleDialogOpen(false);
-    setSelectedMember(null);
-  };
   
   return (
     <>
-      {type === 'member' && member ? (
-        <>
-          <button onClick={() => handleEditRole(member)}>
-            Change Role
-          </button>
-          <button 
-            onClick={() => handleRemoveMember(memberId)}
-            className="text-red-600 hover:text-red-800 hover:bg-red-50"
-          >
-            Remove
-          </button>
-        </>
+      {type === 'member' ? (
+        <button 
+          onClick={() => handleRemoveMember(memberId)}
+          className="text-red-600 hover:text-red-800 hover:bg-red-50"
+        >
+          Remove
+        </button>
       ) : (
         <button 
           onClick={() => handleCancelInvitation(memberId)}
@@ -104,15 +58,6 @@ export default function TeamMemberActions({ memberId, type, refetchAll, member }
         >
           {isLoading ? 'Cancelling...' : 'Cancel Invitation'}
         </button>
-      )}
-      
-      {selectedMember && (
-        <EditRoleDialog
-          isOpen={isEditRoleDialogOpen}
-          onClose={() => setIsEditRoleDialogOpen(false)}
-          member={selectedMember}
-          onRoleUpdated={handleRoleUpdated}
-        />
       )}
     </>
   );

@@ -4,9 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/card';
 import { 
-  ensureAllUsersHaveOrgAdminRole, 
-  ensureCurrentUserHasOrgAdminRole,
-  EnsureUserRoleResult
+  ensureAllUsersHaveProfiles, 
+  ensureCurrentUserHasProfile
 } from '../utils/auth/ensureUserRoles';
 import { toast } from 'sonner';
 import { Loader2, CheckCircle, XCircle, UserCheck, AlertTriangle } from 'lucide-react';
@@ -21,13 +20,13 @@ export default function UserRoleManager() {
     setIsLoading(true);
     setErrorDetails(null);
     try {
-      const result = await ensureAllUsersHaveOrgAdminRole();
+      const result = await ensureAllUsersHaveProfiles();
       setResult(result);
       
       if (result.success) {
         toast.success(result.message);
       } else {
-        const errorMsg = `Error updating user roles: ${result.error?.message || 'Unknown error'}`;
+        const errorMsg = `Error updating user profiles: ${result.error?.message || 'Unknown error'}`;
         setErrorDetails(errorMsg);
         toast.error(errorMsg);
       }
@@ -45,32 +44,22 @@ export default function UserRoleManager() {
     setIsLoading(true);
     setErrorDetails(null);
     try {
-      console.log('Starting role update for current user');
-      const result = await ensureCurrentUserHasOrgAdminRole();
-      console.log('Role update result:', result);
+      console.log('Starting profile check for current user');
+      const result = await ensureCurrentUserHasProfile();
+      console.log('Profile check result:', result);
       
       if (result.success) {
-        if ('noUser' in result) {
-          toast.info('No logged in user to check');
-        } else if ('roleAdded' in result) {
-          if (result.roleAdded || result.membershipAdded) {
-            toast.success('Successfully updated your role to Organization Admin');
-          } else {
-            toast.info('Your account already has the Organization Admin role');
-          }
-        } 
+        toast.success('Successfully verified your profile information');
       } else {
-        // TypeScript-safe error handling
-        const errorSource = 'errorSource' in result ? result.errorSource : 'unknown';
-        const errorMessage = 'error' in result && result.error ? 
+        const errorMessage = result.error ? 
           (typeof result.error === 'string' ? result.error : result.error.message || 'Unknown error') : 
           'Unknown error';
           
-        const detailedError = `Error updating your role (${errorSource}): ${errorMessage}`;
+        const detailedError = `Error checking your profile: ${errorMessage}`;
         
-        console.error(detailedError, 'error' in result ? result.error : null);
+        console.error(detailedError, result.error);
         setErrorDetails(detailedError);
-        toast.error(`Error updating your role: ${errorMessage}`);
+        toast.error(`Error checking your profile: ${errorMessage}`);
       }
     } catch (error: any) {
       console.error('Exception:', error);
@@ -89,11 +78,11 @@ export default function UserRoleManager() {
           <CardHeader>
             <CardTitle>Update Current User</CardTitle>
             <CardDescription>
-              Ensure your account has the Organization Admin role
+              Ensure your account has a profile
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p>This will check your current account and ensure you have the Organization Admin role.</p>
+            <p>This will check your current account and ensure you have a profile.</p>
             
             {errorDetails && (
               <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
@@ -118,7 +107,7 @@ export default function UserRoleManager() {
               ) : (
                 <>
                   <UserCheck className="mr-2 h-4 w-4" />
-                  Update My Role
+                  Verify My Profile
                 </>
               )}
             </Button>
@@ -129,11 +118,11 @@ export default function UserRoleManager() {
           <CardHeader>
             <CardTitle>Update All Users</CardTitle>
             <CardDescription>
-              Ensure all users have the Organization Admin role
+              Ensure all users have profiles
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p>This will check all users in the system and ensure they have the Organization Admin role.</p>
+            <p>This will check all users in the system and ensure they have profiles.</p>
             
             {result && (
               <div className="mt-4 p-4 bg-muted rounded-md">
@@ -149,8 +138,7 @@ export default function UserRoleManager() {
                 {result.success && result.stats && (
                   <ul className="mt-2 space-y-1 text-sm">
                     <li>Total users processed: {result.stats.total}</li>
-                    <li>Roles added: {result.stats.rolesAdded}</li>
-                    <li>Memberships added: {result.stats.membershipsAdded}</li>
+                    <li>Profiles created: {result.stats.profilesCreated}</li>
                     {result.stats.errors > 0 && (
                       <li className="text-red-500">Errors: {result.stats.errors}</li>
                     )}
@@ -179,7 +167,7 @@ export default function UserRoleManager() {
               ) : (
                 <>
                   <UserCheck className="mr-2 h-4 w-4" />
-                  Update All Users
+                  Verify All Users
                 </>
               )}
             </Button>

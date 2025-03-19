@@ -1,62 +1,29 @@
 
-import { useEffect, useState, useCallback } from 'react';
-import { useRoleManagement } from './useRoleManagement';
-import { UserRoleType } from '@/lib/supabase/client';
+import { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { useSimpleAuth } from './useSimpleAuth';
 
+/**
+ * A simplified permissions hook that replaces the complex role-based system
+ * with direct authentication checks
+ */
 export function usePermissions() {
-  // We'll use the role management hook as the source of truth
-  const { 
-    currentRole,
-    isLoading,
-    error
-  } = useRoleManagement();
-  
-  // For analytics/monitoring purposes
-  useEffect(() => {
-    console.log('Using simplified role system: current role =', currentRole);
-  }, [currentRole]);
+  const { user } = useAuth();
+  const { isAuthenticated } = useSimpleAuth();
+  const [permissions, setPermissions] = useState<Record<string, boolean>>({});
 
-  // Simplified permission checking functions
-  const isAdmin = useCallback(() => {
-    return currentRole === 'administrator' || currentRole === 'organization_admin';
-  }, [currentRole]);
-
-  const isEditor = useCallback(() => {
-    return currentRole === 'editor' || isAdmin();
-  }, [currentRole, isAdmin]);
-
-  const isViewer = useCallback(() => {
-    return currentRole === 'viewer' || isEditor();
-  }, [currentRole, isEditor]);
-
-  // Legacy compatibility
-  const hasPermission = useCallback((requiredRole: UserRoleType): boolean => {
-    switch (requiredRole) {
-      case 'administrator':
-        return currentRole === 'administrator';
-      case 'organization_admin':
-        return isAdmin();
-      case 'editor':
-        return isEditor();
-      case 'viewer':
-        return isViewer();
-      default:
-        return false;
-    }
-  }, [currentRole, isAdmin, isEditor, isViewer]);
+  // In the simplified model, we just check if the user is authenticated
+  const hasPermission = async (requiredPermission: string): Promise<boolean> => {
+    // All authenticated users have all permissions in the simplified model
+    return isAuthenticated;
+  };
 
   return {
-    userRole: currentRole,
-    isLoading,
-    // Simplified role check functions
-    isAdmin,
-    isEditor,
-    isViewer,
-    // Legacy compatibility
+    userRole: isAuthenticated ? 'authenticated_user' : 'unauthenticated',
+    isAdmin: isAuthenticated,
     hasPermission,
-    canCreate: isEditor,
-    canEdit: isEditor,
-    canManageTeam: isAdmin,
-    error
+    permissions,
+    isLoading: false,
+    error: null,
   };
 }

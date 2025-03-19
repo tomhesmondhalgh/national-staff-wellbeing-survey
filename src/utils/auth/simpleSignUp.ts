@@ -41,7 +41,32 @@ export async function signUpWithEmail(email: string, password: string, userData?
     
     console.log('User created successfully:', data.user.id);
     
-    // If we have user data, send it to Hubspot if that feature is enabled
+    // If we have user data, update the profile
+    if (userData && data.user) {
+      try {
+        const { error: profileError } = await supabase.rpc(
+          'create_or_update_profile',
+          {
+            profile_id: data.user.id,
+            profile_first_name: userData.firstName,
+            profile_last_name: userData.lastName,
+            profile_job_title: userData.jobTitle || '',
+            profile_school_name: userData.schoolName || '',
+            profile_school_address: userData.schoolAddress || ''
+          }
+        );
+
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+          // Don't block signup if profile creation fails
+        }
+      } catch (profileError: any) {
+        console.error('Exception creating profile:', profileError);
+        // Don't block signup if profile creation fails
+      }
+    }
+    
+    // If we have user data and HubSpot integration is needed, send it there
     if (userData && data.user && typeof sendUserToHubspot === 'function') {
       try {
         await sendUserToHubspot({

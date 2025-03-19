@@ -1,108 +1,87 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { UserRoleType } from '@/lib/supabase/client';
 
-// In-memory cache for user role checks
-const roleCache: Record<string, {
-  roles: Record<string, boolean>,
-  timestamp: number,
-  expiresAt: number
-}> = {};
+// Simple cache for authentication
+const authCache: {
+  isAuthenticated: boolean;
+  timestamp: number;
+  expiresAt: number;
+} = {
+  isAuthenticated: false,
+  timestamp: 0,
+  expiresAt: 0
+};
 
 // Cache expiry time (5 minutes)
 const CACHE_EXPIRY = 5 * 60 * 1000;
 
 /**
- * Check if a user has a specific role
+ * Check if a user is authenticated
  * Uses caching to minimize API requests
  */
-export async function checkUserRole(userId: string, role: UserRoleType): Promise<boolean> {
-  if (!userId) return false;
-  
+export async function checkAuthentication(): Promise<boolean> {
   const now = Date.now();
   
   // Check cache first
-  if (roleCache[userId] && 
-      roleCache[userId].roles[role] !== undefined && 
-      now < roleCache[userId].expiresAt) {
-    return roleCache[userId].roles[role];
+  if (now < authCache.expiresAt) {
+    return authCache.isAuthenticated;
   }
   
-  // Cache miss or expired cache, fetch from database
+  // Cache miss or expired cache, fetch from Supabase
   try {
-    // Use the has_role_v2 function to check if user has the role
-    const { data, error } = await supabase.rpc(
-      'has_role_v2',
-      {
-        user_uuid: userId,
-        required_role: role
-      }
-    );
+    const { data: { user }, error } = await supabase.auth.getUser();
     
     if (error) {
-      console.error('Error checking role:', error);
+      console.error('Error checking authentication:', error);
       return false;
     }
     
-    const hasRole = !!data;
+    const isAuthenticated = !!user;
     
-    // Initialize or update cache
-    if (!roleCache[userId]) {
-      roleCache[userId] = {
-        roles: {},
-        timestamp: now,
-        expiresAt: now + CACHE_EXPIRY
-      };
-    }
+    // Update cache
+    authCache.isAuthenticated = isAuthenticated;
+    authCache.timestamp = now;
+    authCache.expiresAt = now + CACHE_EXPIRY;
     
-    // Update role in cache
-    roleCache[userId].roles[role] = hasRole;
-    roleCache[userId].timestamp = now;
-    roleCache[userId].expiresAt = now + CACHE_EXPIRY;
-    
-    return hasRole;
+    return isAuthenticated;
   } catch (error) {
-    console.error('Error in role check:', error);
+    console.error('Error in authentication check:', error);
     return false;
   }
 }
 
 /**
- * Clear role cache for a specific user
+ * Clear authentication cache
  */
-export function clearRoleCache(userId?: string) {
-  if (userId) {
-    delete roleCache[userId];
-  } else {
-    // Clear entire cache
-    Object.keys(roleCache).forEach(key => delete roleCache[key]);
-  }
+export function clearAuthCache() {
+  authCache.isAuthenticated = false;
+  authCache.timestamp = 0;
+  authCache.expiresAt = 0;
 }
 
 /**
- * Get all roles for a user
- * This is a more expensive operation so use sparingly
+ * Check if current user owns a record by its user_id field
  */
-export async function getUserRoles(userId: string): Promise<UserRoleType[]> {
-  if (!userId) return [];
+export async function isOwner(recordUserId: string): Promise<boolean> {
+  if (!recordUserId) return false;
   
   try {
-    // Get user roles by joining with roles table
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select('role_id, roles(name)')
-      .eq('user_id', userId);
+    // Use the is_owner function to check ownership
+    const { data, error } = await supabase.rpc(
+      'is_owner',
+      {
+        record_user_id: recordUserId
+      }
+    );
     
     if (error) {
-      console.error('Error fetching user roles:', error);
-      return [];
+      console.error('Error checking ownership:', error);
+      return false;
     }
     
-    return data
-      .filter(item => item.roles && item.roles.name)
-      .map(item => item.roles.name as UserRoleType);
+    return !!data;
   } catch (error) {
-    console.error('Unexpected error fetching roles:', error);
-    return [];
+    console.error('Unexpected error checking ownership:', error);
+    return false;
   }
 }

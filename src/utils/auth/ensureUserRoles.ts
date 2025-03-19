@@ -2,203 +2,93 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-// Define more specific return types for clarity and type safety
-export type EnsureUserRoleSuccess = { 
-  success: true; 
-  roleAdded: boolean; 
-  membershipAdded: boolean 
-};
-
-export type EnsureUserRoleNoUser = { 
-  success: true; 
-  noUser: true 
-};
-
-export type EnsureUserRoleFailure = { 
-  success: false; 
-  error: any;
-  errorSource?: string;
-};
-
-// Combined type for all possible returns
-export type EnsureUserRoleResult = 
-  | EnsureUserRoleSuccess
-  | EnsureUserRoleNoUser
-  | EnsureUserRoleFailure;
+// Updated type definitions for simplified model
+export type EnsureUserResult = 
+  | { success: true; message: string }
+  | { success: false; error: any; };
 
 /**
- * Ensures that a user has the organization_admin role
- * If they don't have a role, it adds the organization_admin role
- * Also ensures they have an organization_members record
+ * This is a simplified version of the previous ensureUserHasOrgAdminRole function
+ * Now it just checks if a user exists and has a profile
  */
-export async function ensureUserHasOrgAdminRole(userId: string): Promise<EnsureUserRoleResult> {
+export async function ensureUserHasProfile(userId: string): Promise<EnsureUserResult> {
   try {
-    console.log('Starting ensureUserHasOrgAdminRole for user:', userId);
+    console.log('Starting ensureUserHasProfile for user:', userId);
     
-    // First check if the user already has any role in the user_roles table
-    const { data: existingRoles, error: rolesError } = await supabase
-      .from('user_roles')
+    // Check if the user has a profile
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
       .select('*')
-      .eq('user_id', userId);
+      .eq('id', userId)
+      .single();
       
-    if (rolesError) {
-      console.error('Error checking user roles:', rolesError);
-      return { success: false, error: rolesError, errorSource: 'checking_roles' };
+    if (profileError && profileError.code !== 'PGRST116') {
+      console.error('Error checking user profile:', profileError);
+      return { success: false, error: profileError };
     }
     
-    let roleAdded = false;
-    
-    // If the user doesn't have any roles, add the organization_admin role
-    if (!existingRoles || existingRoles.length === 0) {
-      console.log('No existing roles found, will add organization_admin role');
+    // If profile doesn't exist, create a basic one
+    if (!profile) {
+      console.log('No profile found, creating a basic one');
       
-      // Get the organization_admin role ID
-      const { data: roleData, error: roleError } = await supabase
-        .from('roles')
-        .select('id')
-        .eq('name', 'organization_admin')
-        .single();
+      const { error: createProfileError } = await supabase.rpc(
+        'create_or_update_profile',
+        {
+          profile_id: userId,
+          profile_first_name: '',
+          profile_last_name: '',
+          profile_job_title: '',
+          profile_school_name: '',
+          profile_school_address: ''
+        }
+      );
         
-      if (roleError || !roleData) {
-        console.error('Error finding organization_admin role:', roleError);
-        return { success: false, error: roleError, errorSource: 'finding_role' };
+      if (createProfileError) {
+        console.error('Error creating basic profile:', createProfileError);
+        return { success: false, error: createProfileError };
       }
       
-      console.log('Found organization_admin role with ID:', roleData.id);
-      
-      // Assign the organization_admin role to the user
-      const { error: roleAssignError } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: userId,
-          role_id: roleData.id
-        });
-        
-      if (roleAssignError) {
-        console.error('Failed to assign organization_admin role:', roleAssignError);
-        return { success: false, error: roleAssignError, errorSource: 'assigning_role' };
-      }
-      
-      roleAdded = true;
-      console.log('Successfully assigned organization_admin role to user');
-    } else {
-      console.log('User already has roles:', existingRoles.length);
+      console.log('Created basic profile for user');
+      return { success: true, message: 'Created basic profile for user' };
     }
     
-    // Check if membership exists 
-    // First try the RPC function which is safer
-    const { data: membershipExists, error: membershipError } = await supabase.rpc(
-      'check_organization_membership_exists',
-      { 
-        user_uuid: userId,
-        org_uuid: userId
-      }
-    );
-    
-    if (membershipError) {
-      console.error('Error checking membership existence with RPC:', membershipError);
-      // Fall back to a direct query as last resort
-      const { data: directCheckData, error: directCheckError } = await supabase
-        .from('organization_members')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('organization_id', userId)
-        .maybeSingle();
-      
-      if (directCheckError) {
-        console.error('Error checking membership with direct query:', directCheckError);
-        return { 
-          success: false, 
-          error: directCheckError, 
-          errorSource: 'checking_membership_direct' 
-        };
-      }
-      
-      // If the direct check worked, continue with that result
-      if (directCheckData) {
-        console.log('User already has membership record (direct check):', directCheckData.id);
-        return { 
-          success: true, 
-          roleAdded,
-          membershipAdded: false
-        };
-      }
-    }
-    
-    let membershipAdded = false;
-    
-    // If no existing membership, create one with the user as their own organization admin
-    if (!membershipExists) {
-      console.log('No existing membership found, creating one');
-      const { error: createMembershipError } = await supabase
-        .from('organization_members')
-        .insert({
-          user_id: userId,
-          organization_id: userId,
-          role: 'organization_admin',
-          is_primary: true
-        });
-        
-      if (createMembershipError) {
-        console.error('Error creating organization membership:', createMembershipError);
-        return { 
-          success: false, 
-          error: createMembershipError, 
-          errorSource: 'creating_membership' 
-        };
-      }
-      
-      membershipAdded = true;
-      console.log('Created organization membership with admin role');
-    } else {
-      console.log('User already has membership record (RPC check)');
-    }
-    
-    console.log('Successfully completed ensureUserHasOrgAdminRole');
-    return { 
-      success: true, 
-      roleAdded,
-      membershipAdded
-    };
+    return { success: true, message: 'User profile exists' };
   } catch (error) {
-    console.error('Exception in ensureUserHasOrgAdminRole:', error);
-    return { success: false, error, errorSource: 'unexpected_exception' };
+    console.error('Exception in ensureUserHasProfile:', error);
+    return { success: false, error };
   }
 }
 
 /**
- * Check and ensure all users have the organization_admin role
- * Returns statistics on how many users were updated
+ * Simplified version of ensureAllUsersHaveOrgAdminRole
+ * Now it just ensures all users have profiles
  */
-export async function ensureAllUsersHaveOrgAdminRole() {
+export async function ensureAllUsersHaveProfiles() {
   try {
-    // Get all users from the auth.users table via RPC
-    // Note: This requires appropriate permissions on the Supabase project
-    const { data: users, error: usersError } = await supabase.auth.admin.listUsers();
+    // Get all users from the auth.users table
+    const { data, error } = await supabase.auth.admin.listUsers();
     
-    if (usersError) {
-      console.error('Error fetching users:', usersError);
-      return { success: false, error: usersError };
+    if (error) {
+      console.error('Error fetching users:', error);
+      return { success: false, error };
     }
     
-    if (!users || !users.users || users.users.length === 0) {
+    if (!data || !data.users || data.users.length === 0) {
       return { success: true, message: 'No users found to process', stats: { total: 0 } };
     }
     
     const stats = {
-      total: users.users.length,
-      rolesAdded: 0,
-      membershipsAdded: 0,
+      total: data.users.length,
+      profilesCreated: 0,
       errors: 0
     };
     
     // Process each user
-    for (const user of users.users) {
-      const result = await ensureUserHasOrgAdminRole(user.id);
+    for (const user of data.users) {
+      const result = await ensureUserHasProfile(user.id);
       
-      if (result.success && 'roleAdded' in result) {
-        if (result.roleAdded) stats.rolesAdded++;
-        if (result.membershipAdded) stats.membershipsAdded++;
+      if (result.success) {
+        if (result.message.includes('Created')) stats.profilesCreated++;
       } else {
         stats.errors++;
       }
@@ -206,7 +96,7 @@ export async function ensureAllUsersHaveOrgAdminRole() {
     
     return { 
       success: true, 
-      message: `Processed ${stats.total} users, added ${stats.rolesAdded} roles and ${stats.membershipsAdded} memberships`,
+      message: `Processed ${stats.total} users, created ${stats.profilesCreated} profiles`,
       stats
     };
   } catch (error) {
@@ -216,30 +106,30 @@ export async function ensureAllUsersHaveOrgAdminRole() {
 }
 
 /**
- * Function to be called on application startup to ensure the current user
- * has the organization_admin role
+ * Simplified version of ensureCurrentUserHasOrgAdminRole
+ * Now it just ensures the current user has a profile
  */
-export async function ensureCurrentUserHasOrgAdminRole(): Promise<EnsureUserRoleResult> {
+export async function ensureCurrentUserHasProfile(): Promise<EnsureUserResult> {
   try {
-    console.log('Starting ensureCurrentUserHasOrgAdminRole');
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    console.log('Starting ensureCurrentUserHasProfile');
+    const { data, error } = await supabase.auth.getSession();
     
-    if (sessionError) {
-      console.error('Error getting session:', sessionError);
-      return { success: false, error: sessionError, errorSource: 'getting_session' };
+    if (error) {
+      console.error('Error getting session:', error);
+      return { success: false, error };
     }
     
-    const user = sessionData?.session?.user;
+    const user = data?.session?.user;
     
     if (!user) {
       console.log('No logged in user to check');
-      return { success: true, noUser: true };
+      return { success: true, message: 'No logged in user to check' };
     }
     
     console.log('Found logged in user:', user.id);
-    return await ensureUserHasOrgAdminRole(user.id);
+    return await ensureUserHasProfile(user.id);
   } catch (error) {
-    console.error('Exception in ensureCurrentUserHasOrgAdminRole:', error);
-    return { success: false, error, errorSource: 'unexpected_exception' };
+    console.error('Exception in ensureCurrentUserHasProfile:', error);
+    return { success: false, error };
   }
 }
