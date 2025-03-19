@@ -35,7 +35,10 @@ export default function QuestionModal({
   }, [open, initialData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
+    // Prevent the event from propagating to parent forms
     e.preventDefault();
+    e.stopPropagation();
+    
     setError('');
 
     if (!questionText.trim()) {
@@ -62,7 +65,7 @@ export default function QuestionModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
           <DialogTitle>
             {initialData ? 'Edit Question' : 'Create Question'}
@@ -93,13 +96,22 @@ export default function QuestionModal({
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onOpenChange(false);
+              }}
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isSubmitting}
+              onClick={(e) => {
+                // We already handle submission in the form's onSubmit
+                // This just prevents any possible propagation
+                e.stopPropagation();
+              }}
             >
               {isSubmitting ? 'Saving...' : (initialData ? 'Update' : 'Create')}
             </Button>
