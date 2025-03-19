@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import SurveyLoading from '../components/survey-form/SurveyLoading';
-import { sendUserToHubspot } from '../utils/authUtils';
+import { sendUserToHubspot } from '../utils/auth';
 
 const NewSurvey = () => {
   const navigate = useNavigate();

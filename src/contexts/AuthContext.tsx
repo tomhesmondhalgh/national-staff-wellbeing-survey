@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -8,7 +7,7 @@ import {
   signUpWithEmail, 
   signOutUser, 
   completeUserProfile
-} from '../utils/authUtils';
+} from '../utils/auth';
 
 interface AuthContextType {
   user: User | null;
