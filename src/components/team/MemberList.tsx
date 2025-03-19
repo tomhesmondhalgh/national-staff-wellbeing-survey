@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '../ui/button';
@@ -190,7 +191,6 @@ const MemberList = () => {
       case 'organization_admin': return 'Admin';
       case 'editor': return 'Editor';
       case 'viewer': return 'Viewer';
-      case 'group_admin': return 'Group Admin';
       case 'administrator': return 'System Admin';
       default: return role;
     }

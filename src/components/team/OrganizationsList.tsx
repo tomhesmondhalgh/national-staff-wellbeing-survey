@@ -8,9 +8,144 @@ import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
 import Pagination from '../surveys/Pagination';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
-import CreateOrganizationDialog from './CreateOrganizationDialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
+import { Button as UIButton } from '../ui/button';
+import { Label } from '../ui/label';
+import { Input as UIInput } from '../ui/input';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
 
 const ITEMS_PER_PAGE = 10;
+
+const createOrgFormSchema = z.object({
+  name: z.string().min(2, { message: "Organisation name must be at least 2 characters" }),
+});
+
+type CreateOrgFormValues = z.infer<typeof createOrgFormSchema>;
+
+// Simple component to replace the group-based dialog
+const CreateOrganizationDialog = ({ 
+  isOpen, 
+  onClose, 
+  onComplete 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  onComplete: () => void; 
+}) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const form = useForm<CreateOrgFormValues>({
+    resolver: zodResolver(createOrgFormSchema),
+    defaultValues: {
+      name: '',
+    },
+  });
+
+  const handleSubmit = async (values: CreateOrgFormValues) => {
+    setIsSubmitting(true);
+    
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+      
+      // Create the organization profile
+      const { data: orgData, error: orgError } = await supabase
+        .from('profiles')
+        .insert({
+          id: crypto.randomUUID(),
+          school_name: values.name,
+        })
+        .select('id')
+        .single();
+        
+      if (orgError) {
+        throw orgError;
+      }
+      
+      // Add the user as an admin of the organization
+      const { error: memberError } = await supabase
+        .from('organization_members')
+        .insert({
+          user_id: userId,
+          organization_id: orgData.id,
+          role: 'organization_admin',
+          is_primary: true
+        });
+        
+      if (memberError) {
+        throw memberError;
+      }
+      
+      toast.success('Organisation created successfully');
+      form.reset();
+      onComplete();
+    } catch (error) {
+      console.error('Error creating organisation:', error);
+      toast.error('Failed to create organisation');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Create Organisation</DialogTitle>
+          <DialogDescription>
+            Create a new organisation to manage your team
+          </DialogDescription>
+        </DialogHeader>
+        
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Organisation Name</FormLabel>
+                  <FormControl>
+                    <UIInput 
+                      placeholder="Enter organisation name" 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <DialogFooter className="mt-6">
+              <UIButton 
+                type="button" 
+                variant="ghost" 
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </UIButton>
+              <UIButton 
+                type="submit"
+                disabled={isSubmitting}
+                className="bg-brandPurple-500 hover:bg-brandPurple-600"
+              >
+                {isSubmitting ? 'Creating...' : 'Create Organisation'}
+              </UIButton>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 const OrganizationsList = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -20,40 +155,31 @@ const OrganizationsList = () => {
   const { data: organizationsData, isLoading, refetch } = useQuery({
     queryKey: ['organizations'],
     queryFn: async () => {
-      // First get all groups the user is an admin of
-      const { data: userGroups, error: groupsError } = await supabase
-        .from('group_members')
-        .select('group_id')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id ?? '')
-        .eq('role', 'group_admin');
-        
-      if (groupsError) {
-        toast.error('Failed to load user groups');
-        throw groupsError;
-      }
+      // Get the current user
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
       
-      if (!userGroups.length) {
+      if (!userId) {
         return { organizations: [], total: 0 };
       }
       
-      const groupIds = userGroups.map(g => g.group_id);
-      
-      // Get all organizations in these groups
-      const { data: groupOrgs, error: orgsError } = await supabase
-        .from('group_organizations')
+      // Get organizations where user is an admin
+      const { data: members, error: membersError } = await supabase
+        .from('organization_members')
         .select('organization_id')
-        .in('group_id', groupIds);
+        .eq('user_id', userId)
+        .eq('role', 'organization_admin');
         
-      if (orgsError) {
-        toast.error('Failed to load group organizations');
-        throw orgsError;
+      if (membersError) {
+        toast.error('Failed to load user organizations');
+        throw membersError;
       }
       
-      if (!groupOrgs.length) {
+      if (!members.length) {
         return { organizations: [], total: 0 };
       }
       
-      const orgIds = groupOrgs.map(o => o.organization_id);
+      const orgIds = members.map(m => m.organization_id);
       
       // Get organization profiles
       const { data: organizations, error: profilesError } = await supabase
@@ -95,27 +221,14 @@ const OrganizationsList = () => {
     if (!confirm("Are you sure you want to remove this organization? This will remove all members and data.")) return;
     
     try {
-      // First find all groups the organization belongs to
-      const { data: groupOrgs, error: findError } = await supabase
-        .from('group_organizations')
-        .select('group_id')
+      // Remove organization members first
+      const { error: membersError } = await supabase
+        .from('organization_members')
+        .delete()
         .eq('organization_id', orgId);
         
-      if (findError) {
-        throw findError;
-      }
-      
-      // Then remove it from all groups
-      for (const groupOrg of groupOrgs) {
-        const { error: removeError } = await supabase
-          .from('group_organizations')
-          .delete()
-          .eq('organization_id', orgId)
-          .eq('group_id', groupOrg.group_id);
-          
-        if (removeError) {
-          throw removeError;
-        }
+      if (membersError) {
+        throw membersError;
       }
       
       toast.success('Organization removed successfully');
