@@ -19,6 +19,8 @@ const CustomQuestionsSection: React.FC<CustomQuestionsSectionProps> = ({
     // Enhanced debugging for CustomQuestionsSection
     console.log('CustomQuestionsSection component mounted/updated');
     console.log('customQuestions prop received:', customQuestions);
+    console.log('customQuestions prop type:', typeof customQuestions);
+    console.log('customQuestions is array?', Array.isArray(customQuestions));
     
     if (!customQuestions) {
       console.error('customQuestions prop is undefined or null');
@@ -31,14 +33,23 @@ const CustomQuestionsSection: React.FC<CustomQuestionsSectionProps> = ({
           id: q.id || 'MISSING ID',
           text: q.text || 'MISSING TEXT',
           type: q.type || 'MISSING TYPE',
-          options: q.options ? `${q.options.length} options` : 'No options'
+          options: q.options ? `${q.options.length} options` : 'No options',
+          optionsType: q.options ? typeof q.options : 'undefined'
         });
+        
+        if (q.options) {
+          console.log(`Question ${i+1} options:`, q.options);
+        }
       });
     }
     
     console.log('Current form data:', formData);
     console.log('Custom responses in form data:', formData?.custom_responses || {});
   }, [customQuestions, formData]);
+
+  // Debug render count
+  console.log('CustomQuestionsSection rendering, questions count:', 
+    customQuestions ? customQuestions.length : 'no questions');
 
   // Early return if no questions with better logging
   if (!customQuestions) {
@@ -73,6 +84,8 @@ const CustomQuestionsSection: React.FC<CustomQuestionsSectionProps> = ({
             question.options && 
             Array.isArray(question.options) && 
             question.options.length > 0;
+          
+          console.log(`Question ${question.id} is multiple choice?`, isMultipleChoice);
           
           if (isMultipleChoice) {
             return (

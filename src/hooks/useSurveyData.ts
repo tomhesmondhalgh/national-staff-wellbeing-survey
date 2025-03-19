@@ -6,6 +6,10 @@ import { isSurveyClosed } from '../utils/survey/status';
 import { SurveyTemplate } from '../utils/types/survey';
 import { CustomQuestionType } from '../types/surveyForm';
 import { toast } from 'sonner';
+import { createTracingClient } from '../utils/debugging/queryTracer';
+
+// Create a traced client for debugging
+const tracedSupabase = createTracingClient(supabase);
 
 export function useSurveyData(surveyId: string | null, isPreview: boolean) {
   const [isLoading, setIsLoading] = useState(true);
@@ -40,14 +44,43 @@ export function useSurveyData(surveyId: string | null, isPreview: boolean) {
         
         // ==== ENHANCED DEBUGGING FOR TARGET SURVEY ====
         const isTargetSurvey = surveyId === 'c316b756-5b93-451f-b14e-2cc1df916def';
+        const dbClient = isTargetSurvey ? tracedSupabase : supabase;
+        
         if (isTargetSurvey) {
+          console.log('USING TRACED CLIENT FOR TARGET SURVEY');
           console.log('DEBUGGING TARGET SURVEY DATA FETCHING');
+          
+          // First, explicitly check if custom_questions table has data
+          console.log('Checking if custom_questions table has data');
+          const { data: allQuestions, error: allQuestionsError } = await dbClient
+            .from('custom_questions')
+            .select('id, text, type, options')
+            .limit(5);
+            
+          if (allQuestionsError) {
+            console.error('Error checking custom_questions:', allQuestionsError);
+          } else {
+            console.log('Sample of custom_questions data:', allQuestions);
+          }
+          
+          // Now check if survey_questions has any links for this survey
+          console.log('Checking if survey_questions has links for this survey');
+          const { data: linkCheck, error: linkCheckError } = await dbClient
+            .from('survey_questions')
+            .select('id, question_id, survey_id')
+            .eq('survey_id', surveyId);
+            
+          if (linkCheckError) {
+            console.error('Error checking survey_questions links:', linkCheckError);
+          } else {
+            console.log('Link check results:', linkCheck);
+          }
         }
         
         console.log('Fetching custom questions for survey ID:', surveyId);
         
         // Query both tables directly with a join to ensure we get all data in one request
-        const { data: joinedData, error: joinError } = await supabase
+        const { data: joinedData, error: joinError } = await dbClient
           .from('survey_questions')
           .select(`
             id,
@@ -68,9 +101,9 @@ export function useSurveyData(surveyId: string | null, isPreview: boolean) {
             console.error('Join query error details:', joinError.message, joinError.details);
           }
           
-          // Try the two-step process as fallback
-          console.log('Falling back to two-step query process');
-          return await fetchQuestionsInTwoSteps(surveyId, isTargetSurvey);
+          // Try a direct query approach instead
+          console.log('Trying direct manual queries as fallback');
+          return await fetchQuestionsDirectly(surveyId, isTargetSurvey, dbClient);
         }
         
         if (isTargetSurvey) {
@@ -131,73 +164,52 @@ export function useSurveyData(surveyId: string | null, isPreview: boolean) {
       }
     };
     
-    const fetchQuestionsInTwoSteps = async (surveyId: string, isTargetSurvey: boolean) => {
+    const fetchQuestionsDirectly = async (surveyId: string, isTargetSurvey: boolean, dbClient: typeof supabase) => {
       try {
-        // First, check if there are any survey_questions records for this survey
-        const { data: linkData, error: linkError } = await supabase
+        console.log('ATTEMPTING DIRECT QUERY APPROACH');
+        
+        // STEP 1: Get all question IDs linked to this survey
+        console.log('STEP 1: Get all question IDs linked to this survey');
+        const { data: linkData, error: linkError } = await dbClient
           .from('survey_questions')
-          .select('question_id, id')
+          .select('question_id')
           .eq('survey_id', surveyId);
         
-        if (linkError) {
-          console.error('Error fetching survey_questions links:', linkError);
-          if (isTargetSurvey) {
-            console.error('Link query error details:', linkError.message, linkError.details);
-          }
-          toast.error('Failed to load survey question links');
-          setIsLoading(false);
-          return { isClosed: false };
-        }
-        
-        if (isTargetSurvey) {
-          console.log('Survey question links found:', linkData);
-        }
-        
-        if (!linkData || linkData.length === 0) {
-          console.log('No custom questions linked to this survey');
+        if (linkError || !linkData || linkData.length === 0) {
+          console.error('Direct query - No links found or error:', linkError);
           setCustomQuestions([]);
           setIsLoading(false);
           return { isClosed: false };
         }
         
-        // Extract question IDs from the links
+        console.log('Direct query - Link data:', linkData);
         const questionIds = linkData.map(link => link.question_id);
-        if (isTargetSurvey) {
-          console.log('Question IDs to fetch:', questionIds);
-        }
         
-        // Then fetch the actual custom questions using those IDs
-        const { data: questionsData, error: questionsError } = await supabase
+        // STEP 2: Get the actual question data for these IDs
+        console.log('STEP 2: Get the actual question data for these IDs');
+        const { data: questionsData, error: questionsError } = await dbClient
           .from('custom_questions')
-          .select('id, text, type, options')
+          .select('*')
           .in('id', questionIds);
         
-        if (questionsError) {
-          console.error('Error fetching custom questions:', questionsError);
-          if (isTargetSurvey) {
-            console.error('Questions query error details:', questionsError.message, questionsError.details);
-          }
-          toast.error('Failed to load custom questions');
-          setIsLoading(false);
-          return { isClosed: false };
-        }
-        
-        if (isTargetSurvey) {
-          console.log('Raw custom questions data:', questionsData);
-        }
-        
-        if (!questionsData || questionsData.length === 0) {
-          console.log('No custom questions found with the linked IDs');
+        if (questionsError || !questionsData || questionsData.length === 0) {
+          console.error('Direct query - No questions found or error:', questionsError);
           setCustomQuestions([]);
           setIsLoading(false);
           return { isClosed: false };
         }
         
-        // Transform and format the questions data
-        const formattedQuestions: CustomQuestionType[] = questionsData.map(q => {
-          // Handle options - ensure they're in the right format
+        console.log('Direct query - Questions data:', questionsData);
+        
+        // Format the questions to match our expected format
+        const formattedQuestions = questionsData.map(q => {
           let options: string[] = [];
+          
+          // Handle options based on what type it actually is
           if (q.options) {
+            console.log('Processing options for question:', q.id, 'Options type:', typeof q.options);
+            console.log('Raw options value:', q.options);
+            
             if (Array.isArray(q.options)) {
               options = q.options;
             } else if (typeof q.options === 'string') {
@@ -207,34 +219,41 @@ export function useSurveyData(surveyId: string | null, isPreview: boolean) {
                   options = parsed;
                 }
               } catch (e) {
-                console.error('Failed to parse options:', e);
+                console.error('Failed to parse options string for question', q.id, e);
+              }
+            } else if (typeof q.options === 'object') {
+              console.log('Options is an object, attempting to convert');
+              try {
+                // If it's already a JSON object, try to get values
+                const values = Object.values(q.options);
+                if (Array.isArray(values)) {
+                  options = values.map(v => String(v));
+                }
+              } catch (e) {
+                console.error('Failed to extract values from options object', e);
               }
             }
           }
           
-          if (isTargetSurvey) {
-            console.log(`Formatting question ${q.id}: ${q.text} (type: ${q.type})`, { options });
-          }
-          
-          return {
+          const result = {
             id: q.id,
             text: q.text,
             type: q.type || 'text',
             options: options
           };
+          
+          console.log('Formatted question:', result);
+          return result;
         });
         
-        if (isTargetSurvey) {
-          console.log('Formatted custom questions:', formattedQuestions);
-        }
-        
+        console.log('Final formatted questions from direct query:', formattedQuestions);
         setCustomQuestions(formattedQuestions);
+        setIsLoading(false);
         return { isClosed: false };
       } catch (error) {
-        console.error('Error in two-step query process:', error);
-        return { isClosed: false };
-      } finally {
+        console.error('Error in direct query approach:', error);
         setIsLoading(false);
+        return { isClosed: false };
       }
     };
     
