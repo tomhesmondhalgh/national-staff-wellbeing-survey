@@ -37,37 +37,86 @@ export function useSurveyData(surveyId: string | null, isPreview: boolean) {
         setSurveyName(surveyTemplate.name);
         setSurveyData(surveyTemplate);
         
-        // Fetch directly from the database with a join query to get both the links and questions in one go
         console.log('Fetching custom questions for survey ID:', surveyId);
-        const { data: linkedQuestions, error: joinError } = await supabase
+        
+        // First attempt to get the question IDs directly
+        const { data: questionLinks, error: linksError } = await supabase
           .from('survey_questions')
-          .select(`
-            question_id,
-            custom_questions!inner(id, text, type, options, creator_id)
-          `)
+          .select('question_id')
           .eq('survey_id', surveyId);
-          
-        if (joinError) {
-          console.error('Error fetching linked questions:', joinError);
-          toast.error('Failed to load custom questions');
-        } else {
-          console.log('Linked questions data:', linkedQuestions);
-          
-          if (linkedQuestions && linkedQuestions.length > 0) {
-            // Transform the joined data into the format we need
-            const customQuestionsList: CustomQuestionType[] = linkedQuestions.map(item => ({
-              id: item.custom_questions.id,
-              text: item.custom_questions.text,
-              type: item.custom_questions.type || 'text',
-              options: Array.isArray(item.custom_questions.options) ? item.custom_questions.options : []
-            }));
-            
-            console.log('Processed custom questions:', customQuestionsList);
-            setCustomQuestions(customQuestionsList);
-          } else {
-            console.log('No custom questions found for this survey');
-          }
+        
+        if (linksError) {
+          console.error('Error fetching question links:', linksError);
+          toast.error('Failed to load questions');
+          setIsLoading(false);
+          return { isClosed: false };
         }
+        
+        console.log('Found question links:', questionLinks);
+        
+        if (!questionLinks || questionLinks.length === 0) {
+          console.log('No custom questions linked to this survey');
+          setCustomQuestions([]);
+          setIsLoading(false);
+          return { isClosed: false };
+        }
+        
+        // Extract question IDs
+        const questionIds = questionLinks.map(link => link.question_id);
+        console.log('Question IDs to fetch:', questionIds);
+        
+        // Fetch the actual questions
+        const { data: questionsData, error: questionsError } = await supabase
+          .from('custom_questions')
+          .select('*')
+          .in('id', questionIds);
+        
+        if (questionsError) {
+          console.error('Error fetching custom questions:', questionsError);
+          toast.error('Failed to load question content');
+          setIsLoading(false);
+          return { isClosed: false };
+        }
+        
+        console.log('Raw questions data from database:', questionsData);
+        
+        if (!questionsData || questionsData.length === 0) {
+          console.log('No questions found despite having links');
+          setCustomQuestions([]);
+          setIsLoading(false);
+          return { isClosed: false };
+        }
+        
+        // Transform to our expected format
+        const formattedQuestions: CustomQuestionType[] = questionsData.map(q => {
+          // Ensure we have proper options handling
+          let options: string[] = [];
+          if (q.options) {
+            if (Array.isArray(q.options)) {
+              options = q.options;
+            } else if (typeof q.options === 'string') {
+              // Handle case where options might be a JSON string
+              try {
+                const parsed = JSON.parse(q.options);
+                if (Array.isArray(parsed)) {
+                  options = parsed;
+                }
+              } catch (e) {
+                console.error('Failed to parse options:', e);
+              }
+            }
+          }
+          
+          return {
+            id: q.id,
+            text: q.text,
+            type: q.type || 'text',
+            options: options
+          };
+        });
+        
+        console.log('Formatted custom questions:', formattedQuestions);
+        setCustomQuestions(formattedQuestions);
         
         return { isClosed: false };
       } catch (error) {
