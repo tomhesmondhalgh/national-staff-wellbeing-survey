@@ -157,7 +157,7 @@ const PublicSurveyForm: React.FC = () => {
         improvements: formData.improvements
       };
       
-      // With RLS disabled, we can insert directly without worrying about policies
+      // Insert using our RLS-enabled table with correct policies
       console.log('Submitting response with payload:', responsePayload);
       const { data: responseData, error: responseError } = await supabase
         .from('survey_responses')

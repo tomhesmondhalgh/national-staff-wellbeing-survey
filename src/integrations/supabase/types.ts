@@ -1018,6 +1018,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_survey_open: {
+        Args: {
+          survey_id: string
+        }
+        Returns: boolean
+      }
       user_can_edit_survey: {
         Args: {
           user_uuid: string
