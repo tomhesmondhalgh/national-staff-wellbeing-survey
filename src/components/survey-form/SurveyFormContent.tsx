@@ -49,16 +49,14 @@ const SurveyFormContent: React.FC<SurveyFormContentProps> = ({
         handleInputChange={handleInputChange} 
       />
       
-      {/* Custom questions section - will only render if there are questions */}
-      {(hasQuestions || isLoading) && (
-        <CustomQuestionsSection 
-          questions={questions}
-          responses={responses}
-          onResponse={handleQuestionResponse}
-          isLoading={isLoading}
-          error={error}
-        />
-      )}
+      {/* Custom questions section */}
+      <CustomQuestionsSection 
+        questions={questions}
+        responses={responses}
+        onResponse={handleQuestionResponse}
+        isLoading={isLoading}
+        error={error}
+      />
       
       <div className="pt-6">
         <SubmitButton isSubmitting={isSubmitting} />

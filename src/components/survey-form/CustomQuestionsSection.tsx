@@ -49,11 +49,13 @@ const CustomQuestionsSection: React.FC<CustomQuestionsSectionProps> = ({
     );
   }
 
-  // Early validation
+  // Don't render anything if no questions
   if (!questions || !Array.isArray(questions) || questions.length === 0) {
     console.log('No questions to display in CustomQuestionsSection');
     return null;
   }
+
+  console.log('Rendering questions in CustomQuestionsSection:', questions);
 
   return (
     <div className="mt-12 pt-6 border-t border-gray-200">
