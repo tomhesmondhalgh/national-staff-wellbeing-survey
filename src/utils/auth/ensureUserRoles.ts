@@ -76,13 +76,14 @@ export async function ensureUserHasOrgAdminRole(userId: string): Promise<EnsureU
       console.log('Successfully assigned organization_admin role to user');
     }
     
-    // Now check if the user has an organization membership record, but using RPC to avoid RLS recursion
-    // Use a direct count query with a simple equality filter to avoid triggering the recursive policy
-    const { count, error: membershipCountError } = await supabase
-      .rpc('count_user_organization_memberships', { 
-        user_uuid: userId, 
-        org_uuid: userId 
-      });
+    // Now check if the user has an organization membership record, but using a direct query to avoid RLS recursion
+    // Rather than using rpc(), which has TypeScript limitations, we'll use a direct query with parameters
+    const { data: membershipData, error: membershipCountError } = await supabase
+      .from('organization_members')
+      .select('count')
+      .eq('user_id', userId)
+      .eq('organization_id', userId)
+      .count();
     
     if (membershipCountError) {
       console.error('Error checking existing membership count:', membershipCountError);
@@ -90,9 +91,10 @@ export async function ensureUserHasOrgAdminRole(userId: string): Promise<EnsureU
     }
     
     let membershipAdded = false;
+    const count = membershipData?.count || 0;
     
     // If no existing membership (count is 0), create one with the user as their own organization admin
-    if (!count || count === 0) {
+    if (count === 0) {
       const { error: membershipError } = await supabase
         .from('organization_members')
         .insert({
