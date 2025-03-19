@@ -12,6 +12,7 @@ DROP FUNCTION IF EXISTS public.has_role_v2;
 DROP FUNCTION IF EXISTS public.get_user_role_v2;
 DROP FUNCTION IF EXISTS public.check_organization_membership_exists;
 DROP FUNCTION IF EXISTS public.count_user_organization_memberships;
+DROP FUNCTION IF EXISTS public.get_user_role; -- Added this to resolve the dependency issue
 
 -- Drop tables related to role management
 DROP TABLE IF EXISTS public.user_roles CASCADE;
