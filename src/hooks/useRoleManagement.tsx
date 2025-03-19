@@ -38,7 +38,25 @@ export function useRoleManagement() {
       if (!currentOrganization?.id) {
         console.log('No organization selected, checking for user roles directly');
         try {
-          // Check if user has a role in the user_roles table
+          // First try using the has_role_v2 RPC function
+          const { data: hasAdminRole, error: adminCheckError } = await supabase.rpc(
+            'has_role_v2',
+            { 
+              user_uuid: user.id,
+              required_role: 'organization_admin'
+            }
+          );
+          
+          if (adminCheckError) {
+            console.error('Error checking admin role with RPC:', adminCheckError);
+          } else if (hasAdminRole) {
+            console.log('User has organization_admin role (from RPC check)');
+            setCurrentRole('organization_admin');
+            setIsLoading(false);
+            return;
+          }
+          
+          // Fall back to direct query if RPC doesn't find the role
           const { data: roleData, error: roleError } = await supabase
             .from('user_roles')
             .select('roles(name)')
@@ -52,8 +70,23 @@ export function useRoleManagement() {
             console.log('Found user role:', roleData.roles.name);
             setCurrentRole(roleData.roles.name as UserRoleType);
           } else {
-            console.log('No role found for user');
-            setCurrentRole(null);
+            // Last resort: check if the user has a membership in organization_members
+            const { data: membershipData, error: membershipError } = await supabase
+              .from('organization_members')
+              .select('role')
+              .eq('user_id', user.id)
+              .eq('organization_id', user.id) // Check for their personal organization
+              .single();
+              
+            if (membershipError && membershipError.code !== 'PGRST116') {
+              console.error('Error checking organization membership:', membershipError);
+            } else if (membershipData?.role) {
+              console.log('Found role from organization membership:', membershipData.role);
+              setCurrentRole(membershipData.role as UserRoleType);
+            } else {
+              console.log('No role found for user');
+              setCurrentRole(null);
+            }
           }
         } catch (err: any) {
           console.error('Error in direct role check:', err);

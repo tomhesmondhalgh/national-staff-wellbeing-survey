@@ -73,7 +73,7 @@ export async function signUpWithEmail(email: string, password: string, userData?
         .from('organization_members')
         .insert({
           user_id: data.user.id,
-          organization_id: data.user.id,
+          organization_id: data.user.id,  // The user ID is also their personal organization ID
           role: 'organization_admin',
           is_primary: true
         });
@@ -84,6 +84,19 @@ export async function signUpWithEmail(email: string, password: string, userData?
       }
       
       console.log('Created organization membership with admin role');
+      
+      // Extra verification step - verify the role was actually created
+      const { data: verifyRole, error: verifyError } = await supabase
+        .from('user_roles')
+        .select('*')
+        .eq('user_id', data.user.id);
+        
+      if (verifyError) {
+        console.error('Error verifying role assignment:', verifyError);
+      } else {
+        console.log('Role verification result:', verifyRole?.length ? 'Role assigned' : 'No role found');
+      }
+      
     } catch (roleAssignmentError: any) {
       console.error('Exception during role assignment:', roleAssignmentError);
       // Don't block signup if role assignment fails, but log it clearly
