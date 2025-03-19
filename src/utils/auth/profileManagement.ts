@@ -35,9 +35,6 @@ export async function completeUserProfile(userId: string, userData: any) {
       throw profileError;
     }
     
-    // In the simplified model, we no longer need to create organization memberships
-    // The membership check and creation code has been removed
-    
     // Send welcome email to the user
     try {
       await supabase.functions.invoke('send-welcome-email', {

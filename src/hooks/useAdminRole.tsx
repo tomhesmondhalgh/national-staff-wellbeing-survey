@@ -59,16 +59,12 @@ export function useAdminRole() {
       console.log('Fetching fresh admin status for user:', user.id);
       setIsLoading(true);
       
-      // In the simplified model, we'll just check the user's metadata or email
-      // for admin status. Use a simple check like domain or specific email list
-      const isUserAdmin = false; // Default to false for most users
+      // In the simplified model, we can check for specific admin users by email domain or hardcoded list
+      // This is just a placeholder implementation - in a real app you would implement a proper check
       
-      // For example, you could check if the user's email has a specific domain:
-      // const isUserAdmin = user.email && user.email.endsWith('@admin-domain.com'); 
-      
-      // Or check against a hardcoded list of admin emails
-      // const adminEmails = ['admin1@example.com', 'admin2@example.com'];
-      // const isUserAdmin = user.email && adminEmails.includes(user.email);
+      // For example, you could use a list of admin emails
+      const adminEmails = ['admin@example.com', 'admin@yourdomain.com'];
+      const isUserAdmin = user.email ? adminEmails.includes(user.email) : false;
       
       setIsAdmin(isUserAdmin);
       

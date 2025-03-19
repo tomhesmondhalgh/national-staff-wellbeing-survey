@@ -6,7 +6,7 @@ import { Organization, UserRoleType } from '../lib/supabase/client';
 
 export interface OrganizationWithRole extends Organization {
   role: UserRoleType;
-  id: string; // Adding id to the interface to fix the error
+  id: string;
 }
 
 export const useOrganizations = () => {
@@ -27,45 +27,26 @@ export const useOrganizations = () => {
       setError(null);
 
       try {
-        // Direct query instead of function call
-        const { data: orgMembers, error: orgError } = await supabase
-          .from('organization_members')
-          .select('organization_id, role')
-          .eq('user_id', user.id);
-          
-        if (orgError) {
-          throw orgError;
-        }
-        
-        const orgsWithRoles: OrganizationWithRole[] = [];
+        // In the simplified model, we just use the user's profile as their organization
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('school_name')
+          .eq('id', user.id)
+          .single();
 
-        for (const org of orgMembers || []) {
-          // Fetch organization name
-          try {
-            const { data: profile, error: profileError } = await supabase
-              .from('profiles')
-              .select('school_name')
-              .eq('id', org.organization_id);
-
-            if (profileError) {
-              console.error('Error fetching org profile:', profileError);
-              continue;
-            }
-
-            const orgName = profile && profile[0]?.school_name ? profile[0].school_name : 'Unknown Organization';
-            
-            orgsWithRoles.push({
-              id: org.organization_id,
-              name: orgName,
-              created_at: new Date().toISOString(),
-              role: org.role
-            });
-          } catch (err) {
-            console.error('Error fetching org details:', err);
-          }
+        if (profileError) {
+          throw profileError;
         }
 
-        setOrganizations(orgsWithRoles);
+        // Create an organization entry based on user's profile
+        const personalOrg: OrganizationWithRole = {
+          id: user.id,
+          name: profile?.school_name || 'My Organisation',
+          created_at: new Date().toISOString(),
+          role: 'organization_admin'
+        };
+
+        setOrganizations([personalOrg]);
       } catch (err) {
         console.error('Error fetching organizations:', err);
         setError(err instanceof Error ? err : new Error('Unknown error loading organizations'));

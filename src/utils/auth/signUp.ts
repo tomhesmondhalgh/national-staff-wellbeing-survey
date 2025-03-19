@@ -43,9 +43,6 @@ export async function signUpWithEmail(email: string, password: string, userData?
     
     console.log('User created successfully:', data.user.id);
     
-    // In the simplified authentication model, we don't need to assign roles
-    // All authenticated users have the same permissions
-    
     // Set up the user profile
     try {
       console.log('Setting up user profile');

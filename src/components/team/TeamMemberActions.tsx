@@ -1,7 +1,6 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 
 type TeamMemberActionsProps = {
   memberId: string;
@@ -17,8 +16,12 @@ export default function TeamMemberActions({ memberId, type, refetchAll, member }
     if (!confirm("Are you sure you want to remove this member?")) return;
     
     try {
-      toast.error('This functionality has been simplified and removing members is currently disabled');
-      // We've removed organization_members table in the simplification
+      toast.info('Member removal is disabled in the simplified authentication model', {
+        description: 'This feature has been removed as part of the authentication simplification.',
+        duration: 5000
+      });
+      
+      // Refresh the UI to maintain proper flow
       refetchAll();
     } catch (error) {
       console.error('Error removing member:', error);
@@ -31,8 +34,12 @@ export default function TeamMemberActions({ memberId, type, refetchAll, member }
     
     setIsLoading(true);
     try {
-      toast.error('This functionality has been simplified and cancelling invitations is currently disabled');
-      // We've removed invitations table in the simplification
+      toast.info('Invitation cancellation is disabled in the simplified authentication model', {
+        description: 'This feature has been removed as part of the authentication simplification.',
+        duration: 5000
+      });
+      
+      // Refresh the UI to maintain proper flow
       refetchAll();
     } catch (error) {
       console.error('Error cancelling invitation:', error);
