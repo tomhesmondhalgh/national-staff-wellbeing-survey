@@ -40,63 +40,82 @@ export function useSurveyData(surveyId: string | null, isPreview: boolean) {
         
         console.log('Fetching custom questions for survey ID:', surveyId);
         
-        // Direct join query to get questions in one go
-        const { data: questionsData, error: questionsError } = await supabase
+        // First, check if there are any survey_questions records for this survey
+        const { data: linkData, error: linkError } = await supabase
           .from('survey_questions')
-          .select(`
-            question_id,
-            custom_questions(id, text, type, options)
-          `)
+          .select('question_id, id')
           .eq('survey_id', surveyId);
         
-        if (questionsError) {
-          console.error('Error fetching questions:', questionsError);
-          toast.error('Failed to load survey questions');
+        if (linkError) {
+          console.error('Error fetching survey_questions links:', linkError);
+          toast.error('Failed to load survey question links');
           setIsLoading(false);
           return { isClosed: false };
         }
         
-        console.log('Raw joined questions data:', questionsData);
+        console.log('Survey question links found:', linkData);
         
-        if (!questionsData || questionsData.length === 0) {
+        if (!linkData || linkData.length === 0) {
           console.log('No custom questions linked to this survey');
           setCustomQuestions([]);
           setIsLoading(false);
           return { isClosed: false };
         }
         
-        // Transform joined data to our expected format
-        const formattedQuestions: CustomQuestionType[] = questionsData
-          .filter(item => item.custom_questions) // Filter out any null results
-          .map(item => {
-            const q = item.custom_questions;
-            
-            // Handle options - ensure they're in the right format
-            let options: string[] = [];
-            if (q.options) {
-              if (Array.isArray(q.options)) {
-                options = q.options;
-              } else if (typeof q.options === 'string') {
-                try {
-                  const parsed = JSON.parse(q.options);
-                  if (Array.isArray(parsed)) {
-                    options = parsed;
-                  }
-                } catch (e) {
-                  console.error('Failed to parse options:', e);
+        // Extract question IDs from the links
+        const questionIds = linkData.map(link => link.question_id);
+        console.log('Question IDs to fetch:', questionIds);
+        
+        // Then fetch the actual custom questions using those IDs
+        const { data: questionsData, error: questionsError } = await supabase
+          .from('custom_questions')
+          .select('id, text, type, options')
+          .in('id', questionIds);
+        
+        if (questionsError) {
+          console.error('Error fetching custom questions:', questionsError);
+          toast.error('Failed to load custom questions');
+          setIsLoading(false);
+          return { isClosed: false };
+        }
+        
+        console.log('Raw custom questions data:', questionsData);
+        
+        if (!questionsData || questionsData.length === 0) {
+          console.log('No custom questions found with the linked IDs');
+          setCustomQuestions([]);
+          setIsLoading(false);
+          return { isClosed: false };
+        }
+        
+        // Transform and format the questions data
+        const formattedQuestions: CustomQuestionType[] = questionsData.map(q => {
+          // Handle options - ensure they're in the right format
+          let options: string[] = [];
+          if (q.options) {
+            if (Array.isArray(q.options)) {
+              options = q.options;
+            } else if (typeof q.options === 'string') {
+              try {
+                const parsed = JSON.parse(q.options);
+                if (Array.isArray(parsed)) {
+                  options = parsed;
                 }
+              } catch (e) {
+                console.error('Failed to parse options:', e);
               }
             }
-            
-            console.log(`Formatting question ${q.id}: ${q.text} (type: ${q.type})`, { options });
-            
-            return {
-              id: q.id,
-              text: q.text,
-              type: q.type || 'text',
-              options: options
-            };
-          });
+          }
+          
+          console.log(`Formatting question ${q.id}: ${q.text} (type: ${q.type})`, { options });
+          
+          return {
+            id: q.id,
+            text: q.text,
+            type: q.type || 'text',
+            options: options
+          };
+        });
         
         console.log('Formatted custom questions:', formattedQuestions);
         setCustomQuestions(formattedQuestions);
