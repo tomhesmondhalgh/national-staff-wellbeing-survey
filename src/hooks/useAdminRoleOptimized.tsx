@@ -59,24 +59,24 @@ export function useAdminRoleOptimized() {
       console.log('Fetching fresh admin status for user:', user.id);
       setIsLoading(true);
       
-      // No valid cache, perform API call
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'administrator')
-        .maybeSingle();
-
+      // Use the has_role_v2 function to check if user has administrator role
+      const { data, error } = await supabase.rpc(
+        'has_role_v2',
+        {
+          user_uuid: user.id,
+          required_role: 'administrator'
+        }
+      );
+      
       if (error) {
         console.error('Error checking admin role:', error);
         setIsAdmin(false);
       } else {
-        const isRealAdmin = !!data;
-        setIsAdmin(isRealAdmin);
+        setIsAdmin(!!data);
         
         // Update cache
         adminStatusCache[user.id] = {
-          isAdmin: isRealAdmin,
+          isAdmin: !!data,
           timestamp: now,
           expiresAt: now + CACHE_EXPIRY
         };

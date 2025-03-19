@@ -1178,21 +1178,32 @@ export type Database = {
           created_at: string | null
           id: string
           role: Database["public"]["Enums"]["app_role"]
+          role_id: string
           user_id: string
         }
         Insert: {
           created_at?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          role_id: string
           user_id: string
         }
         Update: {
           created_at?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          role_id?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       xero_contact_mappings: {
         Row: {
@@ -1420,6 +1431,12 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_user_role_v2: {
+        Args: {
+          user_id: string
+        }
+        Returns: string
+      }
       get_user_subscription: {
         Args: {
           user_uuid: string
@@ -1428,6 +1445,13 @@ export type Database = {
           plan: Database["public"]["Enums"]["plan_type"]
           is_active: boolean
         }[]
+      }
+      has_role_v2: {
+        Args: {
+          user_uuid: string
+          required_role: string
+        }
+        Returns: boolean
       }
       role_has_permission: {
         Args: {

@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTestingMode } from '../contexts/TestingModeContext';
-import { supabase, isUserAdmin } from '../lib/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 
 // Simple cache for admin status
 const adminCache: Record<string, {
@@ -46,17 +46,28 @@ export function useAdminRole() {
         return;
       }
       
-      // Not in cache or expired, check from database
+      // Not in cache or expired, use the has_role_v2 function
       console.log('Checking admin status from database for:', user.email);
-      const adminStatus = await isUserAdmin(user.id);
+      const { data, error } = await supabase.rpc(
+        'has_role_v2',
+        {
+          user_uuid: user.id,
+          required_role: 'administrator'
+        }
+      );
       
-      // Update cache
-      adminCache[user.id] = {
-        isAdmin: adminStatus,
-        timestamp: now
-      };
-      
-      setIsAdmin(adminStatus);
+      if (error) {
+        console.error('Error checking admin role:', error);
+        setIsAdmin(false);
+      } else {
+        // Update cache
+        adminCache[user.id] = {
+          isAdmin: !!data,
+          timestamp: now
+        };
+        
+        setIsAdmin(!!data);
+      }
     } catch (error) {
       console.error('Error checking admin status:', error);
       setIsAdmin(false);

@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTestingMode } from '../contexts/TestingModeContext';
 import { useOrganization } from '../contexts/OrganizationContext';
-import { UserRoleType, supabase } from '../lib/supabase/client';
+import { UserRoleType, supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 /**
@@ -95,7 +95,7 @@ export function useRoleManagement() {
     if (!currentOrganization?.id) return false;
     
     try {
-      // Use the database function to check permissions
+      // Use the new v2 database function to check permissions
       const { data, error: permError } = await supabase.rpc(
         'user_has_organization_role_v2',
         {
