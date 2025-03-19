@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { OrganizationProvider } from './contexts/OrganizationContext';
@@ -15,8 +14,7 @@ import SignUp from './pages/SignUp';
 import EmailConfirmation from './pages/EmailConfirmation';
 import Dashboard from './pages/Dashboard';
 import Surveys from './pages/Surveys';
-import NewSurvey from './pages/NewSurvey';
-import EditSurvey from './pages/EditSurvey';
+import SurveyEditor from './pages/SurveyEditor';
 import SurveyForm from './pages/SurveyForm';
 import PublicSurveyForm from './pages/PublicSurveyForm';
 import SurveyComplete from './pages/SurveyComplete';
@@ -75,14 +73,14 @@ function App() {
                       <Surveys />
                     </ProtectedRoute>
                   } />
-                  <Route path="/surveys/:id/edit" element={
-                    <ProtectedRoute>
-                      <EditSurvey />
-                    </ProtectedRoute>
-                  } />
                   <Route path="/new-survey" element={
                     <ProtectedRoute>
-                      <NewSurvey />
+                      <SurveyEditor />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/surveys/:id/edit" element={
+                    <ProtectedRoute>
+                      <SurveyEditor />
                     </ProtectedRoute>
                   } />
                   <Route path="/analysis" element={
