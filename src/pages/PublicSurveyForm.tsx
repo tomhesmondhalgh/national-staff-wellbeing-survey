@@ -28,18 +28,35 @@ const PublicSurveyForm: React.FC = () => {
   } = useSurveyForm(surveyId, isPreview);
   
   useEffect(() => {
-    // Log data when component mounts or data changes
+    // Enhanced logging for debugging
     if (surveyId) {
       console.log('PublicSurveyForm loaded with survey ID:', surveyId);
       console.log('Is preview mode?', isPreview);
     }
-    if (customQuestions && customQuestions.length > 0) {
-      console.log('Custom questions available:', customQuestions);
+    
+    if (customQuestions) {
+      console.log('Custom questions available in component:', customQuestions);
+      console.log('Number of custom questions:', customQuestions.length);
+      
+      if (customQuestions.length > 0) {
+        customQuestions.forEach((q, i) => {
+          console.log(`Question ${i+1}:`, { 
+            id: q.id, 
+            text: q.text, 
+            type: q.type,
+            options: q.options 
+          });
+        });
+      } else {
+        console.log('No custom questions are available for this survey');
+      }
     }
   }, [surveyId, isPreview, customQuestions]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Submitting form with data:', formData);
+    console.log('Custom responses being submitted:', formData.custom_responses);
     await submitForm(navigate);
   };
   
