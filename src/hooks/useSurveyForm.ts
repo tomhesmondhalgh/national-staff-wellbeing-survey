@@ -53,6 +53,8 @@ export function useSurveyForm(surveyId: string | null, isPreview: boolean) {
       setIsSubmitting(true);
       
       console.log('Submitting survey response for survey ID:', surveyId);
+      console.log('Form data:', formData);
+      console.log('Custom responses:', formData.custom_responses);
       
       // Construct response payload
       const responsePayload = {

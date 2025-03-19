@@ -57,7 +57,15 @@ export function useSurveyData(surveyId: string | null, isPreview: boolean) {
           if (questionsError) {
             console.error('Error fetching custom questions:', questionsError);
           } else if (questions) {
-            setCustomQuestions(questions);
+            const customQuestionsList = questions.map(q => ({
+              id: q.id,
+              text: q.text,
+              type: q.type || 'text',
+              options: q.options || []
+            }));
+            
+            console.log('Fetched custom questions:', customQuestionsList);
+            setCustomQuestions(customQuestionsList);
           }
         }
         
