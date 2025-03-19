@@ -4,7 +4,6 @@ import { Send, Copy, Edit } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { usePermissions } from '../../hooks/usePermissions';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useMediaQuery } from '@/hooks/use-media-query';
 
@@ -32,20 +31,10 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
   const [canEditSurveys, setCanEditSurveys] = useState(true);
   const navigate = useNavigate();
   const { user } = useAuth();
-  const permissions = usePermissions();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
-    const checkEditPermission = async () => {
-      if (!user) {
-        setCanEditSurveys(false);
-        return;
-      }
-      
-      setCanEditSurveys(true);
-    };
-    
-    checkEditPermission();
+    setCanEditSurveys(!!user);
   }, [user]);
 
   const copyToClipboard = (id: string, text: string) => {

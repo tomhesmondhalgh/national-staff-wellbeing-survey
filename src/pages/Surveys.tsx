@@ -7,7 +7,6 @@ import Pagination from '../components/surveys/Pagination';
 import { toast } from "sonner";
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { usePermissions } from '../hooks/usePermissions';
 import { useMediaQuery } from '../hooks/use-media-query';
 import { sendSurveyReminder } from '../utils/survey/sendReminder';
 
@@ -21,21 +20,10 @@ const Surveys = () => {
   const [totalSurveys, setTotalSurveys] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [canCreateSurveys, setCanCreateSurveys] = useState(true);
-  const permissions = usePermissions();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
-    const checkCreatePermission = async () => {
-      if (!user) {
-        setCanCreateSurveys(false);
-        return;
-      }
-      
-      // All authenticated users can create surveys
-      setCanCreateSurveys(true);
-    };
-    
-    checkCreatePermission();
+    setCanCreateSurveys(!!user);
   }, [user]);
 
   useEffect(() => {
@@ -48,7 +36,6 @@ const Surveys = () => {
       try {
         setLoading(true);
         
-        // Count surveys excluding Archived ones
         const { count, error: countError } = await supabase
           .from('survey_templates')
           .select('*', { count: 'exact', head: true })
@@ -64,7 +51,6 @@ const Surveys = () => {
         const from = (currentPage - 1) * SURVEYS_PER_PAGE;
         const to = from + SURVEYS_PER_PAGE - 1;
         
-        // Fetch surveys excluding Archived ones
         const { data: surveyTemplates, error } = await supabase
           .from('survey_templates')
           .select(`
