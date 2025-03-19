@@ -137,12 +137,8 @@ const PublicSurveyForm: React.FC = () => {
     try {
       setIsSubmitting(true);
       
-      console.log('Submitting survey response:', {
-        surveyId,
-        formData
-      });
+      console.log('Submitting survey response for survey ID:', surveyId);
       
-      // Create the basic response payload
       const responsePayload = {
         survey_template_id: surveyId,
         role: formData.role,
@@ -160,9 +156,7 @@ const PublicSurveyForm: React.FC = () => {
         improvements: formData.improvements
       };
       
-      console.log('Submitting response payload:', responsePayload);
-      
-      // Insert the survey response - no need to check for table existence anymore
+      // Directly insert the survey response without any additional checks
       const { data: responseData, error: responseError } = await supabase
         .from('survey_responses')
         .insert(responsePayload)
@@ -177,7 +171,7 @@ const PublicSurveyForm: React.FC = () => {
         throw new Error(`Submission error: ${responseError.message}`);
       }
       
-      console.log('Survey response created:', responseData);
+      console.log('Survey response created with ID:', responseData?.id);
       
       // Handle custom questions responses if any
       if (customQuestions.length > 0 && responseData?.id) {
@@ -197,6 +191,8 @@ const PublicSurveyForm: React.FC = () => {
           if (customError) {
             console.error('Error saving custom responses:', customError);
             console.error('Custom error details:', customError.details);
+            // We'll continue even if custom responses fail to save
+            toast.error('Some responses may not have been fully saved');
           }
         }
       }
@@ -242,7 +238,6 @@ const PublicSurveyForm: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-b from-white to-purple-50">
       <div className="container mx-auto px-4 py-8 max-w-3xl">
         <div className="bg-white shadow-md rounded-lg p-6 md:p-8 border border-purple-100">
-          {/* SurveyIntro component now handles all header/logo elements */}
           <SurveyIntro surveyTemplate={surveyData} />
           
           <form onSubmit={handleSubmit} className="mt-8 space-y-8">
