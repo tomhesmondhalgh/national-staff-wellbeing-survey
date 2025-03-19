@@ -37,6 +37,8 @@ export function useSurveyData(surveyId: string | null, isPreview: boolean) {
         setSurveyName(surveyTemplate.name);
         setSurveyData(surveyTemplate);
         
+        // Fetch survey question links first
+        console.log('Fetching question links for survey ID:', surveyId);
         const { data: questionLinks, error: linksError } = await supabase
           .from('survey_questions')
           .select('question_id')
@@ -46,8 +48,12 @@ export function useSurveyData(surveyId: string | null, isPreview: boolean) {
           console.error('Error fetching question links:', linksError);
         }
         
+        console.log('Question links:', questionLinks);
+        
         if (questionLinks && questionLinks.length > 0) {
           const questionIds = questionLinks.map(link => link.question_id);
+          
+          console.log('Fetching custom questions with IDs:', questionIds);
           
           const { data: questions, error: questionsError } = await supabase
             .from('custom_questions')
@@ -67,6 +73,8 @@ export function useSurveyData(surveyId: string | null, isPreview: boolean) {
             console.log('Fetched custom questions:', customQuestionsList);
             setCustomQuestions(customQuestionsList);
           }
+        } else {
+          console.log('No custom questions found for this survey');
         }
         
         return { isClosed: false };

@@ -17,6 +17,9 @@ const CustomQuestionsSection: React.FC<CustomQuestionsSectionProps> = ({
 }) => {
   if (customQuestions.length === 0) return null;
 
+  console.log('Rendering CustomQuestionsSection with questions:', customQuestions);
+  console.log('Current form data:', formData.custom_responses);
+
   return (
     <div className="mt-12 pt-6 border-t border-gray-200">
       <h3 className="text-lg font-medium mb-6">Additional Questions</h3>

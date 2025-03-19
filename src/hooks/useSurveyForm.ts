@@ -30,6 +30,7 @@ export function useSurveyForm(surveyId: string | null, isPreview: boolean) {
   };
 
   const handleCustomQuestionResponse = (questionId: string, value: string) => {
+    console.log('Handling custom question response:', questionId, value);
     setFormData(prev => ({
       ...prev,
       custom_responses: {
