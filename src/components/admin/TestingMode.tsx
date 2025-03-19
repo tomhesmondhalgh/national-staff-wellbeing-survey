@@ -1,10 +1,8 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useTestingMode } from '@/contexts/TestingModeContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { PlanType } from '@/lib/supabase/subscription';
 import { toast } from '@/hooks/use-toast';
 
@@ -13,83 +11,50 @@ const TestingMode = () => {
     isTestingMode, 
     testingPlan,
     enableTestingMode,
-    disableTestingMode,
-    setTestingPlan
+    disableTestingMode
   } = useTestingMode();
 
-  const [selectedPlan, setSelectedPlan] = useState<PlanType>(testingPlan || 'free');
-
-  const handleToggleTestingMode = (enabled: boolean) => {
-    if (!enabled) {
-      disableTestingMode();
-      toast({
-        title: 'Testing Mode Disabled',
-        description: 'You are now using your actual subscription',
-      });
+  const handleSelectPlan = (plan: PlanType) => {
+    // If we're selecting the current plan, do nothing
+    if (isTestingMode && testingPlan === plan) {
       return;
     }
-
-    enableTestingMode(selectedPlan);
+    
+    enableTestingMode(plan);
     toast({
       title: 'Testing Mode Enabled',
-      description: `Testing with ${selectedPlan} plan`,
+      description: `Testing with ${plan} plan`,
     });
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Testing Mode</h2>
-          <p className="text-muted-foreground">
-            Simulate different subscription plans for testing purposes
-          </p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Switch 
-            checked={isTestingMode} 
-            onCheckedChange={handleToggleTestingMode}
-            id="testing-mode-toggle"
-          />
-          <Label htmlFor="testing-mode-toggle">
-            {isTestingMode ? 'Enabled' : 'Disabled'}
-          </Label>
-        </div>
+      <div>
+        <h2 className="text-2xl font-bold">Testing Mode</h2>
+        <p className="text-muted-foreground">
+          Simulate different subscription plans for testing purposes
+        </p>
       </div>
 
       <Card className="p-6">
         <div className="space-y-4">
-          <h3 className="text-lg font-medium">Subscription Plan</h3>
+          <h3 className="text-lg font-medium">Select a Subscription Plan</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {(['free', 'foundation', 'progress', 'premium'] as PlanType[]).map((plan) => (
               <button
                 key={plan}
                 className={`p-4 border rounded-lg text-center capitalize transition-colors ${
-                  selectedPlan === plan 
+                  isTestingMode && testingPlan === plan 
                     ? 'border-primary bg-primary/10 text-primary' 
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
-                onClick={() => setSelectedPlan(plan)}
+                onClick={() => handleSelectPlan(plan)}
               >
                 {plan}
               </button>
             ))}
           </div>
         </div>
-        
-        <Button 
-          onClick={() => {
-            enableTestingMode(selectedPlan);
-            toast({
-              title: 'Testing Mode Updated',
-              description: `Testing with ${selectedPlan} plan`,
-            });
-          }} 
-          disabled={!isTestingMode}
-          className="mt-4"
-        >
-          Apply Plan
-        </Button>
       </Card>
 
       {isTestingMode && (
