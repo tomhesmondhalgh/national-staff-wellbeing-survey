@@ -22,6 +22,8 @@ const SurveyFormContent: React.FC<SurveyFormContentProps> = ({
   handleCustomQuestionResponse,
   handleSubmit
 }) => {
+  const hasCustomQuestions = Array.isArray(customQuestions) && customQuestions.length > 0;
+  
   return (
     <form onSubmit={handleSubmit} className="mt-8 space-y-8">
       <StandardQuestions 
@@ -29,13 +31,13 @@ const SurveyFormContent: React.FC<SurveyFormContentProps> = ({
         handleInputChange={handleInputChange} 
       />
       
-      {customQuestions.length > 0 && (
+      {hasCustomQuestions ? (
         <CustomQuestionsSection 
           customQuestions={customQuestions}
           formData={formData}
           handleCustomQuestionResponse={handleCustomQuestionResponse}
         />
-      )}
+      ) : null}
       
       <div className="pt-6">
         <SubmitButton isSubmitting={isSubmitting} />
