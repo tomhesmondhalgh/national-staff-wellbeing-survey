@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -17,7 +16,7 @@ import CustomTextQuestion from '../components/survey-form/CustomTextQuestion';
 import { getSurveyById } from '../utils/survey/templates';
 import { isSurveyClosed } from '../utils/survey/status';
 import { SurveyTemplate } from '../utils/types/survey';
-import { frequencyOptions, agreementOptions } from '../components/survey-form/constants';
+import { roleOptions, frequencyOptions, agreementOptions } from '../components/survey-form/constants';
 
 const PublicSurveyForm: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -219,21 +218,16 @@ const PublicSurveyForm: React.FC = () => {
           
           <form onSubmit={handleSubmit} className="mt-8 space-y-8">
             <RadioQuestion
-              label="What is your role?"
+              label="What Is Your Role?"
               name="role"
-              options={[
-                'Teaching Staff',
-                'Support Staff',
-                'Middle Leadership',
-                'Senior Leadership'
-              ]}
+              options={roleOptions}
               value={formData.role}
               onChange={(e) => handleInputChange('role', e.target.value)}
               required
             />
             
             <RatingQuestion
-              label="Leadership prioritise staff wellbeing in our organisation"
+              label="Leadership Prioritise Staff Wellbeing In Our Organisation"
               name="leadership_prioritize"
               value={formData.leadership_prioritize}
               onChange={(e) => handleInputChange('leadership_prioritize', e.target.value)}
@@ -241,7 +235,7 @@ const PublicSurveyForm: React.FC = () => {
             />
             
             <RatingQuestion
-              label="I have a manageable workload"
+              label="I Have A Manageable Workload"
               name="manageable_workload"
               value={formData.manageable_workload}
               onChange={(e) => handleInputChange('manageable_workload', e.target.value)}
@@ -249,7 +243,7 @@ const PublicSurveyForm: React.FC = () => {
             />
             
             <RatingQuestion
-              label="I have a good work-life balance"
+              label="I Have A Good Work-Life Balance"
               name="work_life_balance"
               value={formData.work_life_balance}
               onChange={(e) => handleInputChange('work_life_balance', e.target.value)}
@@ -257,7 +251,7 @@ const PublicSurveyForm: React.FC = () => {
             />
             
             <RatingQuestion
-              label="I am in good physical and mental health"
+              label="I Am In Good Physical And Mental Health"
               name="health_state"
               value={formData.health_state}
               onChange={(e) => handleInputChange('health_state', e.target.value)}
@@ -265,7 +259,7 @@ const PublicSurveyForm: React.FC = () => {
             />
             
             <RatingQuestion
-              label="I feel like a valued member of the team"
+              label="I Feel Like A Valued Member Of The Team"
               name="valued_member"
               value={formData.valued_member}
               onChange={(e) => handleInputChange('valued_member', e.target.value)}
@@ -273,7 +267,7 @@ const PublicSurveyForm: React.FC = () => {
             />
             
             <RatingQuestion
-              label="I have access to support when I need it"
+              label="I Have Access To Support When I Need It"
               name="support_access"
               value={formData.support_access}
               onChange={(e) => handleInputChange('support_access', e.target.value)}
@@ -281,7 +275,7 @@ const PublicSurveyForm: React.FC = () => {
             />
             
             <RatingQuestion
-              label="I feel confident performing my role and am given chances to grow"
+              label="I Feel Confident Performing My Role And Am Given Chances To Grow"
               name="confidence_in_role"
               value={formData.confidence_in_role}
               onChange={(e) => handleInputChange('confidence_in_role', e.target.value)}
@@ -289,7 +283,7 @@ const PublicSurveyForm: React.FC = () => {
             />
             
             <RatingQuestion
-              label="I am proud to be part of this organisation"
+              label="I Am Proud To Be Part Of This Organisation"
               name="org_pride"
               value={formData.org_pride}
               onChange={(e) => handleInputChange('org_pride', e.target.value)}
@@ -297,7 +291,7 @@ const PublicSurveyForm: React.FC = () => {
             />
             
             <RadioQuestion
-              label="On a Scale of 1-10 How Likely Are You to Recommend This Organisation to Others as a Great Place to Work?"
+              label="On A Scale Of 1-10 How Likely Are You To Recommend This Organisation To Others As A Great Place To Work?"
               name="recommendation_score"
               options={['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10']}
               value={formData.recommendation_score}
@@ -308,7 +302,7 @@ const PublicSurveyForm: React.FC = () => {
             />
             
             <RadioQuestion
-              label="In the last 6 months I have contemplated leaving my role"
+              label="In The Last 6 Months I Have Contemplated Leaving My Role"
               name="leaving_contemplation"
               options={frequencyOptions}
               value={formData.leaving_contemplation}
@@ -317,7 +311,7 @@ const PublicSurveyForm: React.FC = () => {
             />
             
             <TextQuestion
-              label="What is your school doing well to support staff wellbeing?"
+              label="What Is Your School Doing Well To Support Staff Wellbeing?"
               name="doing_well"
               value={formData.doing_well}
               onChange={(e) => handleInputChange('doing_well', e.target.value)}
@@ -325,7 +319,7 @@ const PublicSurveyForm: React.FC = () => {
             />
             
             <TextQuestion
-              label="What could your school do better to support staff wellbeing?"
+              label="What Could Your School Do Better To Support Staff Wellbeing?"
               name="improvements"
               value={formData.improvements}
               onChange={(e) => handleInputChange('improvements', e.target.value)}
