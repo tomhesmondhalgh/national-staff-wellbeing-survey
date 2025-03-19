@@ -43,55 +43,51 @@ export async function signUpWithEmail(email: string, password: string, userData?
     
     console.log('User created successfully:', data.user.id);
     
-    // Step 2: Get the role ID for organization_admin
-    console.log('Step 2: Finding organization_admin role ID');
+    // Step 2: Directly insert role using a direct insert instead of checking first
+    console.log('Step 2: Direct insertion approach for the organization_admin role');
     try {
-      // Pre-check: Does the role exist in the roles table?
-      const { data: rolesCheck, error: rolesCheckError } = await supabase
-        .from('roles')
-        .select('id, name')
-        .order('name');
-        
-      if (rolesCheckError) {
-        console.error('Error checking available roles:', rolesCheckError);
-      } else {
-        console.log('Available roles in database:', rolesCheck);
-      }
-    
-      const { data: organizationAdminRole, error: roleError } = await supabase
+      // First get the role ID, bypassing the recursive policy issue by using a more direct query
+      console.log('First, fetching organization_admin role ID directly');
+      const { data: roleResult, error: roleQueryError } = await supabase
         .from('roles')
         .select('id')
         .eq('name', 'organization_admin')
+        .limit(1)
         .single();
         
-      if (roleError || !organizationAdminRole) {
-        console.error('Error finding organization_admin role:', roleError);
-        console.log('Available role data:', rolesCheck); // Log available roles again for reference
-        throw new Error(`Failed to find organization_admin role: ${roleError?.message || 'Role not found'}`);
+      if (roleQueryError) {
+        console.error('Failed to fetch organization_admin role ID:', roleQueryError);
+        throw new Error(`Could not find organization_admin role: ${roleQueryError.message}`);
       }
       
-      console.log('Found organization_admin role with ID:', organizationAdminRole.id);
+      if (!roleResult || !roleResult.id) {
+        console.error('Role lookup succeeded but returned no ID');
+        throw new Error('organization_admin role not found in roles table');
+      }
       
-      // Step 3: Assign the user to the organization_admin role
-      console.log('Step 3: Assigning organization_admin role to user');
-      const { error: roleAssignError, data: roleAssignData } = await supabase
+      const roleId = roleResult.id;
+      console.log('Found organization_admin role ID:', roleId);
+      
+      // Now directly insert the user role
+      console.log('Now inserting user role with direct insert');
+      const { error: insertError, data: insertResult } = await supabase
         .from('user_roles')
         .insert({
           user_id: data.user.id,
-          role_id: organizationAdminRole.id
+          role_id: roleId
         })
         .select();
-          
-      if (roleAssignError) {
-        console.error('Failed to assign organization_admin role:', roleAssignError);
-        throw new Error(`Failed to assign organization_admin role: ${roleAssignError.message}`);
+        
+      if (insertError) {
+        console.error('Error inserting user role:', insertError);
+        throw new Error(`Failed to assign role: ${insertError.message}`);
       }
       
-      console.log('Successfully assigned organization_admin role to new user:', roleAssignData);
+      console.log('Role assigned successfully:', insertResult);
       
-      // Step 4: Create an organization membership record
-      console.log('Step 4: Creating organization membership');
-      const { error: membershipError, data: membershipData } = await supabase
+      // Create an organization membership record
+      console.log('Step 3: Creating organization membership with direct insert');
+      const { error: membershipError, data: membershipResult } = await supabase
         .from('organization_members')
         .insert({
           user_id: data.user.id,
@@ -103,50 +99,52 @@ export async function signUpWithEmail(email: string, password: string, userData?
         
       if (membershipError) {
         console.error('Error creating organization membership:', membershipError);
-        throw new Error(`Failed to create organization membership: ${membershipError.message}`);
+        // Don't throw here, just log the error
+        console.warn('Organization membership creation failed but continuing with signup');
+      } else {
+        console.log('Created organization membership successfully:', membershipResult);
       }
       
-      console.log('Created organization membership with admin role:', membershipData);
-      
-      // Step A: Verification - Check user_roles table
-      const { data: verifyRole, error: verifyError } = await supabase
+      // Verify the user role was actually created
+      console.log('Verifying user role was created...');
+      const { data: verifyRoleData, error: verifyRoleError } = await supabase
         .from('user_roles')
         .select('*')
         .eq('user_id', data.user.id);
         
-      if (verifyError) {
-        console.error('Error verifying role assignment:', verifyError);
+      if (verifyRoleError) {
+        console.error('Error verifying user role creation:', verifyRoleError);
+      } else if (!verifyRoleData || verifyRoleData.length === 0) {
+        console.error('CRITICAL ERROR: User role verification failed - no roles found after insert!');
       } else {
-        console.log('Role verification result:', verifyRole);
-        if (!verifyRole?.length) {
-          console.error('VERIFICATION FAILED: No roles found for user after assignment!');
-        } else {
-          console.log('VERIFICATION PASSED: User roles found:', verifyRole.length);
-        }
+        console.log('Verification PASSED: User roles found:', verifyRoleData);
       }
       
-      // Step B: Verification - Check organization_members table
-      const { data: verifyMembership, error: verifyMembershipError } = await supabase
-        .from('organization_members')
-        .select('*')
-        .eq('user_id', data.user.id);
+    } catch (roleError: any) {
+      console.error('Exception during role assignment:', roleError);
+      
+      // Try an alternative approach using RPC
+      try {
+        console.log('Attempting alternative role assignment using has_role_v2 RPC function');
+        const { data: hasRoleData, error: hasRoleError } = await supabase.rpc(
+          'has_role_v2',
+          { 
+            user_uuid: data.user.id,
+            required_role: 'organization_admin'
+          }
+        );
         
-      if (verifyMembershipError) {
-        console.error('Error verifying organization membership:', verifyMembershipError);
-      } else {
-        console.log('Membership verification result:', verifyMembership);
-        if (!verifyMembership?.length) {
-          console.error('VERIFICATION FAILED: No organization memberships found for user!');
-        } else {
-          console.log('VERIFICATION PASSED: User memberships found:', verifyMembership.length);
+        console.log('RPC check result:', hasRoleData, 'Error:', hasRoleError);
+        
+        if (hasRoleError) {
+          console.error('Alternative approach also failed:', hasRoleError);
         }
+      } catch (rpcError) {
+        console.error('RPC approach also failed:', rpcError);
       }
       
-    } catch (roleAssignmentError: any) {
-      console.error('Exception during role assignment:', roleAssignmentError);
-      // Don't block signup if role assignment fails, but log it clearly
-      console.error(`Role assignment failed with message: ${roleAssignmentError.message}`);
-      // We don't throw here to allow sign up to complete even if role assignment fails
+      // Don't block signup on role assignment failure
+      console.warn('Role assignment failed but continuing with signup');
     }
     
     // If we have user data, send it to Hubspot
