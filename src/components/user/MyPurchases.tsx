@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -20,9 +19,11 @@ import {
 } from "../ui/card";
 import { Button } from "../ui/button";
 import { toast } from "sonner";
-import { CreditCard, FileText, AlertCircle } from "lucide-react";
+import { CreditCard, FileText, AlertCircle, ListTodo } from "lucide-react";
 import { formatCurrency } from '../../lib/utils';
 import PageTitle from '../ui/PageTitle';
+import { useSubscription } from '../../hooks/useSubscription';
+import { useRoleManagement } from '../../hooks/useRoleManagement';
 
 export type Purchase = {
   id: string;
@@ -56,13 +57,14 @@ const MyPurchases = () => {
   const [loading, setLoading] = useState(true);
   const [cancellingSubscription, setCancellingSubscription] = useState(false);
   const { user } = useAuth();
+  const { subscription, isLoading: isSubscriptionLoading } = useSubscription();
+  const { currentRole, isLoading: isRoleLoading } = useRoleManagement();
 
   const fetchPurchases = async () => {
     if (!user) return;
 
     setLoading(true);
     try {
-      // Get the user's subscription IDs
       const { data: subscriptions, error: subError } = await supabase
         .from('subscriptions')
         .select('*')
@@ -72,7 +74,6 @@ const MyPurchases = () => {
         throw subError;
       }
 
-      // Find active subscription
       const active = subscriptions?.find(sub => 
         sub.status === 'active' && 
         sub.purchase_type === 'subscription' &&
@@ -96,10 +97,8 @@ const MyPurchases = () => {
         return;
       }
 
-      // Get subscription IDs
       const subscriptionIds = subscriptions.map(sub => sub.id);
 
-      // Get payment history for those subscriptions
       const { data: payments, error: paymentError } = await supabase
         .from('payment_history')
         .select(`
@@ -117,7 +116,6 @@ const MyPurchases = () => {
         throw paymentError;
       }
 
-      // Format the data
       const formattedPurchases = payments.map(item => ({
         ...item,
         plan_type: item.subscription?.plan_type || 'unknown',
@@ -144,7 +142,6 @@ const MyPurchases = () => {
     
     setCancellingSubscription(true);
     try {
-      // Call the edge function to cancel the subscription
       const { data, error } = await supabase.functions.invoke('cancel-subscription', {
         body: {
           subscriptionId: activeSubscription.id,
@@ -157,7 +154,6 @@ const MyPurchases = () => {
       }
 
       toast.success('Your subscription has been scheduled to cancel at the end of the current billing period');
-      // Refresh the data
       fetchPurchases();
     } catch (error) {
       console.error('Error cancelling subscription:', error);
@@ -197,6 +193,19 @@ const MyPurchases = () => {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-GB');
+  };
+
+  const formatPlanName = (planType: string | undefined) => {
+    if (!planType) return 'Free';
+    return planType.charAt(0).toUpperCase() + planType.slice(1);
+  };
+
+  const formatRoleName = (role: string | null) => {
+    if (!role) return 'No Role';
+    return role
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   };
 
   return (
@@ -310,6 +319,49 @@ const MyPurchases = () => {
                   </TableBody>
                 </Table>
               )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Current Plan & Role</CardTitle>
+          <CardDescription>
+            Your current plan details and system role
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isSubscriptionLoading || isRoleLoading ? (
+            <div className="text-center py-4">Loading account information...</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5 text-primary" />
+                  <h3 className="font-medium text-lg">Subscription Plan</h3>
+                </div>
+                <div className="pl-7">
+                  <span className="text-xl font-semibold capitalize">
+                    {formatPlanName(subscription?.plan)}
+                  </span>
+                  <Badge className={`ml-2 ${subscription?.isActive ? 'bg-green-500' : 'bg-red-500'}`}>
+                    {subscription?.isActive ? 'Active' : 'Inactive'}
+                  </Badge>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <ListTodo className="h-5 w-5 text-primary" />
+                  <h3 className="font-medium text-lg">System Role</h3>
+                </div>
+                <div className="pl-7">
+                  <span className="text-xl font-semibold">
+                    {formatRoleName(currentRole)}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>
