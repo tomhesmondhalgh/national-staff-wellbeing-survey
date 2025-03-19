@@ -6,6 +6,7 @@ import { useSurveyForm } from '../hooks/useSurveyForm';
 import SurveyLoading from '../components/survey-form/SurveyLoading';
 import SurveyNotFound from '../components/survey-form/SurveyNotFound';
 import SurveyFormWrapper from '../components/survey-form/SurveyFormWrapper';
+import { CustomQuestionsProvider } from '../contexts/CustomQuestionsContext'; 
 import { toast } from 'sonner';
 
 const PublicSurveyForm: React.FC = () => {
@@ -16,8 +17,7 @@ const PublicSurveyForm: React.FC = () => {
   
   const { 
     isLoading, 
-    surveyData, 
-    customQuestions 
+    surveyData
   } = useSurveyData(surveyId, isPreview);
   
   const {
@@ -29,16 +29,10 @@ const PublicSurveyForm: React.FC = () => {
   } = useSurveyForm(surveyId, isPreview);
   
   useEffect(() => {
-    // Verify data loaded for any survey
     if (surveyId && surveyData) {
       console.log(`Survey data loaded for ID: ${surveyId}`);
-      console.log('Custom questions count:', customQuestions?.length || 0);
-      
-      if (customQuestions?.length === 0) {
-        console.log('Note: This survey has no custom questions linked to it.');
-      }
     }
-  }, [surveyId, surveyData, customQuestions]);
+  }, [surveyId, surveyData]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,16 +57,18 @@ const PublicSurveyForm: React.FC = () => {
   }
   
   return (
-    <SurveyFormWrapper
-      surveyTemplate={surveyData}
-      formData={formData}
-      customQuestions={customQuestions}
-      isSubmitting={isSubmitting}
-      isPreview={isPreview}
-      handleInputChange={handleInputChange}
-      handleCustomQuestionResponse={handleCustomQuestionResponse}
-      handleSubmit={handleSubmit}
-    />
+    <CustomQuestionsProvider>
+      <SurveyFormWrapper
+        surveyTemplate={surveyData}
+        formData={formData}
+        surveyId={surveyId}
+        isSubmitting={isSubmitting}
+        isPreview={isPreview}
+        handleInputChange={handleInputChange}
+        handleCustomQuestionResponse={handleCustomQuestionResponse}
+        handleSubmit={handleSubmit}
+      />
+    </CustomQuestionsProvider>
   );
 };
 

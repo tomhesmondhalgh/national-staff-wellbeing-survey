@@ -1,13 +1,14 @@
 
 import React from 'react';
-import { CustomQuestionType, SurveyFormData } from '../../types/surveyForm';
+import { SurveyFormData } from '../../types/surveyForm';
 import StandardQuestions from './StandardQuestions';
 import CustomQuestionsSection from './CustomQuestionsSection';
 import SubmitButton from './SubmitButton';
+import { useSurveyCustomQuestions } from '../../hooks/useSurveyCustomQuestions';
 
 interface SurveyFormContentProps {
   formData: SurveyFormData;
-  customQuestions: CustomQuestionType[];
+  surveyId: string | null;
   isSubmitting: boolean;
   handleInputChange: (key: string, value: string) => void;
   handleCustomQuestionResponse: (questionId: string, value: string) => void;
@@ -16,13 +17,26 @@ interface SurveyFormContentProps {
 
 const SurveyFormContent: React.FC<SurveyFormContentProps> = ({
   formData,
-  customQuestions,
+  surveyId,
   isSubmitting,
   handleInputChange,
   handleCustomQuestionResponse,
   handleSubmit
 }) => {
-  const hasCustomQuestions = Array.isArray(customQuestions) && customQuestions.length > 0;
+  const { 
+    questions, 
+    responses, 
+    hasQuestions, 
+    isLoading, 
+    error, 
+    handleResponse 
+  } = useSurveyCustomQuestions(surveyId);
+  
+  // Sync our local responses with the parent's state
+  const handleQuestionResponse = (questionId: string, value: string) => {
+    handleResponse(questionId, value);
+    handleCustomQuestionResponse(questionId, value);
+  };
   
   return (
     <form onSubmit={handleSubmit} className="mt-8 space-y-8">
@@ -31,13 +45,16 @@ const SurveyFormContent: React.FC<SurveyFormContentProps> = ({
         handleInputChange={handleInputChange} 
       />
       
-      {hasCustomQuestions ? (
+      {/* Custom questions section - will only render if there are questions */}
+      {(hasQuestions || isLoading) && (
         <CustomQuestionsSection 
-          customQuestions={customQuestions}
-          formData={formData}
-          handleCustomQuestionResponse={handleCustomQuestionResponse}
+          questions={questions}
+          responses={responses}
+          onResponse={handleQuestionResponse}
+          isLoading={isLoading}
+          error={error}
         />
-      ) : null}
+      )}
       
       <div className="pt-6">
         <SubmitButton isSubmitting={isSubmitting} />

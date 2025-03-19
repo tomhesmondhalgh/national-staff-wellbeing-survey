@@ -1,15 +1,16 @@
 
 import React from 'react';
 import { SurveyTemplate } from '../../utils/types/survey';
-import { CustomQuestionType, SurveyFormData } from '../../types/surveyForm';
+import { SurveyFormData } from '../../types/surveyForm';
+import SurveyFormContainer from './SurveyFormContainer';
 import SurveyIntro from './SurveyIntro';
-import PreviewModeFooter from './PreviewModeFooter';
 import SurveyFormContent from './SurveyFormContent';
+import PreviewModeFooter from './PreviewModeFooter';
 
 interface SurveyFormWrapperProps {
   surveyTemplate: SurveyTemplate;
   formData: SurveyFormData;
-  customQuestions: CustomQuestionType[];
+  surveyId: string | null;
   isSubmitting: boolean;
   isPreview: boolean;
   handleInputChange: (key: string, value: string) => void;
@@ -20,7 +21,7 @@ interface SurveyFormWrapperProps {
 const SurveyFormWrapper: React.FC<SurveyFormWrapperProps> = ({
   surveyTemplate,
   formData,
-  customQuestions,
+  surveyId,
   isSubmitting,
   isPreview,
   handleInputChange,
@@ -28,24 +29,20 @@ const SurveyFormWrapper: React.FC<SurveyFormWrapperProps> = ({
   handleSubmit
 }) => {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-purple-50">
-      <div className="container mx-auto px-4 py-8 max-w-3xl">
-        <div className="bg-white shadow-md rounded-lg p-6 md:p-8 border border-purple-100">
-          <SurveyIntro surveyTemplate={surveyTemplate} />
-          
-          <SurveyFormContent
-            formData={formData}
-            customQuestions={customQuestions}
-            isSubmitting={isSubmitting}
-            handleInputChange={handleInputChange}
-            handleCustomQuestionResponse={handleCustomQuestionResponse}
-            handleSubmit={handleSubmit}
-          />
-          
-          {isPreview && <PreviewModeFooter />}
-        </div>
-      </div>
-    </div>
+    <SurveyFormContainer>
+      <SurveyIntro name={surveyTemplate.name} />
+      
+      <SurveyFormContent
+        formData={formData}
+        surveyId={surveyId}
+        isSubmitting={isSubmitting}
+        handleInputChange={handleInputChange}
+        handleCustomQuestionResponse={handleCustomQuestionResponse}
+        handleSubmit={handleSubmit}
+      />
+      
+      {isPreview && <PreviewModeFooter />}
+    </SurveyFormContainer>
   );
 };
 
