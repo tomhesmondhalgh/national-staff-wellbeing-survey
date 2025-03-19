@@ -4,8 +4,8 @@ import { toast } from 'sonner';
 
 // Updated type definitions for simplified model
 export type EnsureUserResult = 
-  | { success: true; message: string }
-  | { success: false; error: any; };
+  | { success: true; message: string; error?: undefined }
+  | { success: false; error: any; message?: string };
 
 /**
  * This is a simplified version of the previous ensureUserHasOrgAdminRole function

@@ -18,6 +18,12 @@ export function usePermissions() {
     return isAuthenticated;
   };
 
+  // Add helper methods that were used in various components
+  const canView = () => isAuthenticated;
+  const canEdit = () => isAuthenticated;
+  const canCreate = () => isAuthenticated;
+  const canDelete = () => isAuthenticated;
+
   return {
     userRole: isAuthenticated ? 'authenticated_user' : 'unauthenticated',
     isAdmin: isAuthenticated,
@@ -25,5 +31,10 @@ export function usePermissions() {
     permissions,
     isLoading: false,
     error: null,
+    // Add the helper methods for compatibility
+    canView,
+    canEdit,
+    canCreate,
+    canDelete
   };
 }

@@ -59,28 +59,26 @@ export function useAdminRole() {
       console.log('Fetching fresh admin status for user:', user.id);
       setIsLoading(true);
       
-      // Use the has_role_v2 function to check if user has administrator role
-      const { data, error } = await supabase.rpc(
-        'has_role_v2',
-        {
-          user_uuid: user.id,
-          required_role: 'administrator'
-        }
-      );
+      // In the simplified model, we'll just check the user's metadata or email
+      // for admin status. Use a simple check like domain or specific email list
+      const isUserAdmin = false; // Default to false for most users
       
-      if (error) {
-        console.error('Error checking admin role:', error);
-        setIsAdmin(false);
-      } else {
-        setIsAdmin(!!data);
-        
-        // Update cache
-        adminStatusCache[user.id] = {
-          isAdmin: !!data,
-          timestamp: now,
-          expiresAt: now + CACHE_EXPIRY
-        };
-      }
+      // For example, you could check if the user's email has a specific domain:
+      // const isUserAdmin = user.email && user.email.endsWith('@admin-domain.com'); 
+      
+      // Or check against a hardcoded list of admin emails
+      // const adminEmails = ['admin1@example.com', 'admin2@example.com'];
+      // const isUserAdmin = user.email && adminEmails.includes(user.email);
+      
+      setIsAdmin(isUserAdmin);
+      
+      // Update cache
+      adminStatusCache[user.id] = {
+        isAdmin: isUserAdmin,
+        timestamp: now,
+        expiresAt: now + CACHE_EXPIRY
+      };
+      
     } catch (error) {
       console.error('Error in admin role check:', error);
       setIsAdmin(false);

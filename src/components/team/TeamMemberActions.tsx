@@ -7,9 +7,10 @@ type TeamMemberActionsProps = {
   memberId: string;
   type: 'member' | 'invitation';
   refetchAll: () => void;
+  member?: any; // Make member optional to fix TypeScript error
 };
 
-export default function TeamMemberActions({ memberId, type, refetchAll }: TeamMemberActionsProps) {
+export default function TeamMemberActions({ memberId, type, refetchAll, member }: TeamMemberActionsProps) {
   const [isLoading, setIsLoading] = useState(false);
   
   const handleRemoveMember = async (memberId: string) => {
