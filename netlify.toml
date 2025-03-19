@@ -17,6 +17,7 @@
   for = "/*"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
+    Pragma = "no-cache"
     
 # Add specific cache control for assets that can be cached longer
 [[headers]]
@@ -37,3 +38,4 @@
 # Configure functions directory for Supabase functions
 [functions]
   directory = "supabase/functions"
+
