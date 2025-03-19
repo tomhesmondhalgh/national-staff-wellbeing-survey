@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -16,6 +17,7 @@ import CustomTextQuestion from '../components/survey-form/CustomTextQuestion';
 import { getSurveyById } from '../utils/survey/templates';
 import { isSurveyClosed } from '../utils/survey/status';
 import { SurveyTemplate } from '../utils/types/survey';
+import { frequencyOptions } from '../components/survey-form/constants';
 
 const PublicSurveyForm: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -210,9 +212,9 @@ const PublicSurveyForm: React.FC = () => {
   }
   
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-white to-purple-50">
       <div className="container mx-auto px-4 py-8 max-w-3xl">
-        <div className="bg-white shadow-sm rounded-lg p-6 md:p-8">
+        <div className="bg-white shadow-md rounded-lg p-6 md:p-8 border border-purple-100">
           <SurveyIntro surveyTemplate={surveyData} />
           
           <form onSubmit={handleSubmit} className="mt-8 space-y-8">
@@ -231,7 +233,7 @@ const PublicSurveyForm: React.FC = () => {
             />
             
             <RatingQuestion
-              label="Our leadership team prioritises staff wellbeing"
+              label="Leadership prioritise staff wellbeing in our organisation"
               name="leadership_prioritize"
               value={formData.leadership_prioritize}
               onChange={(e) => handleInputChange('leadership_prioritize', e.target.value)}
@@ -239,7 +241,7 @@ const PublicSurveyForm: React.FC = () => {
             />
             
             <RatingQuestion
-              label="My workload is manageable"
+              label="I have a manageable workload"
               name="manageable_workload"
               value={formData.manageable_workload}
               onChange={(e) => handleInputChange('manageable_workload', e.target.value)}
@@ -255,7 +257,7 @@ const PublicSurveyForm: React.FC = () => {
             />
             
             <RatingQuestion
-              label="I am in good health"
+              label="I am in good physical and mental health"
               name="health_state"
               value={formData.health_state}
               onChange={(e) => handleInputChange('health_state', e.target.value)}
@@ -279,7 +281,7 @@ const PublicSurveyForm: React.FC = () => {
             />
             
             <RatingQuestion
-              label="I feel confident in my role"
+              label="I feel confident performing my role and am given chances to grow"
               name="confidence_in_role"
               value={formData.confidence_in_role}
               onChange={(e) => handleInputChange('confidence_in_role', e.target.value)}
@@ -295,7 +297,7 @@ const PublicSurveyForm: React.FC = () => {
             />
             
             <RadioQuestion
-              label="How likely are you to recommend this school as a place to work to a friend or colleague?"
+              label="On a Scale of 1-10 How Likely Are You to Recommend This Organisation to Others as a Great Place to Work?"
               name="recommendation_score"
               options={['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10']}
               value={formData.recommendation_score}
@@ -305,9 +307,9 @@ const PublicSurveyForm: React.FC = () => {
             />
             
             <RadioQuestion
-              label="In the past 30 days, have you thought about leaving your current school?"
+              label="In the last 6 months I have contemplated leaving my role"
               name="leaving_contemplation"
-              options={['Yes', 'No']}
+              options={frequencyOptions}
               value={formData.leaving_contemplation}
               onChange={(e) => handleInputChange('leaving_contemplation', e.target.value)}
               required

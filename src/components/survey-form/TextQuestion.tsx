@@ -33,9 +33,10 @@ const TextQuestion: React.FC<TextQuestionProps> = ({
       value={value}
       onChange={onChange}
       className={cn(
-        "w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-brandPurple-500 focus:border-transparent",
-        error ? "border-red-500" : "border-gray-300"
+        "w-full px-4 py-3 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-brandPurple-500 focus:border-transparent transition-colors",
+        error ? "border-red-500" : "border-purple-200 hover:border-purple-300"
       )}
+      placeholder="Type your answer here..."
     />
     {error && <p className="text-red-500 text-sm mt-1 text-left">{error}</p>}
   </div>
