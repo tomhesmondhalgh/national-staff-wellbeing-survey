@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import MainLayout from '../components/layout/MainLayout';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
@@ -144,6 +143,7 @@ const PublicSurveyForm: React.FC = () => {
       });
       
       // Create the basic response payload
+      // Simplified payload to just include the essential survey data
       const responsePayload = {
         survey_template_id: surveyId,
         role: formData.role,
@@ -161,26 +161,41 @@ const PublicSurveyForm: React.FC = () => {
         improvements: formData.improvements
       };
       
-      console.log('Response payload:', responsePayload);
+      console.log('Submitting response payload:', responsePayload);
+      
+      // First, check if the survey_responses table exists
+      const { error: tableCheckError } = await supabase
+        .from('survey_responses')
+        .select('id')
+        .limit(1);
+      
+      if (tableCheckError) {
+        console.error('Error checking survey_responses table:', tableCheckError);
+        console.error('Table check error details:', tableCheckError.details);
+        console.error('Table check error hint:', tableCheckError.hint);
+        console.error('Table check error message:', tableCheckError.message);
+        throw new Error(`Table error: ${tableCheckError.message}`);
+      }
       
       // Insert the survey response
       const { data: responseData, error: responseError } = await supabase
         .from('survey_responses')
         .insert(responsePayload)
         .select('id')
-        .single();
+        .maybeSingle();
       
       if (responseError) {
-        console.error('Error details:', responseError);
+        console.error('Error submitting survey response:', responseError);
         console.error('Error code:', responseError.code);
         console.error('Error message:', responseError.message);
         console.error('Error details:', responseError.details);
-        throw responseError;
+        throw new Error(`Submission error: ${responseError.message}`);
       }
       
       console.log('Survey response created:', responseData);
       
-      if (customQuestions.length > 0 && responseData) {
+      // Handle custom questions responses if any
+      if (customQuestions.length > 0 && responseData?.id) {
         const customResponses = Object.entries(formData.custom_responses).map(([questionId, answer]) => ({
           response_id: responseData.id,
           question_id: questionId,
@@ -196,6 +211,7 @@ const PublicSurveyForm: React.FC = () => {
           
           if (customError) {
             console.error('Error saving custom responses:', customError);
+            console.error('Custom error details:', customError.details);
           }
         }
       }
@@ -221,9 +237,9 @@ const PublicSurveyForm: React.FC = () => {
           custom_responses: {}
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting survey:', error);
-      toast.error('Failed to submit survey');
+      toast.error(`Failed to submit survey: ${error.message || 'Unknown error'}`);
     } finally {
       setIsSubmitting(false);
     }
