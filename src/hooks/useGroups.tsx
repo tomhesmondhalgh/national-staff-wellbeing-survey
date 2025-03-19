@@ -11,14 +11,14 @@ export interface Group {
   updated_at?: string;
 }
 
-// This hook is now deprecated as group tables have been removed from the database
+// This hook is now a stub that returns empty data since groups are no longer supported
 export const useGroups = () => {
   const { user } = useAuth();
   const [groups] = useState<Group[]>([]);
   const [isLoading] = useState(false);
   const [error] = useState<Error | null>(null);
   
-  console.warn('useGroups hook is deprecated as group tables have been removed from the database');
+  console.warn('useGroups hook is deprecated as group functionality has been removed');
 
   return { groups, isLoading, error };
 };

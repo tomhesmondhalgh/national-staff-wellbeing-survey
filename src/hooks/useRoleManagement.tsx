@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { UserRoleType } from '@/lib/supabase/client';
 
 /**
- * Hook to manage and check user roles using the new role system
+ * Hook to manage and check user roles using the simplified role system
  */
 export function useRoleManagement() {
   const { user } = useAuth();
@@ -73,103 +73,29 @@ export function useRoleManagement() {
     fetchUserRole();
   }, [user, currentOrganization, isTestingMode, testingRole]);
 
-  /**
-   * Check if the current user has at least the required role
-   */
-  const hasPermission = useCallback(async (requiredRole: UserRoleType): Promise<boolean> => {
-    if (!user) return false;
-    
-    // If in testing mode, directly compare role hierarchies
-    if (isTestingMode && testingRole) {
-      const roleHierarchy: Record<UserRoleType, number> = {
-        'administrator': 100,
-        'organization_admin': 60,
-        'editor': 40,
-        'viewer': 20
-      };
-      
-      return (roleHierarchy[testingRole as UserRoleType] || 0) >= (roleHierarchy[requiredRole] || 0);
-    }
-    
-    if (!currentOrganization?.id) return false;
-    
-    try {
-      // Use the database function to check permissions
-      const { data, error: permError } = await supabase.rpc(
-        'user_has_organization_role_v2',
-        {
-          user_uuid: user.id,
-          org_id: currentOrganization.id,
-          required_role: requiredRole
-        }
-      );
-      
-      if (permError) {
-        console.error('Error checking permission:', permError);
-        return false;
-      }
-      
-      return !!data;
-    } catch (err) {
-      console.error('Error in permission check:', err);
-      return false;
-    }
-  }, [user, currentOrganization, isTestingMode, testingRole]);
-
-  /**
-   * Get the display name for a role
-   */
-  const getRoleDisplayName = useCallback(async (roleName: string): Promise<string> => {
-    try {
-      const { data, error } = await supabase
-        .from('roles')
-        .select('display_name')
-        .eq('name', roleName)
-        .single();
-      
-      if (error) {
-        console.error('Error fetching role display name:', error);
-        return formatRoleName(roleName);
-      }
-      
-      return data.display_name;
-    } catch (err) {
-      console.error('Error getting role display name:', err);
-      return formatRoleName(roleName);
-    }
-  }, []);
-  
-  // Helper function to format role names as a fallback
-  const formatRoleName = (role: string): string => {
+  // Helper function to format role names for display
+  const formatRoleName = useCallback((role: string): string => {
     return role
       .split('_')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
-  };
+  }, []);
 
-  // Common permission checks as convenience methods
-  const canCreate = useCallback(async (): Promise<boolean> => 
-    hasPermission('editor'), [hasPermission]);
-  
-  const canEdit = useCallback(async (): Promise<boolean> => 
-    hasPermission('editor'), [hasPermission]);
-  
-  const canManageTeam = useCallback(async (): Promise<boolean> => 
-    hasPermission('organization_admin'), [hasPermission]);
-  
-  const isAdmin = useCallback(async (): Promise<boolean> => 
-    hasPermission('administrator'), [hasPermission]);
+  // Get the display name for a role
+  const getRoleDisplayName = useCallback((roleName: string): string => {
+    switch (roleName) {
+      case 'administrator': return 'System Administrator';
+      case 'organization_admin': return 'Organization Admin';
+      case 'editor': return 'Editor';
+      case 'viewer': return 'Viewer';
+      default: return formatRoleName(roleName);
+    }
+  }, [formatRoleName]);
 
   return {
     currentRole,
     isLoading,
     error,
-    hasPermission,
-    getRoleDisplayName,
-    // Convenience methods
-    canCreate,
-    canEdit,
-    canManageTeam,
-    isAdmin
+    getRoleDisplayName
   };
 }
