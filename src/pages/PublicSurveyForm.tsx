@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -17,6 +18,13 @@ import { getSurveyById } from '../utils/survey/templates';
 import { isSurveyClosed } from '../utils/survey/status';
 import { SurveyTemplate } from '../utils/types/survey';
 import { roleOptions, frequencyOptions, agreementOptions } from '../components/survey-form/constants';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 
 const PublicSurveyForm: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -130,6 +138,11 @@ const PublicSurveyForm: React.FC = () => {
     try {
       setIsSubmitting(true);
       
+      console.log('Submitting survey response:', {
+        surveyId,
+        formData
+      });
+      
       const { data: responseData, error: responseError } = await supabase
         .from('survey_responses')
         .insert({
@@ -152,8 +165,11 @@ const PublicSurveyForm: React.FC = () => {
         .single();
       
       if (responseError) {
+        console.error('Error details:', responseError);
         throw responseError;
       }
+      
+      console.log('Survey response created:', responseData);
       
       if (customQuestions.length > 0 && responseData) {
         const customResponses = Object.entries(formData.custom_responses).map(([questionId, answer]) => ({
@@ -161,6 +177,8 @@ const PublicSurveyForm: React.FC = () => {
           question_id: questionId,
           answer
         }));
+        
+        console.log('Saving custom responses:', customResponses);
         
         if (customResponses.length > 0) {
           const { error: customError } = await supabase
@@ -217,14 +235,27 @@ const PublicSurveyForm: React.FC = () => {
           <SurveyIntro surveyTemplate={surveyData} />
           
           <form onSubmit={handleSubmit} className="mt-8 space-y-8">
-            <RadioQuestion
-              label="What Is Your Role?"
-              name="role"
-              options={roleOptions}
-              value={formData.role}
-              onChange={(e) => handleInputChange('role', e.target.value)}
-              required
-            />
+            <div className="mb-10">
+              <label className="text-lg font-medium mb-3 block text-left">
+                What Is Your Role? <span className="text-red-500">*</span>
+              </label>
+              <Select 
+                value={formData.role} 
+                onValueChange={(value) => handleInputChange('role', value)}
+                required
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select your role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {roleOptions.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             
             <RatingQuestion
               label="Leadership Prioritise Staff Wellbeing In Our Organisation"
