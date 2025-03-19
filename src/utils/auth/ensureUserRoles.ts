@@ -85,34 +85,53 @@ export async function ensureUserHasOrgAdminRole(userId: string): Promise<EnsureU
       console.log('User already has roles:', existingRoles.length);
     }
     
-    // Use direct SQL query instead of the count function to avoid RLS recursion
-    // This bypasses the problematic RLS policy by using a direct query
+    // CRITICAL FIX: Use a direct select query instead of count to avoid RLS recursion
     console.log('Checking if user has organization membership record');
     
-    // Method 1: Use service_role permission to bypass RLS
-    const serviceRoleClient = supabase.auth.admin;
-    
-    // Method 2: Skip RLS count function and just check if membership exists
-    const { data: memberData, error: membershipError } = await supabase
-      .from('organization_members')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('organization_id', userId)
-      .maybeSingle();
+    // Simple direct query checking for existence, not using count
+    const { data, error: membershipError } = await supabase.rpc(
+      'check_organization_membership_exists',
+      { 
+        user_uuid: userId,
+        org_uuid: userId
+      }
+    );
     
     if (membershipError) {
-      console.error('Error checking existing membership:', membershipError);
-      return { 
-        success: false, 
-        error: membershipError, 
-        errorSource: 'checking_membership' 
-      };
+      console.error('Error checking membership existence with RPC:', membershipError);
+      // Fall back to a direct query as last resort
+      const { data: directCheckData, error: directCheckError } = await supabase
+        .from('organization_members')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('organization_id', userId)
+        .maybeSingle();
+      
+      if (directCheckError) {
+        console.error('Error checking membership with direct query:', directCheckError);
+        return { 
+          success: false, 
+          error: directCheckError, 
+          errorSource: 'checking_membership_direct' 
+        };
+      }
+      
+      // If the direct check worked, continue with that result
+      if (directCheckData) {
+        console.log('User already has membership record (direct check):', directCheckData.id);
+        return { 
+          success: true, 
+          roleAdded,
+          membershipAdded: false
+        };
+      }
     }
     
     let membershipAdded = false;
+    const membershipExists = data === true;
     
     // If no existing membership, create one with the user as their own organization admin
-    if (!memberData) {
+    if (!membershipExists) {
       console.log('No existing membership found, creating one');
       const { error: createMembershipError } = await supabase
         .from('organization_members')
@@ -135,7 +154,7 @@ export async function ensureUserHasOrgAdminRole(userId: string): Promise<EnsureU
       membershipAdded = true;
       console.log('Created organization membership with admin role');
     } else {
-      console.log('User already has membership record:', memberData.id);
+      console.log('User already has membership record (RPC check)');
     }
     
     console.log('Successfully completed ensureUserHasOrgAdminRole');
