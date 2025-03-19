@@ -58,10 +58,12 @@ const RecentSurveysList = ({ surveys, isLoading }: RecentSurveysListProps) => {
     return (
       <div className="mt-8">
         <h2 className="text-xl font-semibold mb-4">Most Recent Surveys</h2>
-        <div className="p-6 text-center">
-          <p className="text-gray-500">
-            No surveys found. <Link to="/new-survey" className="text-brandPurple-600 hover:text-brandPurple-700 hover:underline">Create your first survey</Link> to get started.
-          </p>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-12 text-center">
+          <h2 className="text-xl font-semibold mb-2">No surveys found</h2>
+          <p className="text-gray-500 mb-6">You haven't created any surveys yet or no responses have been collected.</p>
+          <Link to="/new-survey" className="bg-brandPurple-500 hover:bg-brandPurple-600 text-white font-medium py-2 px-6 rounded-md transition-all duration-200 inline-block">
+            Create Your First Survey
+          </Link>
         </div>
       </div>
     );

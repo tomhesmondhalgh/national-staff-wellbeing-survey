@@ -133,8 +133,9 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
 
   if (surveys.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 text-center py-12">
-        <p className="text-gray-500 mb-4">No surveys found</p>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-12 text-center">
+        <h2 className="text-xl font-semibold mb-2">No surveys found</h2>
+        <p className="text-gray-500 mb-6">You haven't created any surveys yet or no responses have been collected.</p>
         {canEditSurveys && (
           <Link to="/new-survey" className="bg-brandPurple-500 hover:bg-brandPurple-600 text-white font-medium py-2 px-6 rounded-md transition-all duration-200 inline-block">
             Create Your First Survey
