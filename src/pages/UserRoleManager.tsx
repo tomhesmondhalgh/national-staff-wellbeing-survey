@@ -5,7 +5,13 @@ import { Button } from '../components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/card';
 import PageTitle from '../components/ui/PageTitle';
 import { useAdminRole } from '../hooks/useAdminRole';
-import { ensureAllUsersHaveOrgAdminRole, ensureCurrentUserHasOrgAdminRole } from '../utils/auth/ensureUserRoles';
+import { 
+  ensureAllUsersHaveOrgAdminRole, 
+  ensureCurrentUserHasOrgAdminRole,
+  EnsureUserRoleResult,
+  EnsureUserRoleSuccess,
+  EnsureUserRoleNoUser
+} from '../utils/auth/ensureUserRoles';
 import { toast } from 'sonner';
 import { Loader2, CheckCircle, XCircle, UserCheck } from 'lucide-react';
 
@@ -40,9 +46,9 @@ export default function UserRoleManager() {
       const result = await ensureCurrentUserHasOrgAdminRole();
       
       if (result.success) {
-        if (result.noUser) {
+        if ('noUser' in result) {
           toast.info('No logged in user to check');
-        } else if (result.roleAdded || result.membershipAdded) {
+        } else if ('roleAdded' in result && (result.roleAdded || result.membershipAdded)) {
           toast.success('Successfully updated your role to Organization Admin');
         } else {
           toast.info('Your account already has the Organization Admin role');

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -328,7 +327,7 @@ const Profile = () => {
         lastName: data.lastName
       };
       
-      const { error, success } = await completeUserProfile(user.id, userData);
+      const { error, success } = await completeUserProfile(userData);
       
       if (success && emailUpdateSuccess) {
         toast.success('Profile updated successfully!');
@@ -391,7 +390,7 @@ const Profile = () => {
         lastName: profileData.lastName || user.user_metadata?.last_name || '',
       };
       
-      const { error, success } = await completeUserProfile(user.id, userData);
+      const { error, success } = await completeUserProfile(userData);
       
       if (success) {
         toast.success('Profile updated successfully!');

@@ -32,7 +32,8 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, session, isLoading, isAuthenticated, authCheckComplete } = useAuthState();
+  const { user, session, isLoading: authStateIsLoading, isAuthenticated, authCheckComplete } = useAuthState();
+  const [isLoading, setIsLoading] = useState(false);
   
   // Log in user
   const login = async (email: string, password: string) => {
@@ -146,7 +147,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         session,
         user,
-        isLoading,
+        isLoading: isLoading || authStateIsLoading,
         isAuthenticated,
         authCheckComplete,
         login,

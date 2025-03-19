@@ -2,11 +2,28 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-// Define return type for the ensureUserHasOrgAdminRole function
-type EnsureUserRoleResult = 
-  | { success: true; roleAdded: boolean; membershipAdded: boolean }
-  | { success: true; noUser: true }
-  | { success: false; error: any };
+// Define more specific return types for clarity and type safety
+export type EnsureUserRoleSuccess = { 
+  success: true; 
+  roleAdded: boolean; 
+  membershipAdded: boolean 
+};
+
+export type EnsureUserRoleNoUser = { 
+  success: true; 
+  noUser: true 
+};
+
+export type EnsureUserRoleFailure = { 
+  success: false; 
+  error: any 
+};
+
+// Combined type for all possible returns
+export type EnsureUserRoleResult = 
+  | EnsureUserRoleSuccess
+  | EnsureUserRoleNoUser
+  | EnsureUserRoleFailure;
 
 /**
  * Ensures that a user has the organization_admin role

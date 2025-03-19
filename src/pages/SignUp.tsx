@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -9,7 +8,6 @@ import { toast } from 'sonner';
 import { supabase } from '../lib/supabase/client';
 import { SignUpFormData } from '../types/auth';
 
-// Add a constant to identify which signup component is being used
 const SIGNUP_VERSION = 'main_signup_component_v1';
 
 const SignUp = () => {
@@ -21,7 +19,6 @@ const SignUp = () => {
   const [invitationToken, setInvitationToken] = useState<string | null>(null);
   const [invitation, setInvitation] = useState<any>(null);
 
-  // Log environment info to help with debugging
   useEffect(() => {
     console.log('SignUp component mounted with:');
     console.log('- Current URL:', window.location.href);
@@ -29,7 +26,6 @@ const SignUp = () => {
     console.log('- Route location:', location);
   }, [location]);
 
-  // Extract invitation token from URL if present
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const token = params.get('invitation');
@@ -39,7 +35,6 @@ const SignUp = () => {
       fetchInvitationDetails(token);
     }
     
-    // Add debug logging to verify the component is mounting properly
     console.log('SignUp component mounted, pathname:', location.pathname);
   }, [location.search, location.pathname]);
 
@@ -66,7 +61,6 @@ const SignUp = () => {
     console.log('Form submitted with data:', data);
     
     try {
-      // First step: create the user account
       const { error: signUpError, success: signUpSuccess, user } = await signUp(data.email, data.password, {
         firstName: data.firstName,
         lastName: data.lastName,
@@ -76,7 +70,6 @@ const SignUp = () => {
         throw signUpError || new Error('Failed to create account');
       }
       
-      // Second step: complete the user profile with the form data
       const userData = {
         jobTitle: data.jobTitle,
         schoolName: data.schoolName,
@@ -86,18 +79,16 @@ const SignUp = () => {
         lastName: data.lastName,
       };
 
-      const { error: profileError, success: profileSuccess } = await completeUserProfile(user.id, userData);
+      const { error: profileError, success: profileSuccess } = await completeUserProfile(userData);
       
       if (!profileSuccess) {
         throw profileError || new Error('Failed to complete profile');
       }
       
-      // If this was an invitation signup, navigate back to the invitation accept page
       if (invitationToken) {
         console.log(`Signup successful, redirecting to invitation accept with token: ${invitationToken}`);
         navigate(`/invitation/accept?token=${invitationToken}`);
       } else {
-        // Direct signup flow - navigate to dashboard
         console.log('Signup successful, redirecting to dashboard');
         toast.success('Account created successfully!', {
           description: 'Welcome to the platform. You can now log in.'
@@ -114,7 +105,6 @@ const SignUp = () => {
     }
   };
   
-  // Helper function to compile the address for custom school entries
   const compileCustomAddress = (data: SignUpFormData) => {
     const addressParts = [
       data.customStreetAddress,
