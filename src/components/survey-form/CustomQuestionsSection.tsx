@@ -51,6 +51,7 @@ const CustomQuestionsSection: React.FC<CustomQuestionsSectionProps> = ({
 
   // Early validation
   if (!questions || !Array.isArray(questions) || questions.length === 0) {
+    console.log('No questions to display in CustomQuestionsSection');
     return null;
   }
 

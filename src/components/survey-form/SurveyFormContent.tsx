@@ -38,6 +38,10 @@ const SurveyFormContent: React.FC<SurveyFormContentProps> = ({
     handleCustomQuestionResponse(questionId, value);
   };
   
+  console.log('Custom questions in SurveyFormContent:', questions);
+  console.log('Has questions:', hasQuestions);
+  console.log('Is loading questions:', isLoading);
+  
   return (
     <form onSubmit={handleSubmit} className="mt-8 space-y-8">
       <StandardQuestions 

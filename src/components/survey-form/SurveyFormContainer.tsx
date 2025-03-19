@@ -1,10 +1,5 @@
 
 import React from 'react';
-import { Button } from '../ui/button';
-import { CustomQuestionType, SurveyFormData } from '../../types/surveyForm';
-import StandardQuestions from './StandardQuestions';
-import CustomQuestionsSection from './CustomQuestionsSection';
-import SubmitButton from './SubmitButton';
 
 interface SurveyFormContainerProps {
   children: React.ReactNode;

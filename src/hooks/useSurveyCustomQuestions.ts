@@ -9,14 +9,22 @@ export function useSurveyCustomQuestions(surveyId: string | null) {
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    if (surveyId) {
-      loadQuestions(surveyId).then(() => {
+    const fetchCustomQuestions = async () => {
+      if (surveyId) {
+        try {
+          await loadQuestions(surveyId);
+        } catch (err) {
+          console.error('Error loading custom questions:', err);
+        } finally {
+          setIsInitialized(true);
+        }
+      } else {
         setIsInitialized(true);
-      });
-    } else {
-      setIsInitialized(true);
-    }
-  }, [surveyId]);
+      }
+    };
+
+    fetchCustomQuestions();
+  }, [surveyId, loadQuestions]);
 
   const handleResponse = (questionId: string, value: string) => {
     setResponses(prev => ({
