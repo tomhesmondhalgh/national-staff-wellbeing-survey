@@ -85,9 +85,6 @@ export async function ensureUserHasOrgAdminRole(userId: string): Promise<EnsureU
       console.log('User already has roles:', existingRoles.length);
     }
     
-    // CRITICAL FIX: Use a direct select query instead of count to avoid RLS recursion
-    console.log('Checking if user has organization membership record');
-    
     // Use a custom RPC function to check membership existence safely
     // This function was created as a SECURITY DEFINER to bypass RLS policies
     const { data, error: membershipError } = await supabase.rpc<boolean, { user_uuid: string, org_uuid: string }>(

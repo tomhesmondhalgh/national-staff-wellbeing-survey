@@ -5,7 +5,6 @@ import { useTestingMode } from '../contexts/TestingModeContext';
 import { useOrganization } from '../contexts/OrganizationContext';
 import { supabase } from '@/integrations/supabase/client';
 import { UserRoleType } from '@/lib/supabase/client';
-import { toast } from 'sonner';
 
 /**
  * Hook to manage and check user roles using the new role system
@@ -84,7 +83,6 @@ export function useRoleManagement() {
     if (isTestingMode && testingRole) {
       const roleHierarchy: Record<UserRoleType, number> = {
         'administrator': 100,
-        'group_admin': 80,
         'organization_admin': 60,
         'editor': 40,
         'viewer': 20
@@ -96,7 +94,7 @@ export function useRoleManagement() {
     if (!currentOrganization?.id) return false;
     
     try {
-      // Use the new v2 database function to check permissions
+      // Use the database function to check permissions
       const { data, error: permError } = await supabase.rpc(
         'user_has_organization_role_v2',
         {
@@ -159,9 +157,6 @@ export function useRoleManagement() {
   const canManageTeam = useCallback(async (): Promise<boolean> => 
     hasPermission('organization_admin'), [hasPermission]);
   
-  const canManageGroups = useCallback(async (): Promise<boolean> => 
-    hasPermission('group_admin'), [hasPermission]);
-  
   const isAdmin = useCallback(async (): Promise<boolean> => 
     hasPermission('administrator'), [hasPermission]);
 
@@ -175,7 +170,6 @@ export function useRoleManagement() {
     canCreate,
     canEdit,
     canManageTeam,
-    canManageGroups,
     isAdmin
   };
 }

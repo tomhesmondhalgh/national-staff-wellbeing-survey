@@ -1,7 +1,6 @@
 
 import { useEffect } from 'react';
 import { useRoleManagement } from './useRoleManagement';
-import { UserRoleType } from '../lib/supabase/client';
 
 export function usePermissions() {
   // We'll just use the new implementation directly
@@ -13,24 +12,22 @@ export function usePermissions() {
     canCreate,
     canEdit,
     canManageTeam,
-    canManageGroups,
     isAdmin
   } = useRoleManagement();
   
   // For analytics/monitoring purposes
   useEffect(() => {
-    console.log('Using new role system exclusively');
-  }, []);
+    console.log('Using role system: current role =', currentRole);
+  }, [currentRole]);
 
   return {
-    // Return the new implementation directly
+    // Return the implementation directly
     userRole: currentRole,
     isLoading,
     hasPermission,
     canCreate,
     canEdit,
-    canManageTeam, 
-    canManageGroups,
+    canManageTeam,
     isAdmin,
     error
   };

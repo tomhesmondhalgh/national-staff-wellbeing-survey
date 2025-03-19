@@ -28,7 +28,7 @@ export async function checkUserRole(userId: string, role: UserRoleType): Promise
     return roleCache[userId].roles[role];
   }
   
-  // Cache miss or expired cache, fetch from database using the new function
+  // Cache miss or expired cache, fetch from database
   try {
     // Use the has_role_v2 function to check if user has the role
     const { data, error } = await supabase.rpc(
@@ -87,7 +87,7 @@ export async function getUserRoles(userId: string): Promise<UserRoleType[]> {
   if (!userId) return [];
   
   try {
-    // Get user roles using the new get_user_role_v2 function and join with roles table
+    // Get user roles by joining with roles table
     const { data, error } = await supabase
       .from('user_roles')
       .select('role_id, roles(name)')

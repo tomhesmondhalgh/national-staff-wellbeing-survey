@@ -2,7 +2,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Define all types in one place to avoid circular dependencies
-export type UserRoleType = 'administrator' | 'group_admin' | 'organization_admin' | 'editor' | 'viewer';
+export type UserRoleType = 'administrator' | 'organization_admin' | 'editor' | 'viewer';
 export type PlanType = 'free' | 'foundation' | 'progress' | 'premium' | 'enterprise';
 export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'pending' | 'trialing' | 'unpaid';
 export type PaymentMethod = 'stripe' | 'manual' | 'invoice' | 'transfer';
@@ -15,14 +15,6 @@ export type PurchaseType = 'subscription' | 'one-time';
 export interface Organization {
   id: string;
   name: string;
-  created_at: string;
-  updated_at?: string;
-}
-
-export interface Group {
-  id: string;
-  name: string;
-  description?: string;
   created_at: string;
   updated_at?: string;
 }
@@ -47,7 +39,6 @@ export interface Invitation {
   created_at: string;
   expires_at: string;
   accepted_at?: string;
-  group_id?: string;
 }
 
 // Create the Supabase client with fallbacks for development
@@ -69,12 +60,13 @@ export const isUserAdmin = async (userId: string): Promise<boolean> => {
   if (!userId) return false;
   
   try {
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .eq('role', 'administrator')
-      .maybeSingle();
+    const { data, error } = await supabase.rpc(
+      'has_role_v2',
+      {
+        user_uuid: userId,
+        required_role: 'administrator'
+      }
+    );
     
     if (error) {
       console.error('Error checking admin status:', error);
