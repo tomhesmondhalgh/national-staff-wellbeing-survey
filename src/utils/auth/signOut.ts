@@ -10,6 +10,14 @@ export async function signOutUser() {
     localStorage.removeItem('testing_mode_plan');
     localStorage.removeItem('testing_mode_role');
     
+    // Clear any cached auth data from localStorage
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.includes('supabase.auth') || key.includes('sb-'))) {
+        localStorage.removeItem(key);
+      }
+    }
+    
     await supabase.auth.signOut();
     toast({
       title: 'Success',
