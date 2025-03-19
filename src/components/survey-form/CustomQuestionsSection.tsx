@@ -15,7 +15,10 @@ const CustomQuestionsSection: React.FC<CustomQuestionsSectionProps> = ({
   formData,
   handleCustomQuestionResponse
 }) => {
-  if (customQuestions.length === 0) return null;
+  if (!customQuestions || customQuestions.length === 0) {
+    console.log('No custom questions to display, returning null');
+    return null;
+  }
 
   console.log('Rendering CustomQuestionsSection with questions:', customQuestions);
   console.log('Current form data:', formData.custom_responses);
@@ -25,7 +28,12 @@ const CustomQuestionsSection: React.FC<CustomQuestionsSectionProps> = ({
       <h3 className="text-lg font-medium mb-6">Additional Questions</h3>
       <div className="space-y-8">
         {customQuestions.map((question) => {
-          if (question.type === 'multiple_choice' && question.options && question.options.length > 0) {
+          console.log('Rendering question:', question);
+          
+          if (question.type === 'multiple_choice' && 
+              question.options && 
+              Array.isArray(question.options) && 
+              question.options.length > 0) {
             return (
               <CustomMultipleChoiceQuestion
                 key={question.id}

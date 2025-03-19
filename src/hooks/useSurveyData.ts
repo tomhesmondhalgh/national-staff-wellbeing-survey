@@ -37,44 +37,36 @@ export function useSurveyData(surveyId: string | null, isPreview: boolean) {
         setSurveyName(surveyTemplate.name);
         setSurveyData(surveyTemplate);
         
-        // Fetch survey question links first
-        console.log('Fetching question links for survey ID:', surveyId);
-        const { data: questionLinks, error: linksError } = await supabase
+        // Fetch directly from the database with a join query to get both the links and questions in one go
+        console.log('Fetching custom questions for survey ID:', surveyId);
+        const { data: linkedQuestions, error: joinError } = await supabase
           .from('survey_questions')
-          .select('question_id')
+          .select(`
+            question_id,
+            custom_questions!inner(id, text, type, options, creator_id)
+          `)
           .eq('survey_id', surveyId);
           
-        if (linksError) {
-          console.error('Error fetching question links:', linksError);
-        }
-        
-        console.log('Question links:', questionLinks);
-        
-        if (questionLinks && questionLinks.length > 0) {
-          const questionIds = questionLinks.map(link => link.question_id);
+        if (joinError) {
+          console.error('Error fetching linked questions:', joinError);
+          toast.error('Failed to load custom questions');
+        } else {
+          console.log('Linked questions data:', linkedQuestions);
           
-          console.log('Fetching custom questions with IDs:', questionIds);
-          
-          const { data: questions, error: questionsError } = await supabase
-            .from('custom_questions')
-            .select('*')
-            .in('id', questionIds);
-            
-          if (questionsError) {
-            console.error('Error fetching custom questions:', questionsError);
-          } else if (questions) {
-            const customQuestionsList = questions.map(q => ({
-              id: q.id,
-              text: q.text,
-              type: q.type || 'text',
-              options: q.options || []
+          if (linkedQuestions && linkedQuestions.length > 0) {
+            // Transform the joined data into the format we need
+            const customQuestionsList: CustomQuestionType[] = linkedQuestions.map(item => ({
+              id: item.custom_questions.id,
+              text: item.custom_questions.text,
+              type: item.custom_questions.type || 'text',
+              options: Array.isArray(item.custom_questions.options) ? item.custom_questions.options : []
             }));
             
-            console.log('Fetched custom questions:', customQuestionsList);
+            console.log('Processed custom questions:', customQuestionsList);
             setCustomQuestions(customQuestionsList);
+          } else {
+            console.log('No custom questions found for this survey');
           }
-        } else {
-          console.log('No custom questions found for this survey');
         }
         
         return { isClosed: false };
