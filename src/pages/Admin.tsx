@@ -6,7 +6,6 @@ import PurchasesManagement from '../components/admin/PurchasesManagement';
 import PlansManagement from '../components/admin/PlansManagement';
 import TestingMode from '../components/admin/TestingMode';
 import CustomScriptsManagement from '../components/admin/CustomScriptsManagement';
-import UserRoleManager from './UserRoleManager';
 import { useAdminRole } from '../hooks/useAdminRole';
 import { Navigate } from 'react-router-dom';
 import { useTestingMode } from '../contexts/TestingModeContext';
@@ -46,7 +45,6 @@ const Admin = () => {
             <TabsTrigger value="plans">Plan Management</TabsTrigger>
             <TabsTrigger value="testing">Testing Mode</TabsTrigger>
             <TabsTrigger value="scripts">Custom Scripts</TabsTrigger>
-            <TabsTrigger value="roles">User Roles</TabsTrigger>
           </TabsList>
           
           <TabsContent value="purchases">
@@ -63,10 +61,6 @@ const Admin = () => {
           
           <TabsContent value="scripts">
             <CustomScriptsManagement />
-          </TabsContent>
-          
-          <TabsContent value="roles">
-            <UserRoleManager />
           </TabsContent>
         </Tabs>
       </div>
