@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -57,8 +58,6 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
   const [showSurveyLink, setShowSurveyLink] = useState<boolean>(false);
   const [surveyLink, setSurveyLink] = useState<string>('');
   const [selectedCustomQuestionIds, setSelectedCustomQuestionIds] = useState<string[]>(initialCustomQuestionIds);
-  const [isSending, setIsSending] = useState<boolean>(false);
-  const [isPreviewing, setIsPreviewing] = useState<boolean>(false);
   const navigate = useNavigate();
   
   React.useEffect(() => {
@@ -88,38 +87,14 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
     }
   };
 
-  const handlePreviewClick = async () => {
+  const handlePreviewClick = () => {
     if (!onPreviewSurvey) return;
-    
-    setIsPreviewing(true);
-    
-    try {
-      // If we already have a survey ID, open the preview directly
-      if (surveyId) {
-        const previewUrl = `${window.location.origin}/survey?id=${surveyId}&preview=true`;
-        window.open(previewUrl, '_blank');
-      } else {
-        // Otherwise, trigger the preview handler which will save first
-        onPreviewSurvey();
-      }
-    } finally {
-      setIsPreviewing(false);
-    }
+    onPreviewSurvey();
   };
   
-  const handleSendSurvey = async () => {
+  const handleSendSurvey = () => {
     if (!onSendSurvey) return;
-    
-    setIsSending(true);
-    
-    try {
-      // Directly call the send handler without requiring a save first
-      onSendSurvey();
-    } finally {
-      // The setting back to false will happen in practice when the page navigates
-      // But we set it here anyway as a safeguard
-      setIsSending(false);
-    }
+    onSendSurvey();
   };
 
   return (
@@ -162,10 +137,10 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
                     variant="secondary" 
                     className="flex-1 sm:flex-none sm:order-2" 
                     onClick={handlePreviewClick}
-                    disabled={isSubmitting || isPreviewing}
+                    disabled={isSubmitting}
                   >
                     <Play className="mr-2 h-4 w-4" />
-                    {isPreviewing ? 'Opening Preview...' : 'Preview Survey'}
+                    {isSubmitting ? 'Please wait...' : 'Preview Survey'}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">
@@ -182,10 +157,10 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
                     variant="default" 
                     className="flex-1 sm:flex-none sm:order-3 bg-brandPurple-500 hover:bg-brandPurple-600" 
                     onClick={handleSendSurvey}
-                    disabled={isSubmitting || isSending}
+                    disabled={isSubmitting}
                   >
                     <Send className="mr-2 h-4 w-4" />
-                    {isSending ? 'Sending Survey...' : 'Send Survey'}
+                    {isSubmitting ? 'Sending...' : 'Send Survey'}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">

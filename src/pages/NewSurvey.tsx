@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -154,18 +155,37 @@ const NewSurvey = () => {
     }
   };
 
+  // Improved to ensure survey is saved first then preview opens in one operation
   const handlePreviewSurvey = async () => {
     try {
       if (!savedSurveyId) {
+        // Need to save the survey first
         toast.info("Saving survey before preview", {
           description: "The survey will be saved first, then opened in preview mode."
         });
         
+        // Trigger the save form submission
         const saveButton = document.querySelector('form button[type="submit"]') as HTMLButtonElement;
         if (saveButton) saveButton.click();
+        
+        // Set up a watcher to open the preview once the survey is saved
+        const checkInterval = setInterval(() => {
+          if (savedSurveyId) {
+            clearInterval(checkInterval);
+            // Open preview in new tab
+            window.open(`/survey?id=${savedSurveyId}&preview=true`, '_blank');
+          }
+        }, 500);
+        
+        // Clear interval after 10 seconds to prevent infinite checking
+        setTimeout(() => {
+          clearInterval(checkInterval);
+        }, 10000);
+        
         return;
       }
       
+      // If survey already saved, open the preview directly
       window.open(`/survey?id=${savedSurveyId}&preview=true`, '_blank');
     } catch (error) {
       console.error('Error handling preview:', error);
@@ -175,18 +195,18 @@ const NewSurvey = () => {
     }
   };
 
+  // Improved to directly save and send in one operation
   const handleSendSurvey = async () => {
     try {
+      setIsSubmitting(true);
+      
       if (!savedSurveyId) {
-        setIsSubmitting(true);
-        toast.info("Saving survey before sending", {
-          description: "The survey will be saved first, then sent."
-        });
-        
+        // Save the survey first
         const saveButton = document.querySelector('form button[type="submit"]') as HTMLButtonElement;
         if (saveButton) {
           saveButton.click();
           
+          // Set up a watcher to send once survey is saved
           const checkInterval = setInterval(async () => {
             if (savedSurveyId) {
               clearInterval(checkInterval);
@@ -194,6 +214,7 @@ const NewSurvey = () => {
             }
           }, 500);
           
+          // Clear interval after 10 seconds to prevent infinite checking
           setTimeout(() => {
             clearInterval(checkInterval);
             if (!savedSurveyId) {
@@ -207,6 +228,7 @@ const NewSurvey = () => {
         return;
       }
       
+      // If survey already saved, proceed with sending
       await sendSurvey(savedSurveyId);
     } catch (error) {
       console.error('Error handling send:', error);

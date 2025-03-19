@@ -23,7 +23,6 @@ const EditSurvey = () => {
   const [customQuestionIds, setCustomQuestionIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSending, setIsSending] = useState(false);
   const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -173,8 +172,10 @@ const EditSurvey = () => {
     }
   };
 
+  // Improved to directly open the preview in a new tab
   const handlePreviewSurvey = () => {
     if (id) {
+      // Open the preview in a new tab directly
       window.open(`/survey?id=${id}&preview=true`, '_blank');
     } else {
       toast.error("Survey not found", {
@@ -183,39 +184,38 @@ const EditSurvey = () => {
     }
   };
 
+  // Improved to directly save changes and send in one operation
   const handleSendSurvey = async () => {
     if (!id || !surveyData) return;
     
-    setIsSending(true);
+    setIsSubmitting(true);
     
     try {
       // First save any pending changes to the survey
-      if (surveyData) {
-        const updateDate = new Date(surveyData.date);
-        const updateCloseDate = surveyData.closeDate ? new Date(surveyData.closeDate) : null;
-        
-        console.log('Saving survey before sending...');
-        console.log('Distribution method:', surveyData.distributionMethod);
-        
-        // Determine the emails value based on the distribution method
-        const emailsValue = surveyData.distributionMethod === 'email' ? surveyData.recipients : '';
-        
-        const { error: saveError } = await supabase
-          .from('survey_templates')
-          .update({
-            name: surveyData.name,
-            date: updateDate.toISOString(),
-            close_date: updateCloseDate ? updateCloseDate.toISOString() : null,
-            emails: emailsValue,
-            status: 'Sent', // Set status to Sent immediately
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', id);
-        
-        if (saveError) {
-          console.error('Error saving survey before sending:', saveError);
-          throw saveError;
-        }
+      const updateDate = new Date(surveyData.date);
+      const updateCloseDate = surveyData.closeDate ? new Date(surveyData.closeDate) : null;
+      
+      console.log('Saving survey before sending...');
+      console.log('Distribution method:', surveyData.distributionMethod);
+      
+      // Determine the emails value based on the distribution method
+      const emailsValue = surveyData.distributionMethod === 'email' ? surveyData.recipients : '';
+      
+      const { error: saveError } = await supabase
+        .from('survey_templates')
+        .update({
+          name: surveyData.name,
+          date: updateDate.toISOString(),
+          close_date: updateCloseDate ? updateCloseDate.toISOString() : null,
+          emails: emailsValue,
+          status: 'Sent', // Set status to Sent immediately
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+      
+      if (saveError) {
+        console.error('Error saving survey before sending:', saveError);
+        throw saveError;
       }
       
       // Get latest survey data after save
@@ -260,7 +260,7 @@ const EditSurvey = () => {
         toast.error("No valid email addresses found", {
           description: "Please check the email addresses you've entered."
         });
-        setIsSending(false);
+        setIsSubmitting(false);
         return;
       }
       
@@ -296,7 +296,7 @@ const EditSurvey = () => {
         description: "There was a problem sending the invitations. Please try again."
       });
     } finally {
-      setIsSending(false);
+      setIsSubmitting(false);
     }
   };
 
