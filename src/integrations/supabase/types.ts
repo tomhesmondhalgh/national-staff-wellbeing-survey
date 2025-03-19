@@ -1347,6 +1347,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_organization_membership_exists: {
+        Args: {
+          user_uuid: string
+          org_uuid: string
+        }
+        Returns: boolean
+      }
       count_email_responses: {
         Args: {
           survey_id: string
