@@ -23,7 +23,6 @@ import { CreditCard, FileText, AlertCircle, ListTodo } from "lucide-react";
 import { formatCurrency } from '../../lib/utils';
 import PageTitle from '../ui/PageTitle';
 import { useSubscription } from '../../hooks/useSubscription';
-import { useRoleManagement } from '../../hooks/useRoleManagement';
 
 export type Purchase = {
   id: string;
@@ -58,7 +57,6 @@ const MyPurchases = () => {
   const [cancellingSubscription, setCancellingSubscription] = useState(false);
   const { user } = useAuth();
   const { subscription, isLoading: isSubscriptionLoading } = useSubscription();
-  const { currentRole, isLoading: isRoleLoading } = useRoleManagement();
 
   const fetchPurchases = async () => {
     if (!user) return;
@@ -326,13 +324,13 @@ const MyPurchases = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Current Plan & Role</CardTitle>
+          <CardTitle>Current Plan</CardTitle>
           <CardDescription>
-            Your current plan details and system role
+            Your current plan details
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isSubscriptionLoading || isRoleLoading ? (
+          {isSubscriptionLoading ? (
             <div className="text-center py-4">Loading account information...</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -343,23 +341,11 @@ const MyPurchases = () => {
                 </div>
                 <div className="pl-7">
                   <span className="text-xl font-semibold capitalize">
-                    {formatPlanName(subscription?.plan)}
+                    {subscription?.plan ? subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1) : 'Free'}
                   </span>
                   <Badge className={`ml-2 ${subscription?.isActive ? 'bg-green-500' : 'bg-red-500'}`}>
                     {subscription?.isActive ? 'Active' : 'Inactive'}
                   </Badge>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <ListTodo className="h-5 w-5 text-primary" />
-                  <h3 className="font-medium text-lg">System Role</h3>
-                </div>
-                <div className="pl-7">
-                  <span className="text-xl font-semibold">
-                    {formatRoleName(currentRole)}
-                  </span>
                 </div>
               </div>
             </div>

@@ -74,9 +74,6 @@ verify_jwt = false
 [functions.send-invitation-email]
 verify_jwt = false
 
-[functions.cancel-invitation]
-verify_jwt = true
-
 [functions.update-invoice-status]
 verify_jwt = true
 
