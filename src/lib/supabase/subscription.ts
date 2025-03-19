@@ -3,6 +3,8 @@
 import { supabase } from '@/integrations/supabase/client';
 
 export type PlanType = 'free' | 'foundation' | 'progress' | 'premium' | 'enterprise';
+// This is the database-specific plan type, which doesn't include 'enterprise'
+export type DatabasePlanType = 'free' | 'foundation' | 'progress' | 'premium';
 
 export interface SubscriptionAccess {
   plan: PlanType;
@@ -15,9 +17,9 @@ export interface Plan {
   description: string;
   price: number;
   currency: string;
-  purchase_type: 'subscription' | 'one-time';
-  duration_months: number;
-  stripe_price_id: string;
+  purchase_type: 'subscription' | 'one-time' | null;
+  duration_months: number | null;
+  stripe_price_id: string | null;
   features: string[];
   is_popular: boolean;
   is_active: boolean;
@@ -47,7 +49,7 @@ export async function getPlans(): Promise<Plan[]> {
       ...plan,
       features: Array.isArray(plan.features) ? plan.features : 
         (typeof plan.features === 'string' ? JSON.parse(plan.features) : [])
-    }));
+    })) as Plan[];
   } catch (error) {
     console.error('Error in getPlans:', error);
     return [];
@@ -116,13 +118,15 @@ export async function checkAndCreateSubscription(
       endDate = date.toISOString();
     }
     
+    // Enterprise plan is not in the database, so we need to convert it to premium if necessary
+    const dbPlanType: DatabasePlanType = planType === 'enterprise' ? 'premium' : planType;
+    
     // Insert subscription record
     const { error } = await supabase
       .from('subscriptions')
       .insert({
         user_id: userId,
-        plan_type: planType,
-        payment_id: paymentId,
+        plan_type: dbPlanType,
         payment_method: 'stripe',
         purchase_type: purchaseType,
         status: 'active',
