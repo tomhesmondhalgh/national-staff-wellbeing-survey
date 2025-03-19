@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
@@ -8,15 +9,17 @@ import {
   EnsureUserRoleResult
 } from '../utils/auth/ensureUserRoles';
 import { toast } from 'sonner';
-import { Loader2, CheckCircle, XCircle, UserCheck } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, UserCheck, AlertTriangle } from 'lucide-react';
 
 export default function UserRoleManager() {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
 
   const handleEnsureAllUsers = async () => {
     setIsLoading(true);
+    setErrorDetails(null);
     try {
       const result = await ensureAllUsersHaveOrgAdminRole();
       setResult(result);
@@ -24,11 +27,15 @@ export default function UserRoleManager() {
       if (result.success) {
         toast.success(result.message);
       } else {
-        toast.error('Error updating user roles');
+        const errorMsg = `Error updating user roles: ${result.error?.message || 'Unknown error'}`;
+        setErrorDetails(errorMsg);
+        toast.error(errorMsg);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error:', error);
-      toast.error('An error occurred while updating user roles');
+      const errorMsg = `An error occurred: ${error?.message || 'Unknown error'}`;
+      setErrorDetails(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -36,8 +43,11 @@ export default function UserRoleManager() {
 
   const handleEnsureCurrentUser = async () => {
     setIsLoading(true);
+    setErrorDetails(null);
     try {
+      console.log('Starting role update for current user');
       const result = await ensureCurrentUserHasOrgAdminRole();
+      console.log('Role update result:', result);
       
       if (result.success) {
         if ('noUser' in result) {
@@ -50,11 +60,20 @@ export default function UserRoleManager() {
           }
         } 
       } else {
-        toast.error('Error updating your role');
+        // Detailed error handling
+        const errorSource = result.errorSource || 'unknown';
+        const errorMessage = result.error?.message || 'Unknown error';
+        const detailedError = `Error updating your role (${errorSource}): ${errorMessage}`;
+        
+        console.error(detailedError, result.error);
+        setErrorDetails(detailedError);
+        toast.error(`Error updating your role: ${errorMessage}`);
       }
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error('An error occurred while updating your role');
+    } catch (error: any) {
+      console.error('Exception:', error);
+      const errorMsg = `An unexpected error occurred: ${error?.message || 'Unknown error'}`;
+      setErrorDetails(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -72,6 +91,16 @@ export default function UserRoleManager() {
           </CardHeader>
           <CardContent>
             <p>This will check your current account and ensure you have the Organization Admin role.</p>
+            
+            {errorDetails && (
+              <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
+                <h3 className="font-medium flex items-center text-red-700">
+                  <AlertTriangle className="h-5 w-5 mr-2" />
+                  Error Details
+                </h3>
+                <p className="mt-1 text-sm text-red-600">{errorDetails}</p>
+              </div>
+            )}
           </CardContent>
           <CardFooter>
             <Button 
