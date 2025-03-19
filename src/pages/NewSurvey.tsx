@@ -155,30 +155,65 @@ const NewSurvey = () => {
   };
 
   const handlePreviewSurvey = async () => {
-    if (savedSurveyId) {
-      window.open(`/survey?id=${savedSurveyId}&preview=true`, '_blank');
-    } else {
-      toast.info("Saving survey before preview", {
-        description: "The survey will be saved first, then opened in preview mode."
-      });
+    try {
+      if (!savedSurveyId) {
+        toast.info("Saving survey before preview", {
+          description: "The survey will be saved first, then opened in preview mode."
+        });
+        
+        const saveButton = document.querySelector('form button[type="submit"]') as HTMLButtonElement;
+        if (saveButton) saveButton.click();
+        return;
+      }
       
-      // Click the save button to trigger form submission
-      const saveButton = document.querySelector('form button[type="submit"]') as HTMLButtonElement;
-      if (saveButton) saveButton.click();
+      window.open(`/survey?id=${savedSurveyId}&preview=true`, '_blank');
+    } catch (error) {
+      console.error('Error handling preview:', error);
+      toast.error("Failed to preview survey", {
+        description: "Please try again."
+      });
     }
   };
 
   const handleSendSurvey = async () => {
-    if (savedSurveyId) {
-      await sendSurvey(savedSurveyId);
-    } else {
-      toast.info("Saving survey before sending", {
-        description: "The survey will be saved first, then you'll be able to send it."
-      });
+    try {
+      if (!savedSurveyId) {
+        setIsSubmitting(true);
+        toast.info("Saving survey before sending", {
+          description: "The survey will be saved first, then sent."
+        });
+        
+        const saveButton = document.querySelector('form button[type="submit"]') as HTMLButtonElement;
+        if (saveButton) {
+          saveButton.click();
+          
+          const checkInterval = setInterval(async () => {
+            if (savedSurveyId) {
+              clearInterval(checkInterval);
+              await sendSurvey(savedSurveyId);
+            }
+          }, 500);
+          
+          setTimeout(() => {
+            clearInterval(checkInterval);
+            if (!savedSurveyId) {
+              toast.error("Failed to save survey", {
+                description: "Please try saving the survey first, then send it."
+              });
+              setIsSubmitting(false);
+            }
+          }, 10000);
+        }
+        return;
+      }
       
-      // Click the save button to trigger form submission
-      const saveButton = document.querySelector('form button[type="submit"]') as HTMLButtonElement;
-      if (saveButton) saveButton.click();
+      await sendSurvey(savedSurveyId);
+    } catch (error) {
+      console.error('Error handling send:', error);
+      toast.error("Failed to send survey", {
+        description: "Please try again."
+      });
+      setIsSubmitting(false);
     }
   };
   
@@ -199,7 +234,6 @@ const NewSurvey = () => {
       const baseUrl = window.location.origin;
       const surveyUrl = `${baseUrl}/survey?id=${id}`;
       
-      // If using link distribution method, just update status and show the link
       if (!survey.emails || survey.emails.trim() === '') {
         await supabase
           .from('survey_templates')
@@ -210,7 +244,6 @@ const NewSurvey = () => {
           description: "Use the survey link to share with participants."
         });
         
-        // Navigate back to surveys page after successful send operation
         navigate('/surveys');
         return;
       }
@@ -259,7 +292,6 @@ const NewSurvey = () => {
         description: `Sent to ${data.count} recipients.`
       });
       
-      // Navigate back to surveys page after successful send operation
       navigate('/surveys');
     } catch (error) {
       console.error('Error sending survey:', error);
