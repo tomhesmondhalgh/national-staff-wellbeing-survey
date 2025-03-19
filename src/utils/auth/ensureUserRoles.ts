@@ -90,7 +90,7 @@ export async function ensureUserHasOrgAdminRole(userId: string): Promise<EnsureU
     
     // Use a custom RPC function to check membership existence safely
     // This function was created as a SECURITY DEFINER to bypass RLS policies
-    const { data, error: membershipError } = await supabase.rpc<boolean>(
+    const { data, error: membershipError } = await supabase.rpc<boolean, { user_uuid: string, org_uuid: string }>(
       'check_organization_membership_exists',
       { 
         user_uuid: userId,
