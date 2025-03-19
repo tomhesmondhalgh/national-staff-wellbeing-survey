@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -54,7 +53,6 @@ const PublicSurveyForm: React.FC = () => {
     
     const fetchSurveyData = async () => {
       try {
-        // Fetch survey template data
         const surveyTemplate = await getSurveyById(surveyId);
         
         if (!surveyTemplate) {
@@ -63,7 +61,6 @@ const PublicSurveyForm: React.FC = () => {
           return;
         }
         
-        // Check if survey is closed and not in preview mode
         if (isSurveyClosed(surveyTemplate) && !isPreview) {
           navigate('/survey-closed');
           return;
@@ -72,7 +69,6 @@ const PublicSurveyForm: React.FC = () => {
         setSurveyName(surveyTemplate.name);
         setSurveyData(surveyTemplate);
         
-        // Fetch custom questions
         const { data: questionLinks, error: linksError } = await supabase
           .from('survey_questions')
           .select('question_id')
@@ -133,7 +129,6 @@ const PublicSurveyForm: React.FC = () => {
     try {
       setIsSubmitting(true);
       
-      // First save the main survey response
       const { data: responseData, error: responseError } = await supabase
         .from('survey_responses')
         .insert({
@@ -159,7 +154,6 @@ const PublicSurveyForm: React.FC = () => {
         throw responseError;
       }
       
-      // Then save the custom question responses if any
       if (customQuestions.length > 0 && responseData) {
         const customResponses = Object.entries(formData.custom_responses).map(([questionId, answer]) => ({
           response_id: responseData.id,
@@ -178,7 +172,6 @@ const PublicSurveyForm: React.FC = () => {
         }
       }
       
-      // If not preview, redirect to completion page
       if (!isPreview) {
         navigate('/survey-complete');
       } else {
@@ -240,8 +233,6 @@ const PublicSurveyForm: React.FC = () => {
             <RatingQuestion
               label="Our leadership team prioritises staff wellbeing"
               name="leadership_prioritize"
-              min={1}
-              max={5}
               value={formData.leadership_prioritize}
               onChange={(e) => handleInputChange('leadership_prioritize', e.target.value)}
               required
@@ -250,8 +241,6 @@ const PublicSurveyForm: React.FC = () => {
             <RatingQuestion
               label="My workload is manageable"
               name="manageable_workload"
-              min={1}
-              max={5}
               value={formData.manageable_workload}
               onChange={(e) => handleInputChange('manageable_workload', e.target.value)}
               required
@@ -260,8 +249,6 @@ const PublicSurveyForm: React.FC = () => {
             <RatingQuestion
               label="I have a good work-life balance"
               name="work_life_balance"
-              min={1}
-              max={5}
               value={formData.work_life_balance}
               onChange={(e) => handleInputChange('work_life_balance', e.target.value)}
               required
@@ -270,8 +257,6 @@ const PublicSurveyForm: React.FC = () => {
             <RatingQuestion
               label="I am in good health"
               name="health_state"
-              min={1}
-              max={5}
               value={formData.health_state}
               onChange={(e) => handleInputChange('health_state', e.target.value)}
               required
@@ -280,8 +265,6 @@ const PublicSurveyForm: React.FC = () => {
             <RatingQuestion
               label="I feel like a valued member of the team"
               name="valued_member"
-              min={1}
-              max={5}
               value={formData.valued_member}
               onChange={(e) => handleInputChange('valued_member', e.target.value)}
               required
@@ -290,8 +273,6 @@ const PublicSurveyForm: React.FC = () => {
             <RatingQuestion
               label="I have access to support when I need it"
               name="support_access"
-              min={1}
-              max={5}
               value={formData.support_access}
               onChange={(e) => handleInputChange('support_access', e.target.value)}
               required
@@ -300,8 +281,6 @@ const PublicSurveyForm: React.FC = () => {
             <RatingQuestion
               label="I feel confident in my role"
               name="confidence_in_role"
-              min={1}
-              max={5}
               value={formData.confidence_in_role}
               onChange={(e) => handleInputChange('confidence_in_role', e.target.value)}
               required
@@ -310,8 +289,6 @@ const PublicSurveyForm: React.FC = () => {
             <RatingQuestion
               label="I am proud to be part of this organisation"
               name="org_pride"
-              min={1}
-              max={5}
               value={formData.org_pride}
               onChange={(e) => handleInputChange('org_pride', e.target.value)}
               required
@@ -352,7 +329,6 @@ const PublicSurveyForm: React.FC = () => {
               required
             />
             
-            {/* Custom Questions */}
             {customQuestions.length > 0 && (
               <div className="mt-12 pt-6 border-t border-gray-200">
                 <h3 className="text-lg font-medium mb-6">Additional Questions</h3>
