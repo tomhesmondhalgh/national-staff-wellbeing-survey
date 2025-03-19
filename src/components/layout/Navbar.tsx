@@ -7,7 +7,6 @@ import { useAdminRole } from '../../hooks/useAdminRole';
 import NavbarBrand from './NavbarBrand';
 import DesktopNav from './DesktopNav';
 import MobileMenu from './MobileMenu';
-import OrganizationSwitcher from '../organization/OrganizationSwitcher';
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -42,12 +41,6 @@ const Navbar: React.FC = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
           <NavbarBrand />
-          
-          {isAuthenticated && (
-            <div className="hidden md:flex items-center ml-4">
-              <OrganizationSwitcher />
-            </div>
-          )}
           
           <DesktopNav 
             isAuthenticated={isAuthenticated}

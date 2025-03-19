@@ -3,7 +3,6 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { User, ShieldCheck, LogOut, Users, CreditCard } from 'lucide-react';
 import { NavLinks } from './NavLinks';
-import OrganizationSwitcher from '../organization/OrganizationSwitcher';
 import { useAdminRole } from '../../hooks/useAdminRole';
 
 interface MobileMenuProps {
@@ -35,13 +34,6 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
 
   return (
     <div className="md:hidden bg-white shadow-lg animate-slide-down">
-      {/* Organization Switcher for mobile */}
-      {isAuthenticated && (
-        <div className="px-4 pt-3">
-          <OrganizationSwitcher />
-        </div>
-      )}
-      
       <div className="px-2 pt-2 pb-3 space-y-1">
         {isAuthenticated ? (
           <>
