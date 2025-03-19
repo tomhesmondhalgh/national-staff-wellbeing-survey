@@ -77,7 +77,6 @@ export async function ensureUserHasOrgAdminRole(userId: string): Promise<EnsureU
     }
     
     // Now check if the user has an organization membership record, but using a direct query to avoid RLS recursion
-    // Rather than using rpc(), which has TypeScript limitations, we'll use a direct query with parameters
     const { data: membershipData, error: membershipCountError } = await supabase
       .from('organization_members')
       .select('count')

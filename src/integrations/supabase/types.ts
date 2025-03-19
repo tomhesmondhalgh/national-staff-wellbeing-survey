@@ -1359,6 +1359,13 @@ export type Database = {
         }
         Returns: number
       }
+      count_user_organization_memberships: {
+        Args: {
+          user_uuid: string
+          org_uuid: string
+        }
+        Returns: number
+      }
       create_invitation_with_role: {
         Args: {
           user_email: string
