@@ -4,7 +4,7 @@ import { CustomQuestionType } from '../../types/surveyForm';
 import CustomTextQuestion from './CustomTextQuestion';
 import CustomMultipleChoiceQuestion from './CustomMultipleChoiceQuestion';
 import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, AlertTriangle } from 'lucide-react';
 
 interface CustomQuestionsSectionProps {
   questions: CustomQuestionType[];
@@ -49,7 +49,7 @@ const CustomQuestionsSection: React.FC<CustomQuestionsSectionProps> = ({
     );
   }
 
-  // Don't render anything if no questions
+  // If no questions, show a message only if an attempt to load them was made
   if (!questions || !Array.isArray(questions) || questions.length === 0) {
     console.log('No questions to display in CustomQuestionsSection');
     return null;
@@ -64,7 +64,15 @@ const CustomQuestionsSection: React.FC<CustomQuestionsSectionProps> = ({
         {questions.map((question) => {
           if (!question || !question.id) {
             console.error('Invalid question object:', question);
-            return null;
+            return (
+              <Alert key={Math.random().toString()} variant="warning">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Invalid Question Format</AlertTitle>
+                <AlertDescription>
+                  A question could not be displayed due to invalid format.
+                </AlertDescription>
+              </Alert>
+            );
           }
           
           const currentValue = responses[question.id] || '';

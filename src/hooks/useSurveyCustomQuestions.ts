@@ -82,10 +82,16 @@ export function useSurveyCustomQuestions(surveyId: string | null) {
                 const parsed = JSON.parse(q.options);
                 if (Array.isArray(parsed)) {
                   formattedOptions = parsed;
+                } else if (typeof parsed === 'object') {
+                  // Handle object-format options
+                  formattedOptions = Object.values(parsed).map(String);
                 }
               } catch (e) {
-                console.error('Failed to parse options string:', e);
+                console.error('Failed to parse options string:', e, 'Original value:', q.options);
               }
+            } else if (typeof q.options === 'object' && q.options !== null) {
+              // Handle direct object format
+              formattedOptions = Object.values(q.options).map(String);
             }
           }
           
@@ -102,7 +108,7 @@ export function useSurveyCustomQuestions(surveyId: string | null) {
       } catch (err: any) {
         console.error('Error loading custom questions:', err);
         setError(err.message || 'Failed to load custom questions');
-        toast.error('Error loading survey questions');
+        // Don't show a toast here - let the parent component handle the UI notification
       } finally {
         setIsLoading(false);
         setIsInitialized(true);

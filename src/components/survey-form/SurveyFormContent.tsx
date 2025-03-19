@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { SurveyFormData } from '../../types/surveyForm';
 import StandardQuestions from './StandardQuestions';
 import CustomQuestionsSection from './CustomQuestionsSection';
 import SubmitButton from './SubmitButton';
 import { useSurveyCustomQuestions } from '../../hooks/useSurveyCustomQuestions';
+import { toast } from 'sonner';
 
 interface SurveyFormContentProps {
   formData: SurveyFormData;
@@ -31,6 +32,14 @@ const SurveyFormContent: React.FC<SurveyFormContentProps> = ({
     error, 
     handleResponse 
   } = useSurveyCustomQuestions(surveyId);
+  
+  // Report errors from custom questions to the user
+  useEffect(() => {
+    if (error) {
+      console.error('Custom questions error:', error);
+      toast.error(`Error loading custom questions: ${error}`);
+    }
+  }, [error]);
   
   // Sync our local responses with the parent's state
   const handleQuestionResponse = (questionId: string, value: string) => {
