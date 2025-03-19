@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '../ui/button';
@@ -41,7 +40,6 @@ const MemberList = () => {
         // If in testing mode with admin role, grant permission automatically
         if (isTestingMode && 
             (testingRole === 'organization_admin' || 
-             testingRole === 'group_admin' || 
              testingRole === 'administrator' || 
              testingRole === 'editor' || 
              testingRole === 'viewer')) {
