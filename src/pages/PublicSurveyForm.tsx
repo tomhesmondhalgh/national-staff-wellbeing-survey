@@ -143,29 +143,38 @@ const PublicSurveyForm: React.FC = () => {
         formData
       });
       
+      // Create the basic response payload
+      const responsePayload = {
+        survey_template_id: surveyId,
+        role: formData.role,
+        leadership_prioritize: formData.leadership_prioritize,
+        manageable_workload: formData.manageable_workload,
+        work_life_balance: formData.work_life_balance,
+        health_state: formData.health_state,
+        valued_member: formData.valued_member,
+        support_access: formData.support_access,
+        confidence_in_role: formData.confidence_in_role,
+        org_pride: formData.org_pride,
+        recommendation_score: formData.recommendation_score,
+        leaving_contemplation: formData.leaving_contemplation,
+        doing_well: formData.doing_well,
+        improvements: formData.improvements
+      };
+      
+      console.log('Response payload:', responsePayload);
+      
+      // Insert the survey response
       const { data: responseData, error: responseError } = await supabase
         .from('survey_responses')
-        .insert({
-          survey_template_id: surveyId,
-          role: formData.role,
-          leadership_prioritize: formData.leadership_prioritize,
-          manageable_workload: formData.manageable_workload,
-          work_life_balance: formData.work_life_balance,
-          health_state: formData.health_state,
-          valued_member: formData.valued_member,
-          support_access: formData.support_access,
-          confidence_in_role: formData.confidence_in_role,
-          org_pride: formData.org_pride,
-          recommendation_score: formData.recommendation_score,
-          leaving_contemplation: formData.leaving_contemplation,
-          doing_well: formData.doing_well,
-          improvements: formData.improvements
-        })
+        .insert(responsePayload)
         .select('id')
         .single();
       
       if (responseError) {
         console.error('Error details:', responseError);
+        console.error('Error code:', responseError.code);
+        console.error('Error message:', responseError.message);
+        console.error('Error details:', responseError.details);
         throw responseError;
       }
       
@@ -232,6 +241,16 @@ const PublicSurveyForm: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-b from-white to-purple-50">
       <div className="container mx-auto px-4 py-8 max-w-3xl">
         <div className="bg-white shadow-md rounded-lg p-6 md:p-8 border border-purple-100">
+          <div className="mb-8 text-center">
+            <img 
+              src="/lovable-uploads/895356bb-776b-4070-8a89-a6e33e70cee6.png" 
+              alt="Our Human Kind Logo" 
+              className="mx-auto max-h-20 mb-4"
+            />
+            <h1 className="text-2xl font-bold text-brandPurple-600 mb-2">Staff Wellbeing Survey</h1>
+            <h2 className="text-lg text-gray-600">{surveyData.name}</h2>
+          </div>
+          
           <SurveyIntro surveyTemplate={surveyData} />
           
           <form onSubmit={handleSubmit} className="mt-8 space-y-8">
@@ -248,7 +267,7 @@ const PublicSurveyForm: React.FC = () => {
                   <SelectValue placeholder="Select your role" />
                 </SelectTrigger>
                 <SelectContent>
-                  {roleOptions.map((option) => (
+                  {['Senior Leader', 'Middle or Team Leader', 'Teacher / Trainer', 'Teaching Assistant', 'Support Staff', 'Other'].map((option) => (
                     <SelectItem key={option} value={option}>
                       {option}
                     </SelectItem>
