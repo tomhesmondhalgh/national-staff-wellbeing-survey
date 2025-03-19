@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Send, Copy, Edit } from 'lucide-react';
@@ -30,7 +29,7 @@ interface SurveyListProps {
 const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [sendingReminder, setSendingReminder] = useState<string | null>(null);
-  const [canEditSurveys, setCanEditSurveys] = useState(false);
+  const [canEditSurveys, setCanEditSurveys] = useState(true);
   const navigate = useNavigate();
   const { user } = useAuth();
   const permissions = usePermissions();
@@ -38,14 +37,16 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
 
   useEffect(() => {
     const checkEditPermission = async () => {
-      if (permissions && !permissions.isLoading) {
-        const canEdit = await permissions.canEdit();
-        setCanEditSurveys(canEdit);
+      if (!user) {
+        setCanEditSurveys(false);
+        return;
       }
+      
+      setCanEditSurveys(true);
     };
     
     checkEditPermission();
-  }, [permissions]);
+  }, [user]);
 
   const copyToClipboard = (id: string, text: string) => {
     navigator.clipboard.writeText(text)
@@ -136,16 +137,13 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-12 text-center">
         <h2 className="text-xl font-semibold mb-2">No surveys found</h2>
         <p className="text-gray-500 mb-6">You haven't created any surveys yet or no responses have been collected.</p>
-        {canEditSurveys && (
-          <Link to="/new-survey" className="bg-brandPurple-500 hover:bg-brandPurple-600 text-white font-medium py-2 px-6 rounded-md transition-all duration-200 inline-block">
-            Create Your First Survey
-          </Link>
-        )}
+        <Link to="/new-survey" className="bg-brandPurple-500 hover:bg-brandPurple-600 text-white font-medium py-2 px-6 rounded-md transition-all duration-200 inline-block">
+          Create Your First Survey
+        </Link>
       </div>
     );
   }
 
-  // Desktop view with table
   if (!isMobile) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">      
@@ -243,7 +241,6 @@ const SurveyList: React.FC<SurveyListProps> = ({ surveys, onSendReminder }) => {
     );
   }
 
-  // Mobile view with cards
   return (
     <div className="space-y-4">
       {surveys.map((survey) => (

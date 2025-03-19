@@ -18,14 +18,14 @@ export const usePermissions = () => {
 
   // Check if user can create surveys/content
   const canCreate = async () => {
-    if (!user) return false;
-    return !!subscription?.isActive;
+    // Simply check if user is authenticated - all users can create
+    return !!user;
   };
 
   // Check if user can edit content
   const canEdit = async () => {
-    if (!user) return false;
-    return !!subscription?.isActive;
+    // Simply check if user is authenticated - all users can edit
+    return !!user;
   };
 
   // Check if user has admin access

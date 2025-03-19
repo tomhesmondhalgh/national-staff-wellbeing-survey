@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -21,20 +20,23 @@ const Surveys = () => {
   const [surveys, setSurveys] = useState<any[]>([]);
   const [totalSurveys, setTotalSurveys] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [canCreateSurveys, setCanCreateSurveys] = useState(false);
+  const [canCreateSurveys, setCanCreateSurveys] = useState(true);
   const permissions = usePermissions();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
     const checkCreatePermission = async () => {
-      if (permissions && !permissions.isLoading) {
-        const canCreate = await permissions.canCreate();
-        setCanCreateSurveys(canCreate);
+      if (!user) {
+        setCanCreateSurveys(false);
+        return;
       }
+      
+      // All authenticated users can create surveys
+      setCanCreateSurveys(true);
     };
     
     checkCreatePermission();
-  }, [permissions]);
+  }, [user]);
 
   useEffect(() => {
     const fetchSurveys = async () => {
@@ -170,12 +172,12 @@ const Surveys = () => {
             subtitle="Manage all your wellbeing surveys in one place"
             className={`mb-0 ${isMobile ? 'text-center' : 'text-left'}`}
           />
-          {canCreateSurveys && (
+          {user && (
             <Link 
               to="/new-survey"
               className={`btn-primary ${isMobile ? 'w-full text-center py-3' : ''}`}
             >
-              New Survey
+              + New Survey
             </Link>
           )}
         </div>
