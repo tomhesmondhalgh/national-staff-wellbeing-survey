@@ -17,7 +17,7 @@ import CustomTextQuestion from '../components/survey-form/CustomTextQuestion';
 import { getSurveyById } from '../utils/survey/templates';
 import { isSurveyClosed } from '../utils/survey/status';
 import { SurveyTemplate } from '../utils/types/survey';
-import { frequencyOptions } from '../components/survey-form/constants';
+import { frequencyOptions, agreementOptions } from '../components/survey-form/constants';
 
 const PublicSurveyForm: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -304,6 +304,7 @@ const PublicSurveyForm: React.FC = () => {
               onChange={(e) => handleInputChange('recommendation_score', e.target.value)}
               error={undefined}
               required
+              useSlider={true}
             />
             
             <RadioQuestion

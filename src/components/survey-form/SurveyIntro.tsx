@@ -2,6 +2,7 @@
 import React from 'react';
 import PageTitle from '../ui/PageTitle';
 import { SurveyTemplate } from '../../utils/surveyUtils';
+import NavbarBrand from '../layout/NavbarBrand';
 
 interface SurveyIntroProps {
   surveyTemplate: SurveyTemplate | null;
@@ -10,9 +11,19 @@ interface SurveyIntroProps {
 const SurveyIntro: React.FC<SurveyIntroProps> = ({ surveyTemplate }) => {
   return (
     <>
-      <PageTitle 
-        title={surveyTemplate?.name ? surveyTemplate.name : "Complete the National Staff Wellbeing Survey"}
-      />
+      <div className="flex justify-center mb-6">
+        <NavbarBrand />
+      </div>
+      
+      <h1 className="text-2xl md:text-3xl font-bold text-center mb-2 text-brandPurple-700">
+        Staff Wellbeing Survey
+      </h1>
+      
+      {surveyTemplate?.name && (
+        <h2 className="text-xl text-center mb-6 text-gray-600">
+          {surveyTemplate.name}
+        </h2>
+      )}
       
       <div className="mb-8 text-left">
         <p className="text-gray-700">

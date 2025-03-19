@@ -26,12 +26,12 @@ const RatingQuestion: React.FC<RatingQuestionProps> = ({
       <legend className="text-lg font-medium mb-3 text-left">
         {label} {required && <span className="text-red-500">*</span>}
       </legend>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-left">
+      <div className="flex flex-wrap gap-2 text-left">
         {options.map((option, index) => (
           <div 
             key={index} 
             className={cn(
-              "flex items-center space-x-2 p-3 rounded-md transition-all border",
+              "flex items-center space-x-2 p-3 rounded-md transition-all border flex-1",
               value === option
                 ? "bg-brandPurple-100 border-brandPurple-400 shadow-sm" 
                 : "hover:bg-gray-50 border-gray-200"
@@ -46,7 +46,7 @@ const RatingQuestion: React.FC<RatingQuestionProps> = ({
               onChange={onChange}
               className="h-4 w-4 text-brandPurple-600 focus:ring-brandPurple-500 border-gray-300"
             />
-            <label htmlFor={`${name}-${index}`} className="text-sm text-gray-700 cursor-pointer">
+            <label htmlFor={`${name}-${index}`} className="text-sm text-gray-700 cursor-pointer whitespace-nowrap">
               {option}
             </label>
           </div>
