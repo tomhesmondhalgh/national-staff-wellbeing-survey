@@ -253,7 +253,7 @@ const MyPurchases = () => {
         </Card>
       )}
 
-      <Card>
+      <Card className="mb-12">
         <CardHeader>
           <CardTitle>Purchase History</CardTitle>
           <CardDescription>
