@@ -1,3 +1,4 @@
+
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -44,12 +45,13 @@ export async function signUpWithEmail(email: string, password: string, userData?
     // If we have user data, update the profile
     if (userData && data.user) {
       try {
+        // Here's the fix: Ensuring profile_id is the first parameter and all parameters are present
         const { error: profileError } = await supabase.rpc(
           'create_or_update_profile',
           {
             profile_id: data.user.id,
-            profile_first_name: userData.firstName,
-            profile_last_name: userData.lastName,
+            profile_first_name: userData.firstName || '',
+            profile_last_name: userData.lastName || '',
             profile_job_title: userData.jobTitle || '',
             profile_school_name: userData.schoolName || '',
             profile_school_address: userData.schoolAddress || ''

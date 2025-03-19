@@ -22,6 +22,7 @@ export async function completeUserProfile(userId: string, userData: any) {
     }
 
     // Use service role to bypass RLS policies for initial profile creation
+    // Here's the fix: Ensuring profile_id is the first parameter
     const { error: profileError } = await supabase.rpc('create_or_update_profile', {
       profile_id: userId,
       profile_first_name: userData.firstName,
