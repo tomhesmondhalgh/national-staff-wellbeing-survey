@@ -60,12 +60,15 @@ export default function UserRoleManager() {
           }
         } 
       } else {
-        // Detailed error handling
-        const errorSource = result.errorSource || 'unknown';
-        const errorMessage = result.error?.message || 'Unknown error';
+        // TypeScript-safe error handling
+        const errorSource = 'errorSource' in result ? result.errorSource : 'unknown';
+        const errorMessage = 'error' in result && result.error ? 
+          (typeof result.error === 'string' ? result.error : result.error.message || 'Unknown error') : 
+          'Unknown error';
+          
         const detailedError = `Error updating your role (${errorSource}): ${errorMessage}`;
         
-        console.error(detailedError, result.error);
+        console.error(detailedError, 'error' in result ? result.error : null);
         setErrorDetails(detailedError);
         toast.error(`Error updating your role: ${errorMessage}`);
       }

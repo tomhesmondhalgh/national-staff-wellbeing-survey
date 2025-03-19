@@ -5,3 +5,4 @@ export * from './signUp';
 export * from './signOut';
 export * from './profileManagement';
 export * from './hubspot';
+export * from './ensureUserRoles';
