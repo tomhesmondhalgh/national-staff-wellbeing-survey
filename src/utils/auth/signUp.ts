@@ -34,33 +34,38 @@ export async function signUpWithEmail(email: string, password: string, userData?
       throw new Error('Failed to create user account');
     }
     
+    console.log('User created successfully:', data.user.id);
+    
     // If the signup was successful and we have a user, assign them as organization admin
     try {
       // First, set the user's role as organization_admin in the user_roles table
-      // Find the organization_admin role ID first
-      const { data: roleData, error: roleError } = await supabase
+      const { data: organizationAdminRole, error: roleError } = await supabase
         .from('roles')
         .select('id')
         .eq('name', 'organization_admin')
         .single();
         
-      if (roleError || !roleData) {
+      if (roleError || !organizationAdminRole) {
         console.error('Error finding organization_admin role:', roleError);
-      } else {
-        // Add the user to the user_roles table with the organization_admin role
-        const { error: roleAssignError } = await supabase
-          .from('user_roles')
-          .insert({
-            user_id: data.user.id,
-            role_id: roleData.id
-          });
-          
-        if (roleAssignError) {
-          console.error('Failed to assign organization_admin role:', roleAssignError);
-        } else {
-          console.log('Successfully assigned organization_admin role to new user');
-        }
+        throw new Error(`Failed to find organization_admin role: ${roleError?.message || 'Role not found'}`);
       }
+      
+      console.log('Found organization_admin role with ID:', organizationAdminRole.id);
+      
+      // Add the user to the user_roles table with the organization_admin role
+      const { error: roleAssignError } = await supabase
+        .from('user_roles')
+        .insert({
+          user_id: data.user.id,
+          role_id: organizationAdminRole.id
+        });
+          
+      if (roleAssignError) {
+        console.error('Failed to assign organization_admin role:', roleAssignError);
+        throw new Error(`Failed to assign organization_admin role: ${roleAssignError.message}`);
+      }
+      
+      console.log('Successfully assigned organization_admin role to new user');
       
       // Also create an organization membership record for the user
       // This makes them the admin of their own "organization"
@@ -75,12 +80,15 @@ export async function signUpWithEmail(email: string, password: string, userData?
         
       if (membershipError) {
         console.error('Error creating organization membership:', membershipError);
-      } else {
-        console.log('Created organization membership with admin role');
+        throw new Error(`Failed to create organization membership: ${membershipError.message}`);
       }
-    } catch (roleAssignmentError) {
+      
+      console.log('Created organization membership with admin role');
+    } catch (roleAssignmentError: any) {
       console.error('Exception during role assignment:', roleAssignmentError);
-      // Don't block signup if role assignment fails
+      // Don't block signup if role assignment fails, but log it clearly
+      console.error(`Role assignment failed with message: ${roleAssignmentError.message}`);
+      // We don't throw here to allow sign up to complete even if role assignment fails
     }
     
     // If we have user data, send it to Hubspot
@@ -92,14 +100,14 @@ export async function signUpWithEmail(email: string, password: string, userData?
           lastName: userData.lastName,
         });
         console.log('User data sent to Hubspot');
-      } catch (hubspotError) {
+      } catch (hubspotError: any) {
         console.error('Failed to send user data to Hubspot:', hubspotError);
         // Don't block signup if Hubspot integration fails
       }
     }
 
     return { error: null, success: true, user: data.user };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error signing up:', error);
     return { error: error as Error, success: false };
   }

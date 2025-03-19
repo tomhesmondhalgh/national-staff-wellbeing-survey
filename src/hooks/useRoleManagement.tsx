@@ -36,8 +36,31 @@ export function useRoleManagement() {
       
       // No organization selected
       if (!currentOrganization?.id) {
-        setCurrentRole(null);
-        setIsLoading(false);
+        console.log('No organization selected, checking for user roles directly');
+        try {
+          // Check if user has a role in the user_roles table
+          const { data: roleData, error: roleError } = await supabase
+            .from('user_roles')
+            .select('roles(name)')
+            .eq('user_id', user.id)
+            .single();
+            
+          if (roleError && roleError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+            console.error('Error fetching user role:', roleError);
+            setError(`Error fetching role: ${roleError.message}`);
+          } else if (roleData?.roles?.name) {
+            console.log('Found user role:', roleData.roles.name);
+            setCurrentRole(roleData.roles.name as UserRoleType);
+          } else {
+            console.log('No role found for user');
+            setCurrentRole(null);
+          }
+        } catch (err: any) {
+          console.error('Error in direct role check:', err);
+          setError(err.message);
+        } finally {
+          setIsLoading(false);
+        }
         return;
       }
 
@@ -57,6 +80,7 @@ export function useRoleManagement() {
         if (roleError) {
           console.error('Error fetching role:', roleError);
           setError(`Error fetching role: ${roleError.message}`);
+          setIsLoading(false);
           return;
         }
         

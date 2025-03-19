@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -84,7 +85,8 @@ export async function ensureUserHasOrgAdminRole(userId: string): Promise<EnsureU
       console.log('User already has roles:', existingRoles.length);
     }
     
-    // Use a custom function to check membership existence safely
+    // Check if membership exists 
+    // First try the RPC function which is safer
     const { data: membershipExists, error: membershipError } = await supabase.rpc(
       'check_organization_membership_exists',
       { 
