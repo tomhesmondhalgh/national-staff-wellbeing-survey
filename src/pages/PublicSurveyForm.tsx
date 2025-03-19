@@ -157,8 +157,8 @@ const PublicSurveyForm: React.FC = () => {
         improvements: formData.improvements
       };
       
-      // Use raw INSERT SQL without RLS checks to directly insert the response
-      // This bypasses any problematic RLS policies
+      // With RLS disabled, we can insert directly without worrying about policies
+      console.log('Submitting response with payload:', responsePayload);
       const { data: responseData, error: responseError } = await supabase
         .from('survey_responses')
         .insert(responsePayload)
@@ -170,8 +170,6 @@ const PublicSurveyForm: React.FC = () => {
         console.error('Error code:', responseError.code);
         console.error('Error message:', responseError.message);
         console.error('Error details:', responseError.details);
-        
-        // Try a fallback with the alternative client
         throw new Error(`Submission error: ${responseError.message}`);
       }
       
@@ -179,25 +177,31 @@ const PublicSurveyForm: React.FC = () => {
       
       // Handle custom questions responses if any
       if (customQuestions.length > 0 && responseData?.id) {
-        const customResponses = Object.entries(formData.custom_responses).map(([questionId, answer]) => ({
-          response_id: responseData.id,
-          question_id: questionId,
-          answer
-        }));
-        
-        console.log('Saving custom responses:', customResponses);
-        
-        if (customResponses.length > 0) {
-          const { error: customError } = await supabase
-            .from('custom_question_responses')
-            .insert(customResponses);
+        try {
+          const customResponses = Object.entries(formData.custom_responses).map(([questionId, answer]) => ({
+            response_id: responseData.id,
+            question_id: questionId,
+            answer
+          }));
           
-          if (customError) {
-            console.error('Error saving custom responses:', customError);
-            console.error('Custom error details:', customError.details);
-            // We'll continue even if custom responses fail to save
-            toast.error('Some responses may not have been fully saved');
+          console.log('Saving custom responses:', customResponses);
+          
+          if (customResponses.length > 0) {
+            const { error: customError } = await supabase
+              .from('custom_question_responses')
+              .insert(customResponses);
+            
+            if (customError) {
+              console.error('Error saving custom responses:', customError);
+              console.error('Custom error details:', customError.details);
+              toast.error('Some responses may not have been fully saved');
+            } else {
+              console.log('Custom responses saved successfully');
+            }
           }
+        } catch (customErr) {
+          console.error('Exception handling custom responses:', customErr);
+          // Continue with navigation even if custom responses fail
         }
       }
       
