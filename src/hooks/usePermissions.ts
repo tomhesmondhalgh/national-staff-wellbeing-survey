@@ -12,6 +12,10 @@ export const usePermissions = () => {
 
   const isLoading = isAuthLoading || isSubscriptionLoading;
 
+  // Provide a simple role based on subscription status
+  // Default is 'user' for all authenticated users
+  const userRole = subscription?.isActive ? 'subscriber' : 'user';
+
   // Check if user can create surveys/content
   const canCreate = async () => {
     if (!user) return false;
@@ -34,6 +38,7 @@ export const usePermissions = () => {
     canCreate,
     canEdit,
     isAdmin,
-    isLoading
+    isLoading,
+    userRole
   };
 };
