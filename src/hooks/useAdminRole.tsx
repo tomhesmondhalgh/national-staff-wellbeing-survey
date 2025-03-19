@@ -63,7 +63,7 @@ export function useAdminRole() {
       // This is just a placeholder implementation - in a real app you would implement a proper check
       
       // For example, you could use a list of admin emails
-      const adminEmails = ['admin@example.com', 'admin@yourdomain.com'];
+      const adminEmails = ['admin@example.com', 'admin@yourdomain.com', 'tomhesmondhalghce@gmail.com'];
       const isUserAdmin = user.email ? adminEmails.includes(user.email) : false;
       
       setIsAdmin(isUserAdmin);
