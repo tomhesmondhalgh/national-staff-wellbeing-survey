@@ -49,6 +49,14 @@ const Login = () => {
     if (isAuthenticated && !isLoading) {
       const redirectPath = getReturnPath();
       console.log(`User authenticated, redirecting to: ${redirectPath}`);
+      
+      // Show success toast when user is authenticated
+      if (!isLoading) {
+        toast.success('Logged in successfully', {
+          description: 'Welcome back!'
+        });
+      }
+      
       navigate(redirectPath);
     }
   }, [isAuthenticated, isLoading, navigate, location.search]);
@@ -84,7 +92,7 @@ const Login = () => {
       const { error, success } = await signIn(data.email, data.password);
       
       if (success) {
-        // Toast is shown in AuthContext after successful login
+        // Toast will be shown in the useEffect above after authentication state updates
         console.log('Login successful, waiting for auth state to update');
         // The redirect will happen automatically via the useEffect above
       } else if (error) {

@@ -2,7 +2,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
 interface AuthContextType {
   user: User | null;
@@ -72,7 +71,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
   }, []);
 
-  // Sign in function
+  // Sign in function - removed toast here since it's now in the Login component
   const signIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
@@ -80,7 +79,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       if (error) throw error;
       
-      toast.success('Logged in successfully');
       return { error: null, success: true };
     } catch (error) {
       console.error('Error signing in:', error);
@@ -115,7 +113,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       // In our simplified model, we don't assign any roles
       
-      toast.success('Account created successfully');
       return { error: null, success: true, user: data.user };
     } catch (error: any) {
       console.error('Error signing up:', error);
@@ -130,10 +127,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsLoading(true);
     try {
       await supabase.auth.signOut();
-      toast.success('Logged out successfully');
     } catch (error) {
       console.error('Error signing out:', error);
-      toast.error('Failed to log out');
     } finally {
       setIsLoading(false);
     }
