@@ -5,6 +5,8 @@ import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
 import SurveyList from '../components/surveys/SurveyList';
 import Pagination from '../components/surveys/Pagination';
+import { Button } from '../components/ui/button';
+import { Plus } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -171,12 +173,10 @@ const Surveys = () => {
             className={`mb-0 ${isMobile ? 'text-center' : 'text-left'}`}
           />
           {canCreateSurveys && (
-            <Link 
-              to="/new-survey"
-              className={`btn-primary ${isMobile ? 'w-full text-center py-3' : ''}`}
-            >
+            <Button onClick={() => navigate('/new-survey')}>
+              <Plus className="mr-2 h-4 w-4" />
               New Survey
-            </Link>
+            </Button>
           )}
         </div>
 
