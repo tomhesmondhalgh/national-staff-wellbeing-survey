@@ -31,13 +31,11 @@ const MemberList = () => {
   const [hasViewPermission, setHasViewPermission] = useState<boolean | null>(null);
   const [isPermissionLoading, setIsPermissionLoading] = useState(true);
 
-  // Check for team member view permission
   useEffect(() => {
     const checkPermission = async () => {
       setIsPermissionLoading(true);
       
       if (currentOrganization) {
-        // If in testing mode with admin role, grant permission automatically
         if (isTestingMode && 
             (testingRole === 'organization_admin' || 
              testingRole === 'administrator' || 
@@ -97,7 +95,6 @@ const MemberList = () => {
           return { members: [], profiles: [], total: 0 };
         }
         
-        // Get user profiles
         const userIds = members.map(member => member.user_id);
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
@@ -122,7 +119,6 @@ const MemberList = () => {
     enabled: !!currentOrganization && hasViewPermission !== false && !isPermissionLoading
   });
 
-  // Combined loading state
   const isLoading = isPermissionLoading || isDataLoading;
 
   const filteredMembers = membersData?.members.filter(member => {
@@ -237,7 +233,6 @@ const MemberList = () => {
   }
 
   if (error) {
-    // Check if the error is related to database permissions
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     const isPermissionError = errorMessage.includes('policy') || 
                              errorMessage.includes('permission') || 
