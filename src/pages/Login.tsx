@@ -31,17 +31,8 @@ const Login = () => {
   const getReturnPath = () => {
     const params = new URLSearchParams(location.search);
     const returnPath = params.get('returnTo');
-    // Handle invitation redirect special case
-    if (returnPath && returnPath.includes('/invitation/accept')) {
-      return returnPath;
-    }
+    // We no longer handle invitation redirects since that page is removed
     return returnPath || '/dashboard';
-  };
-
-  // Check if we're coming from an invitation
-  const isFromInvitation = () => {
-    const returnPath = getReturnPath();
-    return returnPath.includes('/invitation/accept');
   };
 
   // Redirect authenticated users
@@ -115,11 +106,8 @@ const Login = () => {
     <MainLayout>
       <div className="page-container">
         <PageTitle 
-          title={isFromInvitation() ? "Log in to accept invitation" : "Welcome back"} 
-          subtitle={isFromInvitation() 
-            ? "Log in to your account to accept the organization invitation" 
-            : "Log in to access your surveys and analytics"
-          }
+          title="Welcome back" 
+          subtitle="Log in to access your surveys and analytics"
           alignment="center"
         />
         <AuthForm 

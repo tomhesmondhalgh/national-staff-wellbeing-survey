@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { OrganizationProvider } from './contexts/OrganizationContext';
@@ -28,11 +29,8 @@ import ResetPassword from './pages/ResetPassword';
 import Admin from './pages/Admin';
 import NotFound from './pages/NotFound';
 import CustomQuestions from './pages/CustomQuestions';
-import Team from './pages/Team';
-import InvitationAccept from './pages/InvitationAccept';
 import PaymentSuccess from './pages/PaymentSuccess';
 import Purchases from './pages/Purchases';
-import UserRoleManager from './pages/UserRoleManager';
 
 import './App.css';
 
@@ -64,7 +62,6 @@ function App() {
                   <Route path="/survey" element={<PublicSurveyForm />} />
                   <Route path="/survey-complete" element={<SurveyComplete />} />
                   <Route path="/survey-closed" element={<SurveyClosed />} />
-                  <Route path="/invitation/accept" element={<InvitationAccept />} />
                   <Route path="/payment-success" element={<PaymentSuccess />} />
                   
                   {/* Protected routes */}
@@ -121,16 +118,6 @@ function App() {
                   <Route path="/custom-questions" element={
                     <ProtectedRoute>
                       <CustomQuestions />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/team" element={
-                    <ProtectedRoute>
-                      <Team />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/user-role-manager" element={
-                    <ProtectedRoute>
-                      <UserRoleManager />
                     </ProtectedRoute>
                   } />
                   <Route path="*" element={<NotFound />} />
