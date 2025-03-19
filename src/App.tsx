@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { OrganizationProvider } from './contexts/OrganizationContext';
@@ -33,6 +32,7 @@ import Team from './pages/Team';
 import InvitationAccept from './pages/InvitationAccept';
 import PaymentSuccess from './pages/PaymentSuccess';
 import Purchases from './pages/Purchases';
+import UserRoleManager from './pages/UserRoleManager';
 
 import './App.css';
 
@@ -126,6 +126,11 @@ function App() {
                   <Route path="/team" element={
                     <ProtectedRoute>
                       <Team />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/user-role-manager" element={
+                    <ProtectedRoute>
+                      <UserRoleManager />
                     </ProtectedRoute>
                   } />
                   <Route path="*" element={<NotFound />} />

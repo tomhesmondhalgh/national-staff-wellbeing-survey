@@ -1,137 +1,166 @@
+import React, { useState, useEffect, createContext, useContext } from 'react';
+import { Session, User } from '@supabase/supabase-js';
+import { supabase } from '../integrations/supabase/client';
+import { clearRoleCache } from '@/services/authService';
+import { ensureCurrentUserHasOrgAdminRole } from '../utils/auth/ensureUserRoles';
 
-import React, { createContext, useContext, useCallback } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuthState } from '../hooks/useAuthState';
-import { 
-  signInWithEmail, 
-  signUpWithEmail, 
-  signOutUser, 
-  completeUserProfile
-} from '../utils/auth';
-import { toast } from '../hooks/use-toast';
-
-interface AuthContextType {
-  user: User | null;
+type AuthContextType = {
   session: Session | null;
+  user: User | null;
   isLoading: boolean;
-  isAuthenticated: boolean;
-  authCheckComplete: boolean;  // Added this property
-  signIn: (email: string, password: string) => Promise<{
-    error: Error | null;
-    success: boolean;
-  }>;
-  signUp: (email: string, password: string, userData?: any) => Promise<{
-    error: Error | null;
-    success: boolean;
-    user?: User | null;
-  }>;
-  signOut: () => Promise<void>;
-  completeUserProfile: (userId: string, userData: any) => Promise<{
-    error: Error | null;
-    success: boolean;
-  }>;
-}
+  login: (email: string, password: string) => Promise<{ success: boolean; error: any }>;
+  logout: () => Promise<void>;
+  signUp: (email: string, password: string, metadata?: any) => Promise<{ success: boolean; error: any }>;
+  updateUser: (attributes: any) => Promise<{ data: any; error: any }>;
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { user, session, isLoading, isAuthenticated, authCheckComplete } = useAuthState();
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  console.log('AuthProvider rendering with auth state:', 
-    isAuthenticated ? 'authenticated' : 'not authenticated',
-    'loading:', isLoading,
-    'check complete:', authCheckComplete);
+  useEffect(() => {
+    const loadSession = async () => {
+      setIsLoading(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
 
-  const signIn = useCallback(async (email: string, password: string) => {
-    console.log('Attempting to sign in user:', email);
-    try {
-      const result = await signInWithEmail(email, password);
-      
-      if (result.success) {
-        console.log('Sign in successful');
-      } else {
-        console.error('Sign in failed:', result.error);
+        setSession(session);
+        setUser(session?.user || null);
+      } catch (error) {
+        console.error("Error loading session:", error);
+      } finally {
+        setIsLoading(false);
       }
-      
-      return result;
-    } catch (error) {
-      console.error('Exception during sign in:', error);
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred during sign in',
-        variant: 'destructive',
+    };
+
+    loadSession();
+
+    // Listen for changes on auth state (login, signout, etc.)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        setUser(session?.user || null);
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Log in user
+  const login = async (email: string, password: string) => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
-      return { error: error as Error, success: false };
-    }
-  }, []);
 
-  const signUp = useCallback(async (email: string, password: string, userData?: any) => {
-    console.log('Attempting to sign up user:', email);
-    return signUpWithEmail(email, password, userData);
-  }, []);
-
-  const signOut = useCallback(async () => {
-    console.log('Signing out user');
-    try {
-      const result = await signOutUser();
-      if (result.success) {
-        console.log('Sign out successful, redirecting to login');
-        navigate('/login');
-      } else {
-        console.error('Sign out failed:', result.error);
-        // Attempt to redirect anyway
-        navigate('/login');
+      if (error) {
+        throw error;
       }
-    } catch (error) {
-      console.error('Exception during sign out:', error);
-      // Attempt to redirect anyway
-      navigate('/login');
-    }
-  }, [navigate]);
 
-  const handleCompleteUserProfile = useCallback(async (userId: string, userData: any) => {
-    return completeUserProfile(userId, userData);
-  }, []);
-
-  // If we're on a protected route and not loading, check authentication
-  React.useEffect(() => {
-    if (!isLoading && authCheckComplete && !isAuthenticated) {
-      const isProtectedRoute = !['/login', '/signup', '/reset-password', '/email-confirmation', '/'].includes(location.pathname);
+      // Set the session and user
+      setSession(data.session);
+      setUser(data.user);
       
-      if (isProtectedRoute) {
-        console.log('User not authenticated on protected route, redirecting to login');
-        const returnTo = encodeURIComponent(location.pathname + location.search);
-        navigate(`/login?returnTo=${returnTo}`);
-      }
+      // Ensure the user has the organization_admin role
+      await ensureCurrentUserHasOrgAdminRole();
+      
+      return { success: true, error: null };
+    } catch (error: any) {
+      return { success: false, error };
+    } finally {
+      setIsLoading(false);
     }
-  }, [isLoading, isAuthenticated, authCheckComplete, location.pathname, location.search, navigate]);
+  };
+
+  // Sign up user
+  const signUp = async (email: string, password: string, metadata?: any) => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: metadata,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setSession(data.session);
+      setUser(data.user);
+      return { success: true, error: null };
+    } catch (error: any) {
+      return { success: false, error };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Log out user
+  const logout = async () => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        throw error;
+      }
+      // Clear the session and user
+      setSession(null);
+      setUser(null);
+      clearRoleCache();
+    } catch (error: any) {
+      console.error("Error logging out:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+   // Update user attributes
+   const updateUser = async (attributes: any) => {
+    try {
+      const { data, error } = await supabase.auth.updateUser(attributes);
+      if (error) {
+        console.error("Error updating user:", error);
+        return { data: null, error };
+      }
+      setUser(data.user);
+      return { data, error: null };
+    } catch (error: any) {
+      console.error("Error updating user:", error);
+      return { data: null, error };
+    }
+  };
 
   return (
     <AuthContext.Provider
       value={{
-        user,
         session,
+        user,
         isLoading,
-        isAuthenticated,
-        authCheckComplete, // Added this property to the context value
-        signIn,
+        login,
+        logout,
         signUp,
-        signOut,
-        completeUserProfile: handleCompleteUserProfile,
+        updateUser,
       }}
     >
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 };

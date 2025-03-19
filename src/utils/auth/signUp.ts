@@ -52,6 +52,23 @@ export async function signUpWithEmail(email: string, password: string, userData?
             console.log('Successfully assigned organization_admin role to new user');
           }
         }
+        
+        // Also create an organization membership record for the user
+        // This makes them the admin of their own "organization"
+        const { error: membershipError } = await supabase
+          .from('organization_members')
+          .insert({
+            user_id: data.user.id,
+            organization_id: data.user.id,
+            role: 'organization_admin',
+            is_primary: true
+          });
+          
+        if (membershipError) {
+          console.error('Error creating organization membership:', membershipError);
+        } else {
+          console.log('Created organization membership with admin role');
+        }
       } catch (roleAssignmentError) {
         console.error('Exception during role assignment:', roleAssignmentError);
         // Don't block signup if role assignment fails
