@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -29,13 +30,17 @@ const Surveys = () => {
   useEffect(() => {
     const fetchSurveys = async () => {
       if (!user) {
+        console.log('No user found, skipping survey fetch');
         setLoading(false);
         return;
       }
 
       try {
+        console.log('Fetching surveys for user:', user.id);
         setLoading(true);
         
+        // First attempt to get the count of surveys
+        console.log('Counting surveys excluding Archived ones');
         const { count, error: countError } = await supabase
           .from('survey_templates')
           .select('*', { count: 'exact', head: true })
@@ -43,14 +48,18 @@ const Surveys = () => {
           .neq('status', 'Archived');
           
         if (countError) {
+          console.error('Error counting surveys:', countError);
           throw countError;
         }
         
+        console.log(`Found ${count || 0} total surveys`);
         setTotalSurveys(count || 0);
         
         const from = (currentPage - 1) * SURVEYS_PER_PAGE;
         const to = from + SURVEYS_PER_PAGE - 1;
         
+        console.log(`Fetching surveys page ${currentPage} (range ${from}-${to})`);
+        // Try to fetch surveys directly without relying on RLS functions
         const { data: surveyTemplates, error } = await supabase
           .from('survey_templates')
           .select(`
@@ -69,8 +78,12 @@ const Surveys = () => {
           .range(from, to);
           
         if (error) {
+          console.error('Error fetching survey data:', error);
           throw error;
         }
+        
+        console.log('Successfully fetched surveys:', surveyTemplates.length);
+        console.log('Survey data sample:', surveyTemplates.length > 0 ? surveyTemplates[0] : 'No surveys found');
         
         const formattedSurveys = surveyTemplates.map(template => {
           const now = new Date();
@@ -116,12 +129,27 @@ const Surveys = () => {
           };
         });
         
+        console.log('Surveys formatted successfully');
         setSurveys(formattedSurveys);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching surveys:', error);
-        toast.error("Failed to load surveys", {
-          description: "Please try refreshing the page."
-        });
+        
+        // Check for specific error types to provide better diagnostics
+        if (error.code === '42883') {
+          console.error('Database function error: The application is trying to use a database function that does not exist');
+          toast.error("Failed to load surveys", {
+            description: "Database configuration issue. Please contact support."
+          });
+        } else if (error.code && error.code.startsWith('PGRST')) {
+          console.error('PostgREST error:', error);
+          toast.error("Failed to load surveys", {
+            description: "API configuration issue. Please try again later."
+          });
+        } else {
+          toast.error("Failed to load surveys", {
+            description: "Please try refreshing the page."
+          });
+        }
       } finally {
         setLoading(false);
       }
@@ -175,19 +203,31 @@ const Surveys = () => {
           </div>
         ) : (
           <>
-            <SurveyList 
-              surveys={surveys} 
-              onSendReminder={handleSendReminder}
-            />
-            
-            {totalPages > 1 && (
-              <div className="mt-8">
-                <Pagination 
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
-                />
+            {surveys.length === 0 ? (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-12 text-center">
+                <h2 className="text-xl font-semibold mb-2">No surveys found</h2>
+                <p className="text-gray-500 mb-6">You haven't created any surveys yet.</p>
+                <Link to="/new-survey" className="bg-brandPurple-500 hover:bg-brandPurple-600 text-white font-medium py-2 px-6 rounded-md transition-all duration-200 inline-block">
+                  Create Your First Survey
+                </Link>
               </div>
+            ) : (
+              <>
+                <SurveyList 
+                  surveys={surveys} 
+                  onSendReminder={handleSendReminder}
+                />
+                
+                {totalPages > 1 && (
+                  <div className="mt-8">
+                    <Pagination 
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={handlePageChange}
+                    />
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
