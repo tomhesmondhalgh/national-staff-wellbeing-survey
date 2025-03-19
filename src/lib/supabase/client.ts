@@ -54,28 +54,3 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
   },
 });
-
-// Simple helper to check if user is admin (to be used in components)
-export const isUserAdmin = async (userId: string): Promise<boolean> => {
-  if (!userId) return false;
-  
-  try {
-    const { data, error } = await supabase.rpc(
-      'has_role_v2',
-      {
-        user_uuid: userId,
-        required_role: 'administrator'
-      }
-    );
-    
-    if (error) {
-      console.error('Error checking admin status:', error);
-      return false;
-    }
-    
-    return !!data;
-  } catch (error) {
-    console.error('Exception checking admin status:', error);
-    return false;
-  }
-};

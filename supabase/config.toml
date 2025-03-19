@@ -71,9 +71,6 @@ verify_jwt = true
 [functions.hubspot-integration]
 verify_jwt = false
 
-[functions.send-invitation-email]
-verify_jwt = false
-
 [functions.update-invoice-status]
 verify_jwt = true
 

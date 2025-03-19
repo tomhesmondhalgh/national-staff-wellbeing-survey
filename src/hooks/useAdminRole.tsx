@@ -2,7 +2,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTestingMode } from '../contexts/TestingModeContext';
-import { supabase } from '@/integrations/supabase/client';
 
 // Create a simple in-memory cache to store admin status
 // This is shared across all instances of the hook
@@ -85,20 +84,7 @@ export function useAdminRole() {
 
   useEffect(() => {
     checkAdminRole();
-    
-    // Set up a listener for auth state changes that might affect admin status
-    const { data: authListener } = supabase.auth.onAuthStateChange(() => {
-      if (user) {
-        // Clear cache when auth state changes
-        clearCache(user.id);
-        checkAdminRole();
-      }
-    });
-    
-    return () => {
-      authListener?.subscription.unsubscribe();
-    };
-  }, [user, isTestingMode, testingRole, checkAdminRole, clearCache]);
+  }, [user, isTestingMode, testingRole, checkAdminRole]);
 
   // Expose method to force refresh the admin status
   const refreshAdminStatus = useCallback(() => {

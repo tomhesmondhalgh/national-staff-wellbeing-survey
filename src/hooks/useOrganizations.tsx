@@ -2,10 +2,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase/client';
-import { Organization, UserRoleType } from '../lib/supabase/client';
+import { Organization } from '../lib/supabase/client';
 
 export interface OrganizationWithRole extends Organization {
-  role: UserRoleType;
+  role: string;
   id: string;
 }
 
@@ -43,7 +43,7 @@ export const useOrganizations = () => {
           id: user.id,
           name: profile?.school_name || 'My Organisation',
           created_at: new Date().toISOString(),
-          role: 'organization_admin'
+          role: 'administrator'
         };
 
         setOrganizations([personalOrg]);
