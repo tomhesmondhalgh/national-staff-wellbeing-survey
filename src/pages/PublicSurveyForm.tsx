@@ -16,6 +16,7 @@ import SurveyClosed from '../pages/SurveyClosed';
 import CustomTextQuestion from '../components/survey-form/CustomTextQuestion';
 import { getSurveyById } from '../utils/survey/templates';
 import { isSurveyClosed } from '../utils/survey/status';
+import { SurveyTemplate } from '../utils/types/survey';
 
 const PublicSurveyForm: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -26,7 +27,7 @@ const PublicSurveyForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [surveyName, setSurveyName] = useState('Wellbeing Survey');
-  const [surveyData, setSurveyData] = useState<any>(null);
+  const [surveyData, setSurveyData] = useState<SurveyTemplate | null>(null);
   const [customQuestions, setCustomQuestions] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     role: '',
@@ -219,11 +220,12 @@ const PublicSurveyForm: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8 max-w-3xl">
         <div className="bg-white shadow-sm rounded-lg p-6 md:p-8">
-          <SurveyIntro title={surveyName} />
+          <SurveyIntro surveyTemplate={surveyData} />
           
           <form onSubmit={handleSubmit} className="mt-8 space-y-8">
             <RadioQuestion
-              question="What is your role?"
+              label="What is your role?"
+              name="role"
               options={[
                 'Teaching Staff',
                 'Support Staff',
@@ -231,98 +233,122 @@ const PublicSurveyForm: React.FC = () => {
                 'Senior Leadership'
               ]}
               value={formData.role}
-              onChange={(value) => handleInputChange('role', value)}
+              onChange={(e) => handleInputChange('role', e.target.value)}
               required
             />
             
             <RatingQuestion
-              question="Our leadership team prioritises staff wellbeing"
+              label="Our leadership team prioritises staff wellbeing"
+              name="leadership_prioritize"
+              min={1}
+              max={5}
               value={formData.leadership_prioritize}
-              onChange={(value) => handleInputChange('leadership_prioritize', value)}
+              onChange={(e) => handleInputChange('leadership_prioritize', e.target.value)}
               required
             />
             
             <RatingQuestion
-              question="My workload is manageable"
+              label="My workload is manageable"
+              name="manageable_workload"
+              min={1}
+              max={5}
               value={formData.manageable_workload}
-              onChange={(value) => handleInputChange('manageable_workload', value)}
+              onChange={(e) => handleInputChange('manageable_workload', e.target.value)}
               required
             />
             
             <RatingQuestion
-              question="I have a good work-life balance"
+              label="I have a good work-life balance"
+              name="work_life_balance"
+              min={1}
+              max={5}
               value={formData.work_life_balance}
-              onChange={(value) => handleInputChange('work_life_balance', value)}
+              onChange={(e) => handleInputChange('work_life_balance', e.target.value)}
               required
             />
             
             <RatingQuestion
-              question="I am in good health"
+              label="I am in good health"
+              name="health_state"
+              min={1}
+              max={5}
               value={formData.health_state}
-              onChange={(value) => handleInputChange('health_state', value)}
+              onChange={(e) => handleInputChange('health_state', e.target.value)}
               required
             />
             
             <RatingQuestion
-              question="I feel like a valued member of the team"
+              label="I feel like a valued member of the team"
+              name="valued_member"
+              min={1}
+              max={5}
               value={formData.valued_member}
-              onChange={(value) => handleInputChange('valued_member', value)}
+              onChange={(e) => handleInputChange('valued_member', e.target.value)}
               required
             />
             
             <RatingQuestion
-              question="I have access to support when I need it"
+              label="I have access to support when I need it"
+              name="support_access"
+              min={1}
+              max={5}
               value={formData.support_access}
-              onChange={(value) => handleInputChange('support_access', value)}
+              onChange={(e) => handleInputChange('support_access', e.target.value)}
               required
             />
             
             <RatingQuestion
-              question="I feel confident in my role"
+              label="I feel confident in my role"
+              name="confidence_in_role"
+              min={1}
+              max={5}
               value={formData.confidence_in_role}
-              onChange={(value) => handleInputChange('confidence_in_role', value)}
+              onChange={(e) => handleInputChange('confidence_in_role', e.target.value)}
               required
             />
             
             <RatingQuestion
-              question="I am proud to be part of this organisation"
+              label="I am proud to be part of this organisation"
+              name="org_pride"
+              min={1}
+              max={5}
               value={formData.org_pride}
-              onChange={(value) => handleInputChange('org_pride', value)}
+              onChange={(e) => handleInputChange('org_pride', e.target.value)}
               required
             />
             
             <RadioQuestion
-              question="How likely are you to recommend this school as a place to work to a friend or colleague?"
+              label="How likely are you to recommend this school as a place to work to a friend or colleague?"
+              name="recommendation_score"
               options={['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10']}
-              scaleLabels={{
-                min: 'Not at all likely',
-                max: 'Extremely likely'
-              }}
-              displayAsScale
               value={formData.recommendation_score}
-              onChange={(value) => handleInputChange('recommendation_score', value)}
+              onChange={(e) => handleInputChange('recommendation_score', e.target.value)}
+              error={undefined}
               required
             />
             
             <RadioQuestion
-              question="In the past 30 days, have you thought about leaving your current school?"
+              label="In the past 30 days, have you thought about leaving your current school?"
+              name="leaving_contemplation"
               options={['Yes', 'No']}
               value={formData.leaving_contemplation}
-              onChange={(value) => handleInputChange('leaving_contemplation', value)}
+              onChange={(e) => handleInputChange('leaving_contemplation', e.target.value)}
               required
             />
             
             <TextQuestion
-              question="What is your school doing well to support staff wellbeing?"
+              label="What is your school doing well to support staff wellbeing?"
+              name="doing_well"
               value={formData.doing_well}
-              onChange={(value) => handleInputChange('doing_well', value)}
+              onChange={(e) => handleInputChange('doing_well', e.target.value)}
               required
             />
             
             <TextQuestion
-              question="What could your school do better to support staff wellbeing?"
+              label="What could your school do better to support staff wellbeing?"
+              name="improvements"
               value={formData.improvements}
-              onChange={(value) => handleInputChange('improvements', value)}
+              onChange={(e) => handleInputChange('improvements', e.target.value)}
               required
             />
             
@@ -334,9 +360,10 @@ const PublicSurveyForm: React.FC = () => {
                   {customQuestions.map((question) => (
                     <CustomTextQuestion
                       key={question.id}
-                      question={question.text}
+                      label={question.text}
+                      name={`custom-${question.id}`}
                       value={formData.custom_responses[question.id] || ''}
-                      onChange={(value) => handleCustomQuestionResponse(question.id, value)}
+                      onChange={(e) => handleCustomQuestionResponse(question.id, e.target.value)}
                     />
                   ))}
                 </div>
