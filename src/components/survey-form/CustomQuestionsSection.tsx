@@ -16,9 +16,28 @@ const CustomQuestionsSection: React.FC<CustomQuestionsSectionProps> = ({
   handleCustomQuestionResponse
 }) => {
   useEffect(() => {
-    // Log when the component is rendered and with what props
-    console.log('CustomQuestionsSection rendered with questions:', customQuestions);
-    console.log('CustomQuestionsSection form data:', formData?.custom_responses);
+    // Enhanced debugging for CustomQuestionsSection
+    console.log('CustomQuestionsSection component mounted/updated');
+    console.log('customQuestions prop received:', customQuestions);
+    
+    if (!customQuestions) {
+      console.error('customQuestions prop is undefined or null');
+    } else if (customQuestions.length === 0) {
+      console.warn('customQuestions array is empty');
+    } else {
+      console.log('Number of custom questions:', customQuestions.length);
+      customQuestions.forEach((q, i) => {
+        console.log(`Question ${i+1} details:`, {
+          id: q.id || 'MISSING ID',
+          text: q.text || 'MISSING TEXT',
+          type: q.type || 'MISSING TYPE',
+          options: q.options ? `${q.options.length} options` : 'No options'
+        });
+      });
+    }
+    
+    console.log('Current form data:', formData);
+    console.log('Custom responses in form data:', formData?.custom_responses || {});
   }, [customQuestions, formData]);
 
   // Early return if no questions with better logging
@@ -33,7 +52,6 @@ const CustomQuestionsSection: React.FC<CustomQuestionsSectionProps> = ({
   }
 
   console.log('Rendering CustomQuestionsSection with questions:', customQuestions);
-  console.log('Current form data for custom responses:', formData?.custom_responses || {});
 
   return (
     <div className="mt-12 pt-6 border-t border-gray-200">

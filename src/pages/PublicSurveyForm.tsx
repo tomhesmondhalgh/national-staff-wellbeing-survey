@@ -28,44 +28,36 @@ const PublicSurveyForm: React.FC = () => {
   } = useSurveyForm(surveyId, isPreview);
   
   useEffect(() => {
-    // Enhanced logging for debugging
-    if (surveyId) {
-      console.log('PublicSurveyForm loaded with survey ID:', surveyId);
-      console.log('Is preview mode?', isPreview);
-    }
-    
-    // Log data specifically for the requested survey ID
+    // Check specifically for the target survey ID
     if (surveyId === 'c316b756-5b93-451f-b14e-2cc1df916def') {
-      console.log('DEBUGGING TARGET SURVEY:', surveyId);
-      console.log('Survey data available:', !!surveyData);
-      console.log('Custom questions array:', customQuestions);
-      console.log('Number of custom questions:', customQuestions ? customQuestions.length : 0);
+      console.log('==== TARGET SURVEY DEBUGGING ====');
+      console.log('Survey ID:', surveyId);
+      console.log('Survey data loaded:', !!surveyData);
+      
+      if (surveyData) {
+        console.log('Survey name:', surveyData.name);
+        console.log('Is preview mode:', isPreview);
+      }
+      
+      console.log('Custom questions array present:', !!customQuestions);
+      console.log('Custom questions length:', customQuestions ? customQuestions.length : 0);
       
       if (customQuestions && customQuestions.length > 0) {
-        console.log('Custom questions details:', JSON.stringify(customQuestions, null, 2));
-      } else {
-        console.error('No custom questions found for this survey');
-      }
-    }
-    
-    if (customQuestions) {
-      console.log('Custom questions available in component:', customQuestions);
-      console.log('Number of custom questions:', customQuestions.length);
-      
-      if (customQuestions.length > 0) {
+        console.log('Custom questions details:');
         customQuestions.forEach((q, i) => {
-          console.log(`Question ${i+1}:`, { 
-            id: q.id, 
-            text: q.text, 
+          console.log(`Question ${i+1}:`, {
+            id: q.id,
+            text: q.text,
             type: q.type,
-            options: q.options 
+            options: q.options
           });
         });
       } else {
-        console.log('No custom questions are available for this survey');
+        console.error('No custom questions found for the target survey');
       }
+      console.log('==== END TARGET SURVEY DEBUGGING ====');
     }
-  }, [surveyId, isPreview, customQuestions, surveyData]);
+  }, [surveyId, surveyData, customQuestions, isPreview]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
