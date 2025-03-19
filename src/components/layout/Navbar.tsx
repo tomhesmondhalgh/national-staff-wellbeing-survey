@@ -4,23 +4,19 @@ import { useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdminRole } from '../../hooks/useAdminRole';
-import { usePermissions } from '../../hooks/usePermissions';
-import OrganizationSwitcher from '../organization/OrganizationSwitcher';
 import NavbarBrand from './NavbarBrand';
 import DesktopNav from './DesktopNav';
 import MobileMenu from './MobileMenu';
+import OrganizationSwitcher from '../organization/OrganizationSwitcher';
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [canManageTeam, setCanManageTeam] = useState(false);
   const location = useLocation();
   const { user, signOut } = useAuth();
   const { isAdmin } = useAdminRole();
-  const { userRole } = usePermissions();
   
   const isAuthenticated = !!user;
-  
   const hideAuthButtons = location.pathname === '/survey' || location.pathname === '/survey-complete';
 
   useEffect(() => {
@@ -31,17 +27,6 @@ const Navbar: React.FC = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  useEffect(() => {
-    if (userRole === 'administrator' || userRole === 'organization_admin') {
-      setCanManageTeam(true);
-    } else {
-      setCanManageTeam(false);
-    }
-    
-    console.log('Current user role in Navbar:', userRole, '- Can manage team:', 
-      (userRole === 'administrator' || userRole === 'organization_admin'));
-  }, [userRole]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -67,7 +52,7 @@ const Navbar: React.FC = () => {
           <DesktopNav 
             isAuthenticated={isAuthenticated}
             hideAuthButtons={hideAuthButtons}
-            canManageTeam={canManageTeam}
+            canManageTeam={isAdmin}
             isAdmin={isAdmin}
             handleSignOut={handleSignOut}
           />
@@ -89,7 +74,7 @@ const Navbar: React.FC = () => {
         isAuthenticated={isAuthenticated}
         hideAuthButtons={hideAuthButtons}
         isAdmin={isAdmin}
-        canManageTeam={canManageTeam}
+        canManageTeam={isAdmin}
         handleSignOut={handleSignOut}
         setIsMenuOpen={setIsMenuOpen}
       />

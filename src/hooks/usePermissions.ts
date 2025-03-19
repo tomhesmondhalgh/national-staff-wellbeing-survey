@@ -3,8 +3,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useSubscription } from "./useSubscription";
 
 /**
- * A simplified permissions hook that replaces the role-based system
- * and just checks if the user is logged in and has an active subscription
+ * A simplified permissions hook that provides basic access control
  */
 export const usePermissions = () => {
   const { user, isLoading: isAuthLoading } = useAuth();
@@ -12,32 +11,30 @@ export const usePermissions = () => {
 
   const isLoading = isAuthLoading || isSubscriptionLoading;
 
-  // Provide a simple role based on subscription status
-  // Default is 'user' for all authenticated users
-  const userRole = subscription?.isActive ? 'subscriber' : 'user';
+  // All authenticated users are considered 'users'
+  // Users with active subscriptions are considered 'subscribers'
+  // A separate useAdminRole hook handles admin status
+  const userRole = user ? (subscription?.isActive ? 'subscriber' : 'user') : '';
 
-  // Check if user can create surveys/content
+  // Check if user can create content
   const canCreate = async () => {
-    // Simply check if user is authenticated - all users can create
     return !!user;
   };
 
   // Check if user can edit content
   const canEdit = async () => {
-    // Simply check if user is authenticated - all users can edit
     return !!user;
   };
 
-  // Check if user has admin access
-  const isAdmin = async () => {
-    if (!user) return false;
-    return false; // Will be determined by the useAdminRole hook
+  // Check if user can view content
+  const canView = async () => {
+    return !!user;
   };
 
   return {
     canCreate,
     canEdit,
-    isAdmin,
+    canView,
     isLoading,
     userRole
   };

@@ -1045,6 +1045,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      user_has_organization_role: {
+        Args: {
+          user_uuid: string
+          org_id: string
+          role_level: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       descriptor_status:

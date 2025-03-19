@@ -1,5 +1,5 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '../lib/supabase';
 
 // Simple cache for authentication
 const authCache: {
@@ -60,28 +60,32 @@ export function clearAuthCache() {
 }
 
 /**
- * Check if current user owns a record by its user_id field
+ * Check if current user is the owner of a resource
  */
-export async function isOwner(recordUserId: string): Promise<boolean> {
-  if (!recordUserId) return false;
-  
+export async function isResourceOwner(resourceId: string): Promise<boolean> {
   try {
-    // Use the is_owner function to check ownership
-    const { data, error } = await supabase.rpc(
-      'is_owner',
-      {
-        record_user_id: recordUserId
-      }
-    );
+    // Get the current user
+    const { data: { user }, error } = await supabase.auth.getUser();
     
-    if (error) {
-      console.error('Error checking ownership:', error);
+    if (error || !user) {
       return false;
     }
     
-    return !!data;
+    // Query for the resource
+    const { data, error: resourceError } = await supabase
+      .from('survey_templates')
+      .select('creator_id')
+      .eq('id', resourceId)
+      .single();
+    
+    if (resourceError || !data) {
+      return false;
+    }
+    
+    // Check if the user is the owner
+    return data.creator_id === user.id;
   } catch (error) {
-    console.error('Unexpected error checking ownership:', error);
+    console.error('Error checking resource ownership:', error);
     return false;
   }
 }
