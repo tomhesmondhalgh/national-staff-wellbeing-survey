@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/card';
-import PageTitle from '../components/ui/PageTitle';
 import { useAdminRole } from '../hooks/useAdminRole';
 import { 
   ensureAllUsersHaveOrgAdminRole, 
@@ -17,7 +16,6 @@ import { Loader2, CheckCircle, XCircle, UserCheck } from 'lucide-react';
 
 export default function UserRoleManager() {
   const { user } = useAuth();
-  const { isAdmin, isLoading: isCheckingAdmin } = useAdminRole();
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
 
@@ -64,31 +62,8 @@ export default function UserRoleManager() {
     }
   };
 
-  if (isCheckingAdmin) {
-    return (
-      <div className="container py-8 flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="container py-8">
-        <Card className="max-w-md mx-auto">
-          <CardHeader>
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>Only administrators can access this page.</CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="container py-8">
-      <PageTitle title="User Role Manager" subtitle="Ensure all users have the correct roles" />
-      
+    <div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
         <Card>
           <CardHeader>
