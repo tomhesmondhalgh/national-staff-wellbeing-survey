@@ -1,6 +1,6 @@
 
 import { User, Provider } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
 // Handle sign in with email and password

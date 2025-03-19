@@ -28,119 +28,41 @@ export async function checkUserRole(userId: string, role: UserRoleType): Promise
     return roleCache[userId].roles[role];
   }
   
-  // Cache miss or expired cache, fetch from database
+  // Cache miss or expired cache, fetch from database using the new function
   try {
-    // Check if role is 'administrator' which is stored in user_roles table
-    if (role === 'administrator') {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .eq('role', 'administrator')
-        .maybeSingle();
-        
-      if (error) {
-        console.error('Error checking administrator role:', error);
-        return false;
+    // Use the has_role_v2 function to check if user has the role
+    const { data, error } = await supabase.rpc(
+      'has_role_v2',
+      {
+        user_uuid: userId,
+        required_role: role
       }
-      
-      const hasRole = !!data;
-      
-      // Initialize or update cache
-      if (!roleCache[userId]) {
-        roleCache[userId] = {
-          roles: {},
-          timestamp: now,
-          expiresAt: now + CACHE_EXPIRY
-        };
-      }
-      
-      // Update role in cache
-      roleCache[userId].roles[role] = hasRole;
-      roleCache[userId].timestamp = now;
-      roleCache[userId].expiresAt = now + CACHE_EXPIRY;
-      
-      return hasRole;
-    } 
-    // For other organizational roles, check appropriate tables
-    else if (['organization_admin', 'group_admin', 'editor', 'viewer'].includes(role)) {
-      // First try the user_has_organization_role function if available
-      try {
-        // Check if the user has the role through direct organization membership
-        const { data: directMembership, error: membershipError } = await supabase
-          .from('organization_members')
-          .select('role')
-          .eq('user_id', userId)
-          .eq('role', role)
-          .maybeSingle();
-          
-        if (membershipError) {
-          console.error('Error checking organization membership:', membershipError);
-        } else if (directMembership) {
-          // User has direct role, update cache and return true
-          if (!roleCache[userId]) {
-            roleCache[userId] = {
-              roles: {},
-              timestamp: now,
-              expiresAt: now + CACHE_EXPIRY
-            };
-          }
-          
-          roleCache[userId].roles[role] = true;
-          roleCache[userId].timestamp = now;
-          roleCache[userId].expiresAt = now + CACHE_EXPIRY;
-          return true;
-        }
-        
-        // Check if user has the role through a group
-        const { data: groupMembership, error: groupError } = await supabase
-          .from('group_members')
-          .select('role')
-          .eq('user_id', userId)
-          .eq('role', role)
-          .maybeSingle();
-          
-        if (groupError) {
-          console.error('Error checking group membership:', groupError);
-        } else if (groupMembership) {
-          // User has group role, update cache and return true
-          if (!roleCache[userId]) {
-            roleCache[userId] = {
-              roles: {},
-              timestamp: now,
-              expiresAt: now + CACHE_EXPIRY
-            };
-          }
-          
-          roleCache[userId].roles[role] = true;
-          roleCache[userId].timestamp = now;
-          roleCache[userId].expiresAt = now + CACHE_EXPIRY;
-          return true;
-        }
-        
-        // Neither direct nor group role found
-        if (!roleCache[userId]) {
-          roleCache[userId] = {
-            roles: {},
-            timestamp: now,
-            expiresAt: now + CACHE_EXPIRY
-          };
-        }
-        
-        roleCache[userId].roles[role] = false;
-        roleCache[userId].timestamp = now;
-        roleCache[userId].expiresAt = now + CACHE_EXPIRY;
-        return false;
-      } catch (error) {
-        console.error('Error in role check:', error);
-        return false;
-      }
+    );
+    
+    if (error) {
+      console.error('Error checking role:', error);
+      return false;
     }
     
-    // Default fallback for unknown roles
-    return false;
+    const hasRole = !!data;
+    
+    // Initialize or update cache
+    if (!roleCache[userId]) {
+      roleCache[userId] = {
+        roles: {},
+        timestamp: now,
+        expiresAt: now + CACHE_EXPIRY
+      };
+    }
+    
+    // Update role in cache
+    roleCache[userId].roles[role] = hasRole;
+    roleCache[userId].timestamp = now;
+    roleCache[userId].expiresAt = now + CACHE_EXPIRY;
+    
+    return hasRole;
   } catch (error) {
-    console.error('Unexpected error in role check:', error);
+    console.error('Error in role check:', error);
     return false;
   }
 }
@@ -165,9 +87,10 @@ export async function getUserRoles(userId: string): Promise<UserRoleType[]> {
   if (!userId) return [];
   
   try {
+    // Get user roles using the new get_user_role_v2 function and join with roles table
     const { data, error } = await supabase
       .from('user_roles')
-      .select('role')
+      .select('role_id, roles(name)')
       .eq('user_id', userId);
     
     if (error) {
@@ -175,7 +98,9 @@ export async function getUserRoles(userId: string): Promise<UserRoleType[]> {
       return [];
     }
     
-    return data.map(r => r.role as UserRoleType);
+    return data
+      .filter(item => item.roles && item.roles.name)
+      .map(item => item.roles.name as UserRoleType);
   } catch (error) {
     console.error('Unexpected error fetching roles:', error);
     return [];

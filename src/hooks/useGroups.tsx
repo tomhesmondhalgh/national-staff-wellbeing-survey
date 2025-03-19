@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase/client';
 import { useAuth } from '../contexts/AuthContext';
 import { Group } from '../lib/supabase/client';
 
@@ -32,13 +32,45 @@ export const useGroups = () => {
           throw groupError;
         }
         
-        const userGroups: Group[] = (data || []).map(item => ({
-          id: item.group_id,
-          name: item.groups?.name || 'Unknown',
-          description: item.groups?.description,
-          created_at: item.groups?.created_at || new Date().toISOString(),
-          updated_at: item.groups?.updated_at || new Date().toISOString()
-        }));
+        // Debug the structure to better understand what we're working with
+        if (data && data.length > 0) {
+          console.log('Sample group item structure:', data[0]);
+        }
+        
+        const userGroups: Group[] = (data || []).map(item => {
+          // Get the group data from the groups property
+          const groupData = item.groups || {};
+          
+          // Explicitly cast each property to the required type with fallbacks
+          const name: string = 
+            typeof groupData === 'object' && 'name' in groupData && typeof groupData.name === 'string' 
+              ? groupData.name 
+              : 'Unknown';
+              
+          const description: string | undefined = 
+            typeof groupData === 'object' && 'description' in groupData && typeof groupData.description === 'string'
+              ? groupData.description 
+              : undefined;
+              
+          const created_at: string = 
+            typeof groupData === 'object' && 'created_at' in groupData && typeof groupData.created_at === 'string'
+              ? groupData.created_at 
+              : new Date().toISOString();
+              
+          const updated_at: string | undefined = 
+            typeof groupData === 'object' && 'updated_at' in groupData && typeof groupData.updated_at === 'string'
+              ? groupData.updated_at 
+              : undefined;
+          
+          // Return a properly typed Group object
+          return {
+            id: item.group_id,
+            name,
+            description,
+            created_at,
+            updated_at
+          };
+        });
         
         setGroups(userGroups);
       } catch (err) {
