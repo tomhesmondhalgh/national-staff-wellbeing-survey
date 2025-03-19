@@ -65,7 +65,7 @@ const CustomQuestionsSection: React.FC<CustomQuestionsSectionProps> = ({
           if (!question || !question.id) {
             console.error('Invalid question object:', question);
             return (
-              <Alert key={Math.random().toString()} variant="warning">
+              <Alert key={Math.random().toString()} variant="default">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Invalid Question Format</AlertTitle>
                 <AlertDescription>
