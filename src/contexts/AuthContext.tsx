@@ -1,17 +1,24 @@
+
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
 import { clearRoleCache } from '@/services/authService';
 import { ensureCurrentUserHasOrgAdminRole } from '../utils/auth/ensureUserRoles';
+import { useAuthState } from '@/hooks/useAuthState';
 
 type AuthContextType = {
   session: Session | null;
   user: User | null;
   isLoading: boolean;
+  isAuthenticated: boolean;
+  authCheckComplete: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error: any }>;
+  signIn: (email: string, password: string) => Promise<{ success: boolean; error: any }>;
   logout: () => Promise<void>;
-  signUp: (email: string, password: string, metadata?: any) => Promise<{ success: boolean; error: any }>;
+  signOut: () => Promise<void>;
+  signUp: (email: string, password: string, metadata?: any) => Promise<{ success: boolean; error: any; user?: User }>;
   updateUser: (attributes: any) => Promise<{ data: any; error: any }>;
+  completeUserProfile: (userData: any) => Promise<{ success: boolean; error: any }>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,40 +32,8 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const loadSession = async () => {
-      setIsLoading(true);
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-
-        setSession(session);
-        setUser(session?.user || null);
-      } catch (error) {
-        console.error("Error loading session:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadSession();
-
-    // Listen for changes on auth state (login, signout, etc.)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user || null);
-      }
-    );
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
+  const { user, session, isLoading, isAuthenticated, authCheckComplete } = useAuthState();
+  
   // Log in user
   const login = async (email: string, password: string) => {
     setIsLoading(true);
@@ -72,10 +47,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
-      // Set the session and user
-      setSession(data.session);
-      setUser(data.user);
-      
       // Ensure the user has the organization_admin role
       await ensureCurrentUserHasOrgAdminRole();
       
@@ -86,6 +57,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     }
   };
+
+  // Alias for login to maintain compatibility
+  const signIn = login;
 
   // Sign up user
   const signUp = async (email: string, password: string, metadata?: any) => {
@@ -103,9 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
-      setSession(data.session);
-      setUser(data.user);
-      return { success: true, error: null };
+      return { success: true, error: null, user: data.user };
     } catch (error: any) {
       return { success: false, error };
     } finally {
@@ -121,9 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) {
         throw error;
       }
-      // Clear the session and user
-      setSession(null);
-      setUser(null);
+      // Clear role cache
       clearRoleCache();
     } catch (error: any) {
       console.error("Error logging out:", error);
@@ -132,19 +102,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-   // Update user attributes
-   const updateUser = async (attributes: any) => {
+  // Alias for logout to maintain compatibility
+  const signOut = logout;
+
+  // Update user attributes
+  const updateUser = async (attributes: any) => {
     try {
       const { data, error } = await supabase.auth.updateUser(attributes);
       if (error) {
         console.error("Error updating user:", error);
         return { data: null, error };
       }
-      setUser(data.user);
       return { data, error: null };
     } catch (error: any) {
       console.error("Error updating user:", error);
       return { data: null, error };
+    }
+  };
+
+  // Complete user profile - used during signup flow
+  const completeUserProfile = async (userData: any) => {
+    try {
+      const { error } = await updateUser({
+        data: {
+          first_name: userData.firstName,
+          last_name: userData.lastName,
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      return { success: true, error: null };
+    } catch (error) {
+      console.error("Error completing user profile:", error);
+      return { success: false, error };
     }
   };
 
@@ -154,10 +147,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         session,
         user,
         isLoading,
+        isAuthenticated,
+        authCheckComplete,
         login,
+        signIn,
         logout,
+        signOut,
         signUp,
         updateUser,
+        completeUserProfile,
       }}
     >
       {children}

@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase/client';
+import { supabase } from '../integrations/supabase/client';
 import { useLocation } from 'react-router-dom';
 
 export function useAuthState() {
@@ -30,9 +30,9 @@ export function useAuthState() {
       if (!mounted) return;
       
       console.log('Setting auth state with session:', currentSession ? 'exists' : 'null');
-      console.log('Session user has email:', currentSession?.user?.email ? 'Yes' : 'No');
       
       if (currentSession) {
+        console.log('Session user has email:', currentSession?.user?.email ? 'Yes' : 'No');
         console.log('Session expires at:', 
           currentSession.expires_at ? new Date(currentSession.expires_at * 1000).toISOString() : 'No expiry');
       }
@@ -102,7 +102,7 @@ export function useAuthState() {
     };
   }, []);
 
-  // Return loading state until auth check is complete
+  // Return auth state
   return { 
     user, 
     session, 

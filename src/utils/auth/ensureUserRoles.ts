@@ -2,12 +2,18 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+// Define return type for the ensureUserHasOrgAdminRole function
+type EnsureUserRoleResult = 
+  | { success: true; roleAdded: boolean; membershipAdded: boolean }
+  | { success: true; noUser: true }
+  | { success: false; error: any };
+
 /**
  * Ensures that a user has the organization_admin role
  * If they don't have a role, it adds the organization_admin role
  * Also ensures they have an organization_members record
  */
-export async function ensureUserHasOrgAdminRole(userId: string) {
+export async function ensureUserHasOrgAdminRole(userId: string): Promise<EnsureUserRoleResult> {
   try {
     // First check if the user already has any role in the user_roles table
     const { data: existingRoles, error: rolesError } = await supabase
@@ -62,7 +68,7 @@ export async function ensureUserHasOrgAdminRole(userId: string) {
       
     if (membershipCheckError) {
       console.error('Error checking existing membership:', membershipCheckError);
-      return { success: roleAdded, error: membershipCheckError };
+      return { success: false, error: membershipCheckError };
     }
     
     let membershipAdded = false;
@@ -80,7 +86,7 @@ export async function ensureUserHasOrgAdminRole(userId: string) {
         
       if (membershipError) {
         console.error('Error creating organization membership:', membershipError);
-        return { success: roleAdded, error: membershipError };
+        return { success: false, error: membershipError };
       }
       
       membershipAdded = true;
@@ -128,7 +134,7 @@ export async function ensureAllUsersHaveOrgAdminRole() {
     for (const user of users.users) {
       const result = await ensureUserHasOrgAdminRole(user.id);
       
-      if (result.success) {
+      if (result.success && 'roleAdded' in result) {
         if (result.roleAdded) stats.rolesAdded++;
         if (result.membershipAdded) stats.membershipsAdded++;
       } else {
@@ -151,7 +157,7 @@ export async function ensureAllUsersHaveOrgAdminRole() {
  * Function to be called on application startup to ensure the current user
  * has the organization_admin role
  */
-export async function ensureCurrentUserHasOrgAdminRole() {
+export async function ensureCurrentUserHasOrgAdminRole(): Promise<EnsureUserRoleResult> {
   try {
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     
