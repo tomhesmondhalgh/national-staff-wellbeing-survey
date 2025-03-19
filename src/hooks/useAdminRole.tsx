@@ -1,7 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useTestingMode } from '../contexts/TestingModeContext';
 
 // Create a simple in-memory cache to store admin status
 // This is shared across all instances of the hook
@@ -18,7 +17,6 @@ export function useAdminRole() {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
-  const { isTestingMode, testingRole } = useTestingMode();
 
   // Clear cache for a specific user
   const clearCache = useCallback((userId: string) => {
@@ -36,14 +34,6 @@ export function useAdminRole() {
     }
 
     try {
-      // First check testing mode - this takes precedence over database role
-      if (isTestingMode && testingRole) {
-        const isAdminInTestMode = testingRole === 'administrator';
-        setIsAdmin(isAdminInTestMode);
-        setIsLoading(false);
-        return;
-      }
-      
       // Check cache if not in testing mode
       const now = Date.now();
       const cachedData = adminStatusCache[user.id];
@@ -80,11 +70,11 @@ export function useAdminRole() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, isTestingMode, testingRole]);
+  }, [user]);
 
   useEffect(() => {
     checkAdminRole();
-  }, [user, isTestingMode, testingRole, checkAdminRole]);
+  }, [user, checkAdminRole]);
 
   // Expose method to force refresh the admin status
   const refreshAdminStatus = useCallback(() => {

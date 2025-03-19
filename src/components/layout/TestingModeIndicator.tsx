@@ -3,7 +3,7 @@ import React from 'react';
 import { useTestingMode } from '@/contexts/TestingModeContext';
 
 const TestingModeIndicator = () => {
-  const { isTestingMode, testingPlan, testingRole, disableTestingMode } = useTestingMode();
+  const { isTestingMode, testingPlan, disableTestingMode } = useTestingMode();
 
   if (!isTestingMode) return null;
 
@@ -21,7 +21,6 @@ const TestingModeIndicator = () => {
           <p className="text-sm font-medium text-yellow-800">Testing Mode Active</p>
           <div className="mt-1 text-xs text-yellow-700 space-y-0.5">
             {testingPlan && <p>Plan: <span className="font-medium capitalize">{testingPlan}</span></p>}
-            {testingRole && <p>Role: <span className="font-medium capitalize">{testingRole.replace('_', ' ')}</span></p>}
           </div>
           <button 
             onClick={disableTestingMode}

@@ -12,11 +12,11 @@ import { useTestingMode } from '../contexts/TestingModeContext';
 
 const Admin = () => {
   const { isAdmin, isLoading } = useAdminRole();
-  const { isTestingMode, testingRole } = useTestingMode();
+  const { isTestingMode } = useTestingMode();
   const [activeTab, setActiveTab] = useState('purchases');
   
-  // Determine if user has admin access either through database role or testing mode
-  const hasAdminAccess = isAdmin || (isTestingMode && testingRole === 'administrator');
+  // Determine if user has admin access
+  const hasAdminAccess = isAdmin;
   
   // Loading state
   if (isLoading) {

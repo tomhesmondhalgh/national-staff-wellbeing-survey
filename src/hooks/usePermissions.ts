@@ -13,7 +13,6 @@ export const usePermissions = () => {
 
   // All authenticated users are considered 'users'
   // Users with active subscriptions are considered 'subscribers'
-  // A separate useAdminRole hook handles admin status
   const userRole = user ? (subscription?.isActive ? 'subscriber' : 'user') : '';
 
   // Check if user can create content
