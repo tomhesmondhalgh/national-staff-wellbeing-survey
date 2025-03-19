@@ -8,14 +8,14 @@ import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 
 // Add a constant to identify which login component is being used
-const LOGIN_VERSION = 'main_login_component_v1';
+const LOGIN_VERSION = 'main_login_component_v2';
 
 const Login = () => {
   console.log(`Rendering Login component (${LOGIN_VERSION})`);
   const navigate = useNavigate();
   const location = useLocation();
-  const { signIn, user } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
+  const { signIn, user, isAuthenticated, isLoading } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Log environment info to help with debugging
   useEffect(() => {
@@ -23,7 +23,9 @@ const Login = () => {
     console.log('- Current URL:', window.location.href);
     console.log('- Environment:', import.meta.env.MODE);
     console.log('- Route location:', location);
-  }, [location]);
+    console.log('- Auth state:', isAuthenticated ? 'authenticated' : 'not authenticated');
+    console.log('- Auth loading:', isLoading);
+  }, [location, isAuthenticated, isLoading]);
 
   // Extract returnTo path from URL if present
   const getReturnPath = () => {
@@ -44,12 +46,12 @@ const Login = () => {
 
   // Redirect authenticated users
   useEffect(() => {
-    if (user) {
+    if (isAuthenticated && !isLoading) {
       const redirectPath = getReturnPath();
       console.log(`User authenticated, redirecting to: ${redirectPath}`);
       navigate(redirectPath);
     }
-  }, [user, navigate, location.search]);
+  }, [isAuthenticated, isLoading, navigate, location.search]);
 
   // Check for email confirmation success, password reset, or password reset success in the URL
   useEffect(() => {
@@ -76,16 +78,15 @@ const Login = () => {
 
   const handleSubmit = async (data: any) => {
     console.log('Login form submitted with:', data.email);
-    setIsLoading(true);
+    setIsSubmitting(true);
     
     try {
       const { error, success } = await signIn(data.email, data.password);
       
       if (success) {
-        // Redirect to the return path or dashboard after successful login
-        const redirectPath = getReturnPath();
-        console.log(`Login successful, redirecting to: ${redirectPath}`);
-        navigate(redirectPath);
+        // Toast is shown in AuthContext after successful login
+        console.log('Login successful, waiting for auth state to update');
+        // The redirect will happen automatically via the useEffect above
       } else if (error) {
         console.error('Login error:', error);
         toast.error('Failed to log in', {
@@ -98,7 +99,7 @@ const Login = () => {
         description: 'Please try again later.'
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -116,7 +117,7 @@ const Login = () => {
         <AuthForm 
           mode="login" 
           onSubmit={handleSubmit} 
-          isLoading={isLoading} 
+          isLoading={isSubmitting || isLoading} 
         />
       </div>
     </MainLayout>
