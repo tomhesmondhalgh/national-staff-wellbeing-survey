@@ -5,7 +5,7 @@ import { useSurveyData } from '../hooks/useSurveyData';
 import { useSurveyForm } from '../hooks/useSurveyForm';
 import SurveyLoading from '../components/survey-form/SurveyLoading';
 import SurveyNotFound from '../components/survey-form/SurveyNotFound';
-import SurveyFormContainer from '../components/survey-form/SurveyFormContainer';
+import SurveyFormWrapper from '../components/survey-form/SurveyFormWrapper';
 
 const PublicSurveyForm: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -41,7 +41,7 @@ const PublicSurveyForm: React.FC = () => {
   }
   
   return (
-    <SurveyFormContainer
+    <SurveyFormWrapper
       surveyTemplate={surveyData}
       formData={formData}
       customQuestions={customQuestions}
