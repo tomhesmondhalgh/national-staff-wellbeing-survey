@@ -35,37 +35,9 @@ export async function completeUserProfile(userId: string, userData: any) {
       throw profileError;
     }
     
-    // Add the user as an organization owner/admin of their own profile
-    // First check if the user already has an organization membership
-    const { data: existingMembership, error: membershipCheckError } = await supabase
-      .from('organization_members')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('organization_id', userId);
-      
-    if (membershipCheckError) {
-      console.error('Error checking existing membership:', membershipCheckError);
-    }
+    // In the simplified model, we no longer need to create organization memberships
+    // The membership check and creation code has been removed
     
-    // If no existing membership, create one with the user as their own organization admin
-    if (!existingMembership || existingMembership.length === 0) {
-      const { error: membershipError } = await supabase
-        .from('organization_members')
-        .insert({
-          user_id: userId,
-          organization_id: userId,
-          role: 'organization_admin',
-          is_primary: true
-        });
-        
-      if (membershipError) {
-        console.error('Error creating organization membership:', membershipError);
-        // Don't fail the profile completion if organization setup fails
-      } else {
-        console.log('Created organization membership with admin role');
-      }
-    }
-
     // Send welcome email to the user
     try {
       await supabase.functions.invoke('send-welcome-email', {
