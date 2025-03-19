@@ -7,7 +7,7 @@ import { Button } from '../ui/button';
 import SurveyFormInputs from './SurveyFormInputs';
 import { Form } from '../ui/form';
 import SurveyLink from './SurveyLink';
-import { InfoIcon } from 'lucide-react';
+import { InfoIcon, Save, Play, Send } from 'lucide-react';
 import { 
   Tooltip,
   TooltipContent,
@@ -111,35 +111,68 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
             onChange={setSelectedCustomQuestionIds}
           />
           
-          <div className="mt-8 flex flex-wrap gap-4 justify-end">
-            <Button 
-              type="submit" 
-              variant="outline"
-              className="px-8" 
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Saving...' : submitButtonText}
-            </Button>
+          <div className="mt-8 flex flex-wrap gap-4 sm:flex-row flex-col">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    type="submit" 
+                    variant="outline"
+                    className="flex-1 sm:flex-none sm:order-1" 
+                    disabled={isSubmitting}
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    {isSubmitting ? 'Saving...' : submitButtonText}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p>Save survey without sending it</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             
-            <Button 
-              type="button" 
-              variant="outline" 
-              className="px-6" 
-              onClick={handlePreviewClick}
-              disabled={isSubmitting}
-            >
-              Save and Preview
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    type="button" 
+                    variant="secondary" 
+                    className="flex-1 sm:flex-none sm:order-2" 
+                    onClick={handlePreviewClick}
+                    disabled={isSubmitting}
+                  >
+                    <Play className="mr-2 h-4 w-4" />
+                    Preview Survey
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p>See how the survey will look to recipients</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             
-            <Button 
-              type="button" 
-              variant="default" 
-              className="px-6" 
-              onClick={handleSendSurvey}
-              disabled={isSubmitting}
-            >
-              Save and Send
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    type="button" 
+                    variant="default" 
+                    className="flex-1 sm:flex-none sm:order-3 bg-brandPurple-500 hover:bg-brandPurple-600" 
+                    onClick={handleSendSurvey}
+                    disabled={isSubmitting}
+                  >
+                    <Send className="mr-2 h-4 w-4" />
+                    {isSubmitting ? 'Processing...' : 'Send Survey'}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p>{form.watch("distributionMethod") === "email" ? 
+                    "Send email invitations to recipients" : 
+                    "Generate shareable link and mark as sent"}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </form>
       </Form>
