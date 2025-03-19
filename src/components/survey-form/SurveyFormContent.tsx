@@ -49,7 +49,6 @@ const SurveyFormContent: React.FC<SurveyFormContentProps> = ({
         handleInputChange={handleInputChange} 
       />
       
-      {/* Custom questions section */}
       <CustomQuestionsSection 
         questions={questions}
         responses={responses}

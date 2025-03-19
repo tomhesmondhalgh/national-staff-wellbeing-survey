@@ -101,6 +101,6 @@ const CustomQuestionsSection: React.FC<CustomQuestionsSectionProps> = ({
       </div>
     </div>
   );
-};
+}
 
 export default CustomQuestionsSection;
