@@ -76,13 +76,13 @@ export async function ensureUserHasOrgAdminRole(userId: string): Promise<EnsureU
       console.log('Successfully assigned organization_admin role to user');
     }
     
-    // Now check if the user has an organization membership record, but using a direct query to avoid RLS recursion
+    // Now check if the user has an organization membership record
+    // Use a simple count query that returns the count as a number
     const { data: membershipData, error: membershipCountError } = await supabase
       .from('organization_members')
-      .select('count')
+      .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
-      .eq('organization_id', userId)
-      .count();
+      .eq('organization_id', userId);
     
     if (membershipCountError) {
       console.error('Error checking existing membership count:', membershipCountError);
@@ -90,7 +90,8 @@ export async function ensureUserHasOrgAdminRole(userId: string): Promise<EnsureU
     }
     
     let membershipAdded = false;
-    const count = membershipData?.count || 0;
+    // The count is returned in the count property of the query result
+    const count = membershipData?.length || 0;
     
     // If no existing membership (count is 0), create one with the user as their own organization admin
     if (count === 0) {
