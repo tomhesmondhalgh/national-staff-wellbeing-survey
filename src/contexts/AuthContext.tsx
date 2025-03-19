@@ -16,6 +16,7 @@ interface AuthContextType {
   session: Session | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  authCheckComplete: boolean;  // Added this property
   signIn: (email: string, password: string) => Promise<{
     error: Error | null;
     success: boolean;
@@ -115,6 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         session,
         isLoading,
         isAuthenticated,
+        authCheckComplete, // Added this property to the context value
         signIn,
         signUp,
         signOut,
