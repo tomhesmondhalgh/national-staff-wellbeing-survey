@@ -1,8 +1,15 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase/client';
 import { useAuth } from '../contexts/AuthContext';
-import { Group } from '../lib/supabase/client';
+
+// Define the Group interface to fix the error
+export interface Group {
+  id: string;
+  name: string;
+  description?: string;
+  created_at: string;
+  updated_at?: string;
+}
 
 export const useGroups = () => {
   const { user } = useAuth();

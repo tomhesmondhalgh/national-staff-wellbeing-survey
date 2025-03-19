@@ -33,14 +33,14 @@ const Navbar: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (userRole === 'administrator' || userRole === 'group_admin' || userRole === 'organization_admin') {
+    if (userRole === 'administrator' || userRole === 'organization_admin') {
       setCanManageTeam(true);
     } else {
       setCanManageTeam(false);
     }
     
     console.log('Current user role in Navbar:', userRole, '- Can manage team:', 
-      (userRole === 'administrator' || userRole === 'group_admin' || userRole === 'organization_admin'));
+      (userRole === 'administrator' || userRole === 'organization_admin'));
   }, [userRole]);
 
   const handleSignOut = async () => {

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import PageTitle from '../components/ui/PageTitle';
@@ -49,11 +48,10 @@ const Team = () => {
   }, [isSubscriptionLoading, isProgress, isPremium, isTestingMode, testingPlan]);
   
   // Determine if the user can see the Organisations tab
-  // Only group_admin and administrator roles can see the Organisations tab
+  // Only administrators can see the Organisations tab in our simplified model
   const canSeeOrganizationsTab = 
-    userRole === 'group_admin' || 
     userRole === 'administrator' ||
-    (isTestingMode && (testingRole === 'group_admin' || testingRole === 'administrator'));
+    (isTestingMode && testingRole === 'administrator');
 
   // Helper function to enable admin testing mode
   const enableAdminTestMode = () => {
@@ -75,9 +73,8 @@ const Team = () => {
     // Simplified role check
     const checkAdmin = () => {
       if (userRole === 'administrator' || 
-          userRole === 'group_admin' || 
           userRole === 'organization_admin' ||
-          (isTestingMode && ['administrator', 'group_admin', 'organization_admin'].includes(testingRole || ''))) {
+          (isTestingMode && ['administrator', 'organization_admin'].includes(testingRole || ''))) {
         console.log('User has admin access to team page');
         setIsAdmin(true);
       } else {

@@ -20,13 +20,12 @@ const OrganizationSwitcher: React.FC = () => {
   const [canSwitchOrganizations, setCanSwitchOrganizations] = useState(false);
   
   useEffect(() => {
-    // Check if user has group admin permissions (either real or in testing mode)
-    const isGroupAdmin = 
-      userRole === 'group_admin' || 
-      userRole === 'administrator' ||
-      (isTestingMode && (testingRole === 'group_admin' || testingRole === 'administrator'));
+    // Check if user has admin permissions (either real or in testing mode)
+    const isAdmin = 
+      userRole === 'administrator' || 
+      (isTestingMode && testingRole === 'administrator');
       
-    setCanSwitchOrganizations(isGroupAdmin);
+    setCanSwitchOrganizations(isAdmin);
   }, [userRole, isTestingMode, testingRole]);
   
   // Don't render anything if user can't switch organizations
