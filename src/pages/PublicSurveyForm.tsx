@@ -241,16 +241,7 @@ const PublicSurveyForm: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-b from-white to-purple-50">
       <div className="container mx-auto px-4 py-8 max-w-3xl">
         <div className="bg-white shadow-md rounded-lg p-6 md:p-8 border border-purple-100">
-          <div className="mb-8 text-center">
-            <img 
-              src="/lovable-uploads/895356bb-776b-4070-8a89-a6e33e70cee6.png" 
-              alt="Our Human Kind Logo" 
-              className="mx-auto max-h-20 mb-4"
-            />
-            <h1 className="text-2xl font-bold text-brandPurple-600 mb-2">Staff Wellbeing Survey</h1>
-            <h2 className="text-lg text-gray-600">{surveyData.name}</h2>
-          </div>
-          
+          {/* Logo and title moved to SurveyIntro component */}
           <SurveyIntro surveyTemplate={surveyData} />
           
           <form onSubmit={handleSubmit} className="mt-8 space-y-8">
