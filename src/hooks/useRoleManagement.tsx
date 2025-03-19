@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTestingMode } from '../contexts/TestingModeContext';
 import { useOrganization } from '../contexts/OrganizationContext';
-import { supabase } from '@/lib/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { UserRoleType } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 
