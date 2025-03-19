@@ -7,11 +7,23 @@ import PageTitle from '../components/ui/PageTitle';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 
+// Add a constant to identify which login component is being used
+const LOGIN_VERSION = 'main_login_component_v1';
+
 const Login = () => {
+  console.log(`Rendering Login component (${LOGIN_VERSION})`);
   const navigate = useNavigate();
   const location = useLocation();
   const { signIn, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+
+  // Log environment info to help with debugging
+  useEffect(() => {
+    console.log('Login component mounted with:');
+    console.log('- Current URL:', window.location.href);
+    console.log('- Environment:', import.meta.env.MODE);
+    console.log('- Route location:', location);
+  }, [location]);
 
   // Extract returnTo path from URL if present
   const getReturnPath = () => {
@@ -33,7 +45,9 @@ const Login = () => {
   // Redirect authenticated users
   useEffect(() => {
     if (user) {
-      navigate(getReturnPath());
+      const redirectPath = getReturnPath();
+      console.log(`User authenticated, redirecting to: ${redirectPath}`);
+      navigate(redirectPath);
     }
   }, [user, navigate, location.search]);
 
@@ -61,6 +75,7 @@ const Login = () => {
   }, [location]);
 
   const handleSubmit = async (data: any) => {
+    console.log('Login form submitted with:', data.email);
     setIsLoading(true);
     
     try {
@@ -68,8 +83,11 @@ const Login = () => {
       
       if (success) {
         // Redirect to the return path or dashboard after successful login
-        navigate(getReturnPath());
+        const redirectPath = getReturnPath();
+        console.log(`Login successful, redirecting to: ${redirectPath}`);
+        navigate(redirectPath);
       } else if (error) {
+        console.error('Login error:', error);
         toast.error('Failed to log in', {
           description: error.message || 'Please check your credentials and try again.'
         });
@@ -95,7 +113,11 @@ const Login = () => {
           }
           alignment="center"
         />
-        <AuthForm mode="login" onSubmit={handleSubmit} isLoading={isLoading} />
+        <AuthForm 
+          mode="login" 
+          onSubmit={handleSubmit} 
+          isLoading={isLoading} 
+        />
       </div>
     </MainLayout>
   );

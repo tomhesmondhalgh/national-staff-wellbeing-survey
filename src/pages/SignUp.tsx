@@ -9,13 +9,25 @@ import { toast } from 'sonner';
 import { supabase } from '../lib/supabase/client';
 import { SignUpFormData } from '../types/auth';
 
+// Add a constant to identify which signup component is being used
+const SIGNUP_VERSION = 'main_signup_component_v1';
+
 const SignUp = () => {
+  console.log(`Rendering SignUp component (${SIGNUP_VERSION})`);
   const navigate = useNavigate();
   const location = useLocation();
   const { signUp, completeUserProfile } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [invitationToken, setInvitationToken] = useState<string | null>(null);
   const [invitation, setInvitation] = useState<any>(null);
+
+  // Log environment info to help with debugging
+  useEffect(() => {
+    console.log('SignUp component mounted with:');
+    console.log('- Current URL:', window.location.href);
+    console.log('- Environment:', import.meta.env.MODE);
+    console.log('- Route location:', location);
+  }, [location]);
 
   // Extract invitation token from URL if present
   useEffect(() => {
@@ -40,7 +52,10 @@ const SignUp = () => {
         .single();
 
       if (error) throw error;
-      if (data) setInvitation(data);
+      if (data) {
+        console.log('Invitation details fetched:', data);
+        setInvitation(data);
+      }
     } catch (err) {
       console.error('Error fetching invitation:', err);
     }
@@ -79,9 +94,11 @@ const SignUp = () => {
       
       // If this was an invitation signup, navigate back to the invitation accept page
       if (invitationToken) {
+        console.log(`Signup successful, redirecting to invitation accept with token: ${invitationToken}`);
         navigate(`/invitation/accept?token=${invitationToken}`);
       } else {
         // Direct signup flow - navigate to dashboard
+        console.log('Signup successful, redirecting to dashboard');
         toast.success('Account created successfully!', {
           description: 'Welcome to the platform. You can now log in.'
         });
