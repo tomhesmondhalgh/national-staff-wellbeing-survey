@@ -87,13 +87,15 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
     }
   };
 
-  const handlePreviewClick = () => {
+  const handlePreviewClick = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent form submission
     if (!onPreviewSurvey) return;
     const data = form.getValues();
     onPreviewSurvey(data, selectedCustomQuestionIds || []);
   };
   
-  const handleSendSurvey = () => {
+  const handleSendSurvey = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent form submission
     if (!onSendSurvey) return;
     const data = form.getValues();
     onSendSurvey(data, selectedCustomQuestionIds || []);

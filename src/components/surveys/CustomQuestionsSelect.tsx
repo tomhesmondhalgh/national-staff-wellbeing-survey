@@ -21,7 +21,13 @@ const CustomQuestionsSelect: React.FC<CustomQuestionsSelectProps> = ({
   
   const hasAccess = isPremium || isProgress || isFoundation;
   
-  const openModal = () => setIsModalOpen(true);
+  const openModal = (e: React.MouseEvent) => {
+    // Prevent the event from propagating to parent elements (like the form)
+    e.preventDefault();
+    e.stopPropagation();
+    setIsModalOpen(true);
+  };
+  
   const closeModal = () => setIsModalOpen(false);
   
   if (!hasAccess) {
@@ -54,6 +60,7 @@ const CustomQuestionsSelect: React.FC<CustomQuestionsSelectProps> = ({
         <Button 
           onClick={openModal}
           className="flex items-center gap-2"
+          type="button" // Explicitly set button type to prevent form submission
         >
           <PlusCircle size={16} />
           {selectedQuestionIds.length > 0 ? 'Edit Selection' : 'Add Questions'}
@@ -78,6 +85,7 @@ const CustomQuestionsSelect: React.FC<CustomQuestionsSelectProps> = ({
             size="sm" 
             onClick={openModal}
             className="flex items-center gap-2 mx-auto"
+            type="button" // Explicitly set button type to prevent form submission
           >
             <PlusCircle size={16} />
             Select Questions

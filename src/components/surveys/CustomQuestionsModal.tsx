@@ -35,7 +35,11 @@ const CustomQuestionsModal: React.FC<CustomQuestionsModalProps> = ({
     .filter(q => q.text.toLowerCase().includes(searchTerm.toLowerCase()));
   
   // Handle question selection
-  const toggleQuestion = (questionId: string) => {
+  const toggleQuestion = (questionId: string, e: React.MouseEvent) => {
+    // Prevent any possible propagation to parent forms
+    e.preventDefault();
+    e.stopPropagation();
+    
     const newSelected = selectedIds.includes(questionId)
       ? selectedIds.filter(id => id !== questionId)
       : [...selectedIds, questionId];
@@ -49,12 +53,14 @@ const CustomQuestionsModal: React.FC<CustomQuestionsModalProps> = ({
   };
   
   // Clear search
-  const clearSearch = () => {
+  const clearSearch = (e: React.MouseEvent) => {
+    e.preventDefault();
     setSearchTerm('');
   };
   
   // Handle refresh
-  const handleRefresh = async () => {
+  const handleRefresh = async (e: React.MouseEvent) => {
+    e.preventDefault();
     try {
       setRefreshing(true);
       await refreshQuestions();
@@ -67,6 +73,13 @@ const CustomQuestionsModal: React.FC<CustomQuestionsModalProps> = ({
     }
   };
   
+  // Navigate to create new question page
+  const handleCreateNew = (e: React.MouseEvent) => {
+    e.preventDefault();
+    onClose(); // Close the modal first
+    navigate('/custom-questions');
+  };
+  
   // Effect to refresh questions when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -74,11 +87,16 @@ const CustomQuestionsModal: React.FC<CustomQuestionsModalProps> = ({
         console.error("Error refreshing questions on open:", err);
       });
     }
-  }, [isOpen]);
+  }, [isOpen, refreshQuestions]);
+
+  const handleConfirm = (e: React.MouseEvent) => {
+    e.preventDefault();
+    onClose();
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
         <DialogHeader>
           <DialogTitle>Select Custom Questions</DialogTitle>
         </DialogHeader>
@@ -96,6 +114,7 @@ const CustomQuestionsModal: React.FC<CustomQuestionsModalProps> = ({
               <button 
                 onClick={clearSearch}
                 className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                type="button"
               >
                 <X size={16} />
               </button>
@@ -107,6 +126,7 @@ const CustomQuestionsModal: React.FC<CustomQuestionsModalProps> = ({
             size="sm"
             onClick={handleRefresh}
             disabled={refreshing || isLoading}
+            type="button"
           >
             <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
           </Button>
@@ -120,9 +140,10 @@ const CustomQuestionsModal: React.FC<CustomQuestionsModalProps> = ({
           <div className="py-12 text-center">
             <p className="text-gray-500 mb-4">No matching questions found</p>
             <Button 
-              onClick={() => navigate('/custom-questions')}
+              onClick={handleCreateNew}
               variant="outline"
               className="flex items-center gap-2 mx-auto"
+              type="button"
             >
               <Plus size={16} />
               Create a New Question
@@ -136,7 +157,7 @@ const CustomQuestionsModal: React.FC<CustomQuestionsModalProps> = ({
                   key={question.id}
                   question={question}
                   isSelected={selectedIds.includes(question.id)}
-                  onToggle={() => toggleQuestion(question.id)}
+                  onToggle={(e) => toggleQuestion(question.id, e)}
                 />
               ))}
             </div>
@@ -148,10 +169,10 @@ const CustomQuestionsModal: React.FC<CustomQuestionsModalProps> = ({
             {selectedIds.length} questions selected
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>
+            <Button variant="outline" onClick={onClose} type="button">
               Cancel
             </Button>
-            <Button onClick={onClose} className="flex items-center gap-2">
+            <Button onClick={handleConfirm} className="flex items-center gap-2" type="button">
               <Check size={16} />
               Confirm Selection
             </Button>
@@ -165,7 +186,7 @@ const CustomQuestionsModal: React.FC<CustomQuestionsModalProps> = ({
 interface QuestionCardProps {
   question: CustomQuestion;
   isSelected: boolean;
-  onToggle: () => void;
+  onToggle: (e: React.MouseEvent) => void;
 }
 
 const QuestionCard: React.FC<QuestionCardProps> = ({ question, isSelected, onToggle }) => {

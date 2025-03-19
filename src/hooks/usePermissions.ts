@@ -3,7 +3,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useSubscription } from "./useSubscription";
 
 /**
- * A simplified permissions hook that provides basic access control
+ * A simplified permissions hook that provides basic access control based on subscription
  */
 export const usePermissions = () => {
   const { user, isLoading: isAuthLoading } = useAuth();
@@ -13,22 +13,16 @@ export const usePermissions = () => {
 
   // All authenticated users are considered 'users'
   // Users with active subscriptions are considered 'subscribers'
-  const userRole = user ? (subscription?.isActive ? 'subscriber' : 'user') : '';
+  const userRole = user ? 'user' : '';
 
   // Check if user can create content
-  const canCreate = async () => {
-    return !!user;
-  };
+  const canCreate = () => !!user;
 
   // Check if user can edit content
-  const canEdit = async () => {
-    return !!user;
-  };
+  const canEdit = () => !!user;
 
   // Check if user can view content
-  const canView = async () => {
-    return !!user;
-  };
+  const canView = () => !!user;
 
   return {
     canCreate,
