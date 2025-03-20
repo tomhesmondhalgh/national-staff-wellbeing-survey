@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -66,10 +67,11 @@ const SignUp = () => {
         lastName: data.lastName,
       });
       
-      if (!signUpSuccess || !user) {
+      if (!signUpSuccess) {
         throw signUpError || new Error('Failed to create account');
       }
       
+      // Store user data for profile completion
       const userData = {
         jobTitle: data.jobTitle,
         schoolName: data.schoolName,
@@ -79,22 +81,30 @@ const SignUp = () => {
         lastName: data.lastName,
       };
 
+      // Complete user profile in database
       const { error: profileError, success: profileSuccess } = await completeUserProfile(userData);
       
       if (!profileSuccess) {
         throw profileError || new Error('Failed to complete profile');
       }
       
+      // Redirect to email confirmation page instead of automatically logging in
       if (invitationToken) {
-        console.log(`Signup successful, redirecting to invitation accept with token: ${invitationToken}`);
-        navigate(`/invitation/accept?token=${invitationToken}`);
-      } else {
-        console.log('Signup successful, redirecting to dashboard');
-        toast.success('Account created successfully!', {
-          description: 'Welcome to the platform. You can now log in.'
+        // For invitations, we'll still redirect to the invitation flow
+        // but let the user know they need to confirm their email first
+        toast.info('Please check your email to confirm your account before accessing your invitation', {
+          duration: 6000
         });
-        navigate('/dashboard');
+        navigate(`/email-confirmation`, { state: { email: data.email } });
+      } else {
+        // For regular sign ups, redirect to the email confirmation page
+        console.log('Signup successful, redirecting to email confirmation page');
+        navigate('/email-confirmation', { state: { email: data.email } });
       }
+      
+      toast.success('Account created successfully!', {
+        description: 'Please check your email inbox to confirm your account'
+      });
     } catch (err: any) {
       console.error('Signup error details:', err);
       toast.error('Failed to create account', {
@@ -130,7 +140,7 @@ const SignUp = () => {
         />
         {invitation && (
           <div className="mb-4 text-sm text-brandPurple-100 rounded-lg p-3 bg-brandPurple-50 border border-brandPurple-100">
-            <p>You've been invited to join an organization. Create your account to continue.</p>
+            <p>You've been invited to join an organisation. Create your account to continue.</p>
           </div>
         )}
         <AuthForm 

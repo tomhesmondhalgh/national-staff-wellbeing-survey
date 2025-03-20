@@ -71,7 +71,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
   }, []);
 
-  // Sign in function - removed toast here since it's now in the Login component
+  // Sign in function
   const signIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
@@ -88,16 +88,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  // Sign up function - uses our simplified approach without roles
+  // Sign up function - Modified to require email confirmation
   const signUp = async (email: string, password: string, userData?: any) => {
     setIsLoading(true);
     try {
+      // No longer set redirectTo: window.location.origin + '/dashboard'
+      // Let Supabase handle the default confirmation flow
       const options = userData ? {
         data: {
           first_name: userData.firstName,
           last_name: userData.lastName,
         },
-      } : {};
+        emailRedirectTo: `${window.location.origin}/login`,
+      } : {
+        emailRedirectTo: `${window.location.origin}/login`,
+      };
 
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -111,7 +116,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         throw new Error('Failed to create user account');
       }
       
-      // In our simplified model, we don't assign any roles
+      // Don't attempt to sign in the user immediately
+      // Let them confirm their email first
       
       return { error: null, success: true, user: data.user };
     } catch (error: any) {
